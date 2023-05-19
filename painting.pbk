@@ -1,0 +1,116 @@
+<languageVersion : 1.0;>
+
+kernel Painting
+<   namespace : "ar.shader.painting";
+    vendor : "Alan Ross";
+    version : 1;
+    description : "Painting";
+>
+{
+    parameter float n0
+    <
+        minValue: 0.0;
+        maxValue: 1.0; 
+        defaultValue: 0.0;
+    >;
+    parameter float n1
+    <
+        minValue: 0.0;
+        maxValue: 1.5; 
+        defaultValue: 0.6;
+    >;
+    parameter float n2
+    <
+        minValue: -0.5; 
+        maxValue: 0.5; 
+        defaultValue: 0.11;
+    >;
+
+    input image4 src;
+    output pixel4 dst;
+     
+    void evaluatePixel()
+    {
+        float2 p = outCoord();
+        float2 offset;
+        float dist;
+        float4 c, temp, p0, p1, p2, p3, p4, p5, p6, p7, p8;
+        
+        c = float4( n0, n0, n0, 1.0 );
+        
+        //-- no loops.
+        
+        dist = n1 * 1.0;
+        offset.x = 0.0; offset.y = 0.0;
+        p0 = sampleNearest( src, p + offset ); offset.x = -dist; offset.y = -dist;
+        p1 = sampleNearest( src, p + offset ); offset.x =  0.0;  offset.y = -dist;
+        p2 = sampleNearest( src, p + offset ); offset.x =  dist; offset.y = -dist;
+        p3 = sampleNearest( src, p + offset ); offset.x =  dist; offset.y =  0.0;
+        p4 = sampleNearest( src, p + offset ); offset.x =  dist; offset.y =  dist;
+        p5 = sampleNearest( src, p + offset ); offset.x =  0.0;  offset.y =  dist;
+        p6 = sampleNearest( src, p + offset ); offset.x = -dist; offset.y =  dist;
+        p7 = sampleNearest( src, p + offset ); offset.x = -dist; offset.y =  0.0;
+        p8 = sampleNearest( src, p + offset ); 
+        
+        if( any( lessThan( c, p0 ) ) ){ c = p0; }
+        if( any( lessThan( c, p1 ) ) ){ c = p1; }
+        if( any( lessThan( c, p2 ) ) ){ c = p2; }
+        if( any( lessThan( c, p3 ) ) ){ c = p3; }
+        if( any( lessThan( c, p4 ) ) ){ c = p4; }
+        if( any( lessThan( c, p5 ) ) ){ c = p5; }
+        if( any( lessThan( c, p6 ) ) ){ c = p6; }
+        if( any( lessThan( c, p7 ) ) ){ c = p7; }
+        if( any( lessThan( c, p8 ) ) ){ c = p8; }
+        
+        temp = ( p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 ) / 7.0;
+        
+        dist = n1 * 2.0;
+        offset.x = 0.0; offset.y = 0.0;
+        p0 = sampleNearest( src, p + offset ); offset.x = -dist; offset.y = -dist;
+        p1 = sampleNearest( src, p + offset ); offset.x =  0.0;  offset.y = -dist;
+        p2 = sampleNearest( src, p + offset ); offset.x =  dist; offset.y = -dist;
+        p3 = sampleNearest( src, p + offset ); offset.x =  dist; offset.y =  0.0;
+        p4 = sampleNearest( src, p + offset ); offset.x =  dist; offset.y =  dist;
+        p5 = sampleNearest( src, p + offset ); offset.x =  0.0;  offset.y =  dist;
+        p6 = sampleNearest( src, p + offset ); offset.x = -dist; offset.y =  dist;
+        p7 = sampleNearest( src, p + offset ); offset.x = -dist; offset.y =  0.0;
+        p8 = sampleNearest( src, p + offset );
+
+        if( all( lessThan( c, temp ) ) ){ c.rgb += n2; }
+        else { c.rgb -= n2; }
+        
+        if( any( lessThan( c, p0 ) ) ){ c = p0; }
+        if( any( lessThan( c, p1 ) ) ){ c = p1; }
+        if( any( lessThan( c, p2 ) ) ){ c = p2; }
+        if( any( lessThan( c, p3 ) ) ){ c = p3; }
+        if( any( lessThan( c, p4 ) ) ){ c = p4; }
+        if( any( lessThan( c, p5 ) ) ){ c = p5; }
+        if( any( lessThan( c, p6 ) ) ){ c = p6; }
+        if( any( lessThan( c, p7 ) ) ){ c = p7; }
+        if( any( lessThan( c, p8 ) ) ){ c = p8; }
+        
+        dist = n1 * 3.0;
+        offset.x = 0.0; offset.y = 0.0;
+        p0 = sampleNearest( src, p + offset ); offset.x = -dist; offset.y = -dist;
+        p1 = sampleNearest( src, p + offset ); offset.x =  0.0;  offset.y = -dist;
+        p2 = sampleNearest( src, p + offset ); offset.x =  dist; offset.y = -dist;
+        p3 = sampleNearest( src, p + offset ); offset.x =  dist; offset.y =  0.0;
+        p4 = sampleNearest( src, p + offset ); offset.x =  dist; offset.y =  dist;
+        p5 = sampleNearest( src, p + offset ); offset.x =  0.0;  offset.y =  dist;
+        p6 = sampleNearest( src, p + offset ); offset.x = -dist; offset.y =  dist;
+        p7 = sampleNearest( src, p + offset ); offset.x = -dist; offset.y =  0.0;
+        p8 = sampleNearest( src, p + offset );
+
+        if( any( lessThan( c, p0 ) ) ){ c = p0; }
+        if( any( lessThan( c, p1 ) ) ){ c = p1; }
+        if( any( lessThan( c, p2 ) ) ){ c = p2; }
+        if( any( lessThan( c, p3 ) ) ){ c = p3; }
+        if( any( lessThan( c, p4 ) ) ){ c = p4; }
+        if( any( lessThan( c, p5 ) ) ){ c = p5; }
+        if( any( lessThan( c, p6 ) ) ){ c = p6; }
+        if( any( lessThan( c, p7 ) ) ){ c = p7; }
+        if( any( lessThan( c, p8 ) ) ){ c = p8; }
+        
+        dst = c;
+    }
+}

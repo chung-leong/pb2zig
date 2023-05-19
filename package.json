@@ -1,0 +1,14 @@
+{
+  "name": "pb2zig",
+  "version": "0.0.1",
+  "description": "Pixel Bender to Zig code translator",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chevrotain": "^10.5.0"
+  }
+}
