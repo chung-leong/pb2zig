@@ -81,12 +81,12 @@ const T = {
   Null: createToken({ name: 'Null', pattern: /null/ }),
   True: createToken({ name: 'True', pattern: /true/ }),
   False: createToken({ name: 'False', pattern: /false/ }),
-  NumberLiteral: createToken({
-    name: 'NumberLiteral',
-    pattern: /-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/
+  Number: createToken({
+    name: 'Number',
+    pattern: /(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/
   }),
-  StringLiteral: createToken({
-    name: 'StringLiteral',
+  QuotedStr: createToken({
+    name: 'QuotedStr',
     pattern: /"(?:[^\\"]|\\(?:[bfnrtv"\\/]|u[0-9a-fA-F]{4}))*"/
   }),
   Identifier: createToken({ name: 'Identifier', pattern: /[_a-zA-Z]\w*/ }),
@@ -113,15 +113,23 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.String) },
       ]);
     });
+    $.RULE('numericLiteral', () => {
+      $.OPTION(() => {
+        $.OR([
+          { ALT: () => $.CONSUME(T.Plus) },
+          { ALT: () => $.CONSUME(T.Minus) },
+        ])
+      });
+      $.CONSUME(T.Number);
+    });
     $.RULE('literalValue', () => {
       $.OR([
-        { ALT: () => $.CONSUME(T.StringLiteral) },
-        { ALT: () => $.CONSUME(T.NumberLiteral) },
-        { ALT: () => $.CONSUME(T.Identifier) },
+        { ALT: () => $.SUBRULE($.numericLiteral) },
+        { ALT: () => $.CONSUME(T.QuotedStr) },
         { ALT: () => $.CONSUME(T.True) },
         { ALT: () => $.CONSUME(T.False) },
         { ALT: () => $.CONSUME(T.Null) },
-      ])
+      ]);
     });
     $.RULE('attribute', () => {
       $.CONSUME(T.Identifier);
@@ -131,27 +139,81 @@ class PixelBenderParser extends CstParser {
     });
     $.RULE('tag', () => {
       $.CONSUME(T.LAngle);
-      $.OPTION(() => {
-        $.MANY(() => $.SUBRULE($.attribute));
-      });
+      $.MANY(() => $.SUBRULE($.attribute));
       $.CONSUME(T.RAngle);
-    });
+    });    
     $.RULE('parameter', () => {
       $.CONSUME(T.Parameter);
       $.SUBRULE($.type);
       $.CONSUME(T.Identifier);
       $.SUBRULE($.tag);
+      $.CONSUME(T.Semicolon);
     });
-    $.RULE('codeBlock', () => {
+    $.RULE('expression', () => {
+      $.CONSUME(T.Null);
+    });
+    $.RULE('whileStatement', () => {
+      $.CONSUME(T.While);
+      $.CONSUME(T.LParen);
+      $.SUBRULE($.expression);
+      $.CONSUME(T.RParen);
+      $.SUBRULE($.statement);
+    });
+    $.RULE('doWhileStatement', () => {
+      $.CONSUME(T.Do);
+      $.SUBRULE($.statement);
+      $.CONSUME(T.While);
+      $.CONSUME(T.LParen);
+      $.SUBRULE($.expression);
+      $.CONSUME(T.RParen);
+      $.CONSUME(T.Semicolon);
+    });
+    $.RULE('continueStatement', () => {
+      $.CONSUME(T.Continue);
+      $.CONSUME(T.Semicolon);
+    });
+    $.RULE('breakStatement', () => {
+      $.CONSUME(T.Break);
+      $.CONSUME(T.Semicolon);
+    });
+    $.RULE('returnStatement', () => {
+      $.CONSUME(T.Return);
+      $.OPTION(() => {
+        $.SUBRULE($.expression);
+      });
+      $.CONSUME(T.Semicolon);
+    });
+    $.RULE('emptyStatement', () => {
+      $.CONSUME(T.Semicolon);
+    });
+    $.RULE('statementBlock', () => {
       $.CONSUME(T.LCurly);
-      // TODO
+      $.MANY(() => $.SUBRULE($.statement));
+      $.CONSUME(T.RCurly);
+    });
+    $.RULE('statement', () => {
+      $.OR([
+        { ALT: () => $.SUBRULE($.statementBlock) },
+        //{ ALT: () => $.SUBRULE($.ifElseStatement) },
+        //{ ALT: () => $.SUBRULE($.ifStatement) },
+        { ALT: () => $.SUBRULE($.whileStatement) },
+        { ALT: () => $.SUBRULE($.doWhileStatement) },
+        { ALT: () => $.SUBRULE($.continueStatement) },
+        { ALT: () => $.SUBRULE($.breakStatement) },
+        { ALT: () => $.SUBRULE($.returnStatement) },        
+        { ALT: () => $.SUBRULE($.emptyStatement) },        
+      ]);
+    });
+    $.RULE('kernelBody', () => {
+      $.CONSUME(T.LCurly);
+      $.MANY(() => $.SUBRULE($.parameter));
       $.CONSUME(T.RCurly);
     });
     $.RULE('kernel', () => {
       $.CONSUME(T.Kernel);
       $.CONSUME(T.Identifier);
       $.SUBRULE($.tag);
-      $.SUBRULE($.codeBlock);
+      $.SUBRULE($.kernelBody);
     });
     $.RULE('pbk', () => {
       $.SUBRULE($.tag);
