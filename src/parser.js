@@ -23,6 +23,7 @@ const T = {
   DblAmp: createToken({ name: 'DblAnd', pattern: /&&/ }),
   DblPipe: createToken({ name: 'DblPipe', pattern: /\|\|/ }),
   DblCircum: createToken({ name: 'DblCircum', pattern: /\^\^/ }),
+  Arrow: createToken({ name: 'Arrow', pattern: '/->/' }),
 
   LCurly: createToken({ name: 'LCurly', pattern: /{/ }),
   RCurly: createToken({ name: 'RCurly', pattern: /}/ }),
@@ -45,44 +46,44 @@ const T = {
   Slash: createToken({ name: 'Plus', pattern: /\// }),
   Equal: createToken({ name: 'Equal', pattern: /=/ }),
 
-  If: createToken({ name: 'If', pattern: /if/ }),
-  Else: createToken({ name: 'Else', pattern: /else/ }),
-  For: createToken({ name: 'For', pattern: /for/ }),
-  While: createToken({ name: 'While', pattern: /while/ }),
-  Do: createToken({ name: 'Do', pattern: /do/ }),
-  Break: createToken({ name: 'Break', pattern: /break/ }),
-  Continue: createToken({ name: 'Continue', pattern: /continue/ }),
-  Return: createToken({ name: 'Return', pattern: /return/ }),
+  If: createToken({ name: 'If', pattern: /if\b/ }),
+  Else: createToken({ name: 'Else', pattern: /else\b/ }),
+  For: createToken({ name: 'For', pattern: /for\b/ }),
+  While: createToken({ name: 'While', pattern: /while\b/ }),
+  Do: createToken({ name: 'Do', pattern: /do\b/ }),
+  Break: createToken({ name: 'Break', pattern: /break\b/ }),
+  Continue: createToken({ name: 'Continue', pattern: /continue\b/ }),
+  Return: createToken({ name: 'Return', pattern: /return\b/ }),
 
-  BoolVector: createToken({ name: 'BoolVector', pattern: /bool[2-4]/ }),
-  Bool: createToken({ name: 'Bool', pattern: /bool/ }),
-  IntMatrix: createToken({ name: 'IntMatrix', pattern: /int([2-4])x([2-4])/ }),
-  IntVector: createToken({ name: 'IntVector', pattern: /int([2-4])/ }),
-  Int: createToken({ name: 'Int', pattern: /int/ }),
-  FloatMatrix: createToken({ name: 'FloatMatrix', pattern: /float([2-4])x([2-4])/ }),
-  FloatVector: createToken({ name: 'FloatVector', pattern: /float([2-4])/ }),
-  Float: createToken({ name: 'Float', pattern: /float/ }),
-  Image: createToken({ name: 'Image', pattern: /image([1-4])/ }),
-  Pixel: createToken({ name: 'Pixel', pattern: /pixel([1-4])/ }),
-  Output: createToken({ name: 'Output', pattern: /output/ }),
-  String: createToken({ name: 'String', pattern: /string/ }),
-  Void: createToken({ name: 'Void', pattern: /void/ }),
-  Region: createToken({ name: 'Region', pattern: /region/ }),
+  Bool: createToken({ name: 'Bool', pattern: /bool\b/ }),
+  BoolVector: createToken({ name: 'BoolVector', pattern: /bool[2-4]\b/ }),
+  Int: createToken({ name: 'Int', pattern: /int\b/ }),
+  IntVector: createToken({ name: 'IntVector', pattern: /int([2-4])\b/ }),
+  IntMatrix: createToken({ name: 'IntMatrix', pattern: /int([2-4])x([2-4])\b/ }),
+  Float: createToken({ name: 'Float', pattern: /float\b/ }),
+  FloatVector: createToken({ name: 'FloatVector', pattern: /float([2-4])\b/ }),
+  FloatMatrix: createToken({ name: 'FloatMatrix', pattern: /float([2-4])x([2-4])\b/ }),
+  Image: createToken({ name: 'Image', pattern: /image([1-4])\b/ }),
+  Pixel: createToken({ name: 'Pixel', pattern: /pixel([1-4])\b/ }),
+  Output: createToken({ name: 'Output', pattern: /output\b/ }),
+  String: createToken({ name: 'String', pattern: /string\b/ }),
+  Void: createToken({ name: 'Void', pattern: /void\b/ }),
+  Region: createToken({ name: 'Region', pattern: /region\b/ }),
 
-  Any: createToken({ name: 'Any', pattern: /any/ }),
-  All: createToken({ name: 'All', pattern: /all/ }),
-  Not: createToken({ name: 'Not', pattern: /not/ }),
+  Any: createToken({ name: 'Any', pattern: /any\b/ }),
+  All: createToken({ name: 'All', pattern: /all\b/ }),
+  Not: createToken({ name: 'Not', pattern: /not\b/ }),
 
-  Input: createToken({ name: 'Input', pattern: /input/ }),
-  Output: createToken({ name: 'Output', pattern: /output/ }),
-  In: createToken({ name: 'In', pattern: /in/ }),
-  Out: createToken({ name: 'Out', pattern: /out/ }),
-  Kernel: createToken({ name: 'Kernel', pattern: /kernel/ }),
-  Parameter: createToken({ name: 'Parameter', pattern: /parameter/ }),
+  Input: createToken({ name: 'Input', pattern: /input\b/ }),
+  Output: createToken({ name: 'Output', pattern: /output\b/ }),
+  In: createToken({ name: 'In', pattern: /in\b/ }),
+  Out: createToken({ name: 'Out', pattern: /out\b/ }),
+  Kernel: createToken({ name: 'Kernel', pattern: /kernel\b/ }),
+  Parameter: createToken({ name: 'Parameter', pattern: /parameter\b/ }),
 
-  Null: createToken({ name: 'Null', pattern: /null/ }),
-  True: createToken({ name: 'True', pattern: /true/ }),
-  False: createToken({ name: 'False', pattern: /false/ }),
+  Null: createToken({ name: 'Null', pattern: /null\b/ }),
+  True: createToken({ name: 'True', pattern: /true\b/ }),
+  False: createToken({ name: 'False', pattern: /false\b/ }),
   Number: createToken({
     name: 'Number',
     pattern: /(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/
@@ -91,7 +92,7 @@ const T = {
     name: 'QuotedStr',
     pattern: /"(?:[^\\"]|\\(?:[bfnrtv"\\/]|u[0-9a-fA-F]{4}))*"/
   }),
-  Identifier: createToken({ name: 'Identifier', pattern: /[_a-zA-Z]\w*/ }),
+  Identifier: createToken({ name: 'Identifier', pattern: /[_a-zA-Z][_0-9a-zA-Z]*/ }),
 };
 
 const allTokens = Object.values(T);
@@ -152,6 +153,7 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.SUBRULE($.inputDeclaration) },
         { ALT: () => $.SUBRULE($.outputDeclaration) },
         { ALT: () => $.SUBRULE($.functionDeclaration) },
+        { ALT: () => $.CONSUME(T.Comment) },
       ]);
     });
     $.RULE('parameterDeclaration', () => {
@@ -190,7 +192,7 @@ class PixelBenderParser extends CstParser {
       $.SUBRULE($.returnType);
       $.CONSUME(T.Identifier);
       $.CONSUME(T.LParen);
-      $.SUBRULE($.argumentList);
+      $.SUBRULE($.argumentDeclaration);
       $.CONSUME(T.RParen);
       $.SUBRULE($.statementBlock);
     });    
@@ -200,7 +202,7 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.SUBRULE($.type) },
       ])
     });
-    $.RULE('argumentList', () => {
+    $.RULE('argumentDeclaration', () => {
       $.MANY_SEP({
         SEP: T.Comma,
         DEF: () => $.CONSUME(T.Identifier),
@@ -215,14 +217,16 @@ class PixelBenderParser extends CstParser {
       $.OR([
         { ALT: () => $.SUBRULE($.statementBlock) },
         { ALT: () => $.SUBRULE($.variableDelcaration) },
+        { ALT: () => $.SUBRULE($.variableAssignment) },
         //{ ALT: () => $.SUBRULE($.ifElseStatement) },
         //{ ALT: () => $.SUBRULE($.ifStatement) },
         { ALT: () => $.SUBRULE($.whileStatement) },
         { ALT: () => $.SUBRULE($.doWhileStatement) },
         { ALT: () => $.SUBRULE($.continueStatement) },
         { ALT: () => $.SUBRULE($.breakStatement) },
-        { ALT: () => $.SUBRULE($.returnStatement) },        
-        { ALT: () => $.SUBRULE($.emptyStatement) },        
+        { ALT: () => $.SUBRULE($.returnStatement) },
+        { ALT: () => $.SUBRULE($.emptyStatement) },
+        { ALT: () => $.CONSUME(T.Comment) },
       ]);
     });
     $.RULE('variableDelcaration', () => {
@@ -231,6 +235,7 @@ class PixelBenderParser extends CstParser {
         SEP: T.Comma,
         DEF: () => $.SUBRULE($.identifierWithInit),
       });
+      $.CONSUME(T.Semicolon);
     });
     $.RULE('identifierWithInit', () => {
       $.CONSUME(T.Identifier),
@@ -240,7 +245,48 @@ class PixelBenderParser extends CstParser {
       });
     });
     $.RULE('expression', () => {
-      $.CONSUME(T.Null);
+      $.OR([
+        { ALT: () => $.SUBRULE($.constructorCall) },
+        { ALT: () => $.SUBRULE($.functionCall) },
+        { ALT: () => $.SUBRULE($.propertyAccess) },
+        { ALT: () => $.SUBRULE($.literalValue) },
+        { ALT: () => $.CONSUME(T.Identifier) },
+      ]);
+    });
+    $.RULE('functionCall', () => {
+      $.CONSUME(T.Identifier);
+      $.CONSUME(T.LParen);
+      $.SUBRULE($.argumentList);
+      $.CONSUME(T.RParen);
+    });
+    $.RULE('argumentList', () => {
+      $.MANY_SEP({
+        SEP: T.Comma,
+        DEF: () => $.SUBRULE($.expression),
+      });
+    });
+    $.RULE('variableAssignment', () => {
+      $.SUBRULE($.leftValue);
+      $.CONSUME(T.Equal);
+      $.SUBRULE($.expression);
+      $.CONSUME(T.Semicolon);
+    });
+    $.RULE('leftValue', () => {
+      $.OR([
+        { ALT: () => $.SUBRULE($.propertyAccess) },
+        { ALT: () => $.CONSUME(T.Identifier) },
+      ]);
+    });
+    $.RULE('propertyAccess', () => {
+      $.CONSUME1(T.Identifier);
+      $.CONSUME(T.Arrow);
+      $.CONSUME2(T.Identifier);
+    });
+    $.RULE('constructorCall', () => {
+      $.SUBRULE($.type);
+      $.CONSUME(T.LParen);
+      $.SUBRULE($.argumentList);
+      $.CONSUME(T.RParen);
     });
     $.RULE('whileStatement', () => {
       $.CONSUME(T.While);
