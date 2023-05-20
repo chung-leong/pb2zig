@@ -16,7 +16,7 @@ const T = {
   PlusEql: createToken({ name: 'PlusEql', pattern: /\+=/ }),
   MinusEql: createToken({ name: 'MinusEql', pattern: /-=/ }),
   AsteriskEql: createToken({ name: 'AsteriskEql', pattern: /\*=/ }),
-  SlashEql: createToken({ name: 'PlusEql', pattern: /\/=/ }),
+  SlashEql: createToken({ name: 'SlashEql', pattern: /\/=/ }),
   LAngleEql: createToken({ name: 'LAngleEql', pattern: /<=/ }),
   RAngleEql: createToken({ name: 'RAngleEql', pattern: />=/ }),
   DblPlus: createToken({ name: 'DblPlus', pattern: /\+\+/ }),
@@ -43,7 +43,7 @@ const T = {
   Plus: createToken({ name: 'Plus', pattern: /\+/ }),
   Minus: createToken({ name: 'Minus', pattern: /-/ }),
   Asterisk: createToken({ name: 'Asterisk', pattern: /\*/ }),
-  Slash: createToken({ name: 'Plus', pattern: /\// }),
+  Slash: createToken({ name: 'Slash', pattern: /\// }),
   Equal: createToken({ name: 'Equal', pattern: /=/ }),
 
   If: createToken({ name: 'If', pattern: /if\b/ }),
@@ -69,10 +69,6 @@ const T = {
   String: createToken({ name: 'String', pattern: /string\b/ }),
   Void: createToken({ name: 'Void', pattern: /void\b/ }),
   Region: createToken({ name: 'Region', pattern: /region\b/ }),
-
-  Any: createToken({ name: 'Any', pattern: /any\b/ }),
-  All: createToken({ name: 'All', pattern: /all\b/ }),
-  Not: createToken({ name: 'Not', pattern: /not\b/ }),
 
   Input: createToken({ name: 'Input', pattern: /input\b/ }),
   Output: createToken({ name: 'Output', pattern: /output\b/ }),
@@ -115,26 +111,18 @@ class PixelBenderParser extends CstParser {
     $.RULE('attribute', () => {
       $.CONSUME(T.Identifier);
       $.CONSUME(T.Colon);
+      $.OPTION(() => $.CONSUME(T.Minus));
       $.SUBRULE($.literalValue);
       $.CONSUME(T.Semicolon);
     });
     $.RULE('literalValue', () => {
       $.OR([
-        { ALT: () => $.SUBRULE($.numericLiteral) },
+        { ALT: () => $.CONSUME(T.Number) },
         { ALT: () => $.CONSUME(T.QuotedStr) },
         { ALT: () => $.CONSUME(T.True) },
         { ALT: () => $.CONSUME(T.False) },
         { ALT: () => $.CONSUME(T.Null) },
       ]);
-    });
-    $.RULE('numericLiteral', () => {
-      $.OPTION(() => {
-        $.OR([
-          { ALT: () => $.CONSUME(T.Plus) },
-          { ALT: () => $.CONSUME(T.Minus) },
-        ])
-      });
-      $.CONSUME(T.Number);
     });
     $.RULE('kernel', () => {
       $.CONSUME(T.Kernel);
@@ -144,17 +132,16 @@ class PixelBenderParser extends CstParser {
     });
     $.RULE('kernelBody', () => {
       $.CONSUME(T.LCurly);
-      $.MANY(() => $.SUBRULE($.topLevelDeclaration));
+      $.MANY(() => {
+        $.OR([
+          { ALT: () => $.SUBRULE($.parameterDeclaration) },
+          { ALT: () => $.SUBRULE($.inputDeclaration) },
+          { ALT: () => $.SUBRULE($.outputDeclaration) },
+          { ALT: () => $.SUBRULE($.functionDeclaration) },
+          { ALT: () => $.CONSUME(T.Comment) },
+        ]);
+      });
       $.CONSUME(T.RCurly);
-    });
-    $.RULE('topLevelDeclaration', () => {
-      $.OR([
-        { ALT: () => $.SUBRULE($.parameterDeclaration) },
-        { ALT: () => $.SUBRULE($.inputDeclaration) },
-        { ALT: () => $.SUBRULE($.outputDeclaration) },
-        { ALT: () => $.SUBRULE($.functionDeclaration) },
-        { ALT: () => $.CONSUME(T.Comment) },
-      ]);
     });
     $.RULE('parameterDeclaration', () => {
       $.CONSUME(T.Parameter);
@@ -189,18 +176,15 @@ class PixelBenderParser extends CstParser {
       $.CONSUME(T.Semicolon);
     });
     $.RULE('functionDeclaration', () => {
-      $.SUBRULE($.returnType);
+      $.OR([
+        { ALT: () => $.CONSUME(T.Void) },
+        { ALT: () => $.SUBRULE($.type) },
+      ])
       $.CONSUME(T.Identifier);
       $.CONSUME(T.LParen);
       $.SUBRULE($.argumentDeclaration);
       $.CONSUME(T.RParen);
       $.SUBRULE($.statementBlock);
-    });    
-    $.RULE('returnType', () => {
-      $.OR([
-        { ALT: () => $.CONSUME(T.Void) },
-        { ALT: () => $.SUBRULE($.type) },
-      ])
     });
     $.RULE('argumentDeclaration', () => {
       $.MANY_SEP({
@@ -218,8 +202,7 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.SUBRULE($.statementBlock) },
         { ALT: () => $.SUBRULE($.variableDelcaration) },
         { ALT: () => $.SUBRULE($.variableAssignment) },
-        //{ ALT: () => $.SUBRULE($.ifElseStatement) },
-        //{ ALT: () => $.SUBRULE($.ifStatement) },
+        { ALT: () => $.SUBRULE($.ifStatement) },
         { ALT: () => $.SUBRULE($.whileStatement) },
         { ALT: () => $.SUBRULE($.doWhileStatement) },
         { ALT: () => $.SUBRULE($.continueStatement) },
@@ -245,16 +228,60 @@ class PixelBenderParser extends CstParser {
       });
     });
     $.RULE('expression', () => {
+      $.OPTION1(() => $.SUBRULE($.unaryOperators));
+      $.SUBRULE($.expressionNotRecursive);
+      $.OPTION2(() => {
+        $.SUBRULE($.binaryOperators);
+        $.SUBRULE1($.expression);
+      });
+      $.OPTION3(() => {
+        $.CONSUME(T.Question);
+        $.SUBRULE2($.expression);
+        $.CONSUME(T.Colon);
+        $.SUBRULE3($.expression);
+      })
+    });
+    $.RULE('unaryOperators', () => {
+      $.OR([
+        { ALT: () => $.CONSUME(T.Minus) },
+        { ALT: () => $.CONSUME(T.Exclam) },
+      ]);
+    });
+    $.RULE('expressionNotRecursive', () => {
       $.OR([
         { ALT: () => $.SUBRULE($.constructorCall) },
         { ALT: () => $.SUBRULE($.functionCall) },
         { ALT: () => $.SUBRULE($.propertyAccess) },
         { ALT: () => $.SUBRULE($.literalValue) },
         { ALT: () => $.CONSUME(T.Identifier) },
+        { 
+          ALT: () => {
+            $.CONSUME(T.LParen);
+            $.SUBRULE($.expression);
+            $.CONSUME(T.RParen);
+          }
+        },
       ]);
     });
-    $.RULE('functionCall', () => {
-      $.CONSUME(T.Identifier);
+    $.RULE('binaryOperators', () => { 
+      $.OR([
+        { ALT: () => $.CONSUME(T.Plus) },
+        { ALT: () => $.CONSUME(T.Minus) },
+        { ALT: () => $.CONSUME(T.Asterisk) },
+        { ALT: () => $.CONSUME(T.Slash) },
+        { ALT: () => $.CONSUME(T.LAngle) },
+        { ALT: () => $.CONSUME(T.RAngle) },
+        { ALT: () => $.CONSUME(T.LAngleEql) },
+        { ALT: () => $.CONSUME(T.RAngleEql) },
+        { ALT: () => $.CONSUME(T.DblEql) },
+        { ALT: () => $.CONSUME(T.ExclamEql) },
+        { ALT: () => $.CONSUME(T.DblAmp) },
+        { ALT: () => $.CONSUME(T.DblPipe) },
+        { ALT: () => $.CONSUME(T.DblCircum) },
+      ])
+    });
+    $.RULE('constructorCall', () => {
+      $.SUBRULE($.type);
       $.CONSUME(T.LParen);
       $.SUBRULE($.argumentList);
       $.CONSUME(T.RParen);
@@ -265,9 +292,21 @@ class PixelBenderParser extends CstParser {
         DEF: () => $.SUBRULE($.expression),
       });
     });
+    $.RULE('functionCall', () => {
+      $.CONSUME(T.Identifier);
+      $.CONSUME(T.LParen);
+      $.SUBRULE($.argumentList);
+      $.CONSUME(T.RParen);
+    });
     $.RULE('variableAssignment', () => {
       $.SUBRULE($.leftValue);
-      $.CONSUME(T.Equal);
+      $.OR([
+        { ALT: () => $.CONSUME(T.Equal) },
+        { ALT: () => $.CONSUME(T.PlusEql) },
+        { ALT: () => $.CONSUME(T.MinusEql) },
+        { ALT: () => $.CONSUME(T.AsteriskEql) },
+        { ALT: () => $.CONSUME(T.SlashEql) },
+      ]);
       $.SUBRULE($.expression);
       $.CONSUME(T.Semicolon);
     });
@@ -279,14 +318,23 @@ class PixelBenderParser extends CstParser {
     });
     $.RULE('propertyAccess', () => {
       $.CONSUME1(T.Identifier);
-      $.CONSUME(T.Arrow);
+      $.OR([
+        { ALT: () => $.CONSUME(T.Arrow) },
+        { ALT: () => $.CONSUME(T.Period) },
+      ]);
       $.CONSUME2(T.Identifier);
     });
-    $.RULE('constructorCall', () => {
-      $.SUBRULE($.type);
+    $.RULE('ifStatement', () => {
+      $.CONSUME(T.If);
       $.CONSUME(T.LParen);
-      $.SUBRULE($.argumentList);
+      $.SUBRULE($.expression);
       $.CONSUME(T.RParen);
+      $.SUBRULE($.statement);
+      $.OPTION(() => $.SUBRULE($.elseClause));
+    })
+    $.RULE('elseClause', () => {
+      $.CONSUME(T.Else);
+      $.SUBRULE($.statement);
     });
     $.RULE('whileStatement', () => {
       $.CONSUME(T.While);

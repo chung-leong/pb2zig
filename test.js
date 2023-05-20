@@ -17,3 +17,5 @@ if (parseErrors.length > 0) {
     console.log(error);
   }    
 }
+
+console.log(cst);
