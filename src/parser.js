@@ -132,17 +132,21 @@ class PixelBenderParser extends CstParser {
     });
     $.RULE('kernelBody', () => {
       $.CONSUME(T.LCurly);
-      $.MANY(() => {
-        $.OR([
-          { ALT: () => $.SUBRULE($.parameterDeclaration) },
-          { ALT: () => $.SUBRULE($.inputDeclaration) },
-          { ALT: () => $.SUBRULE($.outputDeclaration) },
-          { ALT: () => $.SUBRULE($.functionDeclaration) },
-          { ALT: () => $.CONSUME(T.Comment) },
-        ]);
-      });
+      $.MANY(() => $.SUBRULE($.kernelStatement));
       $.CONSUME(T.RCurly);
     });
+    $.RULE('kernelStatement', () => {
+      $.OR([
+        { ALT: () => $.SUBRULE($.comment) },
+        { ALT: () => $.SUBRULE($.parameterDeclaration) },
+        { ALT: () => $.SUBRULE($.inputDeclaration) },
+        { ALT: () => $.SUBRULE($.outputDeclaration) },
+        { ALT: () => $.SUBRULE($.functionDeclaration) },
+      ]);
+    });
+    $.RULE('comment', () => {
+      $.CONSUME(T.Comment);
+    })
     $.RULE('parameterDeclaration', () => {
       $.CONSUME(T.Parameter);
       $.SUBRULE($.type);
@@ -176,21 +180,25 @@ class PixelBenderParser extends CstParser {
       $.CONSUME(T.Semicolon);
     });
     $.RULE('functionDeclaration', () => {
+      $.SUBRULE($.returnType);
+      $.CONSUME(T.Identifier);
+      $.CONSUME(T.LParen);
+      $.MANY_SEP({
+        SEP: T.Comma,
+        DEF: () => $.SUBRULE($.argumentDeclaration),
+      });
+      $.CONSUME(T.RParen);
+      $.SUBRULE($.statementBlock);
+    });
+    $.RULE('returnType', () => {
       $.OR([
         { ALT: () => $.CONSUME(T.Void) },
         { ALT: () => $.SUBRULE($.type) },
       ])
-      $.CONSUME(T.Identifier);
-      $.CONSUME(T.LParen);
-      $.SUBRULE($.argumentDeclaration);
-      $.CONSUME(T.RParen);
-      $.SUBRULE($.statementBlock);
     });
     $.RULE('argumentDeclaration', () => {
-      $.MANY_SEP({
-        SEP: T.Comma,
-        DEF: () => $.CONSUME(T.Identifier),
-      });
+      $.SUBRULE($.type);
+      $.CONSUME(T.Identifier);
     });
     $.RULE('statementBlock', () => {
       $.CONSUME(T.LCurly);
@@ -199,6 +207,7 @@ class PixelBenderParser extends CstParser {
     });
     $.RULE('statement', () => {
       $.OR([
+        { ALT: () => $.SUBRULE($.comment) },
         { ALT: () => $.SUBRULE($.statementBlock) },
         { ALT: () => $.SUBRULE($.variableDelcaration) },
         { ALT: () => $.SUBRULE($.variableAssignment) },
@@ -209,7 +218,6 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.SUBRULE($.breakStatement) },
         { ALT: () => $.SUBRULE($.returnStatement) },
         { ALT: () => $.SUBRULE($.emptyStatement) },
-        { ALT: () => $.CONSUME(T.Comment) },
       ]);
     });
     $.RULE('variableDelcaration', () => {
@@ -241,26 +249,25 @@ class PixelBenderParser extends CstParser {
         $.SUBRULE3($.expression);
       })
     });
-    $.RULE('unaryOperators', () => {
-      $.OR([
-        { ALT: () => $.CONSUME(T.Minus) },
-        { ALT: () => $.CONSUME(T.Exclam) },
-      ]);
-    });
     $.RULE('expressionNotRecursive', () => {
       $.OR([
+        { ALT: () => $.SUBRULE($.expressionInParentheses) },
         { ALT: () => $.SUBRULE($.constructorCall) },
         { ALT: () => $.SUBRULE($.functionCall) },
         { ALT: () => $.SUBRULE($.propertyAccess) },
         { ALT: () => $.SUBRULE($.literalValue) },
         { ALT: () => $.CONSUME(T.Identifier) },
-        { 
-          ALT: () => {
-            $.CONSUME(T.LParen);
-            $.SUBRULE($.expression);
-            $.CONSUME(T.RParen);
-          }
-        },
+      ]);
+    });
+    $.RULE('expressionInParentheses', () => {
+      $.CONSUME(T.LParen);
+      $.SUBRULE($.expression);
+      $.CONSUME(T.RParen);
+    });
+    $.RULE('unaryOperators', () => {
+      $.OR([
+        { ALT: () => $.CONSUME(T.Minus) },
+        { ALT: () => $.CONSUME(T.Exclam) },
       ]);
     });
     $.RULE('binaryOperators', () => { 
@@ -375,6 +382,8 @@ class PixelBenderParser extends CstParser {
 }
 const parser = new PixelBenderParser();
 
+export const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
+
 export function parse(text) {
   const lexResult = lexer.tokenize(text)
   parser.input = lexResult.tokens
@@ -384,4 +393,3 @@ export function parse(text) {
     parseErrors: parser.errors
   };
 }
-
