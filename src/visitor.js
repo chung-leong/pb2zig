@@ -74,9 +74,9 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
       const s = this.visit(node);
       if (s instanceof Parameter) {
         parameters.push(s);
-      } else if (s instanceof Input) {
+      } else if (s instanceof InputDeclaration) {
         inputs.push(s);
-      } else if (s instanceof Output) {
+      } else if (s instanceof OutputDeclaration) {
         if (!output) {
           output = s;
         } else {
@@ -112,13 +112,13 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   inputDeclaration(ctx) {
     const type = this.name(ctx.Image);
     const name = this.name(ctx.Identifier);
-    return this.create(Input, { type, name });
+    return this.create(InputDeclaration, { type, name });
   }
 
   outputDeclaration(ctx) {
     const type = this.name(ctx.Pixel);
     const name = this.name(ctx.Identifier);
-    return this.create(Output, { type, name });
+    return this.create(OutputDeclaration, { type, name });
   }
 
   functionDeclaration(ctx) {
@@ -175,7 +175,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const list = [];
     for (const node of ctx.identifierWithInit) {
       const { name, initializer } = this.visit(node);
-      list.push(new Variable({ type, name, initializer }));
+      list.push(new VariableDeclaration({ type, name, initializer }));
     }
     return list;
   }
@@ -187,10 +187,14 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   expression(ctx) {
+    const expr1 = this.visit(ctx.expressionNotRecursive);
+    return expr1;
   }
 
   expressionNotRecursive(ctx) {
-
+    for (const [ name, node ] of Object.entries(ctx)) {
+      return this.visit(node);
+    }
   }
 
   expressionInParentheses(ctx) {
@@ -210,11 +214,19 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   argumentList(ctx) {
-
+    const args = [];
+    if (ctx.expression) {
+      for (const node of ctx.expression) {
+        args.push(this.visit(node));
+      } 
+    }
+    return args;
   }
 
   functionCall(ctx) {
-
+    const name = this.name(ctx.Identifier);
+    const args = this.visit(ctx.argumentList); 
+    return new FunctionCall({ name, args });
   }
   
   variableAssignment(ctx) {
@@ -227,6 +239,11 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   propertyAccess(ctx) {
 
+  }
+
+  variable(ctx) {
+    const name = this.name(ctx.Identifier);
+    return this.create(VariableAccess, { name });
   }
 
   ifStatement(ctx) {
@@ -300,16 +317,20 @@ class Parameter {
   previewValue;
 }
 
-class Variable {
+class VariableDeclaration {
   type;
   name;
   initializer;
 }
 
-class Input extends Variable {
+class InputDeclaration  {
+  type;
+  name;
 }
 
-class Output extends Variable {
+class OutputDeclaration {
+  type;
+  name;
 }
 
 class FunctionDefinition {
@@ -319,6 +340,17 @@ class FunctionDefinition {
   statements;
 }
 
-class FunctionArgument extends Variable {  
+class FunctionArgument {  
+  type;
+  name;
+}
+
+class FunctionCall {
+  name;
+  args;
+}
+
+class VariableAccess {
+  name;
 }
 

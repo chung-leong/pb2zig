@@ -256,7 +256,7 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.SUBRULE($.functionCall) },
         { ALT: () => $.SUBRULE($.propertyAccess) },
         { ALT: () => $.SUBRULE($.literalValue) },
-        { ALT: () => $.CONSUME(T.Identifier) },
+        { ALT: () => $.SUBRULE($.variable) },
       ]);
     });
     $.RULE('expressionInParentheses', () => {
@@ -330,6 +330,9 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.Period) },
       ]);
       $.CONSUME2(T.Identifier);
+    });
+    $.RULE('variable', () => {
+      $.CONSUME(T.Identifier);
     });
     $.RULE('ifStatement', () => {
       $.CONSUME(T.If);

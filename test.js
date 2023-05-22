@@ -20,4 +20,4 @@ if (parseErrors.length > 0) {
 }
 
 const visitor = new PixelBenderAstVisitor();
-console.log(visitor.visit(cst));
+visitor.visit(cst);
