@@ -97,24 +97,24 @@ const lexer = new Lexer(allTokens);
 
 class PixelBenderParser extends CstParser {
   constructor() {
-    super(allTokens);
+    super(allTokens)
     const $ = this;
     $.RULE('pbk', () => {
-      $.SUBRULE($.tag);
-      $.SUBRULE($.kernel);
-    });
+      $.SUBRULE($.tag)
+      $.SUBRULE($.kernel)
+    })
     $.RULE('tag', () => {
-      $.CONSUME(T.LAngle);
-      $.MANY(() => $.SUBRULE($.attribute));
-      $.CONSUME(T.RAngle);
+      $.CONSUME(T.LAngle)
+      $.MANY(() => $.SUBRULE($.attribute))
+      $.CONSUME(T.RAngle)
     });    
     $.RULE('attribute', () => {
-      $.CONSUME(T.Identifier);
-      $.CONSUME(T.Colon);
-      $.OPTION(() => $.CONSUME(T.Minus));
-      $.SUBRULE($.literalValue);
-      $.CONSUME(T.Semicolon);
-    });
+      $.CONSUME(T.Identifier)
+      $.CONSUME(T.Colon)
+      $.OPTION(() => $.CONSUME(T.Minus))
+      $.SUBRULE($.literalValue)
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('literalValue', () => {
       $.OR([
         { ALT: () => $.CONSUME(T.Number) },
@@ -122,19 +122,19 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.True) },
         { ALT: () => $.CONSUME(T.False) },
         { ALT: () => $.CONSUME(T.Null) },
-      ]);
-    });
+      ])
+    })
     $.RULE('kernel', () => {
-      $.CONSUME(T.Kernel);
-      $.CONSUME(T.Identifier);
-      $.SUBRULE($.tag);
-      $.SUBRULE($.kernelBody);
-    });
+      $.CONSUME(T.Kernel)
+      $.CONSUME(T.Identifier)
+      $.SUBRULE($.tag)
+      $.SUBRULE($.kernelBody)
+    })
     $.RULE('kernelBody', () => {
-      $.CONSUME(T.LCurly);
-      $.MANY(() => $.SUBRULE($.kernelStatement));
-      $.CONSUME(T.RCurly);
-    });
+      $.CONSUME(T.LCurly)
+      $.MANY(() => $.SUBRULE($.kernelStatement))
+      $.CONSUME(T.RCurly)
+    })
     $.RULE('kernelStatement', () => {
       $.OR([
         { ALT: () => $.SUBRULE($.comment) },
@@ -142,18 +142,18 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.SUBRULE($.inputDeclaration) },
         { ALT: () => $.SUBRULE($.outputDeclaration) },
         { ALT: () => $.SUBRULE($.functionDeclaration) },
-      ]);
-    });
+      ])
+    })
     $.RULE('comment', () => {
-      $.CONSUME(T.Comment);
+      $.CONSUME(T.Comment)
     })
     $.RULE('parameterDeclaration', () => {
-      $.CONSUME(T.Parameter);
-      $.SUBRULE($.type);
-      $.CONSUME(T.Identifier);
-      $.SUBRULE($.tag);
-      $.CONSUME(T.Semicolon);
-    });
+      $.CONSUME(T.Parameter)
+      $.SUBRULE($.type)
+      $.CONSUME(T.Identifier)
+      $.SUBRULE($.tag)
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('type', () => {
       $.OR([
         { ALT: () => $.CONSUME(T.Bool) },
@@ -165,46 +165,46 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.FloatVector) },
         { ALT: () => $.CONSUME(T.FloatMatrix) },
         { ALT: () => $.CONSUME(T.String) },
-      ]);
-    });
+      ])
+    })
     $.RULE('inputDeclaration', () => {
-      $.CONSUME(T.Input);
-      $.CONSUME(T.Image);
-      $.CONSUME(T.Identifier);
-      $.CONSUME(T.Semicolon);
-    });
+      $.CONSUME(T.Input)
+      $.CONSUME(T.Image)
+      $.CONSUME(T.Identifier)
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('outputDeclaration', () => {
-      $.CONSUME(T.Output);
-      $.CONSUME(T.Pixel);
-      $.CONSUME(T.Identifier);
-      $.CONSUME(T.Semicolon);
-    });
+      $.CONSUME(T.Output)
+      $.CONSUME(T.Pixel)
+      $.CONSUME(T.Identifier)
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('functionDeclaration', () => {
-      $.SUBRULE($.returnType);
-      $.CONSUME(T.Identifier);
-      $.CONSUME(T.LParen);
+      $.SUBRULE($.returnType)
+      $.CONSUME(T.Identifier)
+      $.CONSUME(T.LParen)
       $.MANY_SEP({
         SEP: T.Comma,
         DEF: () => $.SUBRULE($.argumentDeclaration),
-      });
-      $.CONSUME(T.RParen);
-      $.SUBRULE($.statementBlock);
-    });
+      })
+      $.CONSUME(T.RParen)
+      $.SUBRULE($.statementBlock)
+    })
     $.RULE('returnType', () => {
       $.OR([
         { ALT: () => $.CONSUME(T.Void) },
         { ALT: () => $.SUBRULE($.type) },
       ])
-    });
+    })
     $.RULE('argumentDeclaration', () => {
-      $.SUBRULE($.type);
-      $.CONSUME(T.Identifier);
-    });
+      $.SUBRULE($.type)
+      $.CONSUME(T.Identifier)
+    })
     $.RULE('statementBlock', () => {
-      $.CONSUME(T.LCurly);
-      $.MANY(() => $.SUBRULE($.statement));
-      $.CONSUME(T.RCurly);
-    });
+      $.CONSUME(T.LCurly)
+      $.MANY(() => $.SUBRULE($.statement))
+      $.CONSUME(T.RCurly)
+    })
     $.RULE('statement', () => {
       $.OR([
         { ALT: () => $.SUBRULE($.comment) },
@@ -218,59 +218,40 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.SUBRULE($.breakStatement) },
         { ALT: () => $.SUBRULE($.returnStatement) },
         { ALT: () => $.SUBRULE($.emptyStatement) },
-      ]);
-    });
+      ])
+    })
     $.RULE('variableDelcaration', () => {
-      $.SUBRULE($.type);
+      $.SUBRULE($.type)
       $.AT_LEAST_ONE_SEP({
         SEP: T.Comma,
         DEF: () => $.SUBRULE($.identifierWithInit),
-      });
-      $.CONSUME(T.Semicolon);
-    });
+      })
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('identifierWithInit', () => {
       $.CONSUME(T.Identifier),
       $.OPTION(() => {
-        $.CONSUME(T.Equal);
-        $.SUBRULE($.expression);
-      });
-    });
-    $.RULE('expression', () => {
-      $.OPTION1(() => $.SUBRULE($.unaryOperators));
-      $.SUBRULE($.expressionNotRecursive);
-      $.OPTION2(() => {
-        $.SUBRULE($.binaryOperators);
-        $.SUBRULE1($.expression);
-      });
-      $.OPTION3(() => {
-        $.CONSUME(T.Question);
-        $.SUBRULE2($.expression);
-        $.CONSUME(T.Colon);
-        $.SUBRULE3($.expression);
+        $.CONSUME(T.Equal)
+        $.SUBRULE($.expression)
       })
-    });
-    $.RULE('expressionNotRecursive', () => {
-      $.OR([
-        { ALT: () => $.SUBRULE($.expressionInParentheses) },
-        { ALT: () => $.SUBRULE($.constructorCall) },
-        { ALT: () => $.SUBRULE($.functionCall) },
-        { ALT: () => $.SUBRULE($.propertyAccess) },
-        { ALT: () => $.SUBRULE($.literalValue) },
-        { ALT: () => $.SUBRULE($.variable) },
-      ]);
-    });
-    $.RULE('expressionInParentheses', () => {
-      $.CONSUME(T.LParen);
-      $.SUBRULE($.expression);
-      $.CONSUME(T.RParen);
-    });
-    $.RULE('unaryOperators', () => {
-      $.OR([
-        { ALT: () => $.CONSUME(T.Minus) },
-        { ALT: () => $.CONSUME(T.Exclam) },
-      ]);
-    });
-    $.RULE('binaryOperators', () => { 
+    })
+    $.RULE('expression', () => {
+      $.SUBRULE($.binaryOperation);
+      $.OPTION(() => {
+        $.CONSUME(T.Question)
+        $.SUBRULE1($.expression)
+        $.CONSUME(T.Colon)
+        $.SUBRULE2($.expression)  
+      })
+    })
+    $.RULE('binaryOperation', () => {
+      $.SUBRULE($.unaryOperation)
+      $.OPTION(() => {
+        $.SUBRULE($.binaryOperator)
+        $.SUBRULE($.expression)
+      })
+    }); 
+    $.RULE('binaryOperator', () => { 
       $.OR([
         { ALT: () => $.CONSUME(T.Plus) },
         { ALT: () => $.CONSUME(T.Minus) },
@@ -286,100 +267,116 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.DblPipe) },
         { ALT: () => $.CONSUME(T.DblCircum) },
       ])
-    });
+    })
+    $.RULE('unaryOperation', () => {
+      $.OPTION(() => $.SUBRULE($.unaryOperator))
+      $.SUBRULE($.nullaryOperation)
+    })
+    $.RULE('unaryOperator', () => {
+      $.OR([
+        { ALT: () => $.CONSUME(T.Minus) },
+        { ALT: () => $.CONSUME(T.Exclam) },
+      ])
+    })
+
+    $.RULE('nullaryOperation', () => {
+      $.OR([
+        { ALT: () => $.SUBRULE($.parentheses) },
+        { ALT: () => $.SUBRULE($.constructorCall) },
+        { ALT: () => $.SUBRULE($.functionCall) },
+        { ALT: () => $.SUBRULE($.literalValue) },
+        { ALT: () => $.SUBRULE($.variable) },
+      ])
+    })
+    $.RULE('parentheses', () => {
+      $.CONSUME(T.LParen)
+      $.SUBRULE($.expression)
+      $.CONSUME(T.RParen)
+    })
     $.RULE('constructorCall', () => {
-      $.SUBRULE($.type);
-      $.CONSUME(T.LParen);
-      $.SUBRULE($.argumentList);
-      $.CONSUME(T.RParen);
-    });
+      $.SUBRULE($.type)
+      $.CONSUME(T.LParen)
+      $.SUBRULE($.argumentList)
+      $.CONSUME(T.RParen)
+    })
     $.RULE('argumentList', () => {
       $.MANY_SEP({
         SEP: T.Comma,
         DEF: () => $.SUBRULE($.expression),
-      });
-    });
+      })
+    })
     $.RULE('functionCall', () => {
-      $.CONSUME(T.Identifier);
-      $.CONSUME(T.LParen);
-      $.SUBRULE($.argumentList);
-      $.CONSUME(T.RParen);
-    });
+      $.CONSUME(T.Identifier)
+      $.CONSUME(T.LParen)
+      $.SUBRULE($.argumentList)
+      $.CONSUME(T.RParen)
+    })
     $.RULE('variableAssignment', () => {
-      $.SUBRULE($.leftValue);
+      $.SUBRULE($.variable)
       $.OR([
         { ALT: () => $.CONSUME(T.Equal) },
         { ALT: () => $.CONSUME(T.PlusEql) },
         { ALT: () => $.CONSUME(T.MinusEql) },
         { ALT: () => $.CONSUME(T.AsteriskEql) },
         { ALT: () => $.CONSUME(T.SlashEql) },
-      ]);
-      $.SUBRULE($.expression);
-      $.CONSUME(T.Semicolon);
-    });
-    $.RULE('leftValue', () => {
-      $.OR([
-        { ALT: () => $.SUBRULE($.propertyAccess) },
-        { ALT: () => $.CONSUME(T.Identifier) },
-      ]);
-    });
-    $.RULE('propertyAccess', () => {
-      $.CONSUME1(T.Identifier);
-      $.OR([
-        { ALT: () => $.CONSUME(T.Arrow) },
-        { ALT: () => $.CONSUME(T.Period) },
-      ]);
-      $.CONSUME2(T.Identifier);
-    });
+      ])
+      $.SUBRULE($.expression)
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('variable', () => {
-      $.CONSUME(T.Identifier);
-    });
+      $.CONSUME(T.Identifier)
+      $.MANY(() => $.SUBRULE($.property))
+    })
+    $.RULE('property', () => {
+      $.CONSUME(T.Period)
+      $.CONSUME(T.Identifier)
+    })
     $.RULE('ifStatement', () => {
-      $.CONSUME(T.If);
-      $.CONSUME(T.LParen);
-      $.SUBRULE($.expression);
-      $.CONSUME(T.RParen);
-      $.SUBRULE($.statement);
-      $.OPTION(() => $.SUBRULE($.elseClause));
+      $.CONSUME(T.If)
+      $.CONSUME(T.LParen)
+      $.SUBRULE($.expression)
+      $.CONSUME(T.RParen)
+      $.SUBRULE($.statement)
+      $.OPTION(() => $.SUBRULE($.elseClause))
     })
     $.RULE('elseClause', () => {
-      $.CONSUME(T.Else);
-      $.SUBRULE($.statement);
-    });
+      $.CONSUME(T.Else)
+      $.SUBRULE($.statement)
+    })
     $.RULE('whileStatement', () => {
-      $.CONSUME(T.While);
-      $.CONSUME(T.LParen);
-      $.SUBRULE($.expression);
-      $.CONSUME(T.RParen);
-      $.SUBRULE($.statement);
-    });
+      $.CONSUME(T.While)
+      $.CONSUME(T.LParen)
+      $.SUBRULE($.expression)
+      $.CONSUME(T.RParen)
+      $.SUBRULE($.statement)
+    })
     $.RULE('doWhileStatement', () => {
-      $.CONSUME(T.Do);
-      $.SUBRULE($.statement);
-      $.CONSUME(T.While);
-      $.CONSUME(T.LParen);
-      $.SUBRULE($.expression);
-      $.CONSUME(T.RParen);
-      $.CONSUME(T.Semicolon);
-    });
+      $.CONSUME(T.Do)
+      $.SUBRULE($.statement)
+      $.CONSUME(T.While)
+      $.CONSUME(T.LParen)
+      $.SUBRULE($.expression)
+      $.CONSUME(T.RParen)
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('continueStatement', () => {
-      $.CONSUME(T.Continue);
-      $.CONSUME(T.Semicolon);
-    });
+      $.CONSUME(T.Continue)
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('breakStatement', () => {
-      $.CONSUME(T.Break);
-      $.CONSUME(T.Semicolon);
-    });
+      $.CONSUME(T.Break)
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('returnStatement', () => {
-      $.CONSUME(T.Return);
+      $.CONSUME(T.Return)
       $.OPTION(() => {
-        $.SUBRULE($.expression);
-      });
-      $.CONSUME(T.Semicolon);
-    });
+        $.SUBRULE($.expression)
+      })
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('emptyStatement', () => {
-      $.CONSUME(T.Semicolon);
-    });
+      $.CONSUME(T.Semicolon)
+    })
     this.performSelfAnalysis()
   }
 }

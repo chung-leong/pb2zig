@@ -1,13 +1,20 @@
 import { BaseCstVisitor } from './parser.js';
+import * as N from './nodes.js';
 
 export class PixelBenderAstVisitor extends BaseCstVisitor {
   constructor() {
     super();
-    this.validateVisitor();
+    //this.validateVisitor();
   }
 
   name(arr) {
     return arr[0].image;
+  }
+
+  anyName(ctx) {
+    for (const node of Object.values(ctx)) {
+      return this.name(node)
+    }
   }
 
   create(c, props) {
@@ -19,6 +26,12 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
       obj[name] = value;
     }
     return obj;
+  }
+
+  visitAny(ctx) {
+    for (const node of Object.values(ctx)) {      
+      return this.visit(node);
+    }
   }
 
   pbk(ctx) {
@@ -59,66 +72,49 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   kernel(ctx) {
     const name = this.name(ctx.Identifier);
-    const meta = this.create(Meta, this.visit(ctx.tag));
-    const body = this.visit(ctx.kernelBody);   
-    return this.create(Kernel, { name, meta, ...body });
+    const meta = this.create(N.Meta, this.visit(ctx.tag));
+    const statements = this.visit(ctx.kernelBody);   
+    return this.create(N.Kernel, { name, meta, statements });
   }
 
   kernelBody(ctx) {
-    const parameters = [];
-    const inputs = [];
-    var output = null;
-    const functions = [];
     const statements = [];
-    for (const node of ctx.kernelStatement) {
-      const s = this.visit(node);
-      if (s instanceof Parameter) {
-        parameters.push(s);
-      } else if (s instanceof InputDeclaration) {
-        inputs.push(s);
-      } else if (s instanceof OutputDeclaration) {
-        if (!output) {
-          output = s;
-        } else {
-          throw new Error("Multiple output statements encountered");
+    if (ctx.kernelStatement) {
+      for (const node of ctx.kernelStatement) {
+        const s = this.visit(node);
+        if (s) {
+          statements.push(s);
         }
-      } else if (s instanceof FunctionDefinition) {
-        functions.push(s);
-      }
-      statements.push(s);
+      }  
     }
-    return { parameters, inputs, output, functions, statements };
+    return statements;
   }
 
   kernelStatement(ctx) {
-    for (const [ name, node ] of Object.entries(ctx)) {
-      return this.visit(node);
-    }
+    return this.visitAny(ctx);
   }
 
   parameterDeclaration(ctx) {
     const type = this.visit(ctx.type);
     const name = this.name(ctx.Identifier);
     const tag = this.visit(ctx.tag);
-    return this.create(Parameter, { type, name, ...tag });
+    return this.create(N.Parameter, { type, name, ...tag });
   }
 
   type(ctx) {
-    for (const [ name, node ] of Object.entries(ctx)) {
-      return this.name(node)
-    }
+    return this.anyName(ctx);
   }
 
   inputDeclaration(ctx) {
     const type = this.name(ctx.Image);
     const name = this.name(ctx.Identifier);
-    return this.create(InputDeclaration, { type, name });
+    return this.create(N.InputDeclaration, { type, name });
   }
 
   outputDeclaration(ctx) {
     const type = this.name(ctx.Pixel);
     const name = this.name(ctx.Identifier);
-    return this.create(OutputDeclaration, { type, name });
+    return this.create(N.OutputDeclaration, { type, name });
   }
 
   functionDeclaration(ctx) {
@@ -131,7 +127,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
       }
     }
     const statements = this.visit(ctx.statementBlock);
-    return this.create(FunctionDefinition, { type, name, args, statements });
+    return this.create(N.FunctionDefinition, { type, name, args, statements });
   }
 
   returnType(ctx) {  
@@ -146,36 +142,37 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   argumentDeclaration(ctx) {
     const type = this.visit(ctx.type);
     const name = this.name(ctx.Identifier);
-    return this.create(FunctionArgument, { type, name });
+    return this.create(N.FunctionArgument, { type, name });
   }
 
   statementBlock(ctx) {
     const statements = [];
-    for (const node of ctx.statement) {
-      const s = this.visit(node);
-      if (s instanceof Array) {
-        for (const i of s) {
-          statements.push(i);
+    if (ctx.statement) {
+      for (const node of ctx.statement) {
+        const s = this.visit(node);
+        if (s instanceof Array) {
+          for (const i of s) {
+            statements.push(i);
+          }
+        } else {
+          statements.push(s);
         }
-      } else {
-        statements.push(s);
-      }
+      }  
     }
     return statements;
   }
 
   statement(ctx) {
-    for (const [ name, node ] of Object.entries(ctx)) {
-      return this.visit(node);
-    }
+    return this.visitAny(ctx);
   }
 
   variableDelcaration(ctx) {
     const type = this.visit(ctx.type);
     const list = [];
     for (const node of ctx.identifierWithInit) {
-      const { name, initializer } = this.visit(node);
-      list.push(new VariableDeclaration({ type, name, initializer }));
+      const decl = this.visit(node);
+      decl.type = type;
+      list.push(decl);
     }
     return list;
   }
@@ -183,34 +180,66 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   identifierWithInit(ctx) {
     const name = this.name(ctx.Identifier);
     const initializer = this.visit(ctx.expression);
-    return { name, initializer };
+    return this.create(N.VariableDeclaration, { name, initializer });
   }
 
   expression(ctx) {
-    const expr1 = this.visit(ctx.expressionNotRecursive);
-    return expr1;
-  }
-
-  expressionNotRecursive(ctx) {
-    for (const [ name, node ] of Object.entries(ctx)) {
-      return this.visit(node);
+    const expr = this.visit(ctx.binaryOperation);
+    if (ctx.Question) {
+      const condition = expr;
+      const onTrue = this.visit(ctx.expression1);
+      const onFalse = this.visit(ctx.expression2);
+      return this.create(N.Conditional, { condition, onTrue, onFalse });
+    } else {
+      return expr;
     }
   }
 
-  expressionInParentheses(ctx) {
-
+  binaryOperation(ctx) {
+    const expr = this.visit(ctx.unaryOperation);
+    if (ctx.binaryOperator) {
+      const operand1 = expr;
+      const operator = this.visit(ctx.binaryOperator);
+      const operand2 = this.visit(ctx.expression) ;
+      return this.create(N.BinaryOperation, { operand1, operator, operand2 });
+    } else {
+      return expr;
+    }
   }
 
-  unaryOperators(ctx) {
-
+  binaryOperator(ctx) {
+    return this.anyName(ctx);
   }
 
-  binaryOperators(ctx) {
-
+  unaryOperation(ctx) {
+    const expr = this.visit(ctx.nullaryOperation);
+    if (ctx.unaryOperator) {
+      const operator = this.visit()
+      const operand = expr;
+      return this.create(N.UnaryOperation, { operator, operand });
+    } else {
+      return expr;
+    }
   }
-  
+
+  unaryOperator(ctx) {
+    return this.anyName(ctx);
+  }
+
+  nullaryOperation(ctx) {
+    return this.visitAny(ctx);
+  }
+
+  functionCall(ctx) {
+    const name = this.name(ctx.Identifier);
+    const args = this.visit(ctx.argumentList); 
+    return this.create(N.FunctionCall, { name, args });
+  }
+
   constructorCall(ctx) {
-
+    const type = this.visit(ctx.type);
+    const args = this.visit(ctx.argumentList); 
+    return this.create(N.ConstructorCall, { type, args });
   }
 
   argumentList(ctx) {
@@ -223,134 +252,75 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     return args;
   }
 
-  functionCall(ctx) {
-    const name = this.name(ctx.Identifier);
-    const args = this.visit(ctx.argumentList); 
-    return new FunctionCall({ name, args });
-  }
-  
   variableAssignment(ctx) {
-
-  }
-
-  leftValue(ctx) {
-
-  }
-
-  propertyAccess(ctx) {
-
+    const lvalue = this.visit(ctx.variable);
+    const expression = this.visit(ctx.expression);
+    return this.create(N.VariableAssignment, { lvalue, expression });
   }
 
   variable(ctx) {
     const name = this.name(ctx.Identifier);
-    return this.create(VariableAccess, { name });
+    const names = [ name ];
+    if (ctx.property) {
+      for (const node of ctx.property) {
+        names.push
+        (this.visit(node));
+      } 
+    }
+    return this.create(N.VariableAccess, { names });
+  }
+
+  property(ctx) {
+    return this.name(ctx.Identifier);
+  }
+
+  parentheses(ctx) {
+    const expression = this.visit(ctx.expression);
+    return this.create(N.Parentheses, { expression });
   }
 
   ifStatement(ctx) {
-
+    const condition = this.visit(ctx.expression);
+    const statement = this.visit(ctx.statement);
+    const elseClause = (ctx.elseClause) ? this.visit(ctx.elseClause) : undefined;
+    return this.create(N.IfStatement, { condition, statement, elseClause });
   }
 
   elseClause(ctx) {
-
+    const statement = this.visit(ctx.statement);
+    return this.create(N.IfStatement, { statement });
   }
 
   whileStatement(ctx) {
-
+    const condition = this.visit(ctx.expression);
+    const statement = this.visit(ctx.statement);
+    return this.create(N.IfStatement, { condition, statement });
   }
 
   doWhileStatement(ctx) {
-
+    const condition = this.visit(ctx.expression);
+    const statement = this.visit(ctx.statement);
+    return this.create(N.IfStatement, { condition, statement });
   }
 
   continueStatement(ctx) {
-
+    return this.create(N.ContinueStatement, {});
   }
 
   breakStatement(ctx) {
-
+    return this.create(N.BreakStatement, {});
   }
 
   returnStatement(ctx) {
-
+    const value = (ctx.expression) ? this.visit(ctx.expression) : undefined;
+    return this.create(N.ReturnStatement, { value });
   }
 
   emptyStatement(ctx) {
-
   }
 
   comment(ctx) {
     const text = this.name(ctx.Comment);
-    return this.create(Comment, { text });
+    return this.create(N.Comment, { text });
   }
 }
-
-class Kernel {
-  name;
-  meta;
-  parameters;
-  inputs; 
-  output; 
-  functions;
-  statements;
-}
-
-class Meta {
-  namespace;
-  vendor;
-  version;
-  description;
-  displayname;
-  category;
-}
-
-class Comment {
-  text;
-}
-
-class Parameter {
-  name;
-  type;
-  minValue;
-  maxValue;
-  stepInterval;
-  defaultValue;
-  previewValue;
-}
-
-class VariableDeclaration {
-  type;
-  name;
-  initializer;
-}
-
-class InputDeclaration  {
-  type;
-  name;
-}
-
-class OutputDeclaration {
-  type;
-  name;
-}
-
-class FunctionDefinition {
-  type;
-  name;
-  args;
-  statements;
-}
-
-class FunctionArgument {  
-  type;
-  name;
-}
-
-class FunctionCall {
-  name;
-  args;
-}
-
-class VariableAccess {
-  name;
-}
-
