@@ -7,6 +7,10 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     //this.validateVisitor();
   }
 
+  process(tree) {
+    return this.pbk(tree);
+  }
+
   name(arr) {
     return arr[0].image;
   }

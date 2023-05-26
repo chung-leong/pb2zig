@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { parse } from './src/parser.js';
 import { PixelBenderAstVisitor } from './src/visitor.js';
+import { PixelBenderToZigTranslator } from './src/translator.js';
 
 const text = readFileSync('./painting.pbk', 'utf8');
 const { cst, lexErrors, parseErrors } = parse(text);
@@ -20,4 +21,11 @@ if (parseErrors.length > 0) {
 }
 
 const visitor = new PixelBenderAstVisitor();
-console.log(visitor.visit(cst));
+const ast = visitor.visit(cst);
+
+const translater = new PixelBenderToZigTranslator();
+const lines = translater.translate(ast);
+
+for (const line of lines) {
+  console.log(line);
+}
