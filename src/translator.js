@@ -16,10 +16,10 @@ export class PixelBenderToZigTranslator {
             if (!text.startsWith('}'))  {
                 this.nl();
                 line = '';
-                index++;    
+                index++;
             }
             this.indent(+1);
-        } 
+        }
         if (text.startsWith('}')) {
             this.indent(-1);
         }
@@ -95,7 +95,7 @@ export class PixelBenderToZigTranslator {
         for (const [ field, value ] of Object.entries(meta)) {
             if (value) {
                 this.add(`// ${field}: ${value}`);
-                this.nl();        
+                this.nl();
             }
         }
         this.nl();
@@ -106,6 +106,9 @@ export class PixelBenderToZigTranslator {
         this.add(`return struct {`);
         this.addParameterFields();
         this.addParameterDecls();
+        this.addSources();
+        this.addDestination();
+        this.addPixelFunction();
         this.add(`};`);
         this.add(`}`);
     }
@@ -132,7 +135,7 @@ export class PixelBenderToZigTranslator {
         this.nl();
         this.add(`const parameters = .{`);
         for (const param of params) {
-            this.add(`.${param.name} = .{`);        
+            this.add(`.${param.name} = .{`);
             for (const [ name, value ] of Object.entries(param)) {
                 if (name !== 'name' && name !== 'type' && value != undefined) {
                     this.add(`.${name} = ${JSON.stringify(value)},`);
@@ -143,5 +146,16 @@ export class PixelBenderToZigTranslator {
         }
         this.add(`};`);
         this.nl();
+    }
+
+    addSources() {
+    }
+
+    addDestination() {
+
+    }
+
+    addPixelFunction() {
+
     }
 }

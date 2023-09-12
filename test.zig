@@ -31,48 +31,223 @@ pub fn Kernel(comptime Image: type, comptime sampler: anytype) type {
         const SrcType = @Vector(4, f32);
         const DstType = @Vector(4, f32);
 
+        fn sampleNearest(src: Image, coord: @Vector(2, f32)) SrcType {
+            return sampler(src, coord);
+        }
+
+        fn anyLessThan(vector: anytype, value: anytype) bool {
+            _ = value;
+            _ = vector;
+        }
+
+        fn allLessThan(vector: anytype, value: anytype) bool {
+            _ = value;
+            _ = vector;
+        }
+
         fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) DstType {
             var dst: DstType = undefined;
             var n0 = self.n0;
             var n1 = self.n1;
-            _ = n1;
             var n2 = self.n2;
-            _ = n2;
 
             var p: @Vector(2, f32) = outCoord;
-            _ = p;
-            var offset: f32 = undefined;
-            _ = offset;
+            var offset: @Vector(2, f32) = undefined;
             var dist: f32 = undefined;
             var c: @Vector(4, f32) = undefined;
             var temp: @Vector(4, f32) = undefined;
-            _ = temp;
             var p0: @Vector(4, f32) = undefined;
-            _ = p0;
             var p1: @Vector(4, f32) = undefined;
-            _ = p1;
             var p2: @Vector(4, f32) = undefined;
-            _ = p2;
             var p3: @Vector(4, f32) = undefined;
-            _ = p3;
             var p4: @Vector(4, f32) = undefined;
-            _ = p4;
             var p5: @Vector(4, f32) = undefined;
-            _ = p5;
             var p6: @Vector(4, f32) = undefined;
-            _ = p6;
             var p7: @Vector(4, f32) = undefined;
-            _ = p7;
             var p8: @Vector(4, f32) = undefined;
-            _ = p8;
 
             c = @Vector(4, f32){ n0, n0, n0, 1.0 };
 
-            sampler.sampleNearest(self.src, x, y, T);
-
             //-- no loops.
 
-            dist = self.n1 * 1.0;
+            dist = n1 * 1.0;
+            offset[0] = 0.0;
+            offset[1] = 0.0;
+            p0 = sampleNearest(self.src, p + offset);
+            offset[0] = -dist;
+            offset[1] = -dist;
+            p1 = sampleNearest(self.src, p + offset);
+            offset[0] = 0.0;
+            offset[1] = -dist;
+            p2 = sampleNearest(self.src, p + offset);
+            offset[0] = dist;
+            offset[1] = -dist;
+            p3 = sampleNearest(self.src, p + offset);
+            offset[0] = dist;
+            offset[1] = 0.0;
+            p4 = sampleNearest(self.src, p + offset);
+            offset[0] = dist;
+            offset[1] = dist;
+            p5 = sampleNearest(self.src, p + offset);
+            offset[0] = 0.0;
+            offset[1] = dist;
+            p6 = sampleNearest(self.src, p + offset);
+            offset[0] = -dist;
+            offset[1] = dist;
+            p7 = sampleNearest(self.src, p + offset);
+            offset[0] = -dist;
+            offset[1] = 0.0;
+            p8 = sampleNearest(self.src, p + offset);
+
+            if (anyLessThan(c, p0)) {
+                c = p0;
+            }
+            if (anyLessThan(c, p1)) {
+                c = p1;
+            }
+            if (anyLessThan(c, p2)) {
+                c = p2;
+            }
+            if (anyLessThan(c, p3)) {
+                c = p3;
+            }
+            if (anyLessThan(c, p4)) {
+                c = p4;
+            }
+            if (anyLessThan(c, p5)) {
+                c = p5;
+            }
+            if (anyLessThan(c, p6)) {
+                c = p6;
+            }
+            if (anyLessThan(c, p7)) {
+                c = p7;
+            }
+            if (anyLessThan(c, p8)) {
+                c = p8;
+            }
+
+            temp = (p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8) / 7.0;
+
+            dist = n1 * 2.0;
+            offset[0] = 0.0;
+            offset[1] = 0.0;
+            p0 = sampleNearest(self.src, p + offset);
+            offset[0] = -dist;
+            offset[1] = -dist;
+            p1 = sampleNearest(self.src, p + offset);
+            offset[0] = 0.0;
+            offset[1] = -dist;
+            p2 = sampleNearest(self.src, p + offset);
+            offset[0] = dist;
+            offset[1] = -dist;
+            p3 = sampleNearest(self.src, p + offset);
+            offset[0] = dist;
+            offset[1] = 0.0;
+            p4 = sampleNearest(self.src, p + offset);
+            offset[0] = dist;
+            offset[1] = dist;
+            p5 = sampleNearest(self.src, p + offset);
+            offset[0] = 0.0;
+            offset[1] = dist;
+            p6 = sampleNearest(self.src, p + offset);
+            offset[0] = -dist;
+            offset[1] = dist;
+            p7 = sampleNearest(self.src, p + offset);
+            offset[0] = -dist;
+            offset[1] = 0.0;
+            p8 = sampleNearest(self.src, p + offset);
+
+            if (allLessThan(c, temp)) {
+                c.rgb += n2;
+            } else {
+                c.rgb -= n2;
+            }
+
+            if (anyLessThan(c, p0)) {
+                c = p0;
+            }
+            if (anyLessThan(c, p1)) {
+                c = p1;
+            }
+            if (anyLessThan(c, p2)) {
+                c = p2;
+            }
+            if (anyLessThan(c, p3)) {
+                c = p3;
+            }
+            if (anyLessThan(c, p4)) {
+                c = p4;
+            }
+            if (anyLessThan(c, p5)) {
+                c = p5;
+            }
+            if (anyLessThan(c, p6)) {
+                c = p6;
+            }
+            if (anyLessThan(c, p7)) {
+                c = p7;
+            }
+            if (anyLessThan(c, p8)) {
+                c = p8;
+            }
+
+            dist = n1 * 3.0;
+            offset[0] = 0.0;
+            offset[1] = 0.0;
+            p0 = sampleNearest(self.src, p + offset);
+            offset[0] = -dist;
+            offset[1] = -dist;
+            p1 = sampleNearest(self.src, p + offset);
+            offset[0] = 0.0;
+            offset[1] = -dist;
+            p2 = sampleNearest(self.src, p + offset);
+            offset[0] = dist;
+            offset[1] = -dist;
+            p3 = sampleNearest(self.src, p + offset);
+            offset[0] = dist;
+            offset[1] = 0.0;
+            p4 = sampleNearest(self.src, p + offset);
+            offset[0] = dist;
+            offset[1] = dist;
+            p5 = sampleNearest(self.src, p + offset);
+            offset[0] = 0.0;
+            offset[1] = dist;
+            p6 = sampleNearest(self.src, p + offset);
+            offset[0] = -dist;
+            offset[1] = dist;
+            p7 = sampleNearest(self.src, p + offset);
+            offset[0] = -dist;
+            offset[1] = 0.0;
+            p8 = sampleNearest(self.src, p + offset);
+
+            if (anyLessThan(c, p0)) {
+                c = p0;
+            }
+            if (anyLessThan(c, p1)) {
+                c = p1;
+            }
+            if (anyLessThan(c, p2)) {
+                c = p2;
+            }
+            if (anyLessThan(c, p3)) {
+                c = p3;
+            }
+            if (anyLessThan(c, p4)) {
+                c = p4;
+            }
+            if (anyLessThan(c, p5)) {
+                c = p5;
+            }
+            if (anyLessThan(c, p6)) {
+                c = p6;
+            }
+            if (anyLessThan(c, p7)) {
+                c = p7;
+            }
+            if (anyLessThan(c, p8)) {
+                c = p8;
+            }
 
             dst = c;
             return dst;
