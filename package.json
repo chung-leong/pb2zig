@@ -11,5 +11,8 @@
   "license": "MIT",
   "dependencies": {
     "chevrotain": "^10.5.0"
+  },
+  "devDependencies": {
+    "sharp": "^0.32.5"
   }
 }
