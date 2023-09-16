@@ -315,8 +315,8 @@ fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) 
         fn floatPixelFromInt(pixel: Pixel) FPixel {
             // https://github.com/ziglang/zig/issues/16267
             var numerator: FPixel = undefined;
-            var i: usize = 0;
-            while (i < len) : (i += 1) {
+            comptime var i = 0;
+            inline while (i < len) : (i += 1) {
                 numerator[i] = @floatFromInt(pixel[i]);
             }
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
@@ -328,8 +328,8 @@ fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) 
             const multiplier: FPixel = @splat(max);
             const product: FPixel = contrain(pixel * multiplier, max);
             var result: Pixel = undefined;
-            var i: usize = 0;
-            while (i < len) : (i += 1) {
+            comptime var i = 0;
+            inline while (i < len) : (i += 1) {
                 result[i] = @intFromFloat(product[i]);
             }
             return result;
