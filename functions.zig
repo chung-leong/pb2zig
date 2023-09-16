@@ -406,6 +406,186 @@ test "fract" {
     assert(all(fract(vector2) == @Vector(2, f32){ 0.5, 0.75 }));
 }
 
+pub fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
+    return switch (@typeInfo(@TypeOf(v2))) {
+        .Vector => @mod(v1, v2),
+        else => switch (@typeInfo(@TypeOf(v1))) {
+            .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+            else => @mod(v1, v2),
+        },
+    };
+}
+
+test "mod" {
+    const vector1: f32 = 5;
+    const vector2: @Vector(2, f32) = .{ 5, 6 };
+    assert(mod(vector1, 3) == 2);
+    assert(all(mod(vector2, 3) == @Vector(2, f32){ 2, 0 }));
+    assert(all(mod(vector2, @Vector(2, f32){ 3, 4 }) == @Vector(2, f32){ 2, 2 }));
+}
+
+pub fn min(v1: anytype, v2: anytype) @TypeOf(v1) {
+    return switch (@typeInfo(@TypeOf(v2))) {
+        .Vector => @min(v1, v2),
+        else => switch (@typeInfo(@TypeOf(v1))) {
+            .Vector => @min(v1, @as(@TypeOf(v1), @splat(v2))),
+            else => @min(v1, v2),
+        },
+    };
+}
+
+test "min" {
+    const vector1: f32 = 5;
+    const vector2: @Vector(2, f32) = .{ 5, 6 };
+    assert(min(vector1, 3) == 3);
+    assert(all(min(vector2, 5.5) == @Vector(2, f32){ 5, 5.5 }));
+    assert(all(min(vector2, @Vector(2, f32){ 4.5, 5.5 }) == @Vector(2, f32){ 4.5, 5.5 }));
+}
+
+pub fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
+    return switch (@typeInfo(@TypeOf(v2))) {
+        .Vector => @max(v1, v2),
+        else => switch (@typeInfo(@TypeOf(v1))) {
+            .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
+            else => @max(v1, v2),
+        },
+    };
+}
+
+test "max" {
+    const vector1: f32 = 5;
+    const vector2: @Vector(2, f32) = .{ 5, 6 };
+    assert(max(vector1, 3) == 5);
+    assert(all(max(vector2, 5.5) == @Vector(2, f32){ 5.5, 6 }));
+    assert(all(max(vector2, @Vector(2, f32){ 4.5, 5.5 }) == @Vector(2, f32){ 5, 6 }));
+}
+
+pub fn step(v1: anytype, v2: anytype) @TypeOf(v2) {
+    return switch (@typeInfo(@TypeOf(v1))) {
+        .Vector => calc: {
+            const ones: @TypeOf(v2) = @splat(1);
+            const zeros: @TypeOf(v2) = @splat(0);
+            break :calc @select(@typeInfo(@TypeOf(v2)).Vector.child, v2 < v1, zeros, ones);
+        },
+        else => switch (@typeInfo(@TypeOf(v2))) {
+            .Vector => step(@as(@TypeOf(v2), @splat(v1)), v2),
+            else => if (v2 < v1) 0 else 1,
+        },
+    };
+}
+
+test "step" {
+    const pair1: [2]f32 = .{ 1, 2 };
+    const pair2: [2]@Vector(2, f32) = .{ .{ 3, 4 }, .{ 5, 2 } };
+    assert(step(pair1[0], pair1[1]) == 1);
+    assert(all(step(3.5, pair2[0]) == @Vector(2, f32){ 0, 1 }));
+    assert(all(step(pair2[0], pair2[1]) == @Vector(2, f32){ 1, 0 }));
+}
+
+pub fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
+    return switch (@typeInfo(@TypeOf(min_val))) {
+        .Vector => calc: {
+            const T = @typeInfo(@TypeOf(v)).Vector.child;
+            const result1 = @select(T, v < min_val, min_val, v);
+            const result2 = @select(T, result1 > max_val, max_val, result1);
+            break :calc result2;
+        },
+        else => switch (@typeInfo(@TypeOf(v))) {
+            .Vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
+            else => calc: {
+                if (v < min_val) {
+                    break :calc min_val;
+                } else if (v > max_val) {
+                    break :calc max_val;
+                } else {
+                    break :calc v;
+                }
+            },
+        },
+    };
+}
+
+test "clamp" {
+    const vector1: f32 = -1;
+    const vector2: f32 = 1.5;
+    const vector3: f32 = 0.5;
+    assert(clamp(vector1, 0, 1) == 0);
+    assert(clamp(vector2, 0, 1) == 1);
+    assert(clamp(vector3, 0, 1) == 0.5);
+    const vector4: @Vector(2, f32) = .{ -1, 0.5 };
+    const vector5: @Vector(2, f32) = .{ 0.25, 1.5 };
+    const vector6: @Vector(2, f32) = .{ 0.5, 0.75 };
+    assert(all(clamp(vector4, 0, 1) == @Vector(2, f32){ 0, 0.5 }));
+    assert(all(clamp(vector5, 0, 1) == @Vector(2, f32){ 0.25, 1 }));
+    assert(all(clamp(vector6, 0, 1) == @Vector(2, f32){ 0.5, 0.75 }));
+    const min_val: @Vector(2, f32) = .{ 0, 0 };
+    const max_val: @Vector(2, f32) = .{ 1, 0.5 };
+    assert(all(clamp(vector4, min_val, max_val) == @Vector(2, f32){ 0, 0.5 }));
+    assert(all(clamp(vector5, min_val, max_val) == @Vector(2, f32){ 0.25, 0.5 }));
+    assert(all(clamp(vector6, min_val, max_val) == @Vector(2, f32){ 0.5, 0.5 }));
+}
+
+pub fn mix(v1: anytype, v2: anytype, p: anytype) @TypeOf(v1) {
+    return switch (@typeInfo(@TypeOf(p))) {
+        .Vector => v1 * (@as(@TypeOf(p), @splat(1)) - p) + v2 * p,
+        else => switch (@typeInfo(@TypeOf(v1))) {
+            .Vector => mix(v1, v2, @as(@TypeOf(v1), @splat(p))),
+            else => v1 * (1 - p) + v2 * p,
+        },
+    };
+}
+
+test "mix" {
+    const pair1: [2]f32 = .{ 0, 0.5 };
+    assert(mix(pair1[0], pair1[1], 0.5) == 0.25);
+    assert(mix(pair1[0], pair1[1], 0.25) == 0.125);
+    const pair2: [2]@Vector(2, f32) = .{ .{ 0, 1 }, .{ 1, 0 } };
+    assert(all(mix(pair2[0], pair2[1], 0.5) == @Vector(2, f32){ 0.5, 0.5 }));
+    assert(all(mix(pair2[0], pair2[1], 0.25) == @Vector(2, f32){ 0.25, 0.75 }));
+}
+
+pub fn smoothStep(edge0: anytype, edge1: anytype, v: anytype) @TypeOf(v) {
+    return switch (@typeInfo(@TypeOf(edge0))) {
+        .Vector => calc: {
+            const T = @TypeOf(v);
+            const ET = @typeInfo(T).Vector.child;
+            const zeros: T = @splat(0);
+            const ones: T = @splat(1);
+            const twos: T = @splat(2);
+            const threes: T = @splat(3);
+            const value = (v - edge0) / (edge1 - edge0);
+            const interpolated = value * value * (threes - twos * value);
+            const result1 = @select(ET, v <= edge0, zeros, interpolated);
+            const result2 = @select(ET, v >= edge1, ones, result1);
+            break :calc result2;
+        },
+        else => switch (@typeInfo(@TypeOf(v))) {
+            .Vector => smoothStep(@as(@TypeOf(v), @splat(edge0)), @as(@TypeOf(v), @splat(edge1)), v),
+            else => calc: {
+                if (v <= edge0) {
+                    break :calc 0;
+                } else if (v >= edge1) {
+                    break :calc 1;
+                } else {
+                    const value = (v - edge0) / (edge1 - edge0);
+                    const interpolated = value * value * (3 - 2 * value);
+                    break :calc interpolated;
+                }
+            },
+        },
+    };
+}
+
+test "smoothStep" {
+    assert(smoothStep(0.4, 1.6, 1.5) == @as(f32, 0.9803240740740741));
+    assert(smoothStep(0.4, 1.6, 0.45) == @as(f32, 0.005063657407407407));
+    assert(smoothStep(0.4, 1.6, 1.61) == @as(f32, 1));
+    assert(smoothStep(0.4, 1.6, 0.39) == @as(f32, 0));
+    const vector: @Vector(4, f32) = .{ 1.5, 0.45, 1.61, 0.39 };
+    const expected: @Vector(4, f32) = .{ 0.9803240895271301, 0.005063652992248535, 1, 0 };
+    assert(all(smoothStep(0.4, 1.6, vector) == expected));
+}
+
 pub fn length(v: anytype) f32 {
     return @typeInfo(@TypeOf(v)).Vector.len;
 }
