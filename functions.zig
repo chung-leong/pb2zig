@@ -129,9 +129,8 @@ test "greatThanEqual" {
 pub fn radians(v: anytype) @TypeOf(v) {
     const multiplier = std.math.pi / 180.0;
     return switch (@typeInfo(@TypeOf(v))) {
-        .Float => v * multiplier,
         .Vector => v * @as(@TypeOf(v), @splat(multiplier)),
-        else => unreachable,
+        else => v * multiplier,
     };
 }
 
@@ -145,9 +144,8 @@ test "radians" {
 pub fn degrees(v: anytype) @TypeOf(v) {
     const multiplier = 180.0 / std.math.pi;
     return switch (@typeInfo(@TypeOf(v))) {
-        .Float => v * multiplier,
         .Vector => v * @as(@TypeOf(v), @splat(multiplier)),
-        else => unreachable,
+        else => v * multiplier,
     };
 }
 
@@ -193,7 +191,6 @@ test "tan" {
 
 pub fn asin(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Float => std.math.asin(v),
         .Vector => calc: {
             var result: @TypeOf(v) = undefined;
             comptime var i = 0;
@@ -202,7 +199,7 @@ pub fn asin(v: anytype) @TypeOf(v) {
             }
             break :calc result;
         },
-        else => unreachable,
+        else => std.math.asin(v),
     };
 }
 
@@ -215,7 +212,6 @@ test "asin" {
 
 pub fn acos(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Float => std.math.acos(v),
         .Vector => calc: {
             var result: @TypeOf(v) = undefined;
             comptime var i = 0;
@@ -224,7 +220,7 @@ pub fn acos(v: anytype) @TypeOf(v) {
             }
             break :calc result;
         },
-        else => unreachable,
+        else => std.math.acos(v),
     };
 }
 
@@ -237,7 +233,6 @@ test "acos" {
 
 pub fn atan(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Float => std.math.atan(v),
         .Vector => calc: {
             var result: @TypeOf(v) = undefined;
             comptime var i = 0;
@@ -246,7 +241,7 @@ pub fn atan(v: anytype) @TypeOf(v) {
             }
             break :calc result;
         },
-        else => unreachable,
+        else => std.math.atan(v),
     };
 }
 
@@ -257,9 +252,29 @@ test "atan" {
     assert(all(atan(vector2) == @Vector(2, f32){ 0, 0 }));
 }
 
+pub fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
+    return switch (@typeInfo(@TypeOf(v1))) {
+        .Vector => calc: {
+            var result: @TypeOf(v1) = undefined;
+            comptime var i = 0;
+            inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+                result[i] = atan2(v1[i], v2[i]);
+            }
+            break :calc result;
+        },
+        else => std.math.atan2(@TypeOf(v1), v1, v2),
+    };
+}
+
+test "atan2" {
+    const pair1: [2]f32 = .{ 0, 1 };
+    const pair2: [2]@Vector(2, f32) = .{ .{ 0, 1 }, .{ 1, 1 } };
+    assert(atan2(pair1[0], pair1[1]) == 0);
+    assert(all(atan2(pair2[0], pair2[1]) == @Vector(2, f32){ 0, 0.78539816339 }));
+}
+
 pub fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
     return switch (@typeInfo(@TypeOf(v1))) {
-        .Float => std.math.pow(@TypeOf(v1), v1, v2),
         .Vector => calc: {
             var result: @TypeOf(v1) = undefined;
             comptime var i = 0;
@@ -268,7 +283,7 @@ pub fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
             }
             break :calc result;
         },
-        else => unreachable,
+        else => std.math.pow(@TypeOf(v1), v1, v2),
     };
 }
 
@@ -336,9 +351,8 @@ test "sqrt" {
 
 pub fn inverseSqrt(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Float => 1 / @sqrt(v),
         .Vector => @as(@TypeOf(v), @splat(1)) / @sqrt(v),
-        else => unreachable,
+        else => 1 / @sqrt(v),
     };
 }
 
@@ -599,9 +613,8 @@ test "length" {
 
 pub fn distance(v1: anytype, v2: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v1))) {
-        .Float => std.math.fabs(v1 - v2),
         .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-        else => unreachable,
+        else => std.math.fabs(v1 - v2),
     };
 }
 
@@ -616,9 +629,8 @@ test "distance" {
 
 pub fn dot(v1: anytype, v2: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v1))) {
-        .Float => v1 * v2,
         .Vector => @reduce(.Add, v1 * v2),
-        else => unreachable,
+        else => v1 * v2,
     };
 }
 
@@ -646,9 +658,8 @@ test "cross" {
 
 pub fn normalize(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Float => if (v > 0) 1 else -1,
         .Vector => v / @as(@TypeOf(v), @splat(@sqrt(@reduce(.Add, v * v)))),
-        else => unreachable,
+        else => if (v > 0) 1 else -1,
     };
 }
 
@@ -659,4 +670,23 @@ test "normalize" {
     assert(normalize(vector1) == 1);
     assert(all(normalize(vector2) == @Vector(2, f32){ 0.4472135901451111, 0.8944271802902222 }));
     assert(all(normalize(vector3) == @Vector(3, f32){ 0.26726123690605164, 0.5345224738121033, 0.8017836809158325 }));
+}
+
+pub fn matrixCompMult(m1: anytype, m2: anytype) @TypeOf(m1) {
+    const T = @TypeOf(m1);
+    var result: T = undefined;
+    inline for (m1, 0..) |v, index| {
+        result[index] = v * m2[index];
+    }
+    return result;
+}
+
+test "matrixCompMult" {
+    const matrix: [2]@Vector(2, f32) = .{
+        .{ 1, 2 },
+        .{ 3, 4 },
+    };
+    const result = matrixCompMult(matrix, matrix);
+    assert(all(result[0] == @Vector(2, f32){ 1, 4 }));
+    assert(all(result[1] == @Vector(2, f32){ 9, 16 }));
 }
