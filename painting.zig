@@ -1,5 +1,5 @@
 const std = @import("std");
-const functions = @import("./functions.zig");
+const functions = @import("./zig/functions.zig");
 
 pub const kernel = struct {
     // parameter info

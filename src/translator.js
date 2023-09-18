@@ -1,9 +1,20 @@
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
 import * as N from './nodes.js';
 
 export class PixelBenderToZigTranslator {
   lines = [ '' ];
   indent = 0;
   ast = null;
+
+  translate(ast) {
+    this.ast = ast;
+    this.addMetadata();
+    this.addImports();
+    this.addKernel();
+    this.ast = null;
+    return this.lines;
+  }
 
   add(text) {
     const newLines = text.trim().split('\n').map(l => l.trim());
@@ -24,29 +35,40 @@ export class PixelBenderToZigTranslator {
     }
   }
 
-  find(Class) {
-    const list = [];
+  walk(tree, cb) {
     const f = (node) => {
-      if (node instanceof Array) {
-        node.forEach(f);
-      } else if (node instanceof Class) {
-        list.push(node);
-      } else if (node instanceof Object) {
-        for (const n of Object.values(node)) {
-          f(n);
+      if (Array.isArray(node)) {
+        for (const n of node) {
+          const res = f(n);
+          // end iteration if callback returns false
+          if (res === false) {
+            return false;
+          }
         }
+      } else if (node instanceof Object) {
+        const res = cb(node);
+        if (res !== undefined) {
+          return res;
+        }
+        // scan sub-nodes if callback doesn't return anything
+        f(Object.values(node));
       }
     };
-    f(this.ast);
-    return list;
+    f(tree);
   }
 
-  translate(ast) {
-    this.ast = ast;
-    this.addMetadata();
-    this.addKernel();
-    this.ast = null;
-    return this.lines;
+  find(classes) {
+    if (!Array.isArray(classes)) {
+      classes = [ classes ];
+    }
+    const list = [];
+    this.walk(this.ast, (node) => {
+      if (classes.some(c => node instanceof c)) {
+        list.push(node);
+        return true;
+      }
+    });
+    return list;
   }
 
   type(type) {
@@ -85,6 +107,11 @@ export class PixelBenderToZigTranslator {
     }
   }
 
+  addImports() {
+    this.add(`const std = @import("std");`);
+    this.add(``);
+  }
+
   addMetadata() {
     const { name, meta } = this.ast;
     this.add(`// Pixel Bender "${name}" (translated using pb2zig)`);
@@ -98,7 +125,6 @@ export class PixelBenderToZigTranslator {
 
   addKernel() {
     this.add(`pub const kernel = struct {`);
-    //this.addParameterFields();
     this.addParameterDecls();
     this.addInput();
     this.addOutput();
@@ -111,7 +137,7 @@ export class PixelBenderToZigTranslator {
 
   addParameterDecls() {
     const params = this.find(N.Parameter);
-    this.add(`const parameters = .{`);
+    this.add(`pub const parameters = .{`);
     for (const param of params) {
       const {
         name,
@@ -126,19 +152,19 @@ export class PixelBenderToZigTranslator {
       this.add(`.${param.name} = .{`);
       this.add(`.type = ${this.type(type)},`);
       if (minValue !== undefined) {
-        this.add(`.minValue = ${this.value(minValue, type)}`);
+        this.add(`.minValue = ${this.value(minValue, type)},`);
       }
       if (maxValue !== undefined) {
-        this.add(`.maxValue = ${this.value(maxValue, type)}`);
+        this.add(`.maxValue = ${this.value(maxValue, type)},`);
       }
       if (stepInterval !== undefined) {
-        this.add(`.stepInterval = ${this.value(stepInterval, type)}`);
+        this.add(`.stepInterval = ${this.value(stepInterval, type)},`);
       }
       if (defaultValue !== undefined) {
-        this.add(`.defaultValue = ${this.value(defaultValue, type)}`);
+        this.add(`.defaultValue = ${this.value(defaultValue, type)},`);
       }
       if (previewValue !== undefined) {
-        this.add(`.previewValue = ${this.value(previewValue, type)}`);
+        this.add(`.previewValue = ${this.value(previewValue, type)},`);
       }
       for (const [ name, value ] of Object.entries(others)) {
         this.add(`.${name} = ${this.value(value, type)},`);
@@ -174,6 +200,7 @@ export class PixelBenderToZigTranslator {
     this.addInputFields();
     this.add(``);
     this.addCalledFunctions();
+    this.addDefinedFunctions();
     this.add(`}`);
   }
 
@@ -193,8 +220,77 @@ export class PixelBenderToZigTranslator {
   }
 
   addCalledFunctions() {
+    // find function calls
+    const inUse = {};
     const calls = this.find(N.FunctionCall);
-    console.log(calls);
+    for (const { name, args } of calls) {
+      switch (name) {
+        case 'outCoord':
+          // this become an input variable
+          break;
+        case 'sample':
+        case 'sampleNearest':
+        case 'sampleLinear':
+          // these get turned into method calls on the src
+          break;
+        case 'atan':
+          inUse[(args.length === 2) ? 'atan2' : 'atan'] = true;
+          break;
+        default:
+          inUse[name] = true;
+      }
+    }
+
+    // find matrix variables
+    const variables = this.find([ N.FunctionDefinition, N.FunctionArgument, N.VariableDeclaration ]);
+    if (variables.some(v => /[234]x[234]$/.test(v.type))) {
+      inUse['matrixMult'] = true;
+    }
+
+    const codeURL = new URL('../zig/functions.zig', import.meta.url);
+    const code = readFileSync(fileURLToPath(codeURL), 'utf-8');
+    const regExp = /pub (fn (\w+)[\s\S]*?\n})/g;
+    let m;
+    while (m = regExp.exec(code)) {
+      // excluding "pub"
+      const func = m[1], name = m[2];
+      if (inUse[name]) {
+        this.add(func);
+        this.add(``);
+      }
+    }
+  }
+
+  addDefinedFunctions() {
+    const defs = this.find(N.FunctionDefinition);
+    for (const [ index, def ] of defs.entries()) {
+      if (index > 0) {
+        this.add(``);
+      }
+      this.addDefinedFunction(def);
+    }
+  }
+
+  addDefinedFunction(def) {
+    const { name, type, args, statements } = def;
+    if (name === 'evaluatePixel') {
+      this.add(`pub fn ${name}(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {`)
+    } else {
+      const argList = args.map(a => `${a.name}: ${this.type(a.type)}`);
+      this.add(`fn ${name}(${argList.join(', ')}) ${this.type(type)} {`);
+    }
+    this.addStatements(statements);
+    this.add('}');
+  }
+
+  addStatements(statements, scope = {}) {
+    for (const statement of statements) {
+      this.addStatement(statement, scope);
+    }
+  }
+
+  addStatement(statement, scope) {
+
   }
 
   addCreateFunction() {
@@ -209,3 +305,4 @@ export class PixelBenderToZigTranslator {
     `.trim());
   }
 }
+
