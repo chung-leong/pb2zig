@@ -63,14 +63,30 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   literalValue(ctx) {
     for (const [ name, node ] of Object.entries(ctx)) {
-      const value = this.name(node);
+      let value = this.name(node);
+      let type;
       switch (name) {
-        case 'Number': return parseFloat(value);
-        case 'QuotedStr': return JSON.parse(value);
-        case 'True': return true;
-        case 'False': return false;
-        case 'Null': return null;
+        case 'Number':
+          type = /\.e/.test(value) ? 'float' : 'int';
+          value = parseFloat(value);
+          break;
+        case 'QuotedStr':
+          type = 'string'
+          value = JSON.parse(value);
+          break;
+        case 'True':
+          type = 'bool';
+          value = true;
+          break;
+        case 'False':
+          type = 'bool';
+          value = true;
+          break;
+        case 'Null':
+          value = null;
+          break;
       }
+      return this.create(N.Literal, { type, value });
     }
   }
 
@@ -291,8 +307,8 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   elseClause(ctx) {
-    const statement = this.visit(ctx.statement);
-    return this.create(N.IfStatement, { statement });
+    const statements = this.visit(ctx.statement);
+    return this.create(N.IfStatement, { statements });
   }
 
   whileStatement(ctx) {

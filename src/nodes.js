@@ -50,7 +50,12 @@ export class FunctionDefinition {
   statements;
 }
 
-export class FunctionArgument {  
+export class Literal {
+  type;
+  value;
+}
+
+export class FunctionArgument {
   type;
   name;
 }
