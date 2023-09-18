@@ -41,8 +41,8 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   pbk(ctx) {
     const tag = this.visit(ctx.tag);
     if (tag.languageVersion) {
-      if (![ 1.0 ].includes(tag.languageVersion)) {
-        throw new Error(`Unsupported Pixel Bender version: ${tag.languageVersion}`);
+      if (![ 1.0 ].includes(tag.languageVersion.value)) {
+        throw new Error(`Unsupported Pixel Bender version: ${tag.languageVersion.value}`);
       }
     }
     const kernel = this.visit(ctx.kernel);
@@ -234,7 +234,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   unaryOperation(ctx) {
     const expr = this.visit(ctx.nullaryOperation);
     if (ctx.unaryOperator) {
-      const operator = this.visit()
+      const operator = this.visit(ctx.unaryOperator);
       const operand = expr;
       return this.create(N.UnaryOperation, { operator, operand });
     } else {

@@ -104,19 +104,23 @@ export class PixelBenderToZigTranslator {
   getReturnValueType(name, args) {
     const argTypes = this.functionArgTypes[name];
     const overloaded = Array.isArray(argTypes[0]);
-    const types = args.map(a => a.type);
-    const findMismatch = (types) => types.findIndex((type, i) => type !== argTypes[i + 1]);
+    const types = args.map(a => a?.type);
+    const findMismatch = (argTypes) => types.findIndex((type, i) => type !== argTypes[i + 1]);
     if (overloaded) {
       for (const argTypesN of argTypes) {
         const index = findMismatch(argTypesN);
         if (index === -1) {
-          return argTypes[0];
+          return argTypesN[0];
         }
       }
+      console.log(args);
       throw new Error(`${name}(${types.join(', ')}) does not exists"`);
     } else {
       const index = args.findIndex((arg, i) => arg.type !== argTypes[i + 1]);
-      throw new Error(`${name}() expects argument ${index + 1} to be ${argTypes[index + 1]}, got ${types[index]}`);
+      if (index !== -1) {
+        throw new Error(`${name}() expects argument ${index + 1} to be ${argTypes[index + 1]}, got ${types[index]}`);
+      }
+      return argTypes[0];
     }
   }
 
@@ -128,9 +132,9 @@ export class PixelBenderToZigTranslator {
   addMetadata() {
     const { name, meta } = this.ast;
     this.add(`// Pixel Bender "${name}" (translated using pb2zig)`);
-    for (const [ field, value ] of Object.entries(meta)) {
-      if (value) {
-        this.add(`// ${field}: ${value}`);
+    for (const [ field, literal ] of Object.entries(meta)) {
+      if (literal?.value) {
+        this.add(`// ${field}: ${literal.value}`);
       }
     }
     this.add(``);
@@ -165,22 +169,22 @@ export class PixelBenderToZigTranslator {
       this.add(`.${param.name} = .{`);
       this.add(`.type = ${getZigType(type)},`);
       if (minValue !== undefined) {
-        this.add(`.minValue = ${this.value(minValue, type)},`);
+        this.add(`.minValue = ${getZigLiteral(minValue, type)},`);
       }
       if (maxValue !== undefined) {
-        this.add(`.maxValue = ${this.value(maxValue, type)},`);
+        this.add(`.maxValue = ${getZigLiteral(maxValue, type)},`);
       }
       if (stepInterval !== undefined) {
-        this.add(`.stepInterval = ${this.value(stepInterval, type)},`);
+        this.add(`.stepInterval = ${getZigLiteral(stepInterval, type)},`);
       }
       if (defaultValue !== undefined) {
-        this.add(`.defaultValue = ${this.value(defaultValue, type)},`);
+        this.add(`.defaultValue = ${getZigLiteral(defaultValue, type)},`);
       }
       if (previewValue !== undefined) {
-        this.add(`.previewValue = ${this.value(previewValue, type)},`);
+        this.add(`.previewValue = ${getZigLiteral(previewValue, type)},`);
       }
       for (const [ name, value ] of Object.entries(others)) {
-        this.add(`.${name} = ${this.value(value, type)},`);
+        this.add(`.${name} = ${getZigLiteral(value, type)},`);
       }
       this.add(`},`);
     }
@@ -205,6 +209,18 @@ export class PixelBenderToZigTranslator {
       this.add(`${name} = .{ channels: ${channels} },`);
     }
     this.add('};');
+  }
+
+  addCreateFunction() {
+    this.add(`
+      fn create(inputStruct: anytype) Instance(@TypeOf(inputStruct)) {
+        var instance: Instance(@TypeOf(inputStruct)) = undefined;
+        inline for (std.meta.fields(@TypeOf(inputStruct))) |field| {
+            @field(instance, field.name) = @field(inputStruct, field.name);
+        }
+        return instance;
+      }
+    `.trim());
   }
 
   addInstanceFunction() {
@@ -317,17 +333,17 @@ export class PixelBenderToZigTranslator {
     this.add('}');
   }
 
-  addStatements(statements, scope) {
+  addStatements(statements) {
     for (const statement of statements) {
-      this.addStatement(statement, scope);
+      this.addStatement(statement);
     }
   }
 
-  addStatement(statement, scope) {
+  addStatement(statement) {
     const fname = `add${statement.constructor.name}`;
     const f = this[fname];
     if (f) {
-      f.call(this, statement, scope);
+      f.call(this, statement);
     } else {
       this.add(`[TODO: ${fname}];`);
       console.log(statement);
@@ -338,18 +354,18 @@ export class PixelBenderToZigTranslator {
     this.add(text);
   }
 
-  addVariableDeclaration({ type, name, initializer }, scope) {
-    const valueR = this.translateExpression(initializer, type, scope);
+  addVariableDeclaration({ type, name, initializer }) {
+    const valueR = (initializer) ? this.translateExpression(initializer, type) : 'undefined';
     this.add(`var ${name}: ${getZigType(type)} = ${valueR};`);
-    scope[name] = type;
+    this.setVariableType(name, type);
   }
 
-  addVariableAssignment({ lvalue, expression }, scope) {
+  addVariableAssignment({ lvalue, expression }) {
     const [ nameL, propL ] = lvalue.names;
-    const typeL = getVariableType(nameL, scope);
-    const lenL = getVectorWidth(typeL);
-    const valueR = this.translateExpression(expression, lenL, scope)
+    const typeL = this.getVariableType(nameL);
+    const valueR = this.translateExpression(expression, typeL)
     if (propL) {
+      const lenL = getVectorWidth(typeL);
       const indicesL = getVectorIndices(propL, lenL);
       if (indicesL.width > 1) {
         // use write mask
@@ -396,11 +412,11 @@ export class PixelBenderToZigTranslator {
     this.add(`}`);
   }
 
-  translateExpression(expression, typeExpected = undefined) {
+  translateExpression(expression, typeExpected) {
     const fname = `translate${expression.constructor.name}`;
     const f = this[fname];
     if (f) {
-      return f.call(this, expression, len, scope);
+      return f.call(this, expression, typeExpected);
     } else {
       console.log(expression);
       return new Expression(`[TODO: ${fname}]`, 'bool');
@@ -416,56 +432,76 @@ export class PixelBenderToZigTranslator {
 
   translateVariableAccess({ names }) {
     const [ nameR, propR ] = names;
+    const typeR = this.getVariableType(nameR);
     if (propR) {
-      const typeR = getVariableType(nameR, scope);
       const widthR = getVectorWidth(typeR);
       const indicesR = getVectorIndices(propR, widthR);
+      const typeS = getSwizzleType(typeR, indicesR);
       if (indicesR.length > 1) {
-        const typeS = getSwizzleType(typeR, indicesR);
         const elements = [];
         for (const index of indicesR) {
           elements.push(`${nameR}[${index}]`);
         }
-        return new Expression(`.{ ${elements.join(', ')} }`, typeS);
+        const zType = getZigType(typeS);
+        return new Expression(`${zType}{ ${elements.join(', ')} }`, typeS);
       } else {
         const [ index ] = indicesR;
-        return new Expression(`${nameR}[${index}]`, 1);
+        return new Expression(`${nameR}[${index}]`, typeS);
       }
     } else {
-      return nameR;
+      return new Expression(nameR, typeR);
     }
   }
 
   translateFunctionCall({ name, args }) {
     const argList = args.map(a => this.translateExpression(a));
-    const type = getReturnValueType(name, argList);
+    const type = this.getReturnValueType(name, argList);
     switch (name) {
       case 'outCoord':
         return `outCoord`;
       case 'sample':
-        return translateFunctionCall({ name: 'sampleLinear', args }, len, scope);
+        return translateFunctionCall({ name: 'sampleLinear', args });
       case 'sampleNearest':
       case 'sampleLinear':
         return new Expression(`${argList[0]}.${name}(${argList[1]})`, type);
       default:
-        return new Expression(`${name}(${argsTranslated.join(', ')})`, type);
+        return new Expression(`${name}(${argList.join(', ')})`, type);
     }
   }
 
-  translateBinaryOperation({ operator, operand1, operand2 }, typeExpected) {
-
+  translateConstructorCall({ type, args }) {
+    const argList = args.map(a => this.translateExpression(a));
+    if (args.length === 1) {
+      const arg = args[0];
+      arg.convert(type);
+      return arg;
+    } else {
+      const childType = getChildType(type);
+      argList.forEach(a => a.convert(childType));
+      const zType = getZigType(type);
+      return new Expression(`${zType}{ ${ argList.join(', ')} }`);
+    }
   }
 
-  addCreateFunction() {
-    this.add(`
-      fn create(inputStruct: anytype) Instance(@TypeOf(inputStruct)) {
-        var instance: Instance(@TypeOf(inputStruct)) = undefined;
-        inline for (std.meta.fields(@TypeOf(inputStruct))) |field| {
-            @field(instance, field.name) = @field(inputStruct, field.name);
-        }
-        return instance;
-      }
-    `.trim());
+  translateBinaryOperation({ operator, operand1, operand2 }) {
+    const opL = this.translateExpression(operand1);
+    const opR = this.translateExpression(operand2);
+    if (!opL.isVector() && opR.isVector()) {
+      opL.promote(opR.type);
+    } else if (opL.isVector() && !opR.isVector()) {
+      opR.promote(opL.type);
+    }
+    return new Expression(`${opL} ${operator} ${opR}`, opL.type);
+  }
+
+  translateUnaryOperation({ operator, operand }) {
+    const op = this.translateExpression(operand);
+    return new Expression(`${operator}${op}`, op.type);
+  }
+
+  translateParentheses({ expression }) {
+    const expr = this.translateExpression(expression);
+    return new Expression(`(${expr})`, expr.type);
   }
 }
 
@@ -475,12 +511,43 @@ class Expression {
     this.type = type;
   }
 
+  isVector() {
+    return isVector(this.type);
+  }
+
+  isMatrix() {
+    return isMatrix(this.type);
+  }
+
+  promote(type) {
+    this.convert(getChildType(type));
+    this.text = `@as(${type}, @splat(${this.text}))`;
+    this.type = type;
+  }
+
+  convert(type) {
+    if (this.type !== type) {
+      if (type === 'bool') {
+        this.text = `(${this.text} == 0)`;
+      } else if (this.type === 'bool') {
+        this.text = `(if (${this.text}) 1 else 0)`;
+      } else if (type === 'float') {
+        if (isNaN(parseInt(this.text))) {
+          this.text = `@floatFromInt(${this.text})`;
+        }
+      } else if (type === 'int') {
+        this.text = `@intFromFloat(${this.text})`;
+      }
+    }
+    this.type = type;
+  }
+
   toString() {
     return this.text;
   }
 }
 
-getZigType(type) {
+function getZigType(type) {
   if (type.startsWith('pixel')) {
     type = `float` + type.slice(-1);
   }
@@ -515,10 +582,22 @@ getZigType(type) {
 }
 
 function getChildZigType(type) {
-  return getZigType(type.slice(0, -1));
+  return getZigType(getChildType(type));
 }
 
-function widthOf(type) {
+function getChildType(type) {
+  return type.slice(0, -1);
+}
+
+function isVector(type) {
+  return /^\w+\d$/.test(type);
+}
+
+function isMatrix(type) {
+  return /^\w+\dx\d$/.test(type);
+}
+
+function getVectorWidth(type) {
   if (type === undefined) {
     return undefined;
   }
@@ -543,10 +622,14 @@ function getVectorIndices(prop, width) {
 }
 
 function getSwizzleType(type, indices) {
-  return type.slice(-1) + indices.length;
+  const typeE = type.slice(-1);
+  return (indices.length === 1) ? typeE : typeE + indices.length;
 }
 
 function getZigLiteral(value, type) {
+  if (value instanceof N.Literal) {
+    value = value.value;
+  }
   if (type === 'float') {
     let s = value.toString();
     if (s.indexOf('.') === -1) {
@@ -606,6 +689,12 @@ const fx__fx1_fx = [
   [ float3, float, float3 ],
   [ float4, float, float4 ],
 ];
+const fx__fx_fx_fx = [
+  [ float, float, float ],
+  [ float2, float2, float2, float2 ],
+  [ float3, float3, float3, float3 ],
+  [ float4, float4, float4, float4 ],
+];
 const f__fx_fx = [
   [ float, float, float ],
   [ float, float2, float2 ],
@@ -656,19 +745,19 @@ const builtInfunctionArgTypes = {
   mod: fx__fx_fx1,
   step: fx__fx1_fx,
   clamp: [
-    ...fx__fx_float_X_fx,
+    ...fx__fx_fx_fx,
     [ float2, float2, float, float ],
     [ float3, float3, float, float ],
     [ float4, float4, float, float ],
   ],
   min: [
-    ...fx__fx_float_X_fx,
+    ...fx__fx_fx_fx,
     [ float2, float2, float2, float ],
     [ float3, float3, float3, float ],
     [ float4, float4, float4, float ],
   ],
   smoothStep: [
-    ...fx__fx_float_X_fx,
+    ...fx__fx_fx_fx,
     [ float2, float, float, float2 ],
     [ float3, float, float, float3 ],
     [ float4, float, float, float4 ],

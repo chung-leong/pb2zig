@@ -102,13 +102,13 @@ export class Parentheses {
 
 export class IfStatement {
   condition;
-  statement;
+  statements;
   elseClause;
 }
 
 export class WhileStatement {
   condition;
-  statement;
+  statements;
 }
 
 export class ContinueStatement{
