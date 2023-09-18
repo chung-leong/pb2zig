@@ -57,7 +57,7 @@ export class PixelBenderToZigTranslator {
     f(tree);
   }
 
-  find(classes) {
+  find(classes, recursive = false) {
     if (!Array.isArray(classes)) {
       classes = [ classes ];
     }
@@ -65,13 +65,21 @@ export class PixelBenderToZigTranslator {
     this.walk(this.ast, (node) => {
       if (classes.some(c => node instanceof c)) {
         list.push(node);
-        return true;
+        if (!recursive) {
+          return true;
+        }
       }
     });
     return list;
   }
 
   type(type) {
+    if (type.startsWith('pixel')) {
+      type = `float` + type.slice(-1);
+    }
+    if (type.startsWith('image')) {
+      return 'Image';
+    }
     const table = {
       bool: 'bool',
       bool2: 'bool[2]',
@@ -87,12 +95,24 @@ export class PixelBenderToZigTranslator {
       float2: '@Vector(2, f32)',
       float3: '@Vector(3, f32)',
       float4: '@Vector(4, f32)',
+
+      float2x2: '[2]@Vector(2, f32)',
+      float3x3: '[3]@Vector(3, f32)',
+      float4x4: '[4]@Vector(4, f32)',
     };
     const zigType = table[type];
     if (!zigType) {
       throw new Error(`Unknown type: ${type}`);
     }
     return zigType;
+  }
+
+  element(type) {
+    return this.type(type.slice(0, -1));
+  }
+
+  length(type) {
+    return parseInt(type.slice(-1), '') || 1;
   }
 
   value(value, type) {
@@ -104,6 +124,23 @@ export class PixelBenderToZigTranslator {
       return s;
     } else {
       return JSON.stringify(value);
+    }
+  }
+
+  indices(name, len) {
+    if (name) {
+      const map = {
+        r: 0, g: 1, b: 2, a: 3,
+        x: 0, y: 1, z: 2, w: 3,
+        s: 0, t: 1, p: 2, q: 3,
+      };
+      return [ ...name ].map(c => map[c]);
+    } else {
+      const indices = [];
+      for (let i = 0; i < len; i++) {
+        indices.push(i);
+      }
+      return indices;
     }
   }
 
@@ -178,7 +215,7 @@ export class PixelBenderToZigTranslator {
     const inputs = this.find(N.InputDeclaration);
     this.add(`pub const input = .{`);
     for (const { name, type } of inputs) {
-      const channels = parseInt(type.replace(/\D/g, ''));
+      const channels = this.length(type);
       this.add(`${name} = .{ channels: ${channels} },`);
     }
     this.add('};');
@@ -188,7 +225,7 @@ export class PixelBenderToZigTranslator {
     const outputs = this.find(N.OutputDeclaration);
     this.add(`pub const output = .{`);
     for (const { name, type } of outputs) {
-      const channels = parseInt(type.replace(/\D/g, ''));
+      const channels = this.length(type);
       this.add(`${name} = .{ channels: ${channels} },`);
     }
     this.add('};');
@@ -222,7 +259,7 @@ export class PixelBenderToZigTranslator {
   addCalledFunctions() {
     // find function calls
     const inUse = {};
-    const calls = this.find(N.FunctionCall);
+    const calls = this.find(N.FunctionCall, true);
     for (const { name, args } of calls) {
       switch (name) {
         case 'outCoord':
@@ -242,7 +279,7 @@ export class PixelBenderToZigTranslator {
     }
 
     // find matrix variables
-    const variables = this.find([ N.FunctionDefinition, N.FunctionArgument, N.VariableDeclaration ]);
+    const variables = this.find([ N.FunctionDefinition, N.FunctionArgument, N.VariableDeclaration ], true);
     if (variables.some(v => /[234]x[234]$/.test(v.type))) {
       inUse['matrixMult'] = true;
     }
@@ -273,24 +310,169 @@ export class PixelBenderToZigTranslator {
 
   addDefinedFunction(def) {
     const { name, type, args, statements } = def;
+    const scope = {};
     if (name === 'evaluatePixel') {
       this.add(`pub fn ${name}(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {`)
+      this.add(`// input variables`);
+      const parameters = this.find(N.Parameter);
+      for (const { name, type } of parameters) {
+        this.add(`const ${name} = self.${name};`);
+        scope[name] = type;
+      }
+      const inputs = this.find(N.InputDeclaration);
+      for (const { name, type } of inputs) {
+        this.add(`const ${name} = self.${name};`);
+        scope[name] = type;
+      }
+      this.add(``);
+      const outputs = this.find(N.OutputDeclaration);
+      this.add(`// output variable`);
+      for (const { name, type } of outputs) {
+        this.add(`var ${name}: ${this.type(type)} = undefined;`);
+        scope[name] = type;
+      }
+      this.add(``);
     } else {
       const argList = args.map(a => `${a.name}: ${this.type(a.type)}`);
       this.add(`fn ${name}(${argList.join(', ')}) ${this.type(type)} {`);
     }
-    this.addStatements(statements);
+    this.addStatements(statements, scope);
     this.add('}');
   }
 
-  addStatements(statements, scope = {}) {
+  addStatements(statements, scope) {
     for (const statement of statements) {
       this.addStatement(statement, scope);
     }
   }
 
   addStatement(statement, scope) {
+    const fname = `add${statement.constructor.name}`;
+    const f = this[fname];
+    if (f) {
+      f.call(this, statement, scope);
+    } else {
+      this.add(`[TODO: ${fname}];`);
+      console.log(statement);
+    }
+  }
 
+  addComment({ text }) {
+    this.add(text);
+  }
+
+  addVariableDeclaration({ type, name, initializer }, scope) {
+    const len = this.length(type);
+    const valueR = this.translateExpression(initializer, len, scope);
+    this.add(`var ${name}: ${this.type(type)} = ${valueR};`);
+    scope[name] = type;
+  }
+
+  addVariableAssignment({ lvalue, expression }, scope) {
+    const [ nameL, propL ] = lvalue.names;
+    const typeL = this.varType(nameL, scope);
+    const lenL = this.length(typeL);
+    const valueR = this.translateExpression(expression, lenL, scope)
+    if (propL) {
+      const indicesL = this.indices(propL, lenL);
+      if (indicesL.length > 1) {
+        // use write mask
+        const propR = expression.names?.[1];
+        const indicesR = this.indices(propR, indicesL.length);
+        const indicesM = [];
+        for (let i = 0; i < lenL; i++) {
+          if (indicesL.includes(i)) {
+            // use rvalue
+            indicesM.push(~indicesR[i]);
+          } else {
+            // keep lvalue
+            indicesM.push(`${i}`);
+          }
+        }
+        const mask = `.{ ${indicesM.join(', ') } }`;
+        this.add(`${nameL} = @shuffle(${this.element(typeL)}, ${nameL}, ${valueR}, ${mask});`);
+      } else {
+        const [ index ] = indicesL;
+        this.add(`${nameL}[${index}] = ${valueR};`);
+      }
+    } else {
+      this.add(`${nameL} = ${valueR};`);
+    }
+  }
+
+  addIfStatement({ condition, statements, elseClause }, scope) {
+    scope = { ...scope };
+    this.add(`if (${this.translateExpression(condition)}) {`);
+    this.addStatements(statements, scope);
+    if (elseClause) {
+      this.add(`} else {`);
+    }
+    this.add(`}`);
+  }
+
+  varType(name, scope) {
+    const type = scope[name];
+    if (!type) {
+      throw new Error(`Undefined variable: ${name}`);
+    }
+    return type;
+  }
+
+  translateExpression(expression, len, scope) {
+    if (expression instanceof Object) {
+      const fname = `translate${expression.constructor.name}`;
+      const f = this[fname];
+      if (f) {
+        return f.call(this, expression, len, scope);
+      } else {
+        console.log(expression);
+        return `[TODO: ${fname}]`;
+      }
+    } else {
+      return `${expression}`;
+    }
+  }
+
+  translateVariableAccess({ names }, len, scope) {
+    const [ nameR, propR ] = names;
+    if (propR) {
+      const typeR = this.varType(nameR, scope);
+      const lenR = this.length(typeR);
+      const indicesR = this.indices(propR, lenR);
+      if (len > indicesR.length) {
+        // masking is done, just return the name
+        return nameR;
+      } else {
+        if (len > 1) {
+          const elements = [];
+          for (const index of indicesR) {
+            elements.push(`${nameR}[${index}]`);
+          }
+          return `.{ ${elements.join(', ')} }`;
+        } else {
+          const [ index ] = indicesR;
+          return `${nameR}[${index}]`;
+        }
+      }
+    } else {
+      return nameR;
+    }
+  }
+
+  translateFunctionCall({ name, args }, len, scope) {
+    const argsTranslated = args.map(a => this.translateExpression(a));
+    switch (name) {
+      case 'outCoord':
+        return `outCoord`;
+      case 'sample':
+        return translateFunctionCall({ name: 'sampleLinear', args }, len, scope);
+      case 'sampleNearest':
+      case 'sampleLinear':
+        const [ src, arg ] = argsTranslated;
+        return `${src}.${name}(${arg})`;
+      default:
+        return `${name}(${argsTranslated.join(', ')})`;
+    }
   }
 
   addCreateFunction() {

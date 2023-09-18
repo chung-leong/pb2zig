@@ -33,7 +33,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   visitAny(ctx) {
-    for (const node of Object.values(ctx)) {      
+    for (const node of Object.values(ctx)) {
       return this.visit(node);
     }
   }
@@ -77,7 +77,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   kernel(ctx) {
     const name = this.name(ctx.Identifier);
     const meta = this.create(N.Meta, this.visit(ctx.tag));
-    const statements = this.visit(ctx.kernelBody);   
+    const statements = this.visit(ctx.kernelBody);
     return this.create(N.Kernel, { name, meta, statements });
   }
 
@@ -89,7 +89,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
         if (s) {
           statements.push(s);
         }
-      }  
+      }
     }
     return statements;
   }
@@ -134,7 +134,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     return this.create(N.FunctionDefinition, { type, name, args, statements });
   }
 
-  returnType(ctx) {  
+  returnType(ctx) {
     for (const [ name, node ] of Object.entries(ctx)) {
       switch (name) {
         case 'Void': return this.name(node);
@@ -161,7 +161,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
         } else {
           statements.push(s);
         }
-      }  
+      }
     }
     return statements;
   }
@@ -236,13 +236,13 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   functionCall(ctx) {
     const name = this.name(ctx.Identifier);
-    const args = this.visit(ctx.argumentList); 
+    const args = this.visit(ctx.argumentList);
     return this.create(N.FunctionCall, { name, args });
   }
 
   constructorCall(ctx) {
     const type = this.visit(ctx.type);
-    const args = this.visit(ctx.argumentList); 
+    const args = this.visit(ctx.argumentList);
     return this.create(N.ConstructorCall, { type, args });
   }
 
@@ -251,7 +251,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     if (ctx.expression) {
       for (const node of ctx.expression) {
         args.push(this.visit(node));
-      } 
+      }
     }
     return args;
   }
@@ -269,7 +269,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
       for (const node of ctx.property) {
         names.push
         (this.visit(node));
-      } 
+      }
     }
     return this.create(N.VariableAccess, { names });
   }
@@ -285,9 +285,9 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   ifStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statement = this.visit(ctx.statement);
+    const statements = this.visit(ctx.statement);
     const elseClause = (ctx.elseClause) ? this.visit(ctx.elseClause) : undefined;
-    return this.create(N.IfStatement, { condition, statement, elseClause });
+    return this.create(N.IfStatement, { condition, statements, elseClause });
   }
 
   elseClause(ctx) {
@@ -297,14 +297,14 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   whileStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statement = this.visit(ctx.statement);
-    return this.create(N.IfStatement, { condition, statement });
+    const statements = this.visit(ctx.statement);
+    return this.create(N.IfStatement, { condition, statements });
   }
 
   doWhileStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statement = this.visit(ctx.statement);
-    return this.create(N.IfStatement, { condition, statement });
+    const statements = this.visit(ctx.statement);
+    return this.create(N.IfStatement, { condition, statements });
   }
 
   continueStatement(ctx) {
