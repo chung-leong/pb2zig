@@ -1,0 +1,656 @@
+/**
+ * MandelbulbQuick.pbk
+ * Last update: 14 December 2009
+ *
+ * Changelog:
+ *		1.0		- Initial release
+ *		1.0.1	- Fixed a missing asymmetry thanks to Chris King (http://www.dhushara.com)
+ *				- Refinements in the colouring
+ *      1.0.2   - Added radiolaria option for a funky hair-like effect
+ * 				- Incorporated the scalar derivative method as described here:
+ *			    - http://www.fractalforums.com/mandelbulb-implementation/realtime-renderingoptimisations/
+ *		1.0.3	- Created a quick version of the script as using a boolean flag to determine
+ *				  which distance estimation method created long compilation times.
+ * 		1.0.4 	- Fixed issue with older graphic cards and the specular highlights
+ *
+ * 
+ * Copyright (c) 2009 Tom Beddard
+ * http://www.subblue.com
+ *
+ * For more Flash and PixelBender based generative graphics experiments see:
+ * http://www.subblue.com/blog
+ *
+ * Licensed under the MIT License:
+ * http://www.opensource.org/licenses/mit-license.php
+ *
+ *
+ * Credits and references
+ * ======================
+ * For the story behind the 3D Mandelbrot see the following page:
+ * http://www.skytopia.com/project/fractal/mandelbulb.html
+ *
+ * The original forum disussion with many implementation details can be found here:
+ * http://www.fractalforums.com/3d-fractal-generation/true-3d-mandlebrot-type-fractal/
+ *
+ * This implementation references the 4D Quaternion GPU Raytracer by Keenan Crane:
+ * http://www.devmaster.net/forums/showthread.php?t=4448
+ *
+ * and the NVIDIA CUDA/OptiX implementation by cbuchner1:
+ * http://forums.nvidia.com/index.php?showtopic=150985
+ *
+ */
+
+#define PI 3.141592653
+#define MIN_EPSILON 3e-7
+
+<languageVersion : 1.0;>
+
+kernel MandelbulbQuick
+<	namespace : "com.subblue.filters";
+	vendor : "Tom Beddard";
+	version : 1;
+	description : "Mandelbulb Fractal Ray Tracer - the quick version";
+>
+
+
+{
+	parameter int antialiasing
+	<
+		minValue:1;
+		maxValue:3;
+		defaultValue:1;
+		description:"Super sampling quality. Number of samples squared per pixel.";
+	>;
+
+	parameter bool phong
+	<
+		defaultValue:true;
+		description: "Enable phong shading.";
+	>;
+
+	parameter bool julia
+	<
+		defaultValue:false;
+		description: "Enable Julia set version.";
+	>;
+
+	parameter bool radiolaria
+	<
+		defaultValue:false;
+		description: "Enable radiolaria style.";
+	>;
+
+	parameter float radiolariaFactor
+	<
+		minValue: -4.0;
+		maxValue: 4.0;
+		defaultValue: 0.0;
+		description: "Tweak the radiolaria effect.";
+	>;
+
+	parameter float shadows
+	<
+		minValue:0.0;
+		maxValue:1.0;
+		defaultValue:0.0;
+		description: "Enable ray traced shadows.";
+	>;
+
+	parameter float ambientOcclusion
+	<
+		minValue:0.0;
+		maxValue:1.0;
+		defaultValue:0.8;
+		description: "Enable fake ambient occlusion factor based on the orbit trap.";
+	>;
+
+	parameter float ambientOcclusionEmphasis
+	<
+		minValue:0.0;
+		maxValue:1.0;
+		defaultValue:0.58;
+		description: "Emphasise the structure edges based on the number of steps it takes to reach a point in the fractal.";
+	>;
+
+	parameter float bounding
+	<
+		minValue:1.0;
+		maxValue:16.0;
+		defaultValue:2.5;
+		description: "Sets the bounding sphere radius to help accelerate the raytracing.";
+	>;
+
+	parameter float bailout
+	<
+		minValue:0.5;
+		maxValue:12.0;
+		defaultValue:4.0;
+		description: "Sets the bailout value for the fractal calculation. Lower values give smoother less detailed results.";
+	>;
+
+	parameter float power
+	<
+		minValue:2.0;
+		maxValue:32.0;
+		defaultValue:8.0;
+		description: "The power of the fractal.";
+	>;
+
+	parameter float3 julia_c
+	<
+		minValue:float3(-2, -2, -2);
+		maxValue:float3(2, 2, 2);
+		defaultValue:float3(1.0, 0.0, 0.0);
+		description: "The c constant for Julia set fractals";
+	>;
+
+	parameter float3 cameraPosition
+	<
+		minValue:float3(-4, -4, -4);
+		maxValue:float3(4, 4, 4);
+		defaultValue:float3(0, -2.6, 0);
+		description: "Camera position.";
+	>;
+
+	parameter float3 cameraPositionFine
+	<
+		minValue:float3(-0.1, -0.1, -0.1);
+		maxValue:float3(0.1, 0.1, 0.1);
+		defaultValue:float3(0, 0.0, 0.0);
+		description: "Fine tune position.";
+	>;
+
+	parameter float3 cameraRotation
+	<
+		minValue:float3(-180, -180, -180);
+		maxValue:float3(180, 180, 180);
+		defaultValue:float3(0, 0, -90);
+		description: "Pointing angle in each axis of the camera.";
+	>;
+
+	parameter float cameraZoom
+	<
+		minValue:0.0;
+		maxValue:10.0;
+		defaultValue:0.0;
+		description: "Zoom the camera view.";
+	>;
+
+	parameter float3 light
+	<
+		minValue:float3(-50, -50, -50);
+		maxValue:float3(50, 50, 50);
+		defaultValue:float3(38, -42, 38);
+		description: "Position of point light.";
+	>;
+
+	parameter float3 colorBackground
+	<
+		minValue:float3(0, 0, 0);
+		maxValue:float3(1, 1, 1);
+		defaultValue:float3(0.0, 0.0, 0.0);
+		description: "Background colour.";
+        aeUIControl: "aeColor";
+	>;
+    
+    parameter float colorBackgroundTransparency
+	<
+		minValue:float(0.0);
+		maxValue:float(1.0);
+		defaultValue:float(1.0);
+		description: "Background transparency.";
+	>;
+
+	parameter float3 colorDiffuse
+	<
+		minValue:float3(0, 0, 0);
+		maxValue:float3(1, 1, 1);
+		defaultValue:float3(0.0, 0.85, 0.99);
+		description: "Diffuse colour.";
+        aeUIControl: "aeColor";
+	>;
+
+	parameter float3 colorAmbient
+	<
+		minValue:float3(0, 0, 0);
+		maxValue:float3(1, 1, 1);
+		defaultValue:float3(0.67, 0.85, 1.0);
+		description: "Ambient light colour.";
+        aeUIControl: "aeColor";
+	>;
+	
+	parameter float colorAmbientIntensity
+	<
+		minValue:float(0);
+		maxValue:float(1);
+		defaultValue:float(0.4);
+		description: "Ambient light intensity.";
+	>;
+
+	parameter float3 colorLight
+	<
+		minValue:float3(0, 0, 0);
+		maxValue:float3(1, 1, 1);
+		defaultValue:float3(0.48, 0.59, 0.66);
+		description: "Light colour.";
+        aeUIControl: "aeColor";
+	>;
+
+	parameter float colorSpread
+	<
+		minValue:0.0;
+		maxValue:1.0;
+		defaultValue:0.2;
+		description: "Vary the colour based on the normal direction.";
+	>;
+
+	parameter float rimLight
+	<
+		minValue:0.0;
+		maxValue:1.0;
+		defaultValue:0.0;
+		description: "Rim light factor.";
+	>;
+
+	parameter float specularity
+	<
+		minValue:0.0;
+		maxValue:1.0;
+		defaultValue:0.66;
+		description: "Phone specularity";
+	>;
+
+	parameter float specularExponent
+	<
+		minValue:0.1;
+		maxValue:50.0;
+		defaultValue:15.0;
+		description: "Phong shininess";
+	>;
+
+	parameter float3 rotation
+	<
+		minValue:float3(-180, -180, -180);
+		maxValue:float3(180, 180, 180);
+		defaultValue:float3(0, 36, 39.6);
+		description: "Rotate the Mandelbulb in each axis.";
+	>;
+
+	parameter int maxIterations
+	<
+		minValue:1;
+		maxValue:20;
+		defaultValue:6;
+		description: "More iterations reveal more detail in the fractal surface but takes longer to calculate.";
+	>;
+
+	parameter int stepLimit
+	<
+		minValue:10;
+		maxValue:200;
+		defaultValue:110;
+		description: "The maximum number of steps a ray should take.";
+	>;
+
+	parameter float epsilonScale
+	<
+		minValue:0.1;
+		maxValue:1.0;
+		defaultValue:1.0;
+		description: "Scale the epsilon step distance. Smaller values are slower but will generate smoother results for thin areas.";
+	>;
+
+	parameter int2 size
+	<
+		minValue:int2(100, 100);
+		maxValue:int2(2048, 2048);
+		defaultValue:int2(640, 480);
+		description: "The output size in pixels.";
+	>;
+
+	region generated()
+	{
+		return region(float4(0, 0, size.x, size.y));
+	}
+
+	dependent float bailout_sr, aspectRatio, sampleStep, sampleContribution, pixel_scale, eps_start;
+	dependent float3 eye;
+	dependent float3x3 viewRotation, objRotation;
+	output pixel4 dst;
+
+
+	// Scalar derivative approach by Enforcer:
+	// http://www.fractalforums.com/mandelbulb-implementation/realtime-renderingoptimisations/
+	void powN(inout float3 z, float zr0, inout float dr)
+	{
+		float zo0 = asin(z.z / zr0);
+		float zi0 = atan(z.y, z.x);
+		float zr = pow(zr0, power - 1.0);
+		float zo = (zo0) * power;
+		float zi = (zi0) * power;
+		float czo = cos(zo);
+
+		dr = zr * dr * power + 1.0;
+		zr *= zr0;
+
+		z = zr * float3(czo*cos(zi), czo*sin(zi), sin(zo));
+	}
+
+
+	// The fractal calculation
+	//
+	// Calculate the closest distance to the fractal boundary and use this
+	// distance as the size of the step to take in the ray marching.
+	//
+	// Fractal formula:
+	//	  z' = z^p + c
+	//
+	// For each iteration we also calculate the derivative so we can estimate
+	// the distance to the nearest point in the fractal set, which then sets the
+	// maxiumum step we can move the ray forward before having to repeat the calculation.
+	//
+	//	 dz' = p * z^(p-1)
+	//
+	// The distance estimation is then calculated with:
+	//
+	//   0.5 * |z| * log(|z|) / |dz|
+	//
+	float DE(float3 z0, inout float min_dist)
+	{
+		float3 c = julia ? julia_c : z0; // Julia set has fixed c, Mandelbrot c changes with location
+		float3 z = z0;
+
+		float dr = 1.0;
+		float r	 = length(z);
+		if (r < min_dist) min_dist = r;
+
+		for (int n = 0; n < maxIterations; n++) {
+			powN(z, r, dr);
+			z += c;
+
+			if (radiolaria && z.y > radiolariaFactor) z.y = radiolariaFactor;
+
+			r = length(z);
+			if (r < min_dist) min_dist = r;
+			if (r > bailout) break;
+		}
+
+		return 0.5 * log(r) * r / dr;
+	}
+	
+
+	// Intersect bounding sphere
+	//
+	// If we intersect then set the tmin and tmax values to set the start and
+	// end distances the ray should traverse.
+	bool intersectBoundingSphere(float3 origin,
+								 float3 direction,
+								 out float tmin,
+								 out float tmax)
+	{
+		bool hit = false;
+
+		float b = dot(origin, direction);
+		float c = dot(origin, origin) - bounding;
+		float disc = b*b - c;			// discriminant
+		tmin = tmax = 0.0;
+
+		if (disc > 0.0) {
+			// Real root of disc, so intersection
+			float sdisc = sqrt(disc);
+			float t0 = -b - sdisc;			// closest intersection distance
+			float t1 = -b + sdisc;			// furthest intersection distance
+
+			if (t0 >= 0.0) {
+				// Ray intersects front of sphere
+				float min_dist;
+				float3 z = origin + t0 * direction;
+				tmin = DE(z, min_dist);
+				tmax = t0 + t1;
+			} else if (t0 < 0.0) {
+				// Ray starts inside sphere
+				float min_dist;
+				float3 z = origin;
+				tmin = DE(z, min_dist);
+				tmax = t1;
+			}
+			hit = true;
+		}
+
+		return hit;
+	}
+
+
+	// Calculate the gradient in each dimension from the intersection point
+	float3 estimate_normal(float3 z, float e)
+	{
+		float min_dst;	// Not actually used in this particular case
+		float3 z1 = z + float3(e, 0, 0);
+		float3 z2 = z - float3(e, 0, 0);
+		float3 z3 = z + float3(0, e, 0);
+		float3 z4 = z - float3(0, e, 0);
+		float3 z5 = z + float3(0, 0, e);
+		float3 z6 = z - float3(0, 0, e);
+
+		float dx = DE(z1, min_dst) - DE(z2, min_dst);
+		float dy = DE(z3, min_dst) - DE(z4, min_dst);
+		float dz = DE(z5, min_dst) - DE(z6, min_dst);
+
+		return normalize(float3(dx, dy, dz) / (2.0*e));
+	}
+
+
+	// Computes the direct illumination for point pt with normal N due to
+	// a point light at light and a viewer at eye.
+	float3 Phong(float3 pt, float3 N, out float specular)
+	{
+		float3 diffuse	= float3(0, 0, 0);			// Diffuse contribution
+		float3 color	= float3(0, 0, 0);
+        specular = 0.0;
+
+		float3 L = normalize(light * objRotation - pt); // find the vector to the light
+		float  NdotL = dot(N, L);			// find the cosine of the angle between light and normal
+
+		if (NdotL > 0.0) {
+			// Diffuse shading
+			diffuse = colorDiffuse + abs(N) * colorSpread;
+			diffuse *= colorLight * NdotL;
+
+			// Phong highlight
+			float3 E = normalize(eye - pt);		// find the vector to the eye
+			float3 R = L - 2.0 * NdotL * N;		// find the reflected vector
+			float  RdE = dot(R,E);
+
+			if (RdE <= 0.0) {
+				specular = specularity * pow(abs(RdE), specularExponent);
+            }
+		} else {
+			diffuse = colorDiffuse * abs(NdotL) * rimLight;
+		}
+
+		return (colorAmbient * colorAmbientIntensity) + diffuse;
+	}
+
+
+	// Define the ray direction from the pixel coordinates
+	float3 rayDirection(float2 p)
+	{
+		float3 direction = float3( 2.0 * aspectRatio * p.x / float(size.x) - aspectRatio,
+								  -2.0 * p.y / float(size.y) + 1.0,
+								  -2.0 * exp(cameraZoom));
+		return normalize(direction * viewRotation * objRotation);
+	}
+
+
+	// Calculate the output colour for each input pixel
+	float4 renderPixel(float2 pixel)
+	{
+		float tmin, tmax;
+		float3 ray_direction = rayDirection(pixel);
+		float4 color;
+        color.rgb = colorBackground.rgb;
+        color.a = colorBackgroundTransparency;
+
+		if (intersectBoundingSphere(eye, ray_direction, tmin, tmax)) {
+			float3 ray = eye + tmin * ray_direction;
+
+			float dist, ao;
+			float min_dist = 4.0;
+			float ray_length = tmin;
+			float eps = MIN_EPSILON;
+
+			// number of raymarching steps scales inversely with factor
+			int max_steps = int(float(stepLimit) / epsilonScale);
+			int i;
+			float f;
+
+			for (i = 0; i < max_steps; ++i) {
+				dist = DE(ray, min_dist);
+
+				// March ray forward
+				f = epsilonScale * dist;
+				ray += f * ray_direction;
+				ray_length += f * dist;
+
+				// Are we within the intersection threshold or completely missed the fractal
+				if (dist < eps || ray_length > tmax) break;
+
+				// Set the intersection threshold as a function of the ray length from the camera
+				eps = max(MIN_EPSILON, pixel_scale * ray_length);
+			}
+
+
+			// Found intersection?
+			if (dist < eps) {
+				ao	= 1.0 - clamp(1.0 - min_dist * min_dist, 0.0, 1.0) * ambientOcclusion;
+
+				if (phong) {
+					float3 normal = estimate_normal(ray, eps/2.0);
+					float specular = 0.0;
+					color.rgb = Phong(ray, normal, specular);
+
+					if (shadows > 0.0) {
+						// The shadow ray will start at the intersection point and go
+						// towards the point light. We initially move the ray origin
+						// a little bit along this direction so that we don't mistakenly
+						// find an intersection with the same point again.
+						float3 light_direction = normalize((light - ray) * objRotation);
+						ray += normal * eps * 2.0;
+
+						float min_dist2;
+						dist = 4.0;
+
+						for (int j = 0; j < max_steps; ++j) {
+							dist = DE(ray, min_dist2);
+
+							// March ray forward
+							f = epsilonScale * dist;
+							ray += f * light_direction;
+
+							// Are we within the intersection threshold or completely missed the fractal
+							if (dist < eps || dot(ray, ray) > bounding * bounding) break;
+						}
+
+						// Again, if our estimate of the distance to the set is small, we say
+						// that there was a hit and so the source point must be in shadow.
+						if (dist < eps) {
+							color.rgb *= 1.0 - shadows;
+						} else {
+							// Only add specular component when there is no shadow
+							color.rgb += specular;
+						}
+					} else {
+						color.rgb += specular;
+					}
+				} else {
+					// Just use the base colour
+					color.rgb = colorDiffuse;
+				}
+
+				ao *= 1.0 - (float(i) / float(max_steps)) * ambientOcclusionEmphasis * 2.0;
+				color.rgb *= ao;
+                color.a = 1.0;
+			}
+		}
+
+		return clamp(color, 0.0, 1.0);
+	}
+
+
+	// Common values used by all pixels
+	void evaluateDependents()
+	{
+		aspectRatio = float(size.x) / float(size.y);
+
+		// Camera orientation
+		float c1 = cos(radians(-cameraRotation.x));
+		float s1 = sin(radians(-cameraRotation.x));
+		float3x3 viewRotationY = float3x3( c1, 0, s1,
+											0, 1, 0,
+										  -s1, 0, c1);
+
+		float c2 = cos(radians(-cameraRotation.y));
+		float s2 = sin(radians(-cameraRotation.y));
+		float3x3 viewRotationZ = float3x3( c2, -s2, 0,
+										   s2, c2, 0,
+											0, 0, 1);
+
+		float c3 = cos(radians(-cameraRotation.z));
+		float s3 = sin(radians(-cameraRotation.z));
+		float3x3 viewRotationX = float3x3( 1, 0, 0,
+										   0, c3, -s3,
+										   0, s3, c3);
+
+		viewRotation = viewRotationX * viewRotationY * viewRotationZ;
+
+		// Object rotation
+		c1 = cos(radians(-rotation.x));
+		s1 = sin(radians(-rotation.x));
+		float3x3 objRotationY = float3x3( c1, 0, s1,
+											0, 1, 0,
+										  -s1, 0, c1);
+
+		c2 = cos(radians(-rotation.y));
+		s2 = sin(radians(-rotation.y));
+		float3x3 objRotationZ = float3x3( c2, -s2, 0,
+										   s2, c2, 0,
+											0, 0, 1);
+
+		c3 = cos(radians(-rotation.z));
+		s3 = sin(radians(-rotation.z));
+		float3x3 objRotationX = float3x3( 1, 0, 0,
+										   0, c3, -s3,
+										   0, s3, c3);
+
+		objRotation = objRotationX * objRotationY * objRotationZ;
+		
+		eye = (cameraPosition + cameraPositionFine);
+		if (eye == float3(0, 0, 0)) eye = float3(0, 0.0001, 0);
+
+		eye *= objRotation;
+
+		// Super sampling
+		sampleStep = 1.0 / float(antialiasing);
+		sampleContribution = 1.0 / pow(float(antialiasing), 2.0);
+		pixel_scale = 1.0 / max(float(size.x), float(size.y));
+	}
+
+
+	// The main loop
+	void evaluatePixel()
+	{
+		float4 color = float4(0, 0, 0, 0);
+
+		if (antialiasing > 1) {
+			// Average antialiasing^2 points per pixel
+			for (float i = 0.0; i < 1.0; i += sampleStep)
+				for (float j = 0.0; j < 1.0; j += sampleStep)
+					color += sampleContribution * renderPixel(float2(outCoord().x + i, outCoord().y + j));
+		} else {
+			color = renderPixel(outCoord());
+		}
+
+		// Return the final color which is still the background color if we didn't hit anything.
+		dst = color;
+	}
+}

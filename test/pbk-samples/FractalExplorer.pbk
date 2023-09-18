@@ -1,0 +1,827 @@
+/**
+ * FractalExplorer.pbk
+ * Last update: 18 July 2009
+ * 
+ * Changelog:
+ *   1.0   - Initial release
+ *   1.0.1 - Fixed an issue with anti-aliasing on a white background
+ *   1.0.2 - Added the iterationColorBlend option to blend higher iterations into the
+ *           background colour to add a feeling of depth.
+ *         - Added a rotate option.
+ *         - Separated out the alpha channel into a separate control for After Effects
+ *           compatibility.
+ * 
+ * 
+ * Copyright (c) 2009 Tom Beddard
+ * http://www.subblue.com
+ * 
+ * For more Flash and PixelBender based generative graphics experiments see:
+ * http://www.subblue.com/blog
+ * 
+ * Licensed under the MIT License: 
+ * http://www.opensource.org/licenses/mit-license.php
+ * 
+ * 
+ * 
+ * What is this?
+ * =======================================
+ * This filter enables you to explore and render Mandelbrot and Julia sets of multiple powers 
+ * in real-time at high resolutions. It can be used in the free Adobe PixelBender Toolkit, 
+ * via the PixelBender plugin for Photoshop CS4 and as a filter in AfterEffects CS4, where you 
+ * can also animate all the parameters too!
+ * 
+ * PixelBender download and installation instructions are available at:
+ * http://labs.adobe.com/technologies/pixelbender/
+ * 
+ * A PDF user guide for this filter and any updates are available at:
+ * http://www.subblue.com/projects/fractal_explorer
+ * 
+ * 
+ * 
+ * Quick start
+ * =======================================
+ * The filter defaults to a specific form of a Julia set discovered by Earl Glynn, which was 
+ * featured in the introduction section of Clifford Picker's book 'Computers and the Imagination'.
+ * 
+ * 1) Change the size sliders to match the pixel size of your current document
+ * 2) Zoom out to see the entire fractal
+ * 3) Change the power and mu parameters to explore different shapes.
+ *    These parameters come from the basic equation: z' = z^power + mu
+ *    Since mu are complex numbers the two sliders correspond to the real and
+ *    imaginary components, e.g. c = a + bi
+ * 4) Check the mandelbrot option to switch from Julia mode to Mandelbrot mode.
+ *    In the Mandelbrot mode the mu slides don't change anything anything as mu is defined 
+ *    explicitly by the pixel coordinates.
+ * 5) The Mandelbrot center preset has three defined areas of interest in the Mandelbrot set.
+ *    Set this back to 0 to enable the manual controls.
+ * 
+ * 
+ * Help
+ * =======================================
+ * I recommend you download the full PDF user guide that has lots of example images explaining 
+ * the parameters:
+ * http://www.subblue.com/projects/fractal_explorer
+ * 
+ * antialiasing:
+ *   Crude oversampling. The number of samples^2 per pixel, so 1, 4 or 9.
+ *   Only increase this value once you are ready for the final rendering.
+ * 
+ * bailout:
+ *   This sets the limit for the fractal calculation to stop at. This can make most difference 
+ *   with some of the bailoutStyle and colorMode settings.
+ * 
+ * bailoutStyle:
+ *   This changes between different methods of calculating the bailout condition to stop 
+ *   the calculation. The bailout, colorScale and colorCycle controls are useful to tweak when 
+ *   changing the bailoutStyle.
+ *   
+ * center & centerFineTune:
+ *   Pan the fractal. The fine tune option is handy for small tweaks especially at large zooms.
+ *   
+ * Center preset:
+ *   Three preset areas of interest in the Mandelbrot set. When greater than 0 the other controls
+ *   apart from zoom and centerFineTune are disabled. Set back to 0 for manual control.
+ *   
+ * color 1 & 2:
+ *   Inside and outside colours. The 3 slider components correspond to red, gree, blue.
+ *   
+ * colorBackground:
+ *   The background colour, RGB.
+ * 
+ * colorAlpha:
+ *   The three channel control sets the alpha value for color1, color2 and colorBackground. The
+ *   control is separate from the colour controls for After Effects compatibility.
+ * 
+ * colorCycle:
+ *   The number of times the colour gradient will repeat across the range of the fractal.
+ * 
+ * colorCycleMirror:
+ *   This will reflect the colour gradient so that it cycles smoothly.
+ * 
+ * colorCycleOffset
+ *   Change the start point for the gradient colouring.
+ * 
+ * colorMode:
+ *   There are 6 different colouring modes that can be used to greatly change the appearance 
+ *   of the fractal.
+ * 
+ * colorScale:
+ *   Controls the strength of the colour mapping from color1 to color2.
+ * 
+ * hsbColor:
+ *   This changes the colour sliders to be hue, saturation and brightness mode instead of RGB.
+ * 
+ * iterations:
+ *   This sets the number of iterations for each pixel before bailout. Increase this to get 
+ *   more detail into the edges of the fractal.
+ *
+ * iterationsOffset:
+ *   This will ignore results that bailout less than this value. It can be useful to reveal 
+ *   details when using negative powers.
+ * 
+ * iterationColorBlend:
+ *   This blends the background colour as a ratio of the current iteration count. It can give the
+ *   impression of depth as the higher iteration count features will be deeper into the fractal.
+ * 
+ * power:
+ *   This is the power that the fractal equation is raised to:
+ *   z' = z^power + mu
+ *   The standard Julia and Mandelbrot sets have an exponent of 2.0
+ * 
+ * powerFineTune:
+ *   For fine tweaking. The most symmetrical results will be achieved with whole number exponents.
+ * 
+ * mandelbrot:
+ *   Switch from the default Julia mode to the standard Mode.
+ *   In Julia mode the mu value is used as the starting point for every pixel whereas in Mandelbrot
+ *   mode mu is derived from the pixel coordinates, so the mu sliders won't do anything here.
+ *
+ * mu & muFineTune:
+ *   These parameter sliders define the real and imaginary parts of the value mu in:
+ *   z' = z^power + mu
+ *   Changing these will give the biggest variety of images. When you hit on something interesting
+ *   use the muFineTune sliders to tweak it more accurately.
+ * 
+ * rotate:
+ *   Rotate the fractal plane around the origin.
+ * 
+ * size:
+ *   Change this to match the pixel size of your document (as PixelBender doesn't know anything
+ *   about the size of the input image)
+ *  
+ * withE:
+ *   Adds e^z to the fractal equation.
+ *   z' = z^power + e^z + mu
+ * 
+ * withPowerZ:
+ *   Adds z^z to the fractal equation.
+ *   z' = z^power + z^z + mu
+ *
+ * withSine:
+ *   Adds sin(z) to the fractal equation.
+ *   z' = z^power + sin(z) + mu
+ * 
+ * zoom:
+ *   An exponential zoom. Zoom too deep and you may get odd looking pixels as the floating point
+ *   used by PixelBender runs out of precision.
+ *   
+ * zoomFineTune:
+ *   Linear zoom for fine tuning, handy when you zoom in a long way.
+ * 
+ * 
+ * 
+ * As loops aren't supported with Hydra code it curently isn't possible to export this
+ * for use in Flash.
+ * 
+ */
+
+<languageVersion : 1.0;>
+
+kernel FractalExplorer
+<   namespace : "com.subblue.filters";
+    vendor : "Tom Beddard";
+    version : 1;
+    description : "Fractal explorer";
+    displayname: "Fractal Explorer"; 
+    category: "Pixel Bender";
+>
+
+#define BAILOUT 4.0
+#define LOG2 float(log(2.0))
+
+// Complex math operations
+//  - only some of these are used by this filter, but they are handy to have around :)
+#define I float2(0.0, 1.0)
+#define complexMult(a,b) float2(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x)
+#define complexMag(z) float(pow(length(z), 2.0))
+#define complexReciprocal(z) float2(z.x / complexMag(z), -z.y / complexMag(z))
+#define complexDivision(a,b) complexMult(a, complexReciprocal(b))
+#define complexArg(z) float(atan(z.y, z.x))
+#define complexLog(z) float2(log(length(z)), complexArg(z))
+#define complexExp(z) float2(exp(z.x) * cos(z.y), exp(z.x) * sin(z.y))
+#define sinh(x) float((exp(x) - exp(-x)) / 2.0)
+#define cosh(x) float((exp(x) + exp(-x)) / 2.0)
+#define complexSin(z) float2(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y))
+#define complexCos(z) float2(cos(z.x) * cosh(z.y), -sin(z.x) * sinh(z.y))
+#define complexTan(z) float2(sin(2.0 * z.x)/(cos(2.0 * z.x) + cosh(2.0 * z.y)), sinh(2.0 * z.y)/(cos(2.0 * z.x) + cosh(2.0 * z.y)))
+#define complexSinh(z) float2(sinh(z.x) * cos(z.y), cosh(z.x) * sin(z.y))
+#define complexCosh(z) float2(cosh(z.x) * cos(z.y), sinh(z.x) * sin(z.y))
+#define complexTanh(z) float2(sinh(2.0 * z.x)/(cosh(2.0 * z.a) + cos(2.0 * z.y)), sin(2.0 * z.y)/(cosh(2.0 * z.x) + cos(2.0 * z.y)))
+#define polar(r,a) float2(cos(a) * r, sin(a) * r)
+#define complexPower(z,p) float2(polar(pow(length(z), float(p)), float(p) * complexArg(z)))
+
+// x^y = exp(y * log(x))
+#define complexPower2(z, p) float2(complexExp(complexMult(p, complexLog(z))))
+
+{
+    output pixel4 dst;
+    
+    parameter int antialiasing
+    <
+        minValue:1;
+        maxValue:3;
+        defaultValue:1;
+		description:"Super sampling quality. Number of samples squared per pixel.";
+    >;
+    
+    parameter float2 center
+    <
+        minValue:float2(-2.0, -2.0);
+        maxValue:float2(2.0, 2.0);
+        defaultValue:float2(0.0, 0.0);
+		description:"The center of the fractal.";
+    >;
+    
+    parameter float2 centerFineTune
+    <
+        minValue:float2(-1.0, -1.0);
+        maxValue:float2(1.0, 1.0);
+        defaultValue:float2(0.0, 0.0);
+		description:"Fine tune the center position.";
+    >;
+    
+    parameter int centerPreset
+    <
+        minValue:0;
+        maxValue:4;
+        defaultValue:0;
+        aeDisplayName: "Mandelbrot center preset";
+        aeUIControl:"aePopup";
+        aePopupString:"Free control|Seahorse tail|Lightning|Spiral|Mini Mandelbrot";
+		description:"Some nice areas to explore in the Mandelbrot set.";
+    >;
+    
+    parameter bool mandelbrot
+    <
+        defaultValue:false;
+		description:"Use the standard Mandelbrot equation.";
+    >;
+    
+    parameter bool withPowerZ
+    <
+        defaultValue:false;
+		description:"Include z^z in the fractal equation";
+    >;
+    
+    parameter bool withSine
+    <
+        defaultValue:false;
+		description:"Include sin(z) in the fractal equation";
+    >;
+    
+    parameter bool withE
+    <
+        defaultValue:false;
+		description:"Include e(z) in the fractal equation";
+    >;
+	
+    parameter float power
+    <
+        minValue:-12.0;
+        maxValue:12.0;
+        defaultValue:3.0;
+		description:"Raise z to the power e in the fractal formula: z' = z^e + mu";
+    >;
+    
+    parameter float powerFineTune
+    <
+        minValue:-0.1;
+        maxValue:0.1;
+        defaultValue:0.0;
+		description:"Fine tune the exponent.";
+    >;
+
+    parameter float2 mu
+    <
+        minValue:float2(-1.0, -1.0);
+        maxValue:float2(1.0, 1.0);
+        defaultValue:float2(0.42, 0.0);
+		description:"The complex parameter of the fractal formula: z' = z^e + mu";
+    >;
+    
+    parameter float2 muFineTune
+    <
+        minValue:float2(-0.01, -0.01);
+        maxValue:float2(0.01, 0.01);
+        defaultValue:float2(0.0, 0.0);
+		description:"Fine tune mu.";
+    >;
+    
+    parameter int bailoutStyle
+    <
+        minValue:0;
+        maxValue:3;
+        defaultValue:0;
+        aeDisplayName: "Bailout style";
+        aeUIControl:"aePopup";
+        aePopupString:"Smooth|Spiky|Stalks|Swirls";
+		description:"Changes the style of the bailout effect.";
+    >;
+
+    parameter float bailout
+    <
+        minValue:2.0;
+        maxValue:150.0;
+        defaultValue:4.0;
+		description:"Bailout threshold.";
+    >;
+	
+    parameter int iterations
+    <
+        minValue:1;
+        maxValue:300;
+        defaultValue:70;
+		description:"The maximum number of iterations for each pixel before bailout. Use to increase detail at the fractal edges.";
+    >;
+    
+    parameter int iterationsOffset
+    <
+        minValue:0;
+        maxValue:150;
+        defaultValue:0;
+        description:"Offset the start of the iteration count";
+    >;
+	
+    parameter int colorMode
+    <
+        minValue:0;
+        maxValue:5;
+        defaultValue:0;
+        aeDisplayName: "Colouring mode";
+        aeUIControl:"aePopup";
+        aePopupString:"Smooth|Shelf banding|Solid banding|Binary deconvolution|Contour bands|Spikes";
+		description:"Different colouring modes";
+    >;
+	
+    parameter bool hsbColor
+    <
+        defaultValue:false;
+		description:"Use hue, saturation, brightness colouring.";
+    >;
+
+    parameter pixel3 color1
+    <
+        minValue:pixel3(0.0, 0.0, 0.0);
+        maxValue:pixel3(1.0, 1.0, 1.0);
+        defaultValue:pixel3(1.0, 1.0, 1.0);
+		description:"The outer colour.";
+        aeUIControl: "aeColor";
+    >;
+    
+    parameter pixel3 color2
+    <
+        minValue:pixel3(0.0, 0.0, 0.0);
+        maxValue:pixel3(1.0, 1.0, 1.0);
+        defaultValue:pixel3(0.0, 0.28, 0.46);
+		description:"The inner colour.";
+        aeUIControl: "aeColor";
+    >;
+    
+    parameter pixel3 colorBackground
+    <
+        minValue:pixel3(0.0, 0.0, 0.0);
+        maxValue:pixel3(1.0, 1.0, 1.0);
+        defaultValue:pixel3(0.0, 0.0, 0.0);
+		description:"The background colour.";
+        aeUIControl: "aeColor";
+    >;
+    
+    parameter float colorCycle
+    <
+        minValue:1.0;
+        maxValue:10.0;
+        defaultValue:1.0;
+		description:"The number of times the colour gradient repeats.";
+    >;
+    
+    parameter float colorCycleOffset
+    <
+        minValue:0.0;
+        maxValue:1.0;
+        defaultValue:0.0;
+		description:"Shift the colour mapping.";
+    >;
+    
+    parameter bool colorCycleMirror
+    <
+        defaultValue:true;
+		description:"Reflect the colour gradient or use abrupt steps.";
+    >;
+    
+    
+    parameter float colorScale
+    <
+        minValue:1.0;
+        maxValue:20.0;
+        defaultValue:3.0;
+		description:"Determines the mapping scale of the colour.";
+    >;
+    
+	parameter float3 colorAlpha
+	<
+		minValue:float3(0.0, 0.0, 0.0);
+        maxValue:float3(1.0, 1.0, 1.0);
+        defaultValue:float3(1.0, 1.0, 1.0);
+		description:"Separate alpha controls for color1, color2 and colorBackground for AfterEffects support.";
+	>;
+	
+    parameter float iterationColorBlend
+    <
+        minValue:0.0;
+        maxValue:1.0;
+        defaultValue:0.0;
+		description:"Add the illusion of depth by blending subsequent iterations into the background.";
+    >;
+	
+    parameter float rotate
+    <
+        minValue:-180.0;
+        maxValue:180.0;
+        defaultValue:0.0;
+		description:"Rotate the fractal.";
+    >;
+
+    parameter int2 size
+    <
+        minValue:int2(100, 100);
+        maxValue:int2(4096, 4096);
+        defaultValue:int2(640, 480);
+		description:"The size of the rendered fractal.";
+    >;
+
+    parameter float zoom
+    <
+        minValue:-2.0;
+        maxValue:13.0;
+        defaultValue:0.1;
+		description:"Primary zoom.";
+    >;
+    
+    parameter float zoomFineTune
+    <
+        minValue:-1.0;
+        maxValue:1.0;
+        defaultValue:0.0;
+		description:"Fine tune the zoom.";
+    >;
+    
+    
+    region generated()
+    {
+        return region(float4(0, 0, size.x, size.y));
+    }
+    
+    
+    // RGB to HSV
+    // http://www.easyrgb.com/index.php?X=MATH&H=20#text20
+    float3 rgb2hsv(pixel4 color)
+    {
+        float rgb_min = min(color.r, min(color.g, color.b));
+        float rgb_max = max(color.r, max(color.g, color.b));
+        float rgb_delta = rgb_max - rgb_min;
+        
+        float v = rgb_max;
+        float h, s;
+        
+        if (rgb_delta == 0.0) {
+            // Grey
+            h = 0.0;
+            s = 0.0;
+        } else {
+            // Colour
+            s = rgb_delta / rgb_max;
+            float r_delta = (((rgb_max - color.r) / 6.0) + (rgb_delta / 2.0)) / rgb_delta;
+            float g_delta = (((rgb_max - color.g) / 6.0) + (rgb_delta / 2.0)) / rgb_delta;
+            float b_delta = (((rgb_max - color.b) / 6.0) + (rgb_delta / 2.0)) / rgb_delta;
+            
+            if (color.r == rgb_max) {
+                h = b_delta - g_delta;
+            } else if (color.g == rgb_max) {
+                h = 1.0/3.0 + r_delta - b_delta;
+            } else if (color.b == rgb_max) {
+                h = 2.0/3.0 + g_delta - r_delta;
+            }
+            
+            if (h < 0.0) h += 1.0;
+            if (h > 1.0) h -= 1.0;
+        }
+        
+        return float3(h, s, v);
+    }
+    
+    
+    pixel4 hsv2rgb(float3 hsv)
+    {
+        float h, s, v, r, g, b, j, p, q, t;
+        int i;
+        pixel4 color;
+        
+        h = hsv.x;
+        s = hsv.y;
+        v = hsv.z;
+        if (h == 1.0) h = 0.0;
+        
+        if (v == 0.0) {
+            // No brightness so return black
+            color = pixel4(0.0, 0.0, 0.0, 1.0);
+            
+        } else if (s == 0.0) {
+            // No saturation so return grey
+            color = pixel4(v, v, v, 1.0);
+            
+        } else {
+			// RGB color
+            h *= 6.0;
+			i = int(h);
+			j = h - float(i);
+			p = v * (1.0 - s);
+			q = v * (1.0 - (s * j));
+			t = v * (1.0 - (s * (1.0 - j)));
+			
+			if (i == 0) {
+				r = v;
+				g = t;
+				b = p;
+			} else if (i == 1) {
+				r = q;
+				g = v;
+				b = p;
+			} else if (i == 2) {
+				r = p;
+				g = v;
+				b = t;
+			} else if (i == 3) {
+				r = p;
+				g = q;
+				b = v;
+			} else if (i == 4) {
+				r = t;
+				g = p;
+				b = v;
+			} else if (i == 5) {
+				r = v;
+				g = p;
+				b = q;
+			}
+			color = pixel4(r, g, b, 1.0);
+		}
+        
+        return color;
+    }
+    
+    
+    // Calculations common to all pixels
+    dependent float x1, x2, y1, zoomFactor, spanX, spanY, sampleStep, sampleContribution;
+    dependent float exponent_power, log2Bailout, logPower;
+    dependent float2 scale;
+    dependent bool mandelbrotMode;
+    dependent int minIterations;
+    dependent float2x2 rotation;
+    dependent pixel4 color_1, color_2, color_background;
+    
+    void evaluateDependents()
+    {
+        float x0 = center.x;
+        float y0 = center.y;
+        
+        minIterations = iterationsOffset >= iterations ? iterations - 1 : iterationsOffset;
+        
+        // Use a center preset to find some interesting parts of the Mandelbrot set
+        if (centerPreset > 0) {
+            exponent_power = 2.0 + powerFineTune;
+            mandelbrotMode = true;
+        } else {
+            exponent_power = power + powerFineTune;
+            if (exponent_power == 0.0) exponent_power = 0.1;
+            mandelbrotMode = mandelbrot;
+        }
+        
+        if (centerPreset == 1) {
+            x0 = -0.742522478103764;
+            y0 = -0.143708014488453;
+        } else if (centerPreset == 2) {
+            x0 = 0.36295341867850555;
+            y0 = -0.6455617463848476;
+        } else if (centerPreset == 3) {
+            x0 = 0.3218759918211005;
+            y0 = 0.03518083572368085;
+        } else if (centerPreset == 4) {
+            x0 = -1.673497088962531;
+            y0 = -0.0003318667941149705;
+        }
+        
+        // Set min and max limits for x and y in the complex plane
+        zoomFactor = exp(zoom + zoomFineTune);
+        x1 = x0 - (2.0 / zoomFactor);
+        x2 = x0 + (2.0 / zoomFactor);
+        
+        spanX = x2 - x1;
+        spanY = spanX * (float(size.y) / float(size.x));
+        y1 = y0 - spanY / 2.0;
+        
+        x1 += centerFineTune.x * spanX;
+        y1 += centerFineTune.y * spanY;
+        
+        if (rotate != 0.0) {
+            float rc = cos(radians(rotate));
+            float rs = sin(radians(rotate));
+            rotation = float2x2(rc, rs, -rs, rc);
+            float2 xy = float2(x1, y1) * rotation;
+            x1 = xy.x;
+            y1 = xy.y;
+        }
+        
+        scale = float2(spanX / float(size.x), spanY / float(size.y));
+        
+        // Precalcuations for specific colouring modes
+        if (colorMode < 2) {
+            log2Bailout = log(2.0 * log(bailout));
+            logPower = log(abs(exponent_power));
+        }
+        
+        // Define colours
+        color_1 = pixel4(color1.r, color1.g, color1.b, colorAlpha.x);
+        color_2 = pixel4(color2.r, color2.g, color2.b, colorAlpha.y);
+        color_background = pixel4(colorBackground.r, colorBackground.g, colorBackground.b, colorAlpha.z);
+        
+        // Super sampling
+        sampleStep = 1.0 / float(antialiasing);
+        sampleContribution = 1.0 / pow(float(antialiasing), 2.0);
+    }
+    
+    
+    bool bailoutCondition(float2 z)
+    {
+        bool bailing;
+        
+        if (bailoutStyle == 3) {
+            bailing = (pow(z.x, 2.0) - pow(z.y, 2.0)) >= bailout ? true : false;
+        } else if (bailoutStyle == 4) {
+            bailing = (z.x * z.x - z.y * z.x) >= bailout ? true : false;
+        } else if (bailoutStyle == 5) {
+            bailing = (z.y * z.y - z.y * z.x) >= bailout ? true : false;
+        } else if (bailoutStyle == 2) {
+            bailing = (pow(z.y, 2.0) - pow(z.x, 2.0)) >= bailout ? true : false;
+        } else if (bailoutStyle == 1) {
+            bailing = (abs(z.x) > bailout || abs(z.y) > bailout) ? true : false;
+        } else {
+            bailing = (pow(z.x, 2.0) + pow(z.y, 2.0)) >= bailout ? true : false;
+        }
+        return bailing;
+    }
+    
+    
+    pixel4 colorMapping(float n, float2 z)
+    {
+        pixel4 color, c1, c2;
+        float v = abs(1.0 - (n - float(iterationsOffset)) / float(iterations - iterationsOffset));
+        float v0 = v;
+        
+        if (hsbColor && colorMode > 0) {
+            c1 = hsv2rgb(float3(color_1.x, color_1.y, color_1.z));
+            c2 = hsv2rgb(float3(color_2.x, color_2.y, color_2.z));
+        } else {
+            c1 = color_1;
+            c2 = color_2;
+        }
+        
+        if (colorMode == 3) {
+            color = atan(z.y, z.x) > 0.0 ? c1 : c2;
+        } else if (colorMode == 4) {
+            color = mod(n, 2.0) == 0.0 ? c1 : c2;
+        } else if (colorMode == 5) {
+            color = abs(z.x) < bailout / 2.0 || abs(z.y) < bailout / 2.0 ? c1 : c2;
+        } else {
+            if (colorMode != 2) {
+                // Smooth colouring
+                // From: http://en.wikipedia.org/wiki/Mandelbrot_set#Continuous_.28smooth.29_coloring
+                float vp = (log2Bailout - log(log(abs(length(z))))) / logPower;
+                float v1 = abs(1.0 - (n + 1.0 - float(iterationsOffset)) / float(iterations - iterationsOffset));
+                
+                if (colorMode == 1) {
+                    if (n == 0.0) {
+                        v = v - (v - v1) * abs(vp);
+                    } else {
+                        v = v1 - (v1 - v) * abs(vp);
+                    }
+                } else {
+                    v = v + (v1 - v) * abs(vp);
+                }
+                
+                if (v >= 0.0) {
+                    // Do nothing
+                } else {
+                    // Fix invalid value
+                    if (v1 >= 0.0) {
+                        v = v1;
+                    } else if (v0 >= 0.0) {
+                        v = v0;
+                    } else {
+                        v = 0.0;
+                    }
+                }
+            }
+            
+            if (colorMode == 2 && n == 0.0) v = 1.0;
+            if (colorScale > 1.0) v = pow(v, colorScale);
+            if (colorCycle > 1.0) v *= colorCycle;
+            v += colorCycleOffset;
+            
+            if (colorCycleMirror) {
+                bool even = mod(v, 2.0) < 1.0 ? true : false;
+                if (even) {
+                    v = 1.0 - mod(v, 1.0);
+                } else {
+                    v = mod(v, 1.0);
+                }
+            } else {
+                v = 1.0 - mod(v, 1.0);
+            }
+            
+            if (hsbColor) {
+                color = hsv2rgb(mix(float3(c1.x, c1.y, c1.z), float3(c2.x, c2.y, c2.z), v));
+            } else {
+               color = mix(c1, c2, v);
+            }
+        }
+        return color;
+    }
+    
+    
+    /**
+     *  Standard formula
+     *	z' = z^e + mu
+     *  
+     *  Julia:      mu = a + bi which is the same for all points
+     *  Mandelbrot: e = 2.0, mu = x + yi where x and y are derived from the pixel coordinates
+     *  Glynn:      e = 1.5, mu = -0.2 + 0i
+     */
+    pixel4 renderPoint(float2 p)
+    {
+        pixel4 color = color_background;
+        float2 z0;
+        float2 z;
+        
+        if (rotate != 0.0) {
+            z = float2(x1, y1) + p * scale * rotation;
+        } else {
+            z = float2(x1, y1) + p * scale;
+        }
+        
+        float2 c = mandelbrotMode ? z : (mu + muFineTune);
+        float  e = exponent_power;
+        float blend = 1.0;
+        int    n = 0;
+        
+        while (n < iterations) {
+            z0 = complexPower(z, e);
+            if (withPowerZ) z0 += complexPower2(z, z);
+            if (withSine)   z0 += complexSin(z);
+            if (withE)      z0 += complexExp(z);
+            z = z0 + c;
+            
+            if (n >= minIterations && bailoutCondition(z)) {
+                // Set the pixel colour based on the number of iterations it takes to reach the bailout threshold
+                color = colorMapping(float(n), z);
+                break;
+            }
+            
+            n += 1;
+        }
+        
+        // Fill inner
+        //if (n == iterations) {
+        //    color = (1.0 - length(z)) * color1;
+        //}
+        
+        // Prevent edge case of invalid color value
+        if (color.x >= 0.0) {
+            color = mix(color_background, color, color.a);
+        } else {
+            color = color_background;
+        }
+        
+        if (iterationColorBlend > 0.0) blend = clamp(1.0 - (float(n - minIterations) / float(iterations - minIterations)) * iterationColorBlend, 0.0, 1.0);
+        color = mix(color_background, color, color.a * blend);
+        
+        return color;
+    }
+    
+    
+    void
+    evaluatePixel()
+    {
+        pixel4 c = pixel4(0.0, 0.0, 0.0, 0.0);
+        
+        if (antialiasing > 1) {
+            // Average detailSuperSample^2 points per pixel
+            for (float i = 0.0; i < 1.0; i += sampleStep)
+                for (float j = 0.0; j < 1.0; j += sampleStep)
+                    c += sampleContribution * renderPoint(float2(outCoord().x + i, outCoord().y + j));
+        } else {
+           c = renderPoint(outCoord());
+        }
+        
+        dst = c;
+    }
+}

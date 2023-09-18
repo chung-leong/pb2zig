@@ -1,0 +1,4689 @@
+<languageVersion : 1.0;>
+
+kernel JuliaRaytracer
+<   namespace : "derschmale.com";
+    vendor : "Der Schmale";
+    version : 1;
+    description : "Raytraces a Quaternion Julia set";
+>
+{
+    input image3 inputUsedToTest;       // just to test in the toolkit
+    output pixel4 dst;
+    
+    parameter float width < defaultValue: 800.0; >;
+    parameter float height < defaultValue: 600.0; >;
+    
+    parameter float4 c <    minValue: float4(-1.0, -1.0, -2.0, -0.5);
+                            maxValue: float4(1.0, 1.0, 2.0, 0.5);
+                            defaultValue: float4(-0.4, -0.68, -0.36, -0.04); >;
+    parameter float w < minValue: -1.0; maxValue: 1.0; defaultValue: .0; >;
+    parameter float camDistance < minValue: 0.0; maxValue: 10.0; defaultValue: 3.0; >;
+    parameter float rotationY < minValue: -5.0; maxValue: 5.0; defaultValue: 0.0; >;
+    
+    void evaluatePixel()
+    {
+        float3 pos, tdir, dir;
+        float2 coord = outCoord();
+        float3 tlight = float3(.57735, .57735, .57735);
+        float3 light;
+                                    
+        // create ray, based on focal length 1.5
+        tdir.x = coord.x/width - .5;
+        tdir.y = (coord.y/height - .5)*.75;
+        tdir.z = .75;
+        tdir /= length(tdir);
+        float3 tpos = tdir;
+        tpos.z -= camDistance;
+        
+        float cr = cos(rotationY);
+        float sr = sin(rotationY);
+        
+        // cos      0       sin
+        //  0       1        0
+        // -sin     0       cos
+        pos.x = tpos.x * cr + tpos.z*sr;
+        pos.y = tpos.y;
+        pos.z = tpos.z*cr - tpos.x * sr;
+        dir.x = tdir.x * cr + tdir.z*sr;
+        dir.y = tdir.y;
+        dir.z = tdir.z*cr - tdir.x * sr;
+        
+        light.x = tlight.x * cr + tlight.z*sr;
+        light.y = tlight.y;
+        light.z = tlight.z*cr - tlight.x * sr;
+        
+        // calculate distance to julia set
+        float4 z;
+        float t;
+        float4 zn;
+        float4 dz;
+        float4 dzn;
+        float len; 
+        float len2;
+        float dist;
+        
+        
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+        
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+        
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+        
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+        
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+        
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+    
+    dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        len = length(z);
+        len2 = length(dz);
+        dist = len/(2.0*len2)*log2(len);
+        
+        pos += dist*dir;
+        
+        float eps = .0001;
+        float3 r = pos + float3(eps, .0, .0);
+        float3 b = pos + float3(.0, eps, .0);
+        float3 f = pos + float3(.0, .0, eps);
+        
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = pos;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        len = length(z);
+        len2 = length(dz);
+        float dc = len/(2.0*len2)*log2(len);
+        
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = r;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        len = length(z);
+        len2 = length(dz);
+        float dr = len/(2.0*len2)*log2(len);
+        
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = b;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        len = length(z);
+        len2 = length(dz);
+        float db = len/(2.0*len2)*log2(len);
+        
+        dz = float4(1.0, 0.0, 0.0, 0.0);
+        
+        z.xyz = f;
+        z.w = w;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        
+        //zn = z^2.0  + c
+        zn.x = z.x*z.x - z.y*z.y - z.z*z.z - z.w*z.w;
+        t = 2.0*z.x;
+        zn.y = t * z.y;
+        zn.z = t * z.z;
+        zn.w = t * z.w;
+        zn += c;
+        
+        // dzn = 2*z*dz
+        dzn.x = z.x * dz.x - z.y * dz.y - z.z * dz.z - z.w * dz.w;
+        dzn.y = z.x * dz.y + z.y * dz.x + z.z * dz.w - z.w * dz.z; 
+        dzn.z = z.x * dz.z - z.y * dz.w + z.z * dz.x + z.w * dz.y;
+        dzn.w = z.x * dz.w + z.y * dz.z - z.z * dz.y + z.w * dz.x;
+        dzn *= 2.0;
+        z = zn;
+        dz = dzn;
+        len = length(z);
+        len2 = length(dz);
+        float df = len/(2.0*len2)*log2(len);
+        
+        float3 normal = float3(dr-dc, db-dc, df-dc);
+        normal /= length(normal);
+        
+        float diffuse = -dot(normal, light);
+        if (diffuse < 0.0) diffuse = 0.0;
+        
+        float3 halfVec = (dir + light);
+        halfVec /= length(halfVec);
+        float specular = -dot(halfVec, normal);
+        if (specular < 0.0) specular = 0.0;
+        specular = pow(specular, 150.0);
+        
+        float3 color = float3(.4, 0.2, 1.0);
+        
+        tpos.z = pos.z*cr + pos.x * sr;
+        
+        dst.xyz = (color*diffuse + float3(1.0, 1.0, .5)*specular + float3(0.05, 0.025, 0.025));
+        dst.xyz *= clamp(0.0, 1.5, -tpos.z*.5 + .3);
+        
+        if (dc > .2) dst.a = 0.0;
+        else dst.a = 1.0-dc*5.0;
+        dst.xyz *= dst.a;
+    }
+}
