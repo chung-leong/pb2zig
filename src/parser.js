@@ -84,6 +84,8 @@ const T = {
 
   Input: createToken({ name: 'Input', pattern: /input\b/ }),
   Output: createToken({ name: 'Output', pattern: /output\b/ }),
+  Const: createToken({ name: 'Const', pattern: /const\b/ }),
+  Dependent: createToken({ name: 'Dependent', pattern: /dependent\b/ }),
   In: createToken({ name: 'In', pattern: /in\b/ }),
   Out: createToken({ name: 'Out', pattern: /out\b/ }),
   Kernel: createToken({ name: 'Kernel', pattern: /kernel\b/ }),
@@ -160,17 +162,12 @@ export class PixelBenderParser extends CstParser {
     })
     $.RULE('kernelStatement', () => {
       $.OR([
-        { ALT: () => $.SUBRULE($.comment) },
         { ALT: () => $.SUBRULE($.parameterDeclaration) },
         { ALT: () => $.SUBRULE($.inputDeclaration) },
         { ALT: () => $.SUBRULE($.outputDeclaration) },
         { ALT: () => $.SUBRULE($.functionDeclaration) },
-      ])
-    })
-    $.RULE('comment', () => {
-      $.OR([
-        { ALT: () => $.CONSUME(T.Comment) },
-        { ALT: () => $.CONSUME(T.MultilineComment) },
+        { ALT: () => $.SUBRULE($.constantDeclaration) },
+        { ALT: () => $.SUBRULE($.dependentDeclaration) },
       ])
     })
     $.RULE('parameterDeclaration', () => {
@@ -250,7 +247,8 @@ export class PixelBenderParser extends CstParser {
     $.RULE('statement', () => {
       $.OR([
         { ALT: () => $.SUBRULE($.statementBlock) },
-        { ALT: () => $.SUBRULE($.variableDelcaration) },
+        { ALT: () => $.SUBRULE($.variableDeclaration) },
+        { ALT: () => $.SUBRULE($.constantDeclaration) },
         { ALT: () => $.SUBRULE($.expressionStatement) },
         { ALT: () => $.SUBRULE($.ifStatement) },
         { ALT: () => $.SUBRULE($.whileStatement) },
@@ -261,7 +259,7 @@ export class PixelBenderParser extends CstParser {
         { ALT: () => $.SUBRULE($.emptyStatement) },
       ])
     })
-    $.RULE('variableDelcaration', () => {
+    $.RULE('variableDeclaration', () => {
       $.SUBRULE($.type)
       $.AT_LEAST_ONE_SEP({
         SEP: T.Comma,
@@ -269,7 +267,32 @@ export class PixelBenderParser extends CstParser {
       })
       $.CONSUME(T.Semicolon)
     })
+    $.RULE('constantDeclaration', () => {
+      $.CONSUME(T.Const),
+      $.SUBRULE($.type)
+      $.AT_LEAST_ONE_SEP({
+        SEP: T.Comma,
+        DEF: () => $.SUBRULE($.identifierWithMandatoryInit),
+      })
+      $.CONSUME(T.Semicolon)
+    })
+    $.RULE('dependentDeclaration', () => {
+      $.CONSUME(T.Dependent),
+      $.SUBRULE($.type)
+      $.AT_LEAST_ONE_SEP({
+        SEP: T.Comma,
+        DEF: () => $.CONSUME(T.Identifier),
+      })
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('identifierWithInit', () => {
+      $.CONSUME(T.Identifier),
+      $.OPTION(() => {
+        $.CONSUME(T.Equal)
+        $.SUBRULE($.expression)
+      })
+    })
+    $.RULE('identifierWithMandatoryInit', () => {
       $.CONSUME(T.Identifier),
       $.OPTION(() => {
         $.CONSUME(T.Equal)
@@ -427,21 +450,21 @@ export const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 export function parse(code) {
   const lexResult = lexer.tokenize(code)
   const macroCSTs = [];
-  const lexErrors = {};
-  const parseErrors = {};
+  const lexErrors = [];
+  const parseErrors = [];
   for (const token of lexResult.groups.preprocessor) {
     let m;
     if (m = /#\s*define\s+(.*)/.exec(token.image)) {
       const macro = parseMacro(m[1]);
       macroCSTs.push(macro.cst);
-      Object.assign(lexErrors, macro.lexErrors);
-      Object.assign(parseErrors, macro.parseErrors);
+      lexErrors.push(...macro.lexErrors);
+      parseErrors.push(...macro.parseErrors);
     }
   }
   parser.input = lexResult.tokens
   const cst = parser.pbk();
-  Object.assign(lexErrors, lexResult.errors);
-  Object.assign(parseErrors, parser.errors);
+  lexErrors.push(...lexResult.errors);
+  parseErrors.push(...parser.errors);
   return { cst, macroCSTs, lexErrors, parseErrors };
 }
 

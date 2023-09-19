@@ -11,7 +11,8 @@ export function convertPixelBender(code) {
       msgs.push(`   [LEXER]: ${err.message}`);
     }
     for (const err of parseErrors) {
-      msgs.push(`  [PARSER]: ${err.message}`);
+      const { message, token: { startLine, startColumn } } = err;;
+      msgs.push(`  [PARSER]: ${message} at line ${startLine}, column ${startColumn}`);
     }
     const s = (errCount > 1) ? 's' : '';
     throw new Error(`${errCount} error${s} encountered parsing Pixel Bender code:\n\n${msgs.join('\n')}`);

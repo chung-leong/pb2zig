@@ -222,7 +222,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     return this.visitAny(ctx);
   }
 
-  variableDelcaration(ctx) {
+  variableDeclaration(ctx) {
     const type = this.visit(ctx.type);
     const list = [];
     for (const node of ctx.identifierWithInit) {
@@ -233,10 +233,36 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     return list;
   }
 
+  constantDeclaration(ctx) {
+    const type = this.visit(ctx.type);
+    const list = [];
+    for (const node of ctx.identifierWithMandatoryInit) {
+      const decl = this.visit(node);
+      decl.type = type;
+      list.push(decl);
+    }
+    return list;
+  }
+
+  dependentDeclaration(ctx) {
+    const type = this.visit(ctx.type);
+    const list = [];
+    for (const node of ctx.Identifier) {
+      console.log(node);
+    }
+    return list;
+  }
+
   identifierWithInit(ctx) {
     const name = this.name(ctx.Identifier);
     const initializer = this.visit(ctx.expression);
     return this.create(N.VariableDeclaration, { name, initializer });
+  }
+
+  identifierWithMandatoryInit(ctx) {
+    const name = this.name(ctx.Identifier);
+    const initializer = this.visit(ctx.expression);
+    return this.create(N.ConstantDeclaration, { name, initializer });
   }
 
   expression(ctx) {
@@ -373,11 +399,6 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   emptyStatement(ctx) {
     return this.create(N.EmptyStatement, { expression });
-  }
-
-  comment(ctx) {
-    const text = this.name(ctx.Comment);
-    return this.create(N.Comment, { text });
   }
 }
 

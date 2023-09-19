@@ -16,7 +16,6 @@ export class PixelBenderToZigTranslator {
     this.reset();
     this.ast = ast;
     this.macroASTs = macroASTs;
-    console.log(macroASTs);
     this.addMetadata();
     this.addImports();
     this.addKernel();
@@ -28,7 +27,7 @@ export class PixelBenderToZigTranslator {
     this.lines = [ '' ];
     this.indent = 0;
     this.scopeStack = [];
-    this.scope = null;
+    this.scope = {};
     this.functionArgTypes = { ...builtInfunctionArgTypes };
     this.macros = {};
     this.ast = null;
@@ -110,6 +109,10 @@ export class PixelBenderToZigTranslator {
       throw new Error(`Undefined variable: ${name}`);
     }
     return type;
+  }
+
+  hasVariable(name) {
+    return !!this.scope[name];
   }
 
   setFunctionArgs(name, argTypes) {
@@ -237,7 +240,7 @@ export class PixelBenderToZigTranslator {
     this.add(`return struct {`);
     this.addParameterFields();
     this.addInputFields();
-    this.add(``);
+    this.addConstants();
     this.addCalledFunctions();
     this.addDefinedFunctions();
     this.add(`};`);
@@ -275,6 +278,7 @@ export class PixelBenderToZigTranslator {
         this.add(`${name}: std.meta.fieldInfo(InputStruct, .src).type,`);
        }
     }
+    this.add(``);
   }
 
   addProcessFunctions() {
@@ -345,6 +349,53 @@ export class PixelBenderToZigTranslator {
     }
   }
 
+  addConstants() {
+    // look for function definition so we don't scan into them
+    const decls = this.find([ N.ConstantDeclaration, N.FunctionDefinition ]).filter(d => d instanceof N.ConstantDeclaration);
+    // convert macros without dependencies on unknown variables into constants
+    for (const macro of this.macroASTs) {
+      if (!macro.args && !this.isExpansionNecessary(macro)) {
+        const statement = new N.ConstantDeclaration;
+        statement.name = macro.name;
+        statement.initializer = macro.expression;
+        decls.push(statement);
+      }
+    }
+    if (decls.length > 0) {
+      this.add(`// constants`);
+      for (const decl of decls) {
+        this.addStatement(decl);
+      }
+      this.add(``);
+    }
+  }
+
+  isExpansionNecessary(macro) {
+    let necessary = false;
+    this.walk(macro, (node) => {
+      if (node instanceof N.VariableAccess) {
+        const [ name ] = node.names;
+        if (macro.args?.includes(name) || this.hasVariable(name))  {
+          return;
+        } else {
+          necessary = true;
+          return false;
+        }
+      }
+    });
+    return necessary;
+  }
+
+  addDependentVariables() {
+    const decls = this.find(N.DependentDeclaration);
+    for (const [ index, decl ] of decls.entries()) {
+      if (index === 0) {
+        this.add(`// dependent variables`);
+      }
+      this.addStatement(decl);
+    }
+  }
+
   addDefinedFunction(def) {
     const { name, type, args, statements } = def;
     this.startScope();
@@ -399,13 +450,19 @@ export class PixelBenderToZigTranslator {
     }
   }
 
-  addComment({ text }) {
-    this.add(text);
-  }
-
   addVariableDeclaration({ type, name, initializer }) {
     const valueR = (initializer) ? this.translateExpression(initializer, type) : 'undefined';
     this.add(`var ${name}: ${getZigType(type)} = ${valueR};`);
+    this.setVariableType(name, type);
+  }
+
+  addConstantDeclaration({ type, name, initializer }) {
+    const valueR = this.translateExpression(initializer, type);
+    if (type) {
+      this.add(`const ${name}: ${getZigType(type)} = ${valueR};`);
+    } else {
+      this.add(`const ${name} = ${valueR};`);
+    }
     this.setVariableType(name, type);
   }
 
@@ -632,6 +689,9 @@ class Expression {
 }
 
 function getZigType(type) {
+  if (type === undefined) {
+    return undefined;
+  }
   if (type.startsWith('pixel')) {
     type = `float` + type.slice(-1);
   }

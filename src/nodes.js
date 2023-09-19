@@ -34,6 +34,17 @@ export class VariableDeclaration {
   initializer;
 }
 
+export class ConstantDeclaration {
+  type;
+  name;
+  initializer;
+}
+
+export class DependentDeclaration {
+  type;
+  name;
+}
+
 export class InputDeclaration  {
   type;
   name;
