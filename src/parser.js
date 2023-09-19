@@ -103,11 +103,7 @@ const T = {
   Identifier: createToken({ name: 'Identifier', pattern: /[_a-zA-Z][_0-9a-zA-Z]*/ }),
 };
 
-const allTokens = Object.values(T);
-
-const lexer = new Lexer(allTokens);
-
-class PixelBenderParser extends CstParser {
+export class PixelBenderParser extends CstParser {
   constructor() {
     super(allTokens)
     const $ = this;
@@ -221,6 +217,18 @@ class PixelBenderParser extends CstParser {
       $.CONSUME(T.RParen)
       $.SUBRULE($.statementBlock)
     })
+    $.RULE('macroDeclaration', () => {
+      $.CONSUME(T.Identifier)
+      $.OPTION(() => {
+        $.CONSUME(T.LParen)
+        $.MANY_SEP({
+          SEP: T.Comma,
+          DEF: () => $.SUBRULE($.typelessArgumentDeclaration),
+        })
+        $.CONSUME(T.RParen)
+      })
+      $.SUBRULE($.expression)
+    })
     $.RULE('returnType', () => {
       $.OR([
         { ALT: () => $.CONSUME(T.Void) },
@@ -229,6 +237,9 @@ class PixelBenderParser extends CstParser {
     })
     $.RULE('argumentDeclaration', () => {
       $.SUBRULE($.type)
+      $.CONSUME(T.Identifier)
+    })
+    $.RULE('typelessArgumentDeclaration', () => {
       $.CONSUME(T.Identifier)
     })
     $.RULE('statementBlock', () => {
@@ -407,38 +418,40 @@ class PixelBenderParser extends CstParser {
     this.performSelfAnalysis()
   }
 }
-const parser = new PixelBenderParser();
 
+const allTokens = Object.values(T);
+const lexer = new Lexer(allTokens);
+const parser = new PixelBenderParser();
 export const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 
-export function parse(text) {
-  const lexResult = lexer.tokenize(text)
-  const macros = {};
+export function parse(code) {
+  const lexResult = lexer.tokenize(code)
+  const macroCSTs = [];
+  const lexErrors = {};
+  const parseErrors = {};
   for (const token of lexResult.groups.preprocessor) {
     let m;
-    if (m = /#\s*define (\w+)\s*\((.*?)\)\s+(.*)/.exec(token.image)) {
-      const name = m[1];
-      const args = m[2].split(',').filter(a => !!a);
-      const expression = parseMacro(m[3]);
-      macros[name] = { args, expression };
+    if (m = /#\s*define\s+(.*)/.exec(token.image)) {
+      const macro = parseMacro(m[1]);
+      macroCSTs.push(macro.cst);
+      Object.assign(lexErrors, macro.lexErrors);
+      Object.assign(parseErrors, macro.parseErrors);
     }
   }
   parser.input = lexResult.tokens
-  return {
-    cst: parser.pbk(),
-    lexErrors: lexResult.errors,
-    parseErrors: parser.errors,
-    macros,
-  };
+  const cst = parser.pbk();
+  Object.assign(lexErrors, lexResult.errors);
+  Object.assign(parseErrors, parser.errors);
+  return { cst, macroCSTs, lexErrors, parseErrors };
 }
 
 function parseMacro(text) {
   const lexResult = lexer.tokenize(text)
-  const parser = new PixelBenderParser();
   parser.input = lexResult.tokens;
   return {
-    cst: parser.expression(),
+    cst: parser.macroDeclaration(),
     lexErrors: lexResult.errors,
     parseErrors: parser.errors,
   };
 }
+

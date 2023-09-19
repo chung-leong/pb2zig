@@ -54,7 +54,14 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   attribute(ctx) {
-    return { [this.name(ctx.Identifier)]: this.visit(ctx.literalValue) };
+    const name = this.name(ctx.Identifier);
+    let value;
+    if (ctx.literalValue) {
+      value = this.visit(ctx.literalValue);
+    } else if (ctx.literalConstructorCall) {
+      value = this.visit(ctx.literalConstructorCall);
+    }
+    return { [name]: value };
   }
 
   literalValue(ctx) {
@@ -163,6 +170,16 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   macroDeclaration(ctx) {
+    const name = this.name(ctx.Identifier);
+    let args = null;
+    if (ctx.typelessArgumentDeclaration) {
+      args = [];
+      for (const a of ctx.typelessArgumentDeclaration) {
+        args.push(this.visit(a));
+      }
+    }
+    const expression = this.visit(ctx.expression);
+    return this.create(N.MacroDefinition, { name, args, expression });
   }
 
   returnType(ctx) {
@@ -178,6 +195,10 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const type = this.visit(ctx.type);
     const name = this.name(ctx.Identifier);
     return this.create(N.FunctionArgument, { type, name });
+  }
+
+  typelessArgumentDeclaration(ctx) {
+    return this.name(ctx.Identifier);
   }
 
   statementBlock(ctx) {
@@ -358,4 +379,12 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const text = this.name(ctx.Comment);
     return this.create(N.Comment, { text });
   }
+}
+
+const visitor = new PixelBenderAstVisitor();
+
+export function process(cst, macroCSTs) {
+  const ast = visitor.visit(cst);
+  const macroASTs = macroCSTs.map(cst => visitor.visit(cst));
+  return { ast, macroASTs };
 }

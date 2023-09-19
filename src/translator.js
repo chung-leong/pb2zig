@@ -3,21 +3,35 @@ import { fileURLToPath } from 'url';
 import * as N from './nodes.js';
 
 export class PixelBenderToZigTranslator {
-  lines = [ '' ];
-  indent = 0;
-  scopeStack = [];
-  scope = null;
-  functionArgTypes = { ...builtInfunctionArgTypes };
-  ast = null;
+  lines;
+  indent;
+  scopeStack;
+  scope;
+  functionArgTypes;
+  macros;
+  ast;
+  macroASTs;
 
-  translate(ast) {
+  translate(ast, macroASTs) {
+    this.reset();
     this.ast = ast;
+    this.macroASTs = macroASTs;
+    console.log(macroASTs);
     this.addMetadata();
     this.addImports();
     this.addKernel();
     this.addProcessFunctions();
+    return this.lines.join('\n');
+  }
+
+  reset() {
+    this.lines = [ '' ];
+    this.indent = 0;
+    this.scopeStack = [];
+    this.scope = null;
+    this.functionArgTypes = { ...builtInfunctionArgTypes };
+    this.macros = {};
     this.ast = null;
-    return this.lines;
   }
 
   add(text) {
@@ -104,6 +118,9 @@ export class PixelBenderToZigTranslator {
 
   getReturnValueType(name, args) {
     const argTypes = this.functionArgTypes[name];
+    if (!argTypes) {
+      throw new Error(`Undeclared function: ${name}()`);
+    }
     const overloaded = Array.isArray(argTypes[0]);
     const types = args.map(a => a?.type);
     const findMismatch = (argTypes) => types.findIndex((type, i) => type !== argTypes[i + 1]);
@@ -170,22 +187,24 @@ export class PixelBenderToZigTranslator {
       this.add(`.${param.name} = .{`);
       this.add(`.type = ${getZigType(type)},`);
       if (minValue !== undefined) {
-        this.add(`.min_value = ${getZigLiteral(minValue, type)},`);
+        this.add(`.min_value = ${this.translateExpression(minValue, type)},`);
       }
       if (maxValue !== undefined) {
-        this.add(`.max_value = ${getZigLiteral(maxValue, type)},`);
+        this.add(`.max_value = ${this.translateExpression(maxValue, type)},`);
       }
       if (stepInterval !== undefined) {
-        this.add(`.step_interval = ${getZigLiteral(stepInterval, type)},`);
+        this.add(`.step_interval = ${this.translateExpression(stepInterval, type)},`);
       }
       if (defaultValue !== undefined) {
-        this.add(`.default_value = ${getZigLiteral(defaultValue, type)},`);
+        this.add(`.default_value = ${this.translateExpression(defaultValue, type)},`);
       }
       if (previewValue !== undefined) {
-        this.add(`.preview_value = ${getZigLiteral(previewValue, type)},`);
+        this.add(`.preview_value = ${this.translateExpression(previewValue, type)},`);
       }
       for (const [ name, value ] of Object.entries(others)) {
-        this.add(`.${snakeCase(name)} = ${getZigLiteral(value, type)},`);
+        if (value) {
+          this.add(`.${snakeCase(name)} = ${this.translateExpression(value)},`);
+        }
       }
       this.add(`},`);
     }
@@ -456,7 +475,7 @@ export class PixelBenderToZigTranslator {
     const type = this.getReturnValueType(name, argList);
     switch (name) {
       case 'outCoord':
-        return `outCoord`;
+        return new Expression(`outCoord`, type);
       case 'sample':
         return translateFunctionCall({ name: 'sampleLinear', args });
       case 'sampleNearest':
@@ -561,6 +580,12 @@ export class PixelBenderToZigTranslator {
     const expr = this.translateExpression(expression);
     return new Expression(`(${expr})`, expr.type);
   }
+}
+
+const translater = new PixelBenderToZigTranslator();
+
+export function translate(ast, macroASTs) {
+  return translater.translate(ast, macroASTs);
 }
 
 class Expression {
@@ -689,9 +714,6 @@ function getSwizzleType(type, indices) {
 }
 
 function getZigLiteral(value, type) {
-  if (value instanceof N.Literal) {
-    value = value.value;
-  }
   if (type === 'float') {
     let s = value.toString();
     if (s.indexOf('.') === -1) {
@@ -873,5 +895,5 @@ const builtInfunctionArgTypes = {
     [ float, pixel3 ],
     [ float, pixel4 ],
   ],
+};
 
-}

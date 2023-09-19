@@ -1,36 +1,6 @@
 import { readFileSync, writeFileSync } from 'fs';
-import { parse } from './src/parser.js';
-import { PixelBenderAstVisitor } from './src/visitor.js';
-import { PixelBenderToZigTranslator } from './src/translator.js';
+import { convertPixelBender } from './src/index.js';
 
-const text = readFileSync('./test/pbk-samples/posterize.pbk', 'utf8');
-const { cst, lexErrors, parseErrors, macros } = parse(text);
-
-if (lexErrors.length > 0) {
-  console.log('Errors encountered by lexer:');
-  for (const error of lexErrors) {
-    console.log(error);
-  }
-}
-
-if (parseErrors.length > 0) {
-  console.log('Errors encountered by parser:');
-  for (const error of parseErrors) {
-    console.log(error);
-  }
-}
-
-
-const visitor = new PixelBenderAstVisitor();
-const ast = visitor.visit(cst);
-for (const [ name, macro ] of Object.entries(macros)) {
-  //macro.expression = visitor.visit(macro.expression);
-}
-
-const translater = new PixelBenderToZigTranslator();
-const lines = translater.translate(ast);
-
-writeFileSync('./output.zig', lines.join('\n'));
-// for (const line of lines) {
-//   console.log(line);
-// }
+const pbkCode = readFileSync('./test/pbk-samples/posterize.pbk', 'utf8');
+const zigCode = convertPixelBender(pbkCode);
+writeFileSync('./output.zig', zigCode);
