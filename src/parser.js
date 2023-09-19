@@ -6,9 +6,21 @@ const T = {
     pattern: /[ \t\n\r]+/,
     group: Lexer.SKIPPED
   }),
+  MultilineComment: createToken({
+    name: 'MultilineComment',
+    pattern: /\/\*[\s\S]*?\*\//,
+    group: 'comment',
+    line_breaks: true,
+  }),
   Comment: createToken({
     name: 'Comment',
-    pattern: /\/\/.*/
+    group: 'comment',
+    pattern: /\/\/.*/,
+  }),
+  Preprocessor: createToken({
+    name: 'Preprocessor',
+    group: 'preprocessor',
+    pattern: /#\s*(if|ifdef|define|elif|endif)\b.*/,
   }),
 
   DblEql: createToken({ name: 'DblEqual', pattern: /==/ }),
@@ -112,7 +124,10 @@ class PixelBenderParser extends CstParser {
       $.CONSUME(T.Identifier)
       $.CONSUME(T.Colon)
       $.OPTION(() => $.CONSUME(T.Minus))
-      $.SUBRULE($.literalValue)
+      $.OR([
+        { ALT: () => $.SUBRULE($.literalValue) },
+        { ALT: () => $.SUBRULE($.literalConstructorCall) },
+      ])
       $.CONSUME(T.Semicolon)
     })
     $.RULE('literalValue', () => {
@@ -123,6 +138,18 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.False) },
         { ALT: () => $.CONSUME(T.Null) },
       ])
+    })
+    $.RULE('literalConstructorCall', () => {
+      $.SUBRULE($.type)
+      $.CONSUME(T.LParen)
+      $.SUBRULE($.literalList)
+      $.CONSUME(T.RParen)
+    }),
+    $.RULE('literalList', () => {
+      $.MANY_SEP({
+        SEP: T.Comma,
+        DEF: () => $.SUBRULE($.literalValue),
+      })
     })
     $.RULE('kernel', () => {
       $.CONSUME(T.Kernel)
@@ -145,7 +172,10 @@ class PixelBenderParser extends CstParser {
       ])
     })
     $.RULE('comment', () => {
-      $.CONSUME(T.Comment)
+      $.OR([
+        { ALT: () => $.CONSUME(T.Comment) },
+        { ALT: () => $.CONSUME(T.MultilineComment) },
+      ])
     })
     $.RULE('parameterDeclaration', () => {
       $.CONSUME(T.Parameter)
@@ -165,6 +195,7 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.FloatVector) },
         { ALT: () => $.CONSUME(T.FloatMatrix) },
         { ALT: () => $.CONSUME(T.String) },
+        { ALT: () => $.CONSUME(T.Pixel) },
       ])
     })
     $.RULE('inputDeclaration', () => {
@@ -207,10 +238,9 @@ class PixelBenderParser extends CstParser {
     })
     $.RULE('statement', () => {
       $.OR([
-        { ALT: () => $.SUBRULE($.comment) },
         { ALT: () => $.SUBRULE($.statementBlock) },
         { ALT: () => $.SUBRULE($.variableDelcaration) },
-        { ALT: () => $.SUBRULE($.variableAssignment) },
+        { ALT: () => $.SUBRULE($.expressionStatement) },
         { ALT: () => $.SUBRULE($.ifStatement) },
         { ALT: () => $.SUBRULE($.whileStatement) },
         { ALT: () => $.SUBRULE($.doWhileStatement) },
@@ -266,6 +296,11 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.DblAmp) },
         { ALT: () => $.CONSUME(T.DblPipe) },
         { ALT: () => $.CONSUME(T.DblCircum) },
+        { ALT: () => $.CONSUME(T.Equal) },
+        { ALT: () => $.CONSUME(T.PlusEql) },
+        { ALT: () => $.CONSUME(T.MinusEql) },
+        { ALT: () => $.CONSUME(T.AsteriskEql) },
+        { ALT: () => $.CONSUME(T.SlashEql) },
       ])
     })
     $.RULE('unaryOperation', () => {
@@ -310,21 +345,6 @@ class PixelBenderParser extends CstParser {
       $.CONSUME(T.LParen)
       $.SUBRULE($.argumentList)
       $.CONSUME(T.RParen)
-    })
-    $.RULE('variableAssignment', () => {
-      $.SUBRULE($.variable)
-      $.SUBRULE($.assignmentOperator)
-      $.SUBRULE($.expression)
-      $.CONSUME(T.Semicolon)
-    })
-    $.RULE('assignmentOperator', () => {
-      $.OR([
-        { ALT: () => $.CONSUME(T.Equal) },
-        { ALT: () => $.CONSUME(T.PlusEql) },
-        { ALT: () => $.CONSUME(T.MinusEql) },
-        { ALT: () => $.CONSUME(T.AsteriskEql) },
-        { ALT: () => $.CONSUME(T.SlashEql) },
-      ])
     })
     $.RULE('variable', () => {
       $.CONSUME(T.Identifier)
@@ -377,6 +397,10 @@ class PixelBenderParser extends CstParser {
       })
       $.CONSUME(T.Semicolon)
     })
+    $.RULE('expressionStatement', () => {
+      $.SUBRULE($.expression)
+      $.CONSUME(T.Semicolon)
+    })
     $.RULE('emptyStatement', () => {
       $.CONSUME(T.Semicolon)
     })
@@ -389,10 +413,32 @@ export const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 
 export function parse(text) {
   const lexResult = lexer.tokenize(text)
+  const macros = {};
+  for (const token of lexResult.groups.preprocessor) {
+    let m;
+    if (m = /#\s*define (\w+)\s*\((.*?)\)\s+(.*)/.exec(token.image)) {
+      const name = m[1];
+      const args = m[2].split(',').filter(a => !!a);
+      const expression = parseMacro(m[3]);
+      macros[name] = { args, expression };
+    }
+  }
   parser.input = lexResult.tokens
   return {
     cst: parser.pbk(),
     lexErrors: lexResult.errors,
-    parseErrors: parser.errors
+    parseErrors: parser.errors,
+    macros,
+  };
+}
+
+function parseMacro(text) {
+  const lexResult = lexer.tokenize(text)
+  const parser = new PixelBenderParser();
+  parser.input = lexResult.tokens;
+  return {
+    cst: parser.expression(),
+    lexErrors: lexResult.errors,
+    parseErrors: parser.errors,
   };
 }

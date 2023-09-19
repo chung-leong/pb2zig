@@ -25,6 +25,7 @@ export class Parameter {
   stepInterval;
   defaultValue;
   previewValue;
+  parameterType;
 }
 
 export class VariableDeclaration {
@@ -48,6 +49,12 @@ export class FunctionDefinition {
   name;
   args;
   statements;
+}
+
+export class MacroDefinition {
+  name;
+  args;
+  expression;
 }
 
 export class Literal {
@@ -117,4 +124,11 @@ export class ContinueStatement{
 
 export class ReturnStatement{
   value;
+}
+
+export class ExpressionStatement{
+  expression;
+}
+
+export class EmptyStatement{
 }

@@ -84,7 +84,6 @@ pub const kernel = struct {
                 var p7: @Vector(4, f32) = undefined;
                 var p8: @Vector(4, f32) = undefined;
                 c = @Vector(4, f32){ n0, n0, n0, 1 };
-                //-- no loops.
                 dist = n1 * 1;
                 offset[0] = 0;
                 offset[1] = 0;

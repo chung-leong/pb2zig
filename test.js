@@ -3,8 +3,8 @@ import { parse } from './src/parser.js';
 import { PixelBenderAstVisitor } from './src/visitor.js';
 import { PixelBenderToZigTranslator } from './src/translator.js';
 
-const text = readFileSync('./test/pbk-samples/painting.pbk', 'utf8');
-const { cst, lexErrors, parseErrors } = parse(text);
+const text = readFileSync('./test/pbk-samples/posterize.pbk', 'utf8');
+const { cst, lexErrors, parseErrors, macros } = parse(text);
 
 if (lexErrors.length > 0) {
   console.log('Errors encountered by lexer:');
@@ -20,8 +20,12 @@ if (parseErrors.length > 0) {
   }
 }
 
+
 const visitor = new PixelBenderAstVisitor();
 const ast = visitor.visit(cst);
+for (const [ name, macro ] of Object.entries(macros)) {
+  //macro.expression = visitor.visit(macro.expression);
+}
 
 const translater = new PixelBenderToZigTranslator();
 const lines = translater.translate(ast);

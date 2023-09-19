@@ -114,7 +114,6 @@ export class PixelBenderToZigTranslator {
           return argTypesN[0];
         }
       }
-      console.log(args);
       throw new Error(`${name}(${types.join(', ')}) does not exists"`);
     } else {
       const index = args.findIndex((arg, i) => arg.type !== argTypes[i + 1]);
@@ -391,57 +390,9 @@ export class PixelBenderToZigTranslator {
     this.setVariableType(name, type);
   }
 
-  addVariableAssignment({ lvalue, expression, operator }) {
-    const [ nameL, propL ] = lvalue.names;
-    const typeL = this.getVariableType(nameL);
-    if (propL) {
-      // using vector write mask
-      const indicesL = getSwizzleIndices(propL);
-      if (indicesL.length > 1) {
-        const typeS = getSwizzleType(typeL, indicesL);
-        let valueR, indicesR;
-        if (expression instanceof N.VariableAccess && expression.names[1]) {
-          // the right size has a mask too, get its indices
-          const [ nameR, propR ] = expression.names;
-          const typeR = this.getVariableType(nameR);
-          valueR = new Expression(nameR, typeR);
-          indicesR = getSwizzleIndices(propR);
-        } else {
-          // get the full vector and a list of sequential indices
-          valueR = this.translateExpression(expression, typeS) ;
-          indicesR = getVectorIndices(typeS);
-        }
-        if (operator.length === 2) {
-          // += and friends--need to perform the arithmetic operation first
-          if (!valueR.isVector()) {
-            valueR.promote(typeL);
-          }
-          valueR = new Expression(`${nameL} ${operator.charAt(0)} ${valueR}`, typeL);
-        }
-        // build the selection mask
-        const indicesM = [];
-        const widthL = getVectorWidth(typeL);
-        for (let i = 0; i < widthL; i++) {
-          if (indicesL.includes(i)) {
-            // use rvalue--index is negative
-            indicesM.push(~indicesR[i]);
-          } else {
-            // keep lvalue
-            indicesM.push(`${i}`);
-          }
-        }
-        const mask = `@Vector(${indicesM.length}, i32){ ${indicesM.join(', ') } }`;
-        const czType = getChildZigType(typeL);
-        this.add(`${nameL} = @shuffle(${czType}, ${nameL}, ${valueR}, ${mask});`);
-      } else {
-        const [ index ] = indicesL;
-        const valueR = this.translateExpression(expression, typeL)
-        this.add(`${nameL}[${index}] ${operator} ${valueR};`);
-      }
-    } else {
-      const valueR = this.translateExpression(expression, typeL) ;
-      this.add(`${nameL} ${operator} ${valueR};`);
-    }
+  addExpressionStatement({ expression }) {
+    const op = this.translateExpression(expression, 'void');
+    this.add(`${op};`);
   }
 
   addIfStatement(stmt) {
@@ -488,12 +439,9 @@ export class PixelBenderToZigTranslator {
       const indicesR = getSwizzleIndices(propR);
       const typeS = getSwizzleType(typeR, indicesR);
       if (indicesR.length > 1) {
-        const elements = [];
-        for (const index of indicesR) {
-          elements.push(`${nameR}[${index}]`);
-        }
-        const zType = getZigType(typeS);
-        return new Expression(`${zType}{ ${elements.join(', ')} }`, typeS);
+        const czType = getChildZigType(typeS);
+        const mask = `@Vector(${indicesR.length}, i32){ ${indicesR.join(', ') } }`;
+        return new Expression(`@select(${czType}, ${nameR}, undefined, ${mask})`, typeS);
       } else {
         const [ index ] = indicesR;
         return new Expression(`${nameR}[${index}]`, typeS);
@@ -533,15 +481,75 @@ export class PixelBenderToZigTranslator {
     }
   }
 
-  translateBinaryOperation({ operator, operand1, operand2 }) {
-    const opL = this.translateExpression(operand1);
-    const opR = this.translateExpression(operand2);
-    if (!opL.isVector() && opR.isVector()) {
-      opL.promote(opR.type);
-    } else if (opL.isVector() && !opR.isVector()) {
-      opR.promote(opL.type);
+  translateBinaryOperation({ operator, operand1, operand2 }, typeExpected) {
+    if (operator.endsWith('=')) {
+      const [ nameL, propL ] = operand1.names;
+      const typeL = this.getVariableType(nameL);
+      if (propL) {
+        // using vector write mask
+        const indicesL = getSwizzleIndices(propL);
+        if (indicesL.length > 1) {
+          const typeS = getSwizzleType(typeL, indicesL);
+          let valueR, indicesR;
+          if (operand2 instanceof N.VariableAccess && operand2.names[1]) {
+            // the right size has a mask too, get its indices
+            const [ nameR, propR ] = operand2.names;
+            const typeR = this.getVariableType(nameR);
+            valueR = new Expression(nameR, typeR);
+            indicesR = getSwizzleIndices(propR);
+          } else {
+            // get the full vector and a list of sequential indices
+            valueR = this.translateExpression(operand2, typeS) ;
+            indicesR = getVectorIndices(typeS);
+          }
+          if (operator.length === 2) {
+            // += and friends--need to perform the arithmetic operation first
+            if (!valueR.isVector()) {
+              valueR.promote(typeL);
+            }
+            valueR = new Expression(`${nameL} ${operator.charAt(0)} ${valueR}`, typeL);
+          }
+          // build the shuffle mask
+          const indicesM = [];
+          const widthL = getVectorWidth(typeL);
+          for (let i = 0; i < widthL; i++) {
+            if (indicesL.includes(i)) {
+              // use rvalue--index is negative
+              indicesM.push(~indicesR[i]);
+            } else {
+              // keep lvalue
+              indicesM.push(`${i}`);
+            }
+          }
+          const mask1 = `@Vector(${indicesM.length}, i32){ ${indicesM.join(', ') } }`;
+          const czType = getChildZigType(typeL);
+          const result = new Expression(`${nameL} = @shuffle(${czType}, ${nameL}, ${valueR}, ${mask1})`, typeL);
+          if (typeExpected === 'void') {
+            // the result isn't used, so it doesn't matter that the width is wrong
+            return result;
+          }
+          const mask2 = `@Vector(${indicesL.length}, i32){ ${indicesL.join(', ') } }`;
+          return new Expression(`@select(${czType}, ${result}, undefined, ${mask2})`, typeS);
+        } else {
+          const [ index ] = indicesL;
+          const valueR = this.translateExpression(operand2, typeL);
+          const childType = getChildType(typeL);
+          return new Expression(`${nameL}[${index}] ${operator} ${valueR}`, childType);
+        }
+      } else {
+        const valueR = this.translateExpression(operand2, typeL);
+        return new Expression(`${nameL} ${operator} ${valueR}`, typeL);
+      }
+    } else {
+      const opL = this.translateExpression(operand1);
+      const opR = this.translateExpression(operand2);
+      if (!opL.isVector() && opR.isVector()) {
+        opL.promote(opR.type);
+      } else if (opL.isVector() && !opR.isVector()) {
+        opR.promote(opL.type);
+      }
+      return new Expression(`${opL} ${operator} ${opR}`, opL.type);
     }
-    return new Expression(`${opL} ${operator} ${opR}`, opL.type);
   }
 
   translateUnaryOperation({ operator, operand }) {

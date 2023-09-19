@@ -7,10 +7,6 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     this.validateVisitor();
   }
 
-  process(tree) {
-    return this.pbk(tree);
-  }
-
   name(arr) {
     return arr[0].image;
   }
@@ -90,6 +86,22 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     }
   }
 
+  literalConstructorCall(ctx) {
+    const type = this.visit(ctx.type);
+    const args = this.visit(ctx.literalList);
+    return this.create(N.ConstructorCall, { type, args });
+  }
+
+  literalList(ctx) {
+    const args = [];
+    if (ctx.expression) {
+      for (const node of ctx.expression) {
+        args.push(this.visit(node));
+      }
+    }
+    return args;
+  }
+
   kernel(ctx) {
     const name = this.name(ctx.Identifier);
     const meta = this.create(N.Meta, this.visit(ctx.tag));
@@ -148,6 +160,9 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     }
     const statements = this.visit(ctx.statementBlock);
     return this.create(N.FunctionDefinition, { type, name, args, statements });
+  }
+
+  macroDeclaration(ctx) {
   }
 
   returnType(ctx) {
@@ -272,17 +287,6 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     return args;
   }
 
-  variableAssignment(ctx) {
-    const lvalue = this.visit(ctx.variable);
-    const expression = this.visit(ctx.expression);
-    const operator = this.visit(ctx.assignmentOperator);
-    return this.create(N.VariableAssignment, { lvalue, operator, expression });
-  }
-
-  assignmentOperator(ctx) {
-    return this.anyName(ctx);
-  }
-
   variable(ctx) {
     const name = this.name(ctx.Identifier);
     const names = [ name ];
@@ -341,8 +345,13 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     return this.create(N.ReturnStatement, { value });
   }
 
+  expressionStatement(cxt) {
+    const expression = this.visit(cxt.expression);
+    return this.create(N.ExpressionStatement, { expression });
+  }
+
   emptyStatement(ctx) {
-    console.log({ ctx });
+    return this.create(N.EmptyStatement, { expression });
   }
 
   comment(ctx) {
