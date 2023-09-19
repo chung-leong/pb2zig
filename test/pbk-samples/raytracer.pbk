@@ -1,0 +1,291 @@
+<languageVersion : 1.0;>
+
+#define PI 3.1415926535897932384626433832795
+
+kernel RayTracer
+<   namespace : "Newgrounds";
+    vendor : "Newgrounds";
+    version : 1;
+    description : "Pixel Blender Raytracing";
+>
+{
+    output pixel4 dst;
+
+    parameter float  viewPlaneDistance
+    <
+        minValue:       0.1;
+        maxValue:       5.0;
+        defaultValue:   2.0;
+    >;
+
+    parameter float3 lightPos
+    <
+        minValue:       float3(-6.0, -6.0, -25.0);
+        maxValue:       float3(6.0, 6.0, 0.0);
+        defaultValue:   float3(0.0, 2.0, -4.0);
+    >;
+
+    parameter float3 sphere0Position
+    <
+        minValue:       float3(-6.0, -6.0, -25.0);
+        maxValue:       float3(6.0, 6.0, -2.0);
+        defaultValue:   float3(0.0, 2.0, -10.0);
+    >;
+
+    parameter float sphere0Radius
+    <
+        minValue:       0.1;
+        maxValue:       8.0;
+        defaultValue:   2.0;
+    >;
+
+    parameter float3 sphere0Color
+    <
+        minValue:       float3(0.0, 0.0, 0.0);
+        maxValue:       float3(1.0, 1.0, 1.0);
+        defaultValue:   float3(0.8, 0.8, 0.8);
+    >;
+
+    parameter float4 sphere0Material
+    <
+        minValue:       float4(0.0, 0.0, 0.0, 0.0);
+        maxValue:       float4(1.0, 1.0, 1.0, 1.0);
+        defaultValue:   float4(0.05, 0.1, 1.0, 1.0);
+    >;
+
+    const float RENDER_WIDTH            = 512.0;
+    const float RENDER_HEIGHT           = 512.0;
+    const float SPECULAR_EXPONENT       = 50.0;
+
+    const int   MAX_RAY_SHOTS           = 4;
+    const int   NUM_SPHERES             = 35;
+    const int   SPHERE_PARAMETER_COUNT  = 11;
+
+    dependent float sphereArray[NUM_SPHERES*SPHERE_PARAMETER_COUNT];
+
+    // initialize our sphere parameters
+    void evaluateDependents()
+    {
+        // SPHERE PARAMETRS
+        // (x, y, z, radius, r, g, b, ambient, diffuse, specular, reflectivity)
+
+        sphereArray[0] = sphere0Position.x;
+        sphereArray[1] = sphere0Position.y;
+        sphereArray[2] = sphere0Position.z;
+        sphereArray[3] = sphere0Radius;
+        sphereArray[4] = sphere0Color.x;
+        sphereArray[5] = sphere0Color.y;
+        sphereArray[6] = sphere0Color.z;
+        sphereArray[7] = sphere0Material.x;
+        sphereArray[8] = sphere0Material.y;
+        sphereArray[9] = sphere0Material.z;
+        sphereArray[10] = sphere0Material.w;
+
+        sphereArray[11] = 0.0;
+        sphereArray[12] = -1003.0;
+        sphereArray[13] = -8.0;
+        sphereArray[14] = 1000.0;
+        sphereArray[15] = 0.6;
+        sphereArray[16] = 0.6;
+        sphereArray[17] = 0.6;
+        sphereArray[18] = 0.1;
+        sphereArray[19] = 0.8;
+        sphereArray[20] = 0.5;
+        sphereArray[21] = 0.5;
+
+        // let's make a bunch of fakely random spheres
+        for(int i=SPHERE_PARAMETER_COUNT*2; i<NUM_SPHERES*SPHERE_PARAMETER_COUNT; i+=SPHERE_PARAMETER_COUNT)
+        {
+            float ifloat = float(i);
+            sphereArray[i] = sin(ifloat/5.0)*6.0;
+            sphereArray[i+1] = sin(ifloat/4.1)*2.5;
+            sphereArray[i+2] = -18.0 - sin(ifloat/3.1+1.2)*10.0;
+            sphereArray[i+3] = pow(sin(ifloat/1.34+65.3)*0.5+0.5, 3.0)*1.0 + 0.2;
+            sphereArray[i+4] = cos(ifloat/2.1+1.3)*0.5+0.5;
+            sphereArray[i+5] = cos(ifloat/0.1+1.3)*0.5+0.5;
+            sphereArray[i+6] = cos(ifloat/5.1+6.3)*0.5+0.5;
+            sphereArray[i+7] = 0.1;
+            sphereArray[i+8] = 0.7;
+            sphereArray[i+9] = 1.0;
+            sphereArray[i+10] = pow( sin(ifloat/2.1 + 1.243)*0.5 + 0.5, 5.0);
+
+        }
+    }
+
+    // shootRay():  fires a ray from origin, toward dir
+    //              returns first intersection
+    void shootRay(
+        in  float3  origin,
+        in  float3  dir,
+        out int     hit,
+        out float3  pos,
+        out float   t,
+        out int     sphereNum
+    )
+    {
+        float curT;
+        float B, C, disc;
+        float3 spherePos;
+        float3 sphereToOrigin;
+        float sphereRadius;
+
+        hit = 0;
+        t = 99999.0;
+
+        // cycle through all spheres and find the smallest t>0 that we hit
+        for(int i=0; i<NUM_SPHERES*SPHERE_PARAMETER_COUNT; i+=SPHERE_PARAMETER_COUNT)
+        {
+            spherePos = float3(sphereArray[i], sphereArray[i+1], sphereArray[i+2]);
+            sphereRadius = sphereArray[i+3];
+
+            sphereToOrigin = origin - spherePos;
+            B = dot(sphereToOrigin, dir);
+            C = dot(sphereToOrigin, sphereToOrigin) - sphereRadius*sphereRadius;
+
+            disc = B*B-C;
+            if(disc>0.0)
+            {
+                curT = -B-sqrt(disc);
+                if(curT>0.0 && curT<t)
+                {
+                    sphereNum = i;
+                    t = curT;
+                    hit = 1;
+                }
+            }
+        }
+
+        pos = origin + dir*t;
+    }
+
+    void evaluatePixel()
+    {
+        dst = pixel4(0,0,0, 1.0);
+
+        float3 origin = float3(0, 0, 0);
+
+        // calculate direction vector for this pixel
+        float3 dir = float3(
+            2.0*outCoord().x/RENDER_WIDTH   - 1.0,
+            -2.0*outCoord().y/RENDER_HEIGHT + 1.0,
+            -viewPlaneDistance
+        );
+
+        // sphere parameters
+        int     sphereNum;
+        float3  spherePos;
+        float   sphereRadius;
+        float3  sphereColor;
+        float4  sphereMaterial;
+
+        float3 hitPoint;
+        float t;
+        int hit;
+
+        float3 sphereHit;   // hit point relative to sphere
+        float3 n;           // surface normal
+        float3 lightVector; // surface to light
+        float  lightVectorLen;
+        float3 l;           // normalized light vector
+        float3 lReflect;    // reflected off surface
+        float3 dirReflect;
+
+        int shadowTest;
+        float3 temp;
+        int temp2;
+
+        int rayShots = MAX_RAY_SHOTS;
+        float3 colorScale = float3(1.0, 1.0, 1.0);
+
+        // lighting
+        float specular;
+        float diffuse;
+        float lightVal;
+
+        // texturing
+        float phi;
+        float2 uv;
+
+        while( rayShots > 0 )
+        {
+            // let's make sure dir is properly normalized
+            dir = normalize(dir);
+
+            // INTERSECTION TEST
+            // find the first sphere we intersect with
+            shootRay(origin, dir, hit, hitPoint, t, sphereNum);
+
+            if(hit != 0)
+            {
+                // grab the parameters for the sphere we hit
+                spherePos       = float3( sphereArray[sphereNum], sphereArray[sphereNum+1], sphereArray[sphereNum+2] );
+                sphereRadius     = sphereArray[sphereNum+3];
+                sphereColor     = float3( sphereArray[sphereNum+4], sphereArray[sphereNum+5], sphereArray[sphereNum+6] );
+                sphereMaterial  = float4( sphereArray[sphereNum+7], sphereArray[sphereNum+8], sphereArray[sphereNum+9], sphereArray[sphereNum+10] );
+
+                sphereHit = hitPoint - spherePos;
+                n = sphereHit / sphereRadius;                      // normal at the point we hit
+                lightVector = lightPos - hitPoint;                 // hit point to light
+                lightVectorLen = length(lightVector);
+                l = lightVector / lightVectorLen;
+
+                // SHADOW TEST
+                // fire a ray from our hit position towards the light
+                shootRay(hitPoint, l, shadowTest, temp, t, temp2);
+
+                if(shadowTest == 0)                 // if we didn't hit anything, we can see the light
+                    shadowTest = 1;
+                else if(t < lightVectorLen)         // if we hit something before the light, we are in shadow
+                    shadowTest = 0;
+
+                diffuse = dot(l, n);
+
+                lReflect = l - 2.0*diffuse*n;      // reflect the light vector
+                specular = dot(dir, lReflect);
+
+                diffuse = max( diffuse, 0.0 );
+                specular = pow( max(specular, 0.0), SPECULAR_EXPONENT );
+
+                // ground checkboard texture
+                if(sphereNum == 11)
+                {
+                    phi = acos( -dot(float3(1.0, 0.0, 0.0), n) );
+                    uv = float2(
+                        acos( dot( float3(0.0, 0.0, 1.0), n) /sin(phi) )/(2.0*PI),
+                        phi/PI
+                    );
+
+                    // we could do sampleLinear here to do some actual texturing. :)
+                    sphereColor *= ( mod(floor(uv.x*2000.0)+floor(uv.y*2000.0),2.0)==0.0 )? 0.5 : 1.0;
+                }
+
+                // finally, blend our color into this pixel
+
+                lightVal = (sphereMaterial.x + float(shadowTest)*(diffuse*sphereMaterial.y + specular*sphereMaterial.z));
+                pixel3 res = colorScale*lightVal*sphereColor;
+                dst += pixel4(res.x, res.y, res.z, 0.0);
+
+                // reflection
+                if(sphereMaterial.w > 0.0)
+                {
+                    dirReflect = dir - 2.0*dot(dir, n)*n; // reflect our view vector
+                    dirReflect = normalize(dirReflect);
+                    // originate at our hit position, fire at reflected angle
+                    origin = hitPoint;
+                    dir = dirReflect;
+                    rayShots--;
+
+                    // blend according to reflectivity
+                    colorScale *= sphereMaterial.w*sphereColor;
+                }
+                else rayShots = 0;
+            }
+            else rayShots = 0;
+        }
+    }
+
+    region generated()
+    {
+        return region(float4(0, 0, RENDER_WIDTH, RENDER_HEIGHT));
+    }
+}
