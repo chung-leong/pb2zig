@@ -107,7 +107,7 @@ class PixelBenderParser extends CstParser {
       $.CONSUME(T.LAngle)
       $.MANY(() => $.SUBRULE($.attribute))
       $.CONSUME(T.RAngle)
-    });    
+    });
     $.RULE('attribute', () => {
       $.CONSUME(T.Identifier)
       $.CONSUME(T.Colon)
@@ -241,7 +241,7 @@ class PixelBenderParser extends CstParser {
         $.CONSUME(T.Question)
         $.SUBRULE1($.expression)
         $.CONSUME(T.Colon)
-        $.SUBRULE2($.expression)  
+        $.SUBRULE2($.expression)
       })
     })
     $.RULE('binaryOperation', () => {
@@ -250,8 +250,8 @@ class PixelBenderParser extends CstParser {
         $.SUBRULE($.binaryOperator)
         $.SUBRULE($.expression)
       })
-    }); 
-    $.RULE('binaryOperator', () => { 
+    });
+    $.RULE('binaryOperator', () => {
       $.OR([
         { ALT: () => $.CONSUME(T.Plus) },
         { ALT: () => $.CONSUME(T.Minus) },
@@ -313,6 +313,11 @@ class PixelBenderParser extends CstParser {
     })
     $.RULE('variableAssignment', () => {
       $.SUBRULE($.variable)
+      $.SUBRULE($.assignmentOperator)
+      $.SUBRULE($.expression)
+      $.CONSUME(T.Semicolon)
+    })
+    $.RULE('assignmentOperator', () => {
       $.OR([
         { ALT: () => $.CONSUME(T.Equal) },
         { ALT: () => $.CONSUME(T.PlusEql) },
@@ -320,8 +325,6 @@ class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.AsteriskEql) },
         { ALT: () => $.CONSUME(T.SlashEql) },
       ])
-      $.SUBRULE($.expression)
-      $.CONSUME(T.Semicolon)
     })
     $.RULE('variable', () => {
       $.CONSUME(T.Identifier)

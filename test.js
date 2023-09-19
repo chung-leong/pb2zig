@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { parse } from './src/parser.js';
 import { PixelBenderAstVisitor } from './src/visitor.js';
 import { PixelBenderToZigTranslator } from './src/translator.js';
@@ -26,6 +26,7 @@ const ast = visitor.visit(cst);
 const translater = new PixelBenderToZigTranslator();
 const lines = translater.translate(ast);
 
-for (const line of lines) {
-  console.log(line);
-}
+writeFileSync('./output.zig', lines.join('\n'));
+// for (const line of lines) {
+//   console.log(line);
+// }

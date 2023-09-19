@@ -15,6 +15,7 @@ export class PixelBenderToZigTranslator {
     this.addMetadata();
     this.addImports();
     this.addKernel();
+    this.addProcessFunctions();
     this.ast = null;
     return this.lines;
   }
@@ -154,6 +155,7 @@ export class PixelBenderToZigTranslator {
 
   addParameterDecls() {
     const params = this.find(N.Parameter);
+    this.add(`// kernel information`);
     this.add(`pub const parameters = .{`);
     for (const param of params) {
       const {
@@ -169,22 +171,22 @@ export class PixelBenderToZigTranslator {
       this.add(`.${param.name} = .{`);
       this.add(`.type = ${getZigType(type)},`);
       if (minValue !== undefined) {
-        this.add(`.minValue = ${getZigLiteral(minValue, type)},`);
+        this.add(`.min_value = ${getZigLiteral(minValue, type)},`);
       }
       if (maxValue !== undefined) {
-        this.add(`.maxValue = ${getZigLiteral(maxValue, type)},`);
+        this.add(`.max_value = ${getZigLiteral(maxValue, type)},`);
       }
       if (stepInterval !== undefined) {
-        this.add(`.stepInterval = ${getZigLiteral(stepInterval, type)},`);
+        this.add(`.step_interval = ${getZigLiteral(stepInterval, type)},`);
       }
       if (defaultValue !== undefined) {
-        this.add(`.defaultValue = ${getZigLiteral(defaultValue, type)},`);
+        this.add(`.default_value = ${getZigLiteral(defaultValue, type)},`);
       }
       if (previewValue !== undefined) {
-        this.add(`.previewValue = ${getZigLiteral(previewValue, type)},`);
+        this.add(`.preview_value = ${getZigLiteral(previewValue, type)},`);
       }
       for (const [ name, value ] of Object.entries(others)) {
-        this.add(`.${name} = ${getZigLiteral(value, type)},`);
+        this.add(`.${snakeCase(name)} = ${getZigLiteral(value, type)},`);
       }
       this.add(`},`);
     }
@@ -196,7 +198,7 @@ export class PixelBenderToZigTranslator {
     this.add(`pub const input = .{`);
     for (const { name, type } of inputs) {
       const channels = getVectorWidth(type);
-      this.add(`${name} = .{ channels: ${channels} },`);
+      this.add(`.${name} = .{ .channels = ${channels} },`);
     }
     this.add('};');
   }
@@ -206,14 +208,28 @@ export class PixelBenderToZigTranslator {
     this.add(`pub const output = .{`);
     for (const { name, type } of outputs) {
       const channels = getVectorWidth(type);
-      this.add(`${name} = .{ channels: ${channels} },`);
+      this.add(`.${name} = .{ .channels = ${channels} },`);
     }
     this.add('};');
   }
 
+  addInstanceFunction() {
+    this.add(`// generic kernel instance type`);
+    this.add(`fn Instance(comptime InputStruct: type) type {`);
+    this.add(`return struct {`);
+    this.addParameterFields();
+    this.addInputFields();
+    this.add(``);
+    this.addCalledFunctions();
+    this.addDefinedFunctions();
+    this.add(`};`);
+    this.add(`}`);
+  }
+
   addCreateFunction() {
+    this.add(`// kernel instance creation function`);
     this.add(`
-      fn create(inputStruct: anytype) Instance(@TypeOf(inputStruct)) {
+      pub fn create(inputStruct: anytype) Instance(@TypeOf(inputStruct)) {
         var instance: Instance(@TypeOf(inputStruct)) = undefined;
         inline for (std.meta.fields(@TypeOf(inputStruct))) |field| {
             @field(instance, field.name) = @field(inputStruct, field.name);
@@ -223,29 +239,34 @@ export class PixelBenderToZigTranslator {
     `.trim());
   }
 
-  addInstanceFunction() {
-    this.add(`fn Instance(comptime InputStruct: type) type {`);
-    this.addParameterFields();
-    this.addInputFields();
-    this.add(``);
-    this.addCalledFunctions();
-    this.addDefinedFunctions();
-    this.add(`}`);
-  }
-
   addParameterFields() {
     const params = this.find(N.Parameter);
-    for (const param of params) {
-      const type = getZigType(param.type);
-      this.add(`${param.name}: ${type},`);
+    if (params.length > 0) {
+      this.add(`// parameter and input image fields`);
+      for (const param of params) {
+        const type = getZigType(param.type);
+        this.add(`${param.name}: ${type},`);
+      }
     }
   }
 
   addInputFields() {
     const inputs = this.find(N.InputDeclaration);
-    for (const { name } of inputs) {
-     this.add(`${name} = std.meta.fieldInfo(InputStruct, .src).type,`);
+    if (inputs.length > 0) {
+      for (const { name } of inputs) {
+        this.add(`${name}: std.meta.fieldInfo(InputStruct, .src).type,`);
+       }
     }
+  }
+
+  addProcessFunctions() {
+    const codeURL = new URL('../zig/process.zig', import.meta.url);
+    const content = readFileSync(fileURLToPath(codeURL), 'utf-8');
+    const marker = '//---start of code';
+    const index = content.indexOf(marker);
+    const code = content.substring(index + marker.length);
+    this.add(``);
+    this.add(code);
   }
 
   addCalledFunctions() {
@@ -279,13 +300,17 @@ export class PixelBenderToZigTranslator {
     const codeURL = new URL('../zig/functions.zig', import.meta.url);
     const code = readFileSync(fileURLToPath(codeURL), 'utf-8');
     const regExp = /pub (fn (\w+)[\s\S]*?\n})/g;
-    let m;
+    let m, count = 0;
     while (m = regExp.exec(code)) {
       // excluding "pub"
       const func = m[1], name = m[2];
       if (inUse[name]) {
+        if (count === 0) {
+          this.add(`// built-in Pixel Bender functions`);
+        }
         this.add(func);
         this.add(``);
+        count++;
       }
     }
   }
@@ -293,7 +318,9 @@ export class PixelBenderToZigTranslator {
   addDefinedFunctions() {
     const defs = this.find(N.FunctionDefinition);
     for (const [ index, def ] of defs.entries()) {
-      if (index > 0) {
+      if (index === 0) {
+        this.add(`// functions defined in kernel`);
+      } else {
         this.add(``);
       }
       this.addDefinedFunction(def);
@@ -302,9 +329,9 @@ export class PixelBenderToZigTranslator {
 
   addDefinedFunction(def) {
     const { name, type, args, statements } = def;
+    this.startScope();
     if (name === 'evaluatePixel') {
       this.add(`pub fn ${name}(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {`)
-      this.startScope();
       this.add(`// input variables`);
       const parameters = this.find(N.Parameter);
       for (const { name, type } of parameters) {
@@ -324,11 +351,15 @@ export class PixelBenderToZigTranslator {
         this.setVariableType(name, type);
       }
       this.add(``);
+      this.addStatements(statements);
+      for (const { name } of outputs) {
+        this.add(`return ${name};`);
+      }
     } else {
       const argList = args.map(a => `${a.name}: ${getZigType(a.type)}`);
       this.add(`fn ${name}(${argList.join(', ')}) ${getZigType(type)} {`);
+      this.addStatements(statements);
     }
-    this.addStatements(statements);
     this.endScope();
     this.add('}');
   }
@@ -360,36 +391,56 @@ export class PixelBenderToZigTranslator {
     this.setVariableType(name, type);
   }
 
-  addVariableAssignment({ lvalue, expression }) {
+  addVariableAssignment({ lvalue, expression, operator }) {
     const [ nameL, propL ] = lvalue.names;
     const typeL = this.getVariableType(nameL);
-    const valueR = this.translateExpression(expression, typeL)
     if (propL) {
-      const lenL = getVectorWidth(typeL);
-      const indicesL = getVectorIndices(propL, lenL);
-      if (indicesL.width > 1) {
-        // use write mask
-        const propR = expression.names?.[1];
-        const indicesR = getVectorIndices(propR, indicesL.width);
+      // using vector write mask
+      const indicesL = getSwizzleIndices(propL);
+      if (indicesL.length > 1) {
+        const typeS = getSwizzleType(typeL, indicesL);
+        let valueR, indicesR;
+        if (expression instanceof N.VariableAccess && expression.names[1]) {
+          // the right size has a mask too, get its indices
+          const [ nameR, propR ] = expression.names;
+          const typeR = this.getVariableType(nameR);
+          valueR = new Expression(nameR, typeR);
+          indicesR = getSwizzleIndices(propR);
+        } else {
+          // get the full vector and a list of sequential indices
+          valueR = this.translateExpression(expression, typeS) ;
+          indicesR = getVectorIndices(typeS);
+        }
+        if (operator.length === 2) {
+          // += and friends--need to perform the arithmetic operation first
+          if (!valueR.isVector()) {
+            valueR.promote(typeL);
+          }
+          valueR = new Expression(`${nameL} ${operator.charAt(0)} ${valueR}`, typeL);
+        }
+        // build the selection mask
         const indicesM = [];
-        for (let i = 0; i < lenL; i++) {
+        const widthL = getVectorWidth(typeL);
+        for (let i = 0; i < widthL; i++) {
           if (indicesL.includes(i)) {
-            // use rvalue
+            // use rvalue--index is negative
             indicesM.push(~indicesR[i]);
           } else {
             // keep lvalue
             indicesM.push(`${i}`);
           }
         }
-        const mask = `.{ ${indicesM.join(', ') } }`;
+        const mask = `@Vector(${indicesM.length}, i32){ ${indicesM.join(', ') } }`;
         const czType = getChildZigType(typeL);
         this.add(`${nameL} = @shuffle(${czType}, ${nameL}, ${valueR}, ${mask});`);
       } else {
         const [ index ] = indicesL;
-        this.add(`${nameL}[${index}] = ${valueR};`);
+        const valueR = this.translateExpression(expression, typeL)
+        this.add(`${nameL}[${index}] ${operator} ${valueR};`);
       }
     } else {
-      this.add(`${nameL} = ${valueR};`);
+      const valueR = this.translateExpression(expression, typeL) ;
+      this.add(`${nameL} ${operator} ${valueR};`);
     }
   }
 
@@ -434,8 +485,7 @@ export class PixelBenderToZigTranslator {
     const [ nameR, propR ] = names;
     const typeR = this.getVariableType(nameR);
     if (propR) {
-      const widthR = getVectorWidth(typeR);
-      const indicesR = getVectorIndices(propR, widthR);
+      const indicesR = getSwizzleIndices(propR);
       const typeS = getSwizzleType(typeR, indicesR);
       if (indicesR.length > 1) {
         const elements = [];
@@ -521,7 +571,8 @@ class Expression {
 
   promote(type) {
     this.convert(getChildType(type));
-    this.text = `@as(${type}, @splat(${this.text}))`;
+    const zType = getZigType(type);
+    this.text = `@as(${zType}, @splat(${this.text}))`;
     this.type = type;
   }
 
@@ -604,7 +655,16 @@ function getVectorWidth(type) {
   return parseInt(type.slice(-1), '') || 1;
 }
 
-function getVectorIndices(prop, width) {
+function getVectorIndices(type) {
+  const width = getVectorWidth(type);
+  const indices = [];
+  for (let i = 0; i < width; i++) {
+    indices.push(i);
+  }
+  return indices;
+}
+
+function getSwizzleIndices(prop) {
   if (prop) {
     const map = {
       r: 0, g: 1, b: 2, a: 3,
@@ -612,17 +672,11 @@ function getVectorIndices(prop, width) {
       s: 0, t: 1, p: 2, q: 3,
     };
     return [ ...prop ].map(c => map[c]);
-  } else {
-    const indices = [];
-    for (let i = 0; i < width; i++) {
-      indices.push(i);
-    }
-    return indices;
   }
 }
 
 function getSwizzleType(type, indices) {
-  const typeE = type.slice(-1);
+  const typeE = type.slice(0, -1);
   return (indices.length === 1) ? typeE : typeE + indices.length;
 }
 
@@ -639,6 +693,10 @@ function getZigLiteral(value, type) {
   } else {
     return JSON.stringify(value);
   }
+}
+
+function snakeCase(s) {
+  return s.replace(/\B([A-Z])/g, '_$1').toLowerCase();
 }
 
 const bool = 'bool';

@@ -4,7 +4,7 @@ import * as N from './nodes.js';
 export class PixelBenderAstVisitor extends BaseCstVisitor {
   constructor() {
     super();
-    //this.validateVisitor();
+    this.validateVisitor();
   }
 
   process(tree) {
@@ -275,7 +275,12 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   variableAssignment(ctx) {
     const lvalue = this.visit(ctx.variable);
     const expression = this.visit(ctx.expression);
-    return this.create(N.VariableAssignment, { lvalue, expression });
+    const operator = this.visit(ctx.assignmentOperator);
+    return this.create(N.VariableAssignment, { lvalue, operator, expression });
+  }
+
+  assignmentOperator(ctx) {
+    return this.anyName(ctx);
   }
 
   variable(ctx) {
@@ -337,6 +342,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   emptyStatement(ctx) {
+    console.log({ ctx });
   }
 
   comment(ctx) {

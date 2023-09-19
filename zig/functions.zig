@@ -43,12 +43,7 @@ test "not" {
     assert(all(not_vector3 == @Vector(2, bool){ true, false }));
 }
 
-fn BoolOf(comptime T: type) type {
-    const len = @typeInfo(T).Vector.len;
-    return @Vector(len, bool);
-}
-
-pub fn equal(v1: anytype, v2: anytype) BoolOf(@TypeOf(v1)) {
+pub fn equal(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
     return v1 == v2;
 }
 
@@ -61,7 +56,7 @@ test "equal" {
     assert(any(equal(vector3, vector2)) == true);
 }
 
-pub fn notEqual(v1: anytype, v2: anytype) BoolOf(@TypeOf(v1)) {
+pub fn notEqual(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
     return v1 != v2;
 }
 
@@ -74,7 +69,7 @@ test "notEqual" {
     assert(any(notEqual(vector3, vector2)) == true);
 }
 
-pub fn lessThan(v1: anytype, v2: anytype) BoolOf(@TypeOf(v1)) {
+pub fn lessThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
     return v1 < v2;
 }
 
@@ -87,7 +82,7 @@ test "lessThan" {
     assert(any(lessThan(vector3, vector2)) == true);
 }
 
-pub fn lessThanEqual(v1: anytype, v2: anytype) BoolOf(@TypeOf(v1)) {
+pub fn lessThanEqual(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
     return v1 <= v2;
 }
 
@@ -100,7 +95,7 @@ test "lessThanEqual" {
     assert(any(lessThanEqual(vector3, vector2)) == true);
 }
 
-pub fn greaterThan(v1: anytype, v2: anytype) BoolOf(@TypeOf(v1)) {
+pub fn greaterThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
     return v1 > v2;
 }
 
@@ -113,7 +108,7 @@ test "greaterThan" {
     assert(any(greaterThan(vector3, vector2)) == true);
 }
 
-pub fn greatThanEqual(v1: anytype, v2: anytype) BoolOf(@TypeOf(v1)) {
+pub fn greatThanEqual(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
     return v1 >= v2;
 }
 

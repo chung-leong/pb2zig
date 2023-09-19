@@ -71,6 +71,7 @@ export class ConstructorCall {
 }
 
 export class VariableAssignment {
+  operator;
   lvalue;
   expression;
 }
