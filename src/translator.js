@@ -29,6 +29,7 @@ export class PixelBenderToZigTranslator {
     this.scopeStack = [];
     this.scope = {};
     this.functionArgTypes = { ...builtInfunctionArgTypes };
+    this.variableAliases = {};
     this.macros = {};
     this.ast = null;
   }
@@ -638,18 +639,21 @@ export class PixelBenderToZigTranslator {
         return this.translateExpression(expanded);
       }
     }
+    if (name === 'outCoord') {
+      return new ZigExpr(`outCoord`, 'float2');
+    } else if (name === 'sample') {
+      name = 'sampleLinear';
+    } else if (name === 'atan') {
+      if (args.length === 2) {
+        name = 'atan2';
+      }
+    }
     const argList = args.map(a => this.translateExpression(a));
     const type = this.getReturnValueType(name, argList);
-    switch (name) {
-      case 'outCoord':
-        return new ZigExpr(`outCoord`, type);
-      case 'sample':
-        return translateFunctionCall({ name: 'sampleLinear', args });
-      case 'sampleNearest':
-      case 'sampleLinear':
-        return new ZigExpr(`${argList[0]}.${name}(${argList[1]})`, type);
-      default:
-        return new ZigExpr(`${name}(${argList.join(', ')})`, type);
+    if (name === 'sampleNearest' || name === 'sampleLinear') {
+      return new ZigExpr(`${argList[0]}.${name}(${argList[1]})`, type);
+    } else {
+      return new ZigExpr(`${name}(${argList.join(', ')})`, type);
     }
   }
 
@@ -1049,6 +1053,17 @@ const builtInfunctionArgTypes = {
   acos: fx__fx,
   atan: fx__fx,
   atan2: fx__fx_fx,
+  pow: fx__fx_fx,
+  exp: fx__fx,
+  exp2: fx__fx,
+  log: fx__fx,
+  log2: fx__fx,
+  sqrt: fx__fx,
+  inverseSqrt: fx__fx,
+  abs: fx__fx,
+  sign: fx__fx,
+  floor: fx__fx,
+  ceil: fx__fx,
   fract: fx__fx,
   mod: fx__fx_fx1,
   min: fx__fx_fx1,

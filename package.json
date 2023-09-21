@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-loader node-zigar --no-warnings sharp.js"
+    "test": "node --experimental-loader node-zigar --no-warnings ./node_modules/mocha/bin/mocha.js --parallel -- test/*.test.js"
   },
   "author": "",
   "license": "MIT",
@@ -13,6 +13,9 @@
     "chevrotain": "^10.5.0"
   },
   "devDependencies": {
+    "chai": "^4.3.8",
+    "mocha": "^10.2.0",
+    "mocha-skip-if": "^1.0.4",
     "sharp": "^0.32.5"
   }
 }

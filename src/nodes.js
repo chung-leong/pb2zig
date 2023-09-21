@@ -26,6 +26,7 @@ export class Parameter {
   defaultValue;
   previewValue;
   parameterType;
+  description;
 }
 
 export class VariableDeclaration {

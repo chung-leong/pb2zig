@@ -1,8 +1,14 @@
+
+// Pixel Bender "Painting" (translated using pb2zig)
+// namespace: ar.shader.painting
+// vendor: Alan Ross
+// version: 1
+// description: Painting
+
 const std = @import("std");
-const functions = @import("./zig/functions.zig");
 
 pub const kernel = struct {
-    // parameter info
+    // kernel information
     pub const parameters = .{
         .n0 = .{
             .type = f32,
@@ -18,7 +24,7 @@ pub const kernel = struct {
         },
         .n2 = .{
             .type = f32,
-            .min_value = -0.5,
+            .min_value = 0.5,
             .max_value = 0.5,
             .default_value = 0.11,
         },
@@ -29,32 +35,40 @@ pub const kernel = struct {
     pub const output = .{
         .dst = .{ .channels = 4 },
     };
-
+    
+    // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
-            // parameter fields
+            // parameter and input image fields
             n0: f32,
             n1: f32,
             n2: f32,
-
-            // input image(s)
             src: std.meta.fieldInfo(InputStruct, .src).type,
-
-            // built-in PB functions
-            const any = functions.any;
-            const all = functions.all;
-            const lessThan = functions.lessThan;
-
-            fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+            
+            // built-in Pixel Bender functions
+            fn any(v: anytype) bool {
+                return @reduce(.Or, v);
+            }
+            
+            fn all(v: anytype) bool {
+                return @reduce(.And, v);
+            }
+            
+            fn lessThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
+                return v1 < v2;
+            }
+            
+            // functions defined in kernel
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
                 const n0 = self.n0;
                 const n1 = self.n1;
                 const n2 = self.n2;
                 const src = self.src;
-
+                
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
-
+                
                 var p: @Vector(2, f32) = outCoord;
                 var offset: @Vector(2, f32) = undefined;
                 var dist: f32 = undefined;
@@ -69,11 +83,7 @@ pub const kernel = struct {
                 var p6: @Vector(4, f32) = undefined;
                 var p7: @Vector(4, f32) = undefined;
                 var p8: @Vector(4, f32) = undefined;
-
                 c = @Vector(4, f32){ n0, n0, n0, 1.0 };
-
-                //-- no loops.
-
                 dist = n1 * 1.0;
                 offset[0] = 0.0;
                 offset[1] = 0.0;
@@ -102,7 +112,6 @@ pub const kernel = struct {
                 offset[0] = -dist;
                 offset[1] = 0.0;
                 p8 = src.sampleNearest(p + offset);
-
                 if (any(lessThan(c, p0))) {
                     c = p0;
                 }
@@ -130,9 +139,7 @@ pub const kernel = struct {
                 if (any(lessThan(c, p8))) {
                     c = p8;
                 }
-
                 temp = (p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8) / @as(@Vector(4, f32), @splat(7.0));
-
                 dist = n1 * 2.0;
                 offset[0] = 0.0;
                 offset[1] = 0.0;
@@ -161,17 +168,11 @@ pub const kernel = struct {
                 offset[0] = -dist;
                 offset[1] = 0.0;
                 p8 = src.sampleNearest(p + offset);
-
                 if (all(lessThan(c, temp))) {
-                    c[0] += n2;
-                    c[1] += n2;
-                    c[2] += n2;
+                    c = @shuffle(f32, c, c + @as(@Vector(4, f32), @splat(n2)), @Vector(4, i32){ -1, -2, -3, 3 });
                 } else {
-                    c[0] -= n2;
-                    c[1] -= n2;
-                    c[2] -= n2;
+                    c = @shuffle(f32, c, c - @as(@Vector(4, f32), @splat(n2)), @Vector(4, i32){ -1, -2, -3, 3 });
                 }
-
                 if (any(lessThan(c, p0))) {
                     c = p0;
                 }
@@ -199,7 +200,6 @@ pub const kernel = struct {
                 if (any(lessThan(c, p8))) {
                     c = p8;
                 }
-
                 dist = n1 * 3.0;
                 offset[0] = 0.0;
                 offset[1] = 0.0;
@@ -228,7 +228,6 @@ pub const kernel = struct {
                 offset[0] = -dist;
                 offset[1] = 0.0;
                 p8 = src.sampleNearest(p + offset);
-
                 if (any(lessThan(c, p0))) {
                     c = p0;
                 }
@@ -256,14 +255,14 @@ pub const kernel = struct {
                 if (any(lessThan(c, p8))) {
                     c = p8;
                 }
-
                 dst = c;
                 return dst;
             }
         };
     }
-
-    fn create(inputStruct: anytype) Instance(@TypeOf(inputStruct)) {
+    
+    // kernel instance creation function
+    pub fn create(inputStruct: anytype) Instance(@TypeOf(inputStruct)) {
         var instance: Instance(@TypeOf(inputStruct)) = undefined;
         inline for (std.meta.fields(@TypeOf(inputStruct))) |field| {
             @field(instance, field.name) = @field(inputStruct, field.name);
@@ -279,16 +278,34 @@ pub fn apply(input: Input, output: Output) void {
     processImage(kernel, input, output);
 }
 
-fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) type {
+test "apply" {
+    const src_pixels: [1]@Vector(4, u8) = .{.{ 0, 0, 0, 0 }};
+    const input: Input = .{
+        .src = .{
+            .pixels = &src_pixels,
+            .width = 1,
+            .height = 1,
+        },
+    };
+    var dst_pixels: [1]@Vector(4, u8) = .{.{ 0, 0, 0, 0 }};
+    const output: Output = .{
+        .pixels = &dst_pixels,
+        .width = 1,
+        .height = 1,
+    };
+    apply(input, output);
+}
+
+pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) type {
     return struct {
         pub const Pixel = @Vector(len, T);
         pub const FPixel = @Vector(len, f32);
         pub const channels = len;
-
+        
         pixels: if (writable) []Pixel else []const Pixel,
         width: u32,
         height: u32,
-
+        
         pub fn create(allocator: std.mem.Allocator, width: u32, height: u32) !@This() {
             return .{
                 .pixels = try allocator.alloc(Pixel, width * height),
@@ -296,14 +313,14 @@ fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) 
                 .height = height,
             };
         }
-
+        
         inline fn toUnsigned(value: f32) u32 {
             // allow negative value to be interpreted as large integers
             // to simplify bound-checking
             @setRuntimeSafety(false);
             return @intFromFloat(value);
         }
-
+        
         fn contrain(pixel: FPixel, max: f32) FPixel {
             const lower: FPixel = @splat(0);
             const upper: FPixel = @splat(max);
@@ -311,7 +328,7 @@ fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) 
             const pixel3 = @select(f32, pixel2 < upper, pixel2, upper);
             return pixel3;
         }
-
+        
         fn floatPixelFromInt(pixel: Pixel) FPixel {
             // https://github.com/ziglang/zig/issues/16267
             var numerator: FPixel = undefined;
@@ -322,7 +339,7 @@ fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) 
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
-
+        
         fn intPixelFromFloat(pixel: FPixel) Pixel {
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
@@ -334,8 +351,8 @@ fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) 
             }
             return result;
         }
-
-        fn getPixel(self: @This(), x: u32, y: u32) FPixel {
+        
+        pub fn getPixel(self: @This(), x: u32, y: u32) FPixel {
             if (x >= self.width or y >= self.height) {
                 return @as(FPixel, @splat(0));
             }
@@ -347,8 +364,11 @@ fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) 
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
         }
-
-        fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
+        
+        pub fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
+            if (comptime !writable) {
+                return;
+            }
             const index = (y * self.width) + x;
             switch (@typeInfo(T)) {
                 .Float => {
@@ -360,21 +380,21 @@ fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) 
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             }
         }
-
-        fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
+        
+        pub fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
             const x = toUnsigned(coord[0]);
             const y = toUnsigned(coord[1]);
             return self.getPixel(x, y);
         }
-
-        fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
+        
+        pub fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
             const x = toUnsigned(coord[0]);
             const y = toUnsigned(coord[1]);
             const fx = (coord[0] - 0.5) - @floor(coord[0] - 0.5);
             const fy = (coord[1] - 0.5) - @floor(coord[1] - 0.5);
             if (fx + fy == 0) {
                 if (x < self.width and y < self.height) {
-                    return self.pixels[(y * self.height) + x];
+                    return self.getPixel(x, y);
                 } else {
                     return @as(FPixel, @splat(0));
                 }
@@ -400,7 +420,7 @@ fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) 
     };
 }
 
-fn KernelInput(comptime T: type, comptime Kernel: type) type {
+pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     const param_fields = std.meta.fields(@TypeOf(Kernel.parameters));
     const input_fields = std.meta.fields(@TypeOf(Kernel.input));
     const field_count = param_fields.len + input_fields.len;
@@ -445,7 +465,7 @@ fn KernelInput(comptime T: type, comptime Kernel: type) type {
     });
 }
 
-fn KernelOutput(comptime T: type, comptime Kernel: type) type {
+pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     const output_fields = std.meta.fields(@TypeOf(Kernel.output));
     if (output_fields.len > 1) {
         @compileError("Cannot handle multiple output: " ++ output_fields.len);
@@ -454,7 +474,7 @@ fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     return Image(T, output.channels, true);
 }
 
-fn processImage(comptime Kernel: type, input: anytype, output: anytype) void {
+pub fn processImage(comptime Kernel: type, input: anytype, output: anytype) void {
     const instance = Kernel.create(input);
     var coord: @Vector(2, f32) = .{ 0, 0 };
     var y: u32 = 0;
@@ -468,22 +488,4 @@ fn processImage(comptime Kernel: type, input: anytype, output: anytype) void {
         }
         coord[1] += 1;
     }
-}
-
-test "hello" {
-    const src_pixels: [1]@Vector(4, f32) = .{.{ 0, 0, 0, 0 }};
-    const input: Input = .{
-        .src = .{
-            .pixels = &src_pixels,
-            .width = 1,
-            .height = 1,
-        },
-    };
-    var dst_pixels: [1]@Vector(4, f32) = .{.{ 0, 0, 0, 0 }};
-    const output: Output = .{
-        .pixels = &dst_pixels,
-        .width = 1,
-        .height = 1,
-    };
-    apply(input, output);
 }
