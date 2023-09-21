@@ -755,7 +755,7 @@ export class PixelBenderToZigTranslator {
           const [ index ] = indicesL;
           const valueR = this.translateExpression(operand2, typeL);
           const childType = getChildType(typeL);
-          this.add(`${nameL}[${index}] ${operator} ${valueR}`);
+          this.add(`${nameL}[${index}] ${operator} ${valueR};`);
           if (typeExpected === 'void') {
             return null;
           }
