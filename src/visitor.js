@@ -70,7 +70,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
       let type;
       switch (name) {
         case 'Number':
-          type = /\.e/.test(value) ? 'float' : 'int';
+          type = /[\.e]/.test(value) ? 'float' : 'int';
           value = parseFloat(value);
           break;
         case 'QuotedStr':
@@ -96,13 +96,13 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   literalConstructorCall(ctx) {
     const type = this.visit(ctx.type);
     const args = this.visit(ctx.literalList);
-    return this.create(N.ConstructorCall, { type, args });
+    return this.create(N.LiteralConstructorCall, { type, args });
   }
 
   literalList(ctx) {
     const args = [];
-    if (ctx.expression) {
-      for (const node of ctx.expression) {
+    if (ctx.literalValue) {
+      for (const node of ctx.literalValue) {
         args.push(this.visit(node));
       }
     }
@@ -141,7 +141,11 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   type(ctx) {
-    return this.anyName(ctx);
+    let type = this.anyName(ctx);
+    if (type.startsWith('pixel')) {
+      type = 'float' + type.slice(-1);
+    }
+    return type;
   }
 
   inputDeclaration(ctx) {
@@ -151,7 +155,8 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   outputDeclaration(ctx) {
-    const type = this.name(ctx.Pixel);
+    const typeP = this.name(ctx.Pixel);
+    const type = 'float' + typeP.slice(-1)
     const name = this.name(ctx.Identifier);
     return this.create(N.OutputDeclaration, { type, name });
   }

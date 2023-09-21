@@ -1,32 +1,82 @@
 
-// Pixel Bender "Painting" (translated using pb2zig)
-// namespace: ar.shader.painting
-// vendor: Alan Ross
+// Pixel Bender "Posterizer" (translated using pb2zig)
+// namespace: Posterizer
+// vendor: Petri Leskinen
 // version: 1
-// description: Painting
+// description: Posterizes an image using 2 to 8 specified colors
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .n0 = .{
+        .color1 = .{
+            .type = @Vector(4, f32),
+            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
+            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
+            .default_value = .{ 0.441, 0.5859375, 0.62109375, 1.0 },
+            .parameter_type = "colorRGBA",
+        },
+        .color2 = .{
+            .type = @Vector(4, f32),
+            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
+            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
+            .default_value = .{ 0.839, 0.101, 0.1289, 1.0 },
+            .parameter_type = "colorRGBA",
+        },
+        .color3 = .{
+            .type = @Vector(4, f32),
+            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
+            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
+            .default_value = .{ 0.0, 0.195, 0.3, 1.0 },
+            .parameter_type = "colorRGBA",
+        },
+        .color4 = .{
+            .type = @Vector(4, f32),
+            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
+            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
+            .default_value = .{ 0.983, 0.89, 0.656, 1.0 },
+            .parameter_type = "colorRGBA",
+        },
+        .color5 = .{
+            .type = @Vector(4, f32),
+            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
+            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
+            .default_value = .{ 0.0, 0.0, 0.0, 1.0 },
+            .parameter_type = "colorRGBA",
+        },
+        .color6 = .{
+            .type = @Vector(4, f32),
+            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
+            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
+            .default_value = .{ 1.0, 0.0, 0.0, 1.0 },
+            .parameter_type = "colorRGBA",
+        },
+        .color7 = .{
+            .type = @Vector(4, f32),
+            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
+            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
+            .default_value = .{ 0.0, 1.0, 0.0, 1.0 },
+            .parameter_type = "colorRGBA",
+        },
+        .color8 = .{
+            .type = @Vector(4, f32),
+            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
+            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
+            .default_value = .{ 0.0, 0.0, 1.0, 1.0 },
+            .parameter_type = "colorRGBA",
+        },
+        .numColors = .{
+            .type = i32,
+            .min_value = 2,
+            .max_value = 8,
+            .default_value = 4,
+        },
+        .blur = .{
             .type = f32,
             .min_value = 0.0,
-            .max_value = 1.0,
-            .default_value = 0.0,
-        },
-        .n1 = .{
-            .type = f32,
-            .min_value = 0.0,
-            .max_value = 1.5,
-            .default_value = 0.6,
-        },
-        .n2 = .{
-            .type = f32,
-            .min_value = 0.5,
-            .max_value = 0.5,
-            .default_value = 0.11,
+            .max_value = 4.0,
+            .default_value = 0.5,
         },
     };
     pub const input = .{
@@ -40,222 +90,138 @@ pub const kernel = struct {
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            n0: f32,
-            n1: f32,
-            n2: f32,
+            color1: @Vector(4, f32),
+            color2: @Vector(4, f32),
+            color3: @Vector(4, f32),
+            color4: @Vector(4, f32),
+            color5: @Vector(4, f32),
+            color6: @Vector(4, f32),
+            color7: @Vector(4, f32),
+            color8: @Vector(4, f32),
+            numColors: i32,
+            blur: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn any(v: anytype) bool {
-                return @reduce(.Or, v);
-            }
-            
-            fn all(v: anytype) bool {
-                return @reduce(.And, v);
-            }
-            
-            fn lessThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
-                return v1 < v2;
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const n0 = self.n0;
-                const n1 = self.n1;
-                const n2 = self.n2;
+                const color1 = self.color1;
+                const color2 = self.color2;
+                const color3 = self.color3;
+                const color4 = self.color4;
+                const color5 = self.color5;
+                const color6 = self.color6;
+                const color7 = self.color7;
+                const color8 = self.color8;
+                const numColors = self.numColors;
+                const blur = self.blur;
                 const src = self.src;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                var p: @Vector(2, f32) = outCoord;
-                var offset: @Vector(2, f32) = undefined;
                 var dist: f32 = undefined;
-                var c: @Vector(4, f32) = undefined;
-                var temp: @Vector(4, f32) = undefined;
-                var p0: @Vector(4, f32) = undefined;
-                var p1: @Vector(4, f32) = undefined;
-                var p2: @Vector(4, f32) = undefined;
-                var p3: @Vector(4, f32) = undefined;
-                var p4: @Vector(4, f32) = undefined;
-                var p5: @Vector(4, f32) = undefined;
-                var p6: @Vector(4, f32) = undefined;
-                var p7: @Vector(4, f32) = undefined;
-                var p8: @Vector(4, f32) = undefined;
-                c = @Vector(4, f32){ n0, n0, n0, 1 };
-                dist = n1 * 1;
-                offset[0] = 0;
-                offset[1] = 0;
-                p0 = src.sampleNearest(p + offset);
-                offset[0] = -dist;
-                offset[1] = -dist;
-                p1 = src.sampleNearest(p + offset);
-                offset[0] = 0;
-                offset[1] = -dist;
-                p2 = src.sampleNearest(p + offset);
-                offset[0] = dist;
-                offset[1] = -dist;
-                p3 = src.sampleNearest(p + offset);
-                offset[0] = dist;
-                offset[1] = 0;
-                p4 = src.sampleNearest(p + offset);
-                offset[0] = dist;
-                offset[1] = dist;
-                p5 = src.sampleNearest(p + offset);
-                offset[0] = 0;
-                offset[1] = dist;
-                p6 = src.sampleNearest(p + offset);
-                offset[0] = -dist;
-                offset[1] = dist;
-                p7 = src.sampleNearest(p + offset);
-                offset[0] = -dist;
-                offset[1] = 0;
-                p8 = src.sampleNearest(p + offset);
-                if (any(lessThan(c, p0))) {
-                    c = p0;
-                }
-                if (any(lessThan(c, p1))) {
-                    c = p1;
-                }
-                if (any(lessThan(c, p2))) {
-                    c = p2;
-                }
-                if (any(lessThan(c, p3))) {
-                    c = p3;
-                }
-                if (any(lessThan(c, p4))) {
-                    c = p4;
-                }
-                if (any(lessThan(c, p5))) {
-                    c = p5;
-                }
-                if (any(lessThan(c, p6))) {
-                    c = p6;
-                }
-                if (any(lessThan(c, p7))) {
-                    c = p7;
-                }
-                if (any(lessThan(c, p8))) {
-                    c = p8;
-                }
-                temp = (p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8) / @as(@Vector(4, f32), @splat(7));
-                dist = n1 * 2;
-                offset[0] = 0;
-                offset[1] = 0;
-                p0 = src.sampleNearest(p + offset);
-                offset[0] = -dist;
-                offset[1] = -dist;
-                p1 = src.sampleNearest(p + offset);
-                offset[0] = 0;
-                offset[1] = -dist;
-                p2 = src.sampleNearest(p + offset);
-                offset[0] = dist;
-                offset[1] = -dist;
-                p3 = src.sampleNearest(p + offset);
-                offset[0] = dist;
-                offset[1] = 0;
-                p4 = src.sampleNearest(p + offset);
-                offset[0] = dist;
-                offset[1] = dist;
-                p5 = src.sampleNearest(p + offset);
-                offset[0] = 0;
-                offset[1] = dist;
-                p6 = src.sampleNearest(p + offset);
-                offset[0] = -dist;
-                offset[1] = dist;
-                p7 = src.sampleNearest(p + offset);
-                offset[0] = -dist;
-                offset[1] = 0;
-                p8 = src.sampleNearest(p + offset);
-                if (all(lessThan(c, temp))) {
-                    c = @shuffle(f32, c, c + @as(@Vector(4, f32), @splat(n2)), @Vector(4, i32){ -1, -2, -3, 3 });
+                var minDist: f32 = undefined;
+                var tmp: f32 = undefined;
+                var po: @Vector(4, f32) = src.sampleLinear(outCoord);
+                po += src.sampleLinear(outCoord + @Vector(2, f32){ blur, 0.0 }) + src.sampleLinear(outCoord + @Vector(2, f32){ -blur, 0.0 });
+                po += src.sampleLinear(outCoord + @Vector(2, f32){ 0.0, blur }) + src.sampleLinear(outCoord + @Vector(2, f32){ 0.0, -blur });
+                if (po[3] < 0.01) {
+                    dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 } else {
-                    c = @shuffle(f32, c, c - @as(@Vector(4, f32), @splat(n2)), @Vector(4, i32){ -1, -2, -3, 3 });
+                    po /= @as(@Vector(4, f32), @splat(po[3]));
+                    dst = color1;
+                    tmp = po[0] - dst[0];
+                    const tmp1 = tmp;
+                    tmp = po[1] - dst[1];
+                    const tmp2 = tmp;
+                    tmp = po[2] - dst[2];
+                    const tmp3 = tmp;
+                    minDist = tmp1 * tmp1 + tmp2 * tmp2 + tmp3 * tmp3;
+                    tmp = po[0] - color2[0];
+                    const tmp4 = tmp;
+                    tmp = po[1] - color2[1];
+                    const tmp5 = tmp;
+                    tmp = po[2] - color2[2];
+                    const tmp6 = tmp;
+                    dist = tmp4 * tmp4 + tmp5 * tmp5 + tmp6 * tmp6;
+                    const tmp7 = dist;
+                    if (tmp7 < minDist) {
+                        minDist = tmp7;
+                        dst = color2;
+                    }
+                    tmp = po[0] - color3[0];
+                    const tmp8 = tmp;
+                    tmp = po[1] - color3[1];
+                    const tmp9 = tmp;
+                    tmp = po[2] - color3[2];
+                    const tmp10 = tmp;
+                    dist = tmp8 * tmp8 + tmp9 * tmp9 + tmp10 * tmp10;
+                    const tmp11 = dist;
+                    if (numColors > 2 and tmp11 < minDist) {
+                        minDist = tmp11;
+                        dst = color3;
+                    }
+                    tmp = po[0] - color4[0];
+                    const tmp12 = tmp;
+                    tmp = po[1] - color4[1];
+                    const tmp13 = tmp;
+                    tmp = po[2] - color4[2];
+                    const tmp14 = tmp;
+                    dist = tmp12 * tmp12 + tmp13 * tmp13 + tmp14 * tmp14;
+                    const tmp15 = dist;
+                    if (numColors > 3 and tmp15 < minDist) {
+                        minDist = tmp15;
+                        dst = color4;
+                    }
+                    tmp = po[0] - color5[0];
+                    const tmp16 = tmp;
+                    tmp = po[1] - color5[1];
+                    const tmp17 = tmp;
+                    tmp = po[2] - color5[2];
+                    const tmp18 = tmp;
+                    dist = tmp16 * tmp16 + tmp17 * tmp17 + tmp18 * tmp18;
+                    const tmp19 = dist;
+                    if (numColors > 4 and tmp19 < minDist) {
+                        minDist = tmp19;
+                        dst = color5;
+                    }
+                    tmp = po[0] - color6[0];
+                    const tmp20 = tmp;
+                    tmp = po[1] - color6[1];
+                    const tmp21 = tmp;
+                    tmp = po[2] - color6[2];
+                    const tmp22 = tmp;
+                    dist = tmp20 * tmp20 + tmp21 * tmp21 + tmp22 * tmp22;
+                    const tmp23 = dist;
+                    if (numColors > 5 and tmp23 < minDist) {
+                        minDist = tmp23;
+                        dst = color6;
+                    }
+                    tmp = po[0] - color7[0];
+                    const tmp24 = tmp;
+                    tmp = po[1] - color7[1];
+                    const tmp25 = tmp;
+                    tmp = po[2] - color7[2];
+                    const tmp26 = tmp;
+                    dist = tmp24 * tmp24 + tmp25 * tmp25 + tmp26 * tmp26;
+                    const tmp27 = dist;
+                    if (numColors > 6 and tmp27 < minDist) {
+                        minDist = tmp27;
+                        dst = color7;
+                    }
+                    tmp = po[0] - color8[0];
+                    const tmp28 = tmp;
+                    tmp = po[1] - color8[1];
+                    const tmp29 = tmp;
+                    tmp = po[2] - color8[2];
+                    const tmp30 = tmp;
+                    dist = tmp28 * tmp28 + tmp29 * tmp29 + tmp30 * tmp30;
+                    const tmp31 = dist;
+                    if (numColors > 7 and tmp31 < minDist) {
+                        dst = color8;
+                    }
                 }
-                if (any(lessThan(c, p0))) {
-                    c = p0;
-                }
-                if (any(lessThan(c, p1))) {
-                    c = p1;
-                }
-                if (any(lessThan(c, p2))) {
-                    c = p2;
-                }
-                if (any(lessThan(c, p3))) {
-                    c = p3;
-                }
-                if (any(lessThan(c, p4))) {
-                    c = p4;
-                }
-                if (any(lessThan(c, p5))) {
-                    c = p5;
-                }
-                if (any(lessThan(c, p6))) {
-                    c = p6;
-                }
-                if (any(lessThan(c, p7))) {
-                    c = p7;
-                }
-                if (any(lessThan(c, p8))) {
-                    c = p8;
-                }
-                dist = n1 * 3;
-                offset[0] = 0;
-                offset[1] = 0;
-                p0 = src.sampleNearest(p + offset);
-                offset[0] = -dist;
-                offset[1] = -dist;
-                p1 = src.sampleNearest(p + offset);
-                offset[0] = 0;
-                offset[1] = -dist;
-                p2 = src.sampleNearest(p + offset);
-                offset[0] = dist;
-                offset[1] = -dist;
-                p3 = src.sampleNearest(p + offset);
-                offset[0] = dist;
-                offset[1] = 0;
-                p4 = src.sampleNearest(p + offset);
-                offset[0] = dist;
-                offset[1] = dist;
-                p5 = src.sampleNearest(p + offset);
-                offset[0] = 0;
-                offset[1] = dist;
-                p6 = src.sampleNearest(p + offset);
-                offset[0] = -dist;
-                offset[1] = dist;
-                p7 = src.sampleNearest(p + offset);
-                offset[0] = -dist;
-                offset[1] = 0;
-                p8 = src.sampleNearest(p + offset);
-                if (any(lessThan(c, p0))) {
-                    c = p0;
-                }
-                if (any(lessThan(c, p1))) {
-                    c = p1;
-                }
-                if (any(lessThan(c, p2))) {
-                    c = p2;
-                }
-                if (any(lessThan(c, p3))) {
-                    c = p3;
-                }
-                if (any(lessThan(c, p4))) {
-                    c = p4;
-                }
-                if (any(lessThan(c, p5))) {
-                    c = p5;
-                }
-                if (any(lessThan(c, p6))) {
-                    c = p6;
-                }
-                if (any(lessThan(c, p7))) {
-                    c = p7;
-                }
-                if (any(lessThan(c, p8))) {
-                    c = p8;
-                }
-                dst = c;
                 return dst;
             }
         };

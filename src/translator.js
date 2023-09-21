@@ -8,9 +8,9 @@ export class PixelBenderToZigTranslator {
   scopeStack;
   scope;
   functionArgTypes;
-  macros;
   ast;
   macroASTs;
+  variableAliases;
 
   translate(ast, macroASTs) {
     this.reset();
@@ -113,6 +113,73 @@ export class PixelBenderToZigTranslator {
 
   hasVariable(name) {
     return !!this.scope[name];
+  }
+
+  getVariableAlias(name) {
+    return this.variableAliases[name] ?? name;
+  }
+
+  clearVariableAliases() {
+    this.variableAliases = {};
+  }
+
+  addTempVariable(target) {
+    let count = 1;
+    let name;
+    do {
+      name = `tmp${count++}`;
+    } while(this.hasVariable(name));
+    this.setVariableType(name, 'anytype');
+    this.add(`const ${name} = ${target};`);
+    this.variableAliases[target] = name;
+    return name;
+  }
+
+  hasFunction(name) {
+    return !!this.functionArgTypes[name];
+  }
+
+  expandMacro(name, args) {
+    const macro = this.macroASTs.find(m => m.name === name);
+    if (!macro) {
+      return null;
+    }
+    if (macro.args.length !== args.length) {
+      const s = (macro.args.length > 1) ? 's' : '';
+      throw new Error(`Macro ${name}() expects ${macro.args.length} argument${s}, received ${args.length}`);
+    }
+    const argsByName = {};
+    for (const [ index, argName ] of macro.args.entries()) {
+      argsByName[argName] = args[index];
+    }
+    const clone = function(object) {
+      if (Array.isArray(object)) {
+        return object.map(clone);
+      } else if (object && typeof(object) === 'object') {
+        if (object instanceof N.VariableAccess) {
+          const [ name, prop ] = object.names;
+          const arg = argsByName[name];
+          if (arg) {
+            if (prop) {
+              const argProp = new N.VariableAccess();
+              argProp.names = [ arg.names[0], prop ];
+              return argProp;
+            } else {
+              return arg;
+            }
+          }
+        }
+        const copy = new object.constructor();
+        for (const [ name, child ] of Object.entries(object)) {
+          copy[name] = clone(child);
+        }
+        return copy;
+      } else {
+        return object;
+      }
+    };
+    const expanded = clone(macro.expression);
+    return expanded;
   }
 
   setFunctionArgs(name, argTypes) {
@@ -242,6 +309,7 @@ export class PixelBenderToZigTranslator {
     this.addInputFields();
     this.addConstants();
     this.addCalledFunctions();
+    this.addMacroFunctions();
     this.addDefinedFunctions();
     this.add(`};`);
     this.add(`}`);
@@ -352,38 +420,70 @@ export class PixelBenderToZigTranslator {
   addConstants() {
     // look for function definition so we don't scan into them
     const decls = this.find([ N.ConstantDeclaration, N.FunctionDefinition ]).filter(d => d instanceof N.ConstantDeclaration);
-    // convert macros without dependencies on unknown variables into constants
-    for (const macro of this.macroASTs) {
-      if (!macro.args && !this.isExpansionNecessary(macro)) {
-        const statement = new N.ConstantDeclaration;
-        statement.name = macro.name;
-        statement.initializer = macro.expression;
-        decls.push(statement);
-      }
-    }
     if (decls.length > 0) {
       this.add(`// constants`);
       for (const decl of decls) {
         this.addStatement(decl);
       }
+    }
+    // convert macros without dependencies on unknown variables into constants
+    let count = decls.length;
+    for (const macro of this.macroASTs) {
+      const { name, args, expression } = macro;
+      if (!args) {
+        try {
+          const expr = this.translateExpression(expression);
+          if (count === 0) {
+            this.add(`// constants`);
+          }
+          this.add(`const ${name} = ${expr};`);
+          this.setVariableType(name, expr.type);
+          count++;
+        } catch (err) {
+          // if the expression uses varaibles not defined in the global
+          // scope, it will fail and land here
+        }
+      }
+    }
+    if (count > 0) {
       this.add(``);
     }
   }
 
-  isExpansionNecessary(macro) {
-    let necessary = false;
-    this.walk(macro, (node) => {
-      if (node instanceof N.VariableAccess) {
-        const [ name ] = node.names;
-        if (macro.args?.includes(name) || this.hasVariable(name))  {
-          return;
-        } else {
-          necessary = true;
-          return false;
+  addMacroFunctions() {
+    let count = 0;
+    for (const macro of this.macroASTs) {
+      const { name, args, expression } = macro;
+      if (args) {
+        // see if we can handle it as a generic function
+        try {
+          this.startScope();
+          for (const name of args) {
+            this.setVariableType(name, 'anytype');
+          }
+          const expr = this.translateExpression(expression);
+          const argList = args.map(name => `${name}: anytype`);
+          let returnType = expr.type;
+          if (returnType === 'anytype') {
+            returnType = `@TypeOf(${args[0]})`;
+          }
+          if (count === 0) {
+            this.add(`// macro functions`);
+          }
+          this.add(`fn ${name}(${argList.join(', ')}) ${returnType} {`);
+          this.add(`return ${expr};`);
+          this.add(`}`)
+          count++;
+        } catch (err) {
+          // must be expanded
+        } finally {
+          this.endScope();
         }
       }
-    });
-    return necessary;
+    }
+    if (count > 0) {
+      this.add(``);
+    }
   }
 
   addDependentVariables() {
@@ -448,6 +548,7 @@ export class PixelBenderToZigTranslator {
       this.add(`[TODO: ${fname}];`);
       console.log(statement);
     }
+    this.clearVariableAliases();
   }
 
   addVariableDeclaration({ type, name, initializer }) {
@@ -458,17 +559,15 @@ export class PixelBenderToZigTranslator {
 
   addConstantDeclaration({ type, name, initializer }) {
     const valueR = this.translateExpression(initializer, type);
-    if (type) {
-      this.add(`const ${name}: ${getZigType(type)} = ${valueR};`);
-    } else {
-      this.add(`const ${name} = ${valueR};`);
-    }
+    this.add(`const ${name}: ${getZigType(type)} = ${valueR};`);
     this.setVariableType(name, type);
   }
 
   addExpressionStatement({ expression }) {
     const op = this.translateExpression(expression, 'void');
-    this.add(`${op};`);
+    if (op !== null) {
+      this.add(`${op};`);
+    }
   }
 
   addIfStatement(stmt) {
@@ -496,68 +595,113 @@ export class PixelBenderToZigTranslator {
     if (f) {
       return f.call(this, expression, typeExpected);
     } else {
+      if (expression.constructor.name === 'ZigExpr') {
+        throw new Error('Already translated');
+      }
       console.log(expression);
-      return new Expression(`[TODO: ${fname}]`, 'bool');
+      return new ZigExpr(`[TODO: ${fname}]`, 'bool');
     }
   }
 
   translateLiteral({ type, value }, typeExpected) {
-    if (type == 'int' && typeExpected == 'float') {
-      type = typeExpected;
+    if (type == 'int' && typeExpected?.startsWith('float')) {
+      type = getChildType(typeExpected);
     }
-    return new Expression(getZigLiteral(value, type), type);
+    return new ZigExpr(getZigLiteral(value, type), type);
   }
 
   translateVariableAccess({ names }) {
-    const [ nameR, propR ] = names;
-    const typeR = this.getVariableType(nameR);
-    if (propR) {
-      const indicesR = getSwizzleIndices(propR);
-      const typeS = getSwizzleType(typeR, indicesR);
+    const [ name, prop ] = names;
+    const type = this.getVariableType(name);
+    // in case the variable is aliased by a temporary variable
+    const nameA = this.getVariableAlias(name);
+    if (prop) {
+      const indicesR = getSwizzleIndices(prop);
+      const typeS = getSwizzleType(type, indicesR);
       if (indicesR.length > 1) {
-        const czType = getChildZigType(typeS);
+        const typeCZ = getChildZigType(typeS);
         const mask = `@Vector(${indicesR.length}, i32){ ${indicesR.join(', ') } }`;
-        return new Expression(`@select(${czType}, ${nameR}, undefined, ${mask})`, typeS);
+        return new ZigExpr(`@select(${typeCZ}, ${nameA}, undefined, ${mask})`, typeS);
       } else {
         const [ index ] = indicesR;
-        return new Expression(`${nameR}[${index}]`, typeS);
+        return new ZigExpr(`${nameA}[${index}]`, typeS);
       }
     } else {
-      return new Expression(nameR, typeR);
+      return new ZigExpr(nameA, type);
     }
   }
 
   translateFunctionCall({ name, args }) {
+    if (!this.hasFunction(name)) {
+      const expanded = this.expandMacro(name, args);
+      if (expanded) {
+        return this.translateExpression(expanded);
+      }
+    }
     const argList = args.map(a => this.translateExpression(a));
     const type = this.getReturnValueType(name, argList);
     switch (name) {
       case 'outCoord':
-        return new Expression(`outCoord`, type);
+        return new ZigExpr(`outCoord`, type);
       case 'sample':
         return translateFunctionCall({ name: 'sampleLinear', args });
       case 'sampleNearest':
       case 'sampleLinear':
-        return new Expression(`${argList[0]}.${name}(${argList[1]})`, type);
+        return new ZigExpr(`${argList[0]}.${name}(${argList[1]})`, type);
       default:
-        return new Expression(`${name}(${argList.join(', ')})`, type);
+        return new ZigExpr(`${name}(${argList.join(', ')})`, type);
     }
   }
 
   translateConstructorCall({ type, args }) {
-    const argList = args.map(a => this.translateExpression(a));
-    if (args.length === 1) {
-      const arg = args[0];
+    const argList = args.map(a => this.translateExpression(a, type));
+    const width = getVectorWidth(type);
+    if (width === 1) {
+      const arg = argList[0];
+      arg.convert(type);
+      return arg;
+    } else {
+      const childType = getChildType(type);
+      const typeZ = getZigType(type);
+      argList.forEach(a => a.convert(childType));
+      if (argList.length === 1) {
+        const arg = argList[0];
+        arg.promote(type);
+        return arg;
+      } else {
+        return new ZigExpr(`${typeZ}{ ${argList.join(', ')} }`, type);
+      }
+    }
+  }
+
+  translateLiteralConstructorCall({ type, args }) {
+    const argList = args.map(a => this.translateExpression(a, type));
+    const width = getVectorWidth(type);
+    if (width === 1) {
+      const arg = argList[0];
       arg.convert(type);
       return arg;
     } else {
       const childType = getChildType(type);
       argList.forEach(a => a.convert(childType));
-      const zType = getZigType(type);
-      return new Expression(`${zType}{ ${ argList.join(', ')} }`);
+      if (argList.length === 1) {
+        while (argList.length < width) {
+          argList.push(argList[0]);
+        }
+      }
+      return new ZigExpr(`.{ ${argList.join(', ')} }`, type);
     }
   }
 
   translateBinaryOperation({ operator, operand1, operand2 }, typeExpected) {
+    switch (operator) {
+      case '&&':
+        operator = 'and';
+        break;
+      case '||':
+        operator = 'or';
+        break;
+    };
     if (operator.endsWith('=')) {
       const [ nameL, propL ] = operand1.names;
       const typeL = this.getVariableType(nameL);
@@ -571,7 +715,7 @@ export class PixelBenderToZigTranslator {
             // the right size has a mask too, get its indices
             const [ nameR, propR ] = operand2.names;
             const typeR = this.getVariableType(nameR);
-            valueR = new Expression(nameR, typeR);
+            valueR = new ZigExpr(nameR, typeR);
             indicesR = getSwizzleIndices(propR);
           } else {
             // get the full vector and a list of sequential indices
@@ -583,7 +727,7 @@ export class PixelBenderToZigTranslator {
             if (!valueR.isVector()) {
               valueR.promote(typeL);
             }
-            valueR = new Expression(`${nameL} ${operator.charAt(0)} ${valueR}`, typeL);
+            valueR = new ZigExpr(`${nameL} ${operator.charAt(0)} ${valueR}`, typeL);
           }
           // build the shuffle mask
           const indicesM = [];
@@ -598,23 +742,35 @@ export class PixelBenderToZigTranslator {
             }
           }
           const mask1 = `@Vector(${indicesM.length}, i32){ ${indicesM.join(', ') } }`;
-          const czType = getChildZigType(typeL);
-          const result = new Expression(`${nameL} = @shuffle(${czType}, ${nameL}, ${valueR}, ${mask1})`, typeL);
+          const typeCZ = getChildZigType(typeL);
+          this.add(`${nameL} = @shuffle(${typeCZ}, ${nameL}, ${valueR}, ${mask1});`);
           if (typeExpected === 'void') {
             // the result isn't used, so it doesn't matter that the width is wrong
-            return result;
+            return null;
           }
+          const tmp = this.addTempVariable(nameL);
           const mask2 = `@Vector(${indicesL.length}, i32){ ${indicesL.join(', ') } }`;
-          return new Expression(`@select(${czType}, ${result}, undefined, ${mask2})`, typeS);
+          return new ZigExpr(`@select(${typeCZ}, ${tmp}, undefined, ${mask2})`, typeS);
         } else {
           const [ index ] = indicesL;
           const valueR = this.translateExpression(operand2, typeL);
           const childType = getChildType(typeL);
-          return new Expression(`${nameL}[${index}] ${operator} ${valueR}`, childType);
+          this.add(`${nameL}[${index}] ${operator} ${valueR}`);
+          if (typeExpected === 'void') {
+            return null;
+          }
+          const tmp = this.addTempVariable(`${nameL}[${index}]`);
+          return new ZigExpr(tmp, childType);
         }
       } else {
         const valueR = this.translateExpression(operand2, typeL);
-        return new Expression(`${nameL} ${operator} ${valueR}`, typeL);
+        valueR.promote(typeL);
+        this.add(`${nameL} ${operator} ${valueR};`);
+        if (typeExpected === 'void') {
+          return null;
+        }
+        const tmp = this.addTempVariable(nameL);
+        return new ZigExpr(tmp, typeL);
       }
     } else {
       const opL = this.translateExpression(operand1);
@@ -624,18 +780,22 @@ export class PixelBenderToZigTranslator {
       } else if (opL.isVector() && !opR.isVector()) {
         opR.promote(opL.type);
       }
-      return new Expression(`${opL} ${operator} ${opR}`, opL.type);
+      return new ZigExpr(`${opL} ${operator} ${opR}`, opL.type);
     }
   }
 
   translateUnaryOperation({ operator, operand }) {
     const op = this.translateExpression(operand);
-    return new Expression(`${operator}${op}`, op.type);
+    return new ZigExpr(`${operator}${op}`, op.type);
   }
 
   translateParentheses({ expression }) {
     const expr = this.translateExpression(expression);
-    return new Expression(`(${expr})`, expr.type);
+    if (/^\w+$/.test(expr)) {
+      // don't need the parentheses
+      return expr;
+    }
+    return new ZigExpr(`(${expr})`, expr.type);
   }
 }
 
@@ -645,7 +805,7 @@ export function translate(ast, macroASTs) {
   return translater.translate(ast, macroASTs);
 }
 
-class Expression {
+class ZigExpr {
   constructor(text, type) {
     this.text = text;
     this.type = type;
@@ -660,10 +820,12 @@ class Expression {
   }
 
   promote(type) {
-    this.convert(getChildType(type));
-    const zType = getZigType(type);
-    this.text = `@as(${zType}, @splat(${this.text}))`;
-    this.type = type;
+    if (this.type !== type && !isVector(this.type)) {
+      this.convert(getChildType(type));
+      const typeZ = getZigType(type);
+      this.text = `@as(${typeZ}, @splat(${this.text}))`;
+      this.type = type;
+    }
   }
 
   convert(type) {
@@ -673,11 +835,19 @@ class Expression {
       } else if (this.type === 'bool') {
         this.text = `(if (${this.text}) 1 else 0)`;
       } else if (type === 'float') {
-        if (isNaN(parseInt(this.text))) {
+        const value = parseFloat(this.text);
+        if (isNaN(value)) {
           this.text = `@floatFromInt(${this.text})`;
+        } else {
+          this.text = getZigLiteral(value, type);
         }
       } else if (type === 'int') {
-        this.text = `@intFromFloat(${this.text})`;
+        const value = parseInt(this.text);
+        if (isNaN(value)) {
+          this.text = `@intFromFloat(${this.text})`;
+        } else {
+          this.text = getZigLiteral(value, type);
+        }
       }
     }
     this.type = type;
@@ -691,9 +861,6 @@ class Expression {
 function getZigType(type) {
   if (type === undefined) {
     return undefined;
-  }
-  if (type.startsWith('pixel')) {
-    type = `float` + type.slice(-1);
   }
   if (type.startsWith('image')) {
     return 'Image';
@@ -730,7 +897,7 @@ function getChildZigType(type) {
 }
 
 function getChildType(type) {
-  return type.slice(0, -1);
+  return isVector(type) ? type.slice(0, -1) : type;
 }
 
 function isVector(type) {
@@ -808,10 +975,6 @@ const image1 = 'image1';
 const image2 = 'image2';
 const image3 = 'image3';
 const image4 = 'image4';
-const pixel1 = 'pixel1';
-const pixel2 = 'pixel2';
-const pixel3 = 'pixel3';
-const pixel4 = 'pixel4';
 
 const fx__fx = [
   [ float, float ],
@@ -869,10 +1032,10 @@ const b__bv = [
   [ bool, bool4 ],
 ];
 const px__im_f2 = [
-  [ pixel1, image1, float2 ],
-  [ pixel2, image2, float2 ],
-  [ pixel3, image3, float2 ],
-  [ pixel4, image4, float2 ],
+  [ float, image1, float2 ],
+  [ float2, image2, float2 ],
+  [ float3, image3, float2 ],
+  [ float4, image4, float2 ],
 ];
 
 const builtInfunctionArgTypes = {
@@ -940,20 +1103,20 @@ const builtInfunctionArgTypes = {
     [ float2, image2 ],
     [ float2, image3 ],
     [ float2, image4 ],
-    [ float2, pixel1 ],
-    [ float2, pixel2 ],
-    [ float2, pixel3 ],
-    [ float2, pixel4 ],
+    [ float2, float ],
+    [ float2, float2 ],
+    [ float2, float3 ],
+    [ float2, float4 ],
   ],
   pixelAspectRatio: [
     [ float, image1 ],
     [ float, image2 ],
     [ float, image3 ],
     [ float, image4 ],
-    [ float, pixel1 ],
-    [ float, pixel2 ],
-    [ float, pixel3 ],
-    [ float, pixel4 ],
+    [ float, float ],
+    [ float, float2 ],
+    [ float, float3 ],
+    [ float, float4 ],
   ],
 };
 
