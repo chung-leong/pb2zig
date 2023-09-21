@@ -1,31 +1,54 @@
 
-// Pixel Bender "AsciiMii" (translated using pb2zig)
-// namespace: com.greyboxware.asciimii
-// vendor: Richard Zurad
+// Pixel Bender "ZoomBlurFocus" (translated using pb2zig)
+// namespace: com.abril
+// vendor: Daniel Allegretti
 // version: 1
-// description: Filter to mimic the TEXTp effect from YouTube's 2010 April Fools joke
+// description: Ajustable zoom blur, you can control focal size, edge hardness and light. Based on ZoomBlur by Ryan Phelan.
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .size = .{
-            .type = i32,
-            .min_value = 1,
-            .max_value = 32,
-            .default_value = 8,
+        .amount = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 0.5,
+            .default_value = 0.25,
         },
-        .charCount = .{
+        .center = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ 0.0, 0.0 },
+            .max_value = .{ 900.0, 900.0 },
+            .default_value = .{ 200.0, 200.0 },
+        },
+        .focalSize = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 500.0,
+            .default_value = 100.0,
+        },
+        .invert = .{
             .type = i32,
-            .min_value = 1,
-            .max_value = 512,
-            .default_value = 256,
+            .min_value = 0,
+            .max_value = 1,
+            .default_value = 0,
+        },
+        .vignette = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 1.0,
+            .default_value = 0.6,
+        },
+        .edgeHardness = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 1.0,
+            .default_value = 0.0,
         },
     };
     pub const input = .{
         .src = .{ .channels = 4 },
-        .text = .{ .channels = 4 },
     };
     pub const output = .{
         .dst = .{ .channels = 4 },
@@ -35,55 +58,101 @@ pub const kernel = struct {
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            size: i32,
-            charCount: i32,
+            amount: f32,
+            center: @Vector(2, f32),
+            focalSize: f32,
+            invert: i32,
+            vignette: f32,
+            edgeHardness: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            text: std.meta.fieldInfo(InputStruct, .src).type,
             
             // built-in Pixel Bender functions
-            fn sqrt(v: anytype) @TypeOf(v) {
-                return @sqrt(v);
-            }
-            
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @mod(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @mod(v1, v2),
-                    },
-                };
+            fn length(v: anytype) f32 {
+                return @typeInfo(@TypeOf(v)).Vector.len;
             }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const size = self.size;
-                const charCount = self.charCount;
+                const amount = self.amount;
+                const center = self.center;
+                const focalSize = self.focalSize;
+                const invert = self.invert;
+                const vignette = self.vignette;
+                const edgeHardness = self.edgeHardness;
                 const src = self.src;
-                const text = self.text;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                var sizef: f32 = @floatFromInt(size);
-                var charCountf: f32 = @floatFromInt(charCount);
-                var offset2: @Vector(2, f32) = mod(outCoord, sizef);
-                var mosaicPixel4: @Vector(4, f32) = src.sampleNearest(outCoord - offset2);
-                var luma: f32 = 0.2126 * mosaicPixel4[0] + 0.7152 * mosaicPixel4[1] + 0.0722 * mosaicPixel4[2];
-                var range: f32 = (1.0 / (charCountf - 1.0));
-                var fontOffset: f32 = sizef * floor(luma / range);
-                var fontmapsize: f32 = (sizef * floor(sqrt(charCountf)));
-                var yRow: f32 = floor(fontOffset / fontmapsize);
-                offset2[1] = offset2[1] + (sizef * yRow);
-                offset2[0] = offset2[0] + (fontOffset - (fontmapsize * yRow));
-                var charPixel4: @Vector(4, f32) = text.sampleLinear(offset2);
-                dst = @shuffle(f32, dst, @shuffle(f32, mosaicPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }) * @shuffle(f32, charPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
-                dst[3] = mosaicPixel4[3];
+                var str: f32 = 1.0 - vignette;
+                var coord: @Vector(2, f32) = outCoord;
+                var cur_radius: f32 = length(coord - center);
+                var color: @Vector(4, f32) = src.sampleNearest(coord);
+                var cond1: i32 = [TODO: translateConditional];
+                invert == 1;
+                const tmp1 = invert;
+                if (tmp1) {
+                    cond1 == 0;
+                    const tmp2 = cond1;
+                    if (tmp2) {
+                        cond1 = 1;
+                    } else {
+                        cond1 = 0;
+                    }
+                }
+                var strength: f32 = undefined;
+                invert == 1;
+                const tmp2 = invert;
+                if (tmp2) {
+                    strength = cur_radius / focalSize;
+                } else {
+                    strength = focalSize / cur_radius;
+                }
+                var tmpAmount: f32 = strength * amount;
+                coord -= center;
+                var tmpDst: @Vector(4, f32) = @as(@Vector(4, f32), @splat(0.0));
+                var scale: f32 = undefined;
+                scale = 1.0;
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (1.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (2.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (3.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (4.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (5.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (6.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (7.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (8.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (9.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (10.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (11.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (12.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (13.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                scale = 1.0 + tmpAmount * (14.0 / 14.0);
+                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst /= @as(@Vector(4, f32), @splat(15.0));
+                cond1 == 1;
+                const tmp3 = cond1;
+                if (tmp3) {
+                    dst = (@as(@Vector(4, f32), @splat((1.0 - edgeHardness))) * ((color * @as(@Vector(4, f32), @splat(strength))) + (tmpDst * @as(@Vector(4, f32), @splat((1.0 - strength)))))) + (tmpDst * @as(@Vector(4, f32), @splat(edgeHardness)));
+                    dst = @shuffle(f32, dst, (@as(@Vector(3, f32), @splat(vignette)) * @shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(strength))) + (@shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat((1.0 - vignette)))), @Vector(4, i32){ -1, -2, -3, 3 });
+                } else {
+                    dst = color;
+                }
+                dst[3] = color[3];
                 return dst;
             }
         };

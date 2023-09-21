@@ -1,31 +1,20 @@
 
-// Pixel Bender "AsciiMii" (translated using pb2zig)
-// namespace: com.greyboxware.asciimii
-// vendor: Richard Zurad
-// version: 1
-// description: Filter to mimic the TEXTp effect from YouTube's 2010 April Fools joke
+// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
+// namespace: AfterEffects
+// vendor: Adobe Systems Incorporated
+// version: 2
+// description: Estimate alpha based on color channels.
+// displayname: Alpha From Max Color
+// category: Utility
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .size = .{
-            .type = i32,
-            .min_value = 1,
-            .max_value = 32,
-            .default_value = 8,
-        },
-        .charCount = .{
-            .type = i32,
-            .min_value = 1,
-            .max_value = 512,
-            .default_value = 256,
-        },
     };
     pub const input = .{
         .src = .{ .channels = 4 },
-        .text = .{ .channels = 4 },
     };
     pub const output = .{
         .dst = .{ .channels = 4 },
@@ -34,27 +23,15 @@ pub const kernel = struct {
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
-            // parameter and input image fields
-            size: i32,
-            charCount: i32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            text: std.meta.fieldInfo(InputStruct, .src).type,
             
             // built-in Pixel Bender functions
-            fn sqrt(v: anytype) @TypeOf(v) {
-                return @sqrt(v);
-            }
-            
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
+            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @mod(v1, v2),
+                    .Vector => @max(v1, v2),
                     else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @mod(v1, v2),
+                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @max(v1, v2),
                     },
                 };
             }
@@ -62,28 +39,20 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const size = self.size;
-                const charCount = self.charCount;
                 const src = self.src;
-                const text = self.text;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                var sizef: f32 = @floatFromInt(size);
-                var charCountf: f32 = @floatFromInt(charCount);
-                var offset2: @Vector(2, f32) = mod(outCoord, sizef);
-                var mosaicPixel4: @Vector(4, f32) = src.sampleNearest(outCoord - offset2);
-                var luma: f32 = 0.2126 * mosaicPixel4[0] + 0.7152 * mosaicPixel4[1] + 0.0722 * mosaicPixel4[2];
-                var range: f32 = (1.0 / (charCountf - 1.0));
-                var fontOffset: f32 = sizef * floor(luma / range);
-                var fontmapsize: f32 = (sizef * floor(sqrt(charCountf)));
-                var yRow: f32 = floor(fontOffset / fontmapsize);
-                offset2[1] = offset2[1] + (sizef * yRow);
-                offset2[0] = offset2[0] + (fontOffset - (fontmapsize * yRow));
-                var charPixel4: @Vector(4, f32) = text.sampleLinear(offset2);
-                dst = @shuffle(f32, dst, @shuffle(f32, mosaicPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }) * @shuffle(f32, charPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
-                dst[3] = mosaicPixel4[3];
+                dst = src.sampleNearest(outCoord);
+                dst = @shuffle(f32, dst, dst * dst, @Vector(4, i32){ -4, -1, -1, 3 });
+                dst[3] = max(max(dst[0], dst[1]), dst[2]);
+                dst[3] *= 254.0 / 255.0;
+                dst[3] != 0.0;
+                const tmp1 = dst[3];
+                if (tmp1) {
+                    dst = @shuffle(f32, dst, dst / dst, @Vector(4, i32){ -4, -1, -1, 3 });
+                }
                 return dst;
             }
         };

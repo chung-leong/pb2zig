@@ -622,7 +622,7 @@ export class PixelBenderToZigTranslator {
       if (indicesR.length > 1) {
         const typeCZ = getChildZigType(typeS);
         const mask = `@Vector(${indicesR.length}, i32){ ${indicesR.join(', ') } }`;
-        return new ZigExpr(`@select(${typeCZ}, ${nameA}, undefined, ${mask})`, typeS);
+        return new ZigExpr(`@shuffle(${typeCZ}, ${nameA}, undefined, ${mask})`, typeS);
       } else {
         const [ index ] = indicesR;
         return new ZigExpr(`${nameA}[${index}]`, typeS);
@@ -754,7 +754,7 @@ export class PixelBenderToZigTranslator {
           }
           const tmp = this.addTempVariable(nameL);
           const mask2 = `@Vector(${indicesL.length}, i32){ ${indicesL.join(', ') } }`;
-          return new ZigExpr(`@select(${typeCZ}, ${tmp}, undefined, ${mask2})`, typeS);
+          return new ZigExpr(`@shuffle(${typeCZ}, ${tmp}, undefined, ${mask2})`, typeS);
         } else {
           const [ index ] = indicesL;
           const valueR = this.translateExpression(operand2, typeL);

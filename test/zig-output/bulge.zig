@@ -1,31 +1,30 @@
 
-// Pixel Bender "AsciiMii" (translated using pb2zig)
-// namespace: com.greyboxware.asciimii
-// vendor: Richard Zurad
+// Pixel Bender "Distort" (translated using pb2zig)
+// namespace: net.nicoptere.filters
+// vendor: nicoptere
 // version: 1
-// description: Filter to mimic the TEXTp effect from YouTube's 2010 April Fools joke
+// description: bulge
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .size = .{
-            .type = i32,
-            .min_value = 1,
-            .max_value = 32,
-            .default_value = 8,
+        .center = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ 0.0, 0.0 },
+            .max_value = .{ 4096.0, 4096.0 },
+            .default_value = .{ 0.0, 0.0 },
         },
-        .charCount = .{
-            .type = i32,
-            .min_value = 1,
-            .max_value = 512,
-            .default_value = 256,
+        .amplitude = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 100.0,
+            .default_value = 3.0,
         },
     };
     pub const input = .{
         .src = .{ .channels = 4 },
-        .text = .{ .channels = 4 },
     };
     pub const output = .{
         .dst = .{ .channels = 4 },
@@ -35,55 +34,55 @@ pub const kernel = struct {
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            size: i32,
-            charCount: i32,
+            center: @Vector(2, f32),
+            amplitude: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            text: std.meta.fieldInfo(InputStruct, .src).type,
             
             // built-in Pixel Bender functions
+            fn sin(v: anytype) @TypeOf(v) {
+                return @sin(v);
+            }
+            
+            fn cos(v: anytype) @TypeOf(v) {
+                return @cos(v);
+            }
+            
+            fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => calc: {
+                        var result: @TypeOf(v1) = undefined;
+                        comptime var i = 0;
+                        inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+                            result[i] = atan2(v1[i], v2[i]);
+                        }
+                        break :calc result;
+                    },
+                    else => std.math.atan2(@TypeOf(v1), v1, v2),
+                };
+            }
+            
             fn sqrt(v: anytype) @TypeOf(v) {
                 return @sqrt(v);
-            }
-            
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @mod(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @mod(v1, v2),
-                    },
-                };
             }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const size = self.size;
-                const charCount = self.charCount;
+                const center = self.center;
+                const amplitude = self.amplitude;
                 const src = self.src;
-                const text = self.text;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                var sizef: f32 = @floatFromInt(size);
-                var charCountf: f32 = @floatFromInt(charCount);
-                var offset2: @Vector(2, f32) = mod(outCoord, sizef);
-                var mosaicPixel4: @Vector(4, f32) = src.sampleNearest(outCoord - offset2);
-                var luma: f32 = 0.2126 * mosaicPixel4[0] + 0.7152 * mosaicPixel4[1] + 0.0722 * mosaicPixel4[2];
-                var range: f32 = (1.0 / (charCountf - 1.0));
-                var fontOffset: f32 = sizef * floor(luma / range);
-                var fontmapsize: f32 = (sizef * floor(sqrt(charCountf)));
-                var yRow: f32 = floor(fontOffset / fontmapsize);
-                offset2[1] = offset2[1] + (sizef * yRow);
-                offset2[0] = offset2[0] + (fontOffset - (fontmapsize * yRow));
-                var charPixel4: @Vector(4, f32) = text.sampleLinear(offset2);
-                dst = @shuffle(f32, dst, @shuffle(f32, mosaicPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }) * @shuffle(f32, charPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
-                dst[3] = mosaicPixel4[3];
+                var coord: @Vector(2, f32) = outCoord;
+                var dx: f32 = coord[0] - center[0];
+                var dy: f32 = coord[1] - center[1];
+                var a: f32 = atan2(dy, dx);
+                var r: f32 = sqrt(dx * dx + dy * dy);
+                r *= r / sqrt(center[0] * center[1]) / amplitude;
+                var dest: @Vector(2, f32) = @Vector(2, f32){ center[0] + cos(a) * r, center[1] + sin(a) * r };
+                dst = src.sampleNearest(dest);
                 return dst;
             }
         };

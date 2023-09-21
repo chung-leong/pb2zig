@@ -1,89 +1,124 @@
 
-// Pixel Bender "AsciiMii" (translated using pb2zig)
-// namespace: com.greyboxware.asciimii
-// vendor: Richard Zurad
+// Pixel Bender "Outline" (translated using pb2zig)
+// namespace: ar.shader.outline
+// vendor: Alan Ross
 // version: 1
-// description: Filter to mimic the TEXTp effect from YouTube's 2010 April Fools joke
+// description: Outline
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .size = .{
-            .type = i32,
-            .min_value = 1,
-            .max_value = 32,
-            .default_value = 8,
+        .n0 = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 1.0,
+            .default_value = 0.0,
         },
-        .charCount = .{
-            .type = i32,
-            .min_value = 1,
-            .max_value = 512,
-            .default_value = 256,
+        .n1 = .{
+            .type = f32,
+            .min_value = 0.2,
+            .max_value = 1.0,
+            .default_value = 0.5,
         },
     };
     pub const input = .{
-        .src = .{ .channels = 4 },
-        .text = .{ .channels = 4 },
+        .src = .{ .channels = 3 },
     };
     pub const output = .{
-        .dst = .{ .channels = 4 },
+        .dst = .{ .channels = 3 },
     };
     
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            size: i32,
-            charCount: i32,
+            n0: f32,
+            n1: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            text: std.meta.fieldInfo(InputStruct, .src).type,
             
             // built-in Pixel Bender functions
-            fn sqrt(v: anytype) @TypeOf(v) {
-                return @sqrt(v);
+            fn all(v: anytype) bool {
+                return @reduce(.And, v);
             }
             
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @mod(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @mod(v1, v2),
-                    },
-                };
+            fn greaterThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
+                return v1 > v2;
             }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const size = self.size;
-                const charCount = self.charCount;
+                const n0 = self.n0;
+                const n1 = self.n1;
                 const src = self.src;
-                const text = self.text;
                 
                 // output variable
-                var dst: @Vector(4, f32) = undefined;
+                var dst: @Vector(3, f32) = undefined;
                 
-                var sizef: f32 = @floatFromInt(size);
-                var charCountf: f32 = @floatFromInt(charCount);
-                var offset2: @Vector(2, f32) = mod(outCoord, sizef);
-                var mosaicPixel4: @Vector(4, f32) = src.sampleNearest(outCoord - offset2);
-                var luma: f32 = 0.2126 * mosaicPixel4[0] + 0.7152 * mosaicPixel4[1] + 0.0722 * mosaicPixel4[2];
-                var range: f32 = (1.0 / (charCountf - 1.0));
-                var fontOffset: f32 = sizef * floor(luma / range);
-                var fontmapsize: f32 = (sizef * floor(sqrt(charCountf)));
-                var yRow: f32 = floor(fontOffset / fontmapsize);
-                offset2[1] = offset2[1] + (sizef * yRow);
-                offset2[0] = offset2[0] + (fontOffset - (fontmapsize * yRow));
-                var charPixel4: @Vector(4, f32) = text.sampleLinear(offset2);
-                dst = @shuffle(f32, dst, @shuffle(f32, mosaicPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }) * @shuffle(f32, charPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
-                dst[3] = mosaicPixel4[3];
+                var p: @Vector(2, f32) = outCoord;
+                var offset: @Vector(2, f32) = undefined;
+                var dist: f32 = undefined;
+                var c: @Vector(3, f32) = undefined;
+                var m: @Vector(3, f32) = undefined;
+                var p0: @Vector(3, f32) = undefined;
+                var p1: @Vector(3, f32) = undefined;
+                var p2: @Vector(3, f32) = undefined;
+                var p3: @Vector(3, f32) = undefined;
+                var p4: @Vector(3, f32) = undefined;
+                var p5: @Vector(3, f32) = undefined;
+                var p6: @Vector(3, f32) = undefined;
+                var p7: @Vector(3, f32) = undefined;
+                var p8: @Vector(3, f32) = undefined;
+                var w: @Vector(3, f32) = @Vector(3, f32){ 1.0, 1.0, 1.0 };
+                var b: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
+                c = @Vector(3, f32){ n0, n0, n0 };
+                dist = n1 * 1.0;
+                offset[0] = 0.0;
+                offset[1] = 0.0;
+                p0 = src.sampleLinear(p + offset);
+                offset[0] = -dist;
+                offset[1] = -dist;
+                p1 = src.sampleLinear(p + offset);
+                offset[0] = 0.0;
+                offset[1] = -dist;
+                p2 = src.sampleLinear(p + offset);
+                offset[0] = dist;
+                offset[1] = -dist;
+                p3 = src.sampleLinear(p + offset);
+                offset[0] = dist;
+                offset[1] = 0.0;
+                p4 = src.sampleLinear(p + offset);
+                offset[0] = dist;
+                offset[1] = dist;
+                p5 = src.sampleLinear(p + offset);
+                offset[0] = 0.0;
+                offset[1] = dist;
+                p6 = src.sampleLinear(p + offset);
+                offset[0] = -dist;
+                offset[1] = dist;
+                p7 = src.sampleLinear(p + offset);
+                offset[0] = -dist;
+                offset[1] = 0.0;
+                p8 = src.sampleLinear(p + offset);
+                c = w;
+                if (all(greaterThan(p0, p1))) {
+                    c = b;
+                }
+                if (all(greaterThan(p0, p3))) {
+                    c = b;
+                }
+                if (all(greaterThan(p0, p5))) {
+                    c = b;
+                }
+                if (all(greaterThan(p0, p7))) {
+                    c = b;
+                }
+                c[0] = c[0] * p0[0] / 0.5;
+                c[1] = c[1] * p0[1] / 0.5;
+                c[2] = c[2] * p0[2] / 0.5;
+                dst = c;
                 return dst;
             }
         };
