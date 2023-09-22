@@ -33,6 +33,7 @@ pub const kernel = struct {
     
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
+        _ = InputStruct;
         return struct {
             // parameter and input image fields
             checkerSize: f32,
@@ -63,7 +64,7 @@ pub const kernel = struct {
                 var position: @Vector(2, f32) = outCoord;
                 var vertical: f32 = mod(position[0], checkerSize * 2.0);
                 var horizontal: f32 = mod(position[1], checkerSize * 2.0);
-                dst = @as(@Vector(4, f32), @splat((if ([TODO: translateConditional]) 1 else 0)));
+                dst = if (((vertical < checkerSize) != (horizontal < checkerSize))) colorB else colorA;
                 return dst;
             }
         };

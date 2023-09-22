@@ -1,56 +1,46 @@
 
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
-// namespace: AfterEffects
-// vendor: Adobe Systems Incorporated
-// version: 2
-// description: Estimate alpha based on color channels.
-// displayname: Alpha From Max Color
-// category: Utility
+// Pixel Bender "simple" (translated using pb2zig)
+// namespace: Your Namespace
+// vendor: Your Vendor
+// version: 1
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
+        .transform = .{
+            .type = [3]@Vector(3, f32),
+            .min_value = .{ -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0 },
+            .max_value = .{ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 },
+            .default_value = .{ 0.5, 0.0, 0.0, 0.3, 1.0, 0.7, 0.1, 0.3, 0.8 },
+        },
     };
     pub const input = .{
-        .src = .{ .channels = 4 },
+        .src = .{ .channels = 3 },
     };
     pub const output = .{
-        .dst = .{ .channels = 4 },
+        .dst = .{ .channels = 3 },
     };
     
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
+            // parameter and input image fields
+            transform: [3]@Vector(3, f32),
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
-                    },
-                };
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
+                const transform = self.transform;
                 const src = self.src;
                 
                 // output variable
-                var dst: @Vector(4, f32) = undefined;
+                var dst: @Vector(3, f32) = undefined;
                 
                 dst = src.sampleNearest(outCoord);
-                dst = @shuffle(f32, dst, dst * dst, @Vector(4, i32){ -4, -1, -1, 3 });
-                dst[3] = max(max(dst[0], dst[1]), dst[2]);
-                dst[3] *= 254.0 / 255.0;
-                if (dst[3] != 0.0) {
-                    dst = @shuffle(f32, dst, dst / dst, @Vector(4, i32){ -4, -1, -1, 3 });
-                }
+                dst = transform * dst;
                 return dst;
             }
         };

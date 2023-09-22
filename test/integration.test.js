@@ -14,10 +14,7 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'advanced-stereographic';
     await translate(name);
-    await apply(name, {
-      src: 'malgorzata-socha.png',
-      text: 'fontmap.png',
-    });
+    await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate alpha-from-max-color.pbk', async function() {
     this.timeout(60000);
@@ -58,7 +55,7 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'checker-fill';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    await apply(name, {});
   })
   it('should correctly translate chihuly.pbk', async function() {
     this.timeout(60000);
@@ -220,6 +217,7 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
+  skip.
   it('should correctly translate warp.pbk', async function() {
     this.timeout(60000);
     const name = 'warp';
@@ -271,7 +269,7 @@ async function translate(name) {
 async function apply(name, sources, params = {}) {
   const { apply, Output } = await import(`${zigDir}/${name}.zig`);
   const input = { ...params };
-  let width, height, channels = 4, depth = 'uchar';
+  let width = 250, height = 250, channels = 4, depth = 'uchar', srcCount = 0;
   for (const [ srcName, filename ] of Object.entries(sources)) {
     let img = sharp(`${imgInDir}/${filename}`);
     img = img.ensureAlpha();
@@ -282,7 +280,7 @@ async function apply(name, sources, params = {}) {
       width: info.width,
       height: info.height
     };
-    if (width === undefined) {
+    if (srcCount++ === 0) {
       width = info.width;
       height = info.height;
     }

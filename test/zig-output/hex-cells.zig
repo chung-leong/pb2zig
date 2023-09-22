@@ -1,57 +1,75 @@
 
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
-// namespace: AfterEffects
-// vendor: Adobe Systems Incorporated
-// version: 2
-// description: Estimate alpha based on color channels.
-// displayname: Alpha From Max Color
-// category: Utility
+// Pixel Bender "HexCells" (translated using pb2zig)
+// namespace: Hex cells � not just pixels
+// vendor: Petri Leskinen
+// version: 1
+// description: Hexagonal Tiling
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
+        .size = .{
+            .type = f32,
+            .min_value = 1.0,
+            .max_value = 200.0,
+            .default_value = 50.0,
+            .description = "Hexagon Size",
+        },
+        .base = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ -200.0, -200.0 },
+            .max_value = .{ 800.0, 500.0 },
+            .default_value = .{ 400.0, 250.0 },
+            .description = "base point",
+        },
     };
     pub const input = .{
-        .src = .{ .channels = 4 },
+        .img = .{ .channels = 4 },
     };
     pub const output = .{
-        .dst = .{ .channels = 4 },
+        .pxl = .{ .channels = 4 },
     };
     
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
-            src: std.meta.fieldInfo(InputStruct, .src).type,
+            // parameter and input image fields
+            size: f32,
+            base: @Vector(2, f32),
+            img: std.meta.fieldInfo(InputStruct, .src).type,
+            
+            // constants
+            const sqrt3: f32 = 1.7320508076;
+            const halfSqrt3: f32 = 0.866025404;
             
             // built-in Pixel Bender functions
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
-                    },
-                };
+            fn floor(v: anytype) @TypeOf(v) {
+                return @floor(v);
             }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const src = self.src;
+                const size = self.size;
+                const base = self.base;
+                const img = self.img;
                 
                 // output variable
-                var dst: @Vector(4, f32) = undefined;
+                var pxl: @Vector(4, f32) = undefined;
                 
-                dst = src.sampleNearest(outCoord);
-                dst = @shuffle(f32, dst, dst * dst, @Vector(4, i32){ -4, -1, -1, 3 });
-                dst[3] = max(max(dst[0], dst[1]), dst[2]);
-                dst[3] *= 254.0 / 255.0;
-                if (dst[3] != 0.0) {
-                    dst = @shuffle(f32, dst, dst / dst, @Vector(4, i32){ -4, -1, -1, 3 });
-                }
-                return dst;
+                var grid: @Vector(2, f32) = @Vector(2, f32){ size, sqrt3 * size };
+                var po1: @Vector(2, f32) = floor((outCoord - base) / grid + @as(@Vector(2, f32), @splat(0.5)));
+                po1 = po1 * grid + base - outCoord;
+                var dst1: f32 = po1[0] * po1[0] + po1[1] * po1[1];
+                var base2: @Vector(2, f32) = base + @as(@Vector(2, f32), @splat(size)) * @Vector(2, f32){ 0.5, halfSqrt3 };
+                var po2: @Vector(2, f32) = floor((outCoord - base2) / grid + @as(@Vector(2, f32), @splat(0.5)));
+                po2 = po2 * grid + base2 - outCoord;
+                var dst2: f32 = po2[0] * po2[0] + po2[1] * po2[1];
+                po1 = if ((dst1 < dst2)) po2 else po1;
+                pxl = img.sampleNearest(po1 + outCoord);
+                return pxl;
             }
         };
     }

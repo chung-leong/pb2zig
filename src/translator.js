@@ -140,18 +140,20 @@ export class PixelBenderToZigTranslator {
     return !!this.functionArgTypes[name];
   }
 
-  expandMacro(name, args) {
+  expandMacro(name, args = null) {
     const macro = this.macroASTs.find(m => m.name === name);
-    if (!macro) {
+    if (!macro || !macro.args !== !args) {
       return null;
     }
-    if (macro.args.length !== args.length) {
-      const s = (macro.args.length > 1) ? 's' : '';
-      throw new Error(`Macro ${name}() expects ${macro.args.length} argument${s}, received ${args.length}`);
-    }
     const argsByName = {};
-    for (const [ index, argName ] of macro.args.entries()) {
-      argsByName[argName] = args[index];
+    if (macro.args) {
+      if (macro.args.length !== args.length) {
+        const s = (macro.args.length > 1) ? 's' : '';
+        throw new Error(`Macro ${name}() expects ${macro.args.length} argument${s}, received ${args?.length}`);
+      }
+      for (const [ index, argName ] of macro.args.entries()) {
+        argsByName[argName] = args[index];
+      }
     }
     const clone = function(object) {
       if (Array.isArray(object)) {
@@ -230,6 +232,7 @@ export class PixelBenderToZigTranslator {
 
   addKernel() {
     this.add(`pub const kernel = struct {`);
+    this.addGlobalConstants();
     this.addParameterDecls();
     this.addInput();
     this.addOutput();
@@ -255,22 +258,23 @@ export class PixelBenderToZigTranslator {
         previewValue,
         ...others
       } = param;
+      const typeZ = getZigType(type);
       this.add(`.${param.name} = .{`);
-      this.add(`.type = ${getZigType(type)},`);
+      this.add(`.type = ${typeZ},`);
       if (minValue !== undefined) {
-        this.add(`.min_value = ${this.translateExpression(minValue, type)},`);
+        this.add(`.min_value = ${this.translateExpression(minValue, 'comptime')},`);
       }
       if (maxValue !== undefined) {
-        this.add(`.max_value = ${this.translateExpression(maxValue, type)},`);
+        this.add(`.max_value = ${this.translateExpression(maxValue, 'comptime')},`);
       }
       if (stepInterval !== undefined) {
-        this.add(`.step_interval = ${this.translateExpression(stepInterval, type)},`);
+        this.add(`.step_interval = ${this.translateExpression(stepInterval, 'comptime')},`);
       }
       if (defaultValue !== undefined) {
-        this.add(`.default_value = ${this.translateExpression(defaultValue, type)},`);
+        this.add(`.default_value = ${this.translateExpression(defaultValue, 'comptime')},`);
       }
       if (previewValue !== undefined) {
-        this.add(`.preview_value = ${this.translateExpression(previewValue, type)},`);
+        this.add(`.preview_value = ${this.translateExpression(previewValue, 'comptime')},`);
       }
       for (const [ name, value ] of Object.entries(others)) {
         if (value) {
@@ -305,6 +309,10 @@ export class PixelBenderToZigTranslator {
   addInstanceFunction() {
     this.add(`// generic kernel instance type`);
     this.add(`fn Instance(comptime InputStruct: type) type {`);
+    const inputs = this.find(N.InputDeclaration);
+    if (inputs.length === 0) {
+      this.add(`_ = InputStruct;`);
+    }
     this.add(`return struct {`);
     this.addParameterFields();
     this.addInputFields();
@@ -426,9 +434,13 @@ export class PixelBenderToZigTranslator {
       for (const decl of decls) {
         this.addStatement(decl);
       }
+      this.add(``);
     }
+  }
+
+  addGlobalConstants() {
     // convert macros without dependencies on unknown variables into constants
-    let count = decls.length;
+    let count = 0;
     for (const macro of this.macroASTs) {
       const { name, args, expression } = macro;
       if (!args) {
@@ -613,9 +625,12 @@ export class PixelBenderToZigTranslator {
 
   translateVariableAccess({ names }) {
     const [ name, prop ] = names;
-    const type = this.getVariableType(name);
-    // in case the variable is aliased by a temporary variable
-    const nameA = this.getVariableAlias(name);
+    // expand the macro only if it wasn't possible to convert it to a variable
+    const macro = this.hasVariable(name) ? null : this.expandMacro(name);
+    const type = (macro) ? macro.type : this.getVariableType(name);
+    // use macro if there's one, otherwise check to see
+    // if the variable is aliased by a temporary variable
+    const nameA = (macro) ? `${this.translateExpression(macro)}` : this.getVariableAlias(name);
     if (prop) {
       const indicesR = getSwizzleIndices(prop);
       const typeS = getSwizzleType(type, indicesR);
@@ -657,7 +672,7 @@ export class PixelBenderToZigTranslator {
     }
   }
 
-  translateConstructorCall({ type, args }) {
+  translateConstructorCall({ type, args }, typeExpected) {
     const argList = args.map(a => this.translateExpression(a, type));
     const width = getVectorWidth(type);
     if (width === 1) {
@@ -666,14 +681,23 @@ export class PixelBenderToZigTranslator {
       return arg;
     } else {
       const childType = getChildType(type);
-      const typeZ = getZigType(type);
       argList.forEach(a => a.convert(childType));
-      if (argList.length === 1) {
-        const arg = argList[0];
-        arg.promote(type);
-        return arg;
+      if (typeExpected === 'comptime') {
+        if (argList.length === 1) {
+          while (argList.length < width) {
+            argList.push(argList[0]);
+          }
+        }
+        return new ZigExpr(`.{ ${argList.join(', ')} }`, type);
       } else {
-        return new ZigExpr(`${typeZ}{ ${argList.join(', ')} }`, type);
+        if (argList.length === 1) {
+          const arg = argList[0];
+          arg.promote(type);
+          return arg;
+        } else {
+          const typeZ = getZigType(type);
+          return new ZigExpr(`${typeZ}{ ${argList.join(', ')} }`, type);
+        }
       }
     }
   }
@@ -705,8 +729,26 @@ export class PixelBenderToZigTranslator {
       case '||':
         operator = 'or';
         break;
+      case '^^':
+        operator = '!=';
+        break;
     };
-    if (operator.endsWith('=')) {
+    const isAssignment = {
+      '=': true,
+      '+=': true,
+      '-=': true,
+      '*=': true,
+      '/=': true,
+    };
+    const isLogical = {
+      '==': true,
+      '!=': true,
+      '>=': true,
+      '<=': true,
+      '<': true,
+      '>': true,
+    };
+    if (isAssignment[operator]) {
       const [ nameL, propL ] = operand1.names;
       const typeL = this.getVariableType(nameL);
       if (propL) {
@@ -784,12 +826,16 @@ export class PixelBenderToZigTranslator {
       } else if (opL.isVector() && !opR.isVector()) {
         opR.promote(opL.type);
       }
-      return new ZigExpr(`${opL} ${operator} ${opR}`, opL.type);
+      const width = getVectorWidth(opL.type);
+      const type = isLogical[operator] ? getType('bool', width) : opL.type;
+      return new ZigExpr(`${opL} ${operator} ${opR}`, type);
     }
   }
 
   translateUnaryOperation({ operator, operand }) {
     const op = this.translateExpression(operand);
+    const isLogical = { '!': true };
+    const type = isLogical[operator] ? getType('bool', width) : op.type;
     return new ZigExpr(`${operator}${op}`, op.type);
   }
 
@@ -800,6 +846,13 @@ export class PixelBenderToZigTranslator {
       return expr;
     }
     return new ZigExpr(`(${expr})`, expr.type);
+  }
+
+  translateConditional({ condition, onTrue, onFalse }) {
+    const c = this.translateExpression(condition);
+    const f = this.translateExpression(onTrue);
+    const t = this.translateExpression(onFalse);
+    return new ZigExpr(`if (${c}) ${t} else ${f}`, t.type);
   }
 }
 
@@ -860,6 +913,10 @@ class ZigExpr {
   toString() {
     return this.text;
   }
+}
+
+function getType(baseType, width) {
+  return (width > 1) ? baseType + width : baseType;
 }
 
 function getZigType(type) {

@@ -34,14 +34,14 @@ kernel ZoomBlurFocus
     defaultValue: false;
     >;
     */
-    
+
     parameter int invert
     <
     minValue: 0;
     maxValue: 1;
     defaultValue: 0;
     >;
-    
+
     parameter float vignette
     <
     minValue: 0.0;
@@ -58,15 +58,14 @@ kernel ZoomBlurFocus
 
     input image4 src;
     output pixel4 dst;
-    
+
     void evaluatePixel() {
-    
-        float str = 1.0 - vignette;
+
         float2 coord = outCoord();
         float cur_radius = length(coord - center);
         pixel4 color = sampleNearest(src, coord);
         int cond1 = (cur_radius > focalSize) ? 1 : 0;
-        
+
         if(invert == 1) {
             //cond1 = !cond1;
             if(cond1 == 0) {
@@ -75,14 +74,14 @@ kernel ZoomBlurFocus
                 cond1 = 0;
             }
         }
-        
+
         float strength;
         if(invert == 1) {
             strength = cur_radius / focalSize;
         } else {
             strength = focalSize / cur_radius;
         }
-        
+
         float tmpAmount = strength * amount;
         coord -= center;
         pixel4 tmpDst = float4(0.0);

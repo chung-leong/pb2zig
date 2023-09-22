@@ -1,17 +1,36 @@
 
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
-// namespace: AfterEffects
-// vendor: Adobe Systems Incorporated
-// version: 2
-// description: Estimate alpha based on color channels.
-// displayname: Alpha From Max Color
-// category: Utility
+// Pixel Bender "Tiling" (translated using pb2zig)
+// namespace: CircularDisks
+// vendor: Petri Leskinen
+// version: 1
+// description: Disk tiling
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
+        .size = .{
+            .type = f32,
+            .min_value = 1.0,
+            .max_value = 100.0,
+            .default_value = 30.0,
+            .description = "Pattern Size",
+        },
+        .radius = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 1.0,
+            .default_value = 0.42,
+            .description = "Radius: how much a disks fills up its space",
+        },
+        .base = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ -200.0, -200.0 },
+            .max_value = .{ 800.0, 500.0 },
+            .default_value = .{ 350.2, 100.2 },
+            .description = "Base Point",
+        },
     };
     pub const input = .{
         .src = .{ .channels = 4 },
@@ -23,33 +42,69 @@ pub const kernel = struct {
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
+            // parameter and input image fields
+            size: f32,
+            radius: f32,
+            base: @Vector(2, f32),
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
+            // constants
+            const DOUBLEPI: f32 = 6.2831846;
+            
             // built-in Pixel Bender functions
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
+            fn sin(v: anytype) @TypeOf(v) {
+                return @sin(v);
+            }
+            
+            fn cos(v: anytype) @TypeOf(v) {
+                return @cos(v);
+            }
+            
+            fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => calc: {
+                        var result: @TypeOf(v1) = undefined;
+                        comptime var i = 0;
+                        inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+                            result[i] = atan2(v1[i], v2[i]);
+                        }
+                        break :calc result;
                     },
+                    else => std.math.atan2(@TypeOf(v1), v1, v2),
                 };
+            }
+            
+            fn floor(v: anytype) @TypeOf(v) {
+                return @floor(v);
+            }
+            
+            fn length(v: anytype) f32 {
+                return @typeInfo(@TypeOf(v)).Vector.len;
             }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
+                const size = self.size;
+                const radius = self.radius;
+                const base = self.base;
                 const src = self.src;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                dst = src.sampleNearest(outCoord);
-                dst = @shuffle(f32, dst, dst * dst, @Vector(4, i32){ -4, -1, -1, 3 });
-                dst[3] = max(max(dst[0], dst[1]), dst[2]);
-                dst[3] *= 254.0 / 255.0;
-                if (dst[3] != 0.0) {
-                    dst = @shuffle(f32, dst, dst / dst, @Vector(4, i32){ -4, -1, -1, 3 });
+                var po: @Vector(2, f32) = outCoord - base;
+                var polar: @Vector(2, f32) = @Vector(2, f32){ @floatFromInt(length(po)), atan2(po[1], po[0]) };
+                polar[0] = size * floor(0.5 + polar[0] / size);
+                var phi: f32 = floor(DOUBLEPI * polar[0] / size);
+                if (phi > 0.1) {
+                    phi = DOUBLEPI / phi;
+                    polar[1] = phi * floor(0.5 + polar[1] / phi);
+                }
+                po = base + @as(@Vector(2, f32), @splat(polar[0])) * @Vector(2, f32){ cos(polar[1]), sin(polar[1]) };
+                dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
+                if (@as(bool[2], @splat((radius == 0))) * @as(@Vector(2, f32), @splat(size)) > length(po - outCoord)) {
+                    dst = src.sampleLinear(po);
                 }
                 return dst;
             }

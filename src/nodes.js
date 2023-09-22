@@ -89,11 +89,6 @@ export class ConstructorCall {
   args;
 }
 
-export class LiteralConstructorCall {
-  type;
-  args;
-}
-
 export class VariableAssignment {
   operator;
   lvalue;

@@ -85,26 +85,19 @@ pub const kernel = struct {
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                var str: f32 = 1.0 - vignette;
                 var coord: @Vector(2, f32) = outCoord;
                 var cur_radius: f32 = length(coord - center);
                 var color: @Vector(4, f32) = src.sampleNearest(coord);
-                var cond1: i32 = [TODO: translateConditional];
-                invert == 1;
-                const tmp1 = invert;
-                if (tmp1) {
-                    cond1 == 0;
-                    const tmp2 = cond1;
-                    if (tmp2) {
+                var cond1: i32 = if ((cur_radius > focalSize)) 0 else 1;
+                if (invert == 1) {
+                    if (cond1 == 0) {
                         cond1 = 1;
                     } else {
                         cond1 = 0;
                     }
                 }
                 var strength: f32 = undefined;
-                invert == 1;
-                const tmp2 = invert;
-                if (tmp2) {
+                if (invert == 1) {
                     strength = cur_radius / focalSize;
                 } else {
                     strength = focalSize / cur_radius;
@@ -144,9 +137,7 @@ pub const kernel = struct {
                 scale = 1.0 + tmpAmount * (14.0 / 14.0);
                 tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 tmpDst /= @as(@Vector(4, f32), @splat(15.0));
-                cond1 == 1;
-                const tmp3 = cond1;
-                if (tmp3) {
+                if (cond1 == 1) {
                     dst = (@as(@Vector(4, f32), @splat((1.0 - edgeHardness))) * ((color * @as(@Vector(4, f32), @splat(strength))) + (tmpDst * @as(@Vector(4, f32), @splat((1.0 - strength)))))) + (tmpDst * @as(@Vector(4, f32), @splat(edgeHardness)));
                     dst = @shuffle(f32, dst, (@as(@Vector(3, f32), @splat(vignette)) * @shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(strength))) + (@shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat((1.0 - vignette)))), @Vector(4, i32){ -1, -2, -3, 3 });
                 } else {

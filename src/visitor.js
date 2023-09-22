@@ -48,20 +48,16 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   tag(ctx) {
     const attrs = {};
     for (const node of ctx.attribute) {
-      Object.assign(attrs, this.visit(node));
+      const { name, value } = this.visit(node);
+      attrs[name] = value;
     }
     return attrs;
   }
 
   attribute(ctx) {
     const name = this.name(ctx.Identifier);
-    let value;
-    if (ctx.literalValue) {
-      value = this.visit(ctx.literalValue);
-    } else if (ctx.literalConstructorCall) {
-      value = this.visit(ctx.literalConstructorCall);
-    }
-    return { [name]: value };
+    const value = this.visit(ctx.expression);
+    return { name, value };
   }
 
   literalValue(ctx) {
@@ -274,8 +270,8 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const expr = this.visit(ctx.binaryOperation);
     if (ctx.Question) {
       const condition = expr;
-      const onTrue = this.visit(ctx.expression1);
-      const onFalse = this.visit(ctx.expression2);
+      const onTrue = this.visit(ctx.expression[0]);
+      const onFalse = this.visit(ctx.expression[1]);
       return this.create(N.Conditional, { condition, onTrue, onFalse });
     } else {
       return expr;

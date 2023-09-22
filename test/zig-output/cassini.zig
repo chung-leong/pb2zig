@@ -8,6 +8,10 @@
 const std = @import("std");
 
 pub const kernel = struct {
+    // constants
+    const PI = 3.141592;
+    const DOUPLEPI = 6.28318531;
+    
     // kernel information
     pub const parameters = .{
         .imageWH = .{
@@ -55,10 +59,6 @@ pub const kernel = struct {
             zoom: f32,
             lambda: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // constants
-            const PI = 3.141592;
-            const DOUPLEPI = 6.28318531;
             
             // built-in Pixel Bender functions
             fn sin(v: anytype) @TypeOf(v) {

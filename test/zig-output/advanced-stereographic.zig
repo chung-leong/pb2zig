@@ -1,17 +1,68 @@
 
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
-// namespace: AfterEffects
-// vendor: Adobe Systems Incorporated
-// version: 2
-// description: Estimate alpha based on color channels.
-// displayname: Alpha From Max Color
-// category: Utility
+// Pixel Bender "stereographics" (translated using pb2zig)
+// namespace: advanced stereographic projection
+// vendor: frank reitberger
+// version: 1
+// description: enhanced by warp(s), turn(s), scale(s) & zoom(s)
 
 const std = @import("std");
 
 pub const kernel = struct {
+    // constants
+    const PI = 3.141592;
+    const DOUPLEPI = 6.28318531;
+    
     // kernel information
     pub const parameters = .{
+        .center = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ 0.0, 0.0 },
+            .max_value = .{ 2000.0, 2000.0 },
+            .default_value = .{ 180.0, 180.0 },
+            .description = "set input image center",
+        },
+        .xy_replication = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ 1.0, 1.0 },
+            .max_value = .{ 181.0, 181.0 },
+            .default_value = .{ 28.0, 28.0 },
+            .description = "xy.replicate map",
+        },
+        .radius = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 100.0,
+            .default_value = 72.0,
+            .description = "set radius",
+        },
+        .scale = .{
+            .type = f32,
+            .min_value = 0.1,
+            .max_value = 4.0,
+            .default_value = 2.3,
+            .description = "set aspect ratio",
+        },
+        .zoom = .{
+            .type = f32,
+            .min_value = 0.1,
+            .max_value = 5.0,
+            .default_value = 1.0,
+            .description = "set zoom",
+        },
+        .turn = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 1.0,
+            .default_value = 1.0,
+            .description = "set rotation",
+        },
+        .warp = .{
+            .type = f32,
+            .min_value = 0.1,
+            .max_value = PI,
+            .default_value = 2.3,
+            .description = "set warp",
+        },
     };
     pub const input = .{
         .src = .{ .channels = 4 },
@@ -23,34 +74,72 @@ pub const kernel = struct {
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
+            // parameter and input image fields
+            center: @Vector(2, f32),
+            xy_replication: @Vector(2, f32),
+            radius: f32,
+            scale: f32,
+            zoom: f32,
+            turn: f32,
+            warp: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
             // built-in Pixel Bender functions
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
+            fn sin(v: anytype) @TypeOf(v) {
+                return @sin(v);
+            }
+            
+            fn cos(v: anytype) @TypeOf(v) {
+                return @cos(v);
+            }
+            
+            fn atan(v: anytype) @TypeOf(v) {
+                return switch (@typeInfo(@TypeOf(v))) {
+                    .Vector => calc: {
+                        var result: @TypeOf(v) = undefined;
+                        comptime var i = 0;
+                        inline while (i < @typeInfo(@TypeOf(v)).Vector.len) : (i += 1) {
+                            result[i] = atan(v[i]);
+                        }
+                        break :calc result;
                     },
+                    else => std.math.atan(v),
                 };
+            }
+            
+            fn sqrt(v: anytype) @TypeOf(v) {
+                return @sqrt(v);
             }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
+                const center = self.center;
+                const xy_replication = self.xy_replication;
+                const radius = self.radius;
+                const scale = self.scale;
+                const zoom = self.zoom;
+                const turn = self.turn;
+                const warp = self.warp;
                 const src = self.src;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                dst = src.sampleNearest(outCoord);
-                dst = @shuffle(f32, dst, dst * dst, @Vector(4, i32){ -4, -1, -1, 3 });
-                dst[3] = max(max(dst[0], dst[1]), dst[2]);
-                dst[3] *= 254.0 / 255.0;
-                if (dst[3] != 0.0) {
-                    dst = @shuffle(f32, dst, dst / dst, @Vector(4, i32){ -4, -1, -1, 3 });
-                }
+                var pos: @Vector(2, f32) = outCoord - center;
+                var r: f32 = sqrt(pos[0] * pos[0] + pos[1] * pos[1]);
+                var theta: f32 = atan(pos[1] / pos[0]);
+                var spectral: f32 = scale * r;
+                var damp: f32 = -sin(warp) * 1.0 + cos(warp);
+                var rad: f32 = xy_replication[1] * zoom;
+                var maxpi: f32 = 2.0 * atan(scale);
+                var edgewise: f32 = 2.0 * atan(spectral / rad);
+                var meridian: f32 = theta + DOUPLEPI * turn;
+                var ny: f32 = (xy_replication[1]) * (2.0 * edgewise / maxpi) - (xy_replication[1]);
+                var nx: f32 = (xy_replication[0] - 1.0) * meridian / PI - (xy_replication[0]);
+                var vx: f32 = radius * cos(nx);
+                var vy: f32 = radius * sin(ny);
+                dst = src.sampleLinear(center + @Vector(2, f32){ vx, vy * damp });
                 return dst;
             }
         };

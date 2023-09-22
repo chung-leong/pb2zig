@@ -122,10 +122,7 @@ export class PixelBenderParser extends CstParser {
       $.CONSUME(T.Identifier)
       $.CONSUME(T.Colon)
       $.OPTION(() => $.CONSUME(T.Minus))
-      $.OR([
-        { ALT: () => $.SUBRULE($.literalValue) },
-        { ALT: () => $.SUBRULE($.literalConstructorCall) },
-      ])
+      $.SUBRULE($.expression)
       $.CONSUME(T.Semicolon)
     })
     $.RULE('literalValue', () => {
@@ -136,18 +133,6 @@ export class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.False) },
         { ALT: () => $.CONSUME(T.Null) },
       ])
-    })
-    $.RULE('literalConstructorCall', () => {
-      $.SUBRULE($.type)
-      $.CONSUME(T.LParen)
-      $.SUBRULE($.literalList)
-      $.CONSUME(T.RParen)
-    }),
-    $.RULE('literalList', () => {
-      $.MANY_SEP({
-        SEP: T.Comma,
-        DEF: () => $.SUBRULE($.literalValue),
-      })
     })
     $.RULE('kernel', () => {
       $.CONSUME(T.Kernel)

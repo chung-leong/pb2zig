@@ -8,6 +8,10 @@
 const std = @import("std");
 
 pub const kernel = struct {
+    // constants
+    const PI = 3.141592;
+    const DOUPLEPI = 6.28318531;
+    
     // kernel information
     pub const parameters = .{
         .image_h = .{
@@ -56,10 +60,6 @@ pub const kernel = struct {
             spread: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
-            // constants
-            const PI = 3.141592;
-            const DOUPLEPI = 6.28318531;
-            
             // built-in Pixel Bender functions
             fn sin(v: anytype) @TypeOf(v) {
                 return @sin(v);
@@ -85,9 +85,7 @@ pub const kernel = struct {
                 var d: f32 = tick * (image_h + spread) - (image_h / 2.0);
                 var vx: f32 = d - spread;
                 var angle: f32 = PI / 2.0 + DOUPLEPI * (pos[0] - vx) / spread;
-                pos[0] >= vx;
-                const tmp1 = pos[0];
-                if (tmp1) {
+                if (pos[0] >= vx) {
                     if (pos[0] < d) {
                         if ((sign(pos[1]) * pos[1]) > image_h * sign(sin(angle)) * sin(angle)) {
                             dst[0] = 0.0;
