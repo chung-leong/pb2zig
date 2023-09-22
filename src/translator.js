@@ -392,8 +392,8 @@ export class PixelBenderToZigTranslator {
 
     // find matrix variables
     const variables = this.find([ N.FunctionDefinition, N.FunctionArgument, N.VariableDeclaration ], true);
-    if (variables.some(v => /[234]x[234]$/.test(v.type))) {
-      inUse['matrixMult'] = true;
+    if (variables.some(v => isMatrix(v.type))) {
+      inUse['matrixCalc'] = true;
     }
 
     const codeURL = new URL('../zig/functions.zig', import.meta.url);

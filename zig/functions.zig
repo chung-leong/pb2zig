@@ -667,9 +667,8 @@ test "normalize" {
     assert(all(normalize(vector3) == @Vector(3, f32){ 0.26726123690605164, 0.5345224738121033, 0.8017836809158325 }));
 }
 
-pub fn matrixCompMult(m1: anytype, m2: anytype) @TypeOf(m1) {
-    const T = @TypeOf(m1);
-    var result: T = undefined;
+pub fn matrixCompMult(m1: anytype, m2: anytype) @TypeOf(m2) {
+    var result: @TypeOf(m2) = undefined;
     inline for (m1, 0..) |v, index| {
         result[index] = v * m2[index];
     }
@@ -684,4 +683,148 @@ test "matrixCompMult" {
     const result = matrixCompMult(matrix, matrix);
     assert(all(result[0] == @Vector(2, f32){ 1, 4 }));
     assert(all(result[1] == @Vector(2, f32){ 9, 16 }));
+}
+
+pub fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) switch (operator[0]) {
+    '=', '!' => bool,
+    '+', '-', '/' => @TypeOf(p2),
+    '*' => switch (@typeInfo(@TypeOf(p2))) {
+        .Vector => @TypeOf(p2),
+        else => switch (@typeInfo(@TypeOf(p1))) {
+            .Vector => @TypeOf(p1),
+            else => @TypeOf(p2),
+        },
+    },
+    else => @compileError("Unknown operator: " ++ operator),
+} {
+    const calc = struct {
+        fn @"Matrix * Vector"(m1: anytype, v2: anytype) @TypeOf(v2) {
+            var result: @TypeOf(v2) = undefined;
+            inline for (m1, 0..) |row, r| {
+                result[r] = @reduce(.Add, row * v2);
+            }
+            return result;
+        }
+
+        fn @"Matrix * Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
+            const ar = @typeInfo(@TypeOf(m2)).Array;
+            var result: @TypeOf(m2) = undefined;
+            comptime var c = 0;
+            inline while (c < ar.len) : (c += 1) {
+                comptime var i = 0;
+                var column: ar.child = undefined;
+                inline while (i < ar.len) : (i += 1) {
+                    column[i] = m2[i][c];
+                }
+                inline for (m1, 0..) |row, r| {
+                    result[r][c] = @reduce(.Add, row * column);
+                }
+            }
+            return result;
+        }
+
+        fn @"Vector * Matrix"(v1: anytype, m2: anytype) @TypeOf(v1) {
+            const ar = @typeInfo(@TypeOf(m2)).Array;
+            var t: @TypeOf(m2) = undefined;
+            inline for (m2, 0..) |row, r| {
+                comptime var c = 0;
+                inline while (c < ar.len) : (c += 1) {
+                    t[c][r] = row[c];
+                }
+            }
+            return @"Matrix * Vector"(t, v1);
+        }
+
+        fn @"Matrix + Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
+            var result: @TypeOf(m2) = undefined;
+            inline for (m1, 0..) |v, index| {
+                result[index] = v + m2[index];
+            }
+            return result;
+        }
+
+        fn @"Matrix - Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
+            var result: @TypeOf(m2) = undefined;
+            inline for (m1, 0..) |v, index| {
+                result[index] = v - m2[index];
+            }
+            return result;
+        }
+
+        fn @"Matrix / Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
+            var result: @TypeOf(m2) = undefined;
+            inline for (m1, 0..) |v, index| {
+                result[index] = v / m2[index];
+            }
+            return result;
+        }
+
+        fn @"Matrix == Matrix"(m1: anytype, m2: anytype) bool {
+            inline for (m1, 0..) |v, index| {
+                if (!@reduce(.And, v == m2[index])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        fn @"Matrix != Matrix"(m1: anytype, m2: anytype) bool {
+            return !@"Matrix == Matrix"(m1, m2);
+        }
+
+        fn label(comptime T: type) []const u8 {
+            return switch (@typeInfo(T)) {
+                .Vector => "Vector",
+                .Array => "Matrix",
+                else => @typeName(T),
+            };
+        }
+    };
+    const type1 = comptime calc.label(@TypeOf(p1));
+    const type2 = comptime calc.label(@TypeOf(p2));
+    const fname = type1 ++ " " ++ operator ++ " " ++ type2;
+    if (!@hasDecl(calc, fname)) {
+        @compileError("Illegal operation: " ++ fname);
+    }
+    const f = @field(calc, fname);
+    return f(p1, p2);
+}
+
+test "matrixCalc" {
+    const m1: [2]@Vector(2, f32) = .{
+        .{ 1, 2 },
+        .{ 3, 4 },
+    };
+    const m2: [2]@Vector(2, f32) = .{
+        .{ 5, 6 },
+        .{ 7, 8 },
+    };
+    const v1: @Vector(2, f32) = .{ 10, 20 };
+    const result1 = matrixCalc("+", m1, m2);
+    assert(all(result1[0] == @Vector(2, f32){ 6, 8 }));
+    assert(all(result1[1] == @Vector(2, f32){ 10, 12 }));
+    const result2 = matrixCalc("-", m1, m2);
+    assert(all(result2[0] == @Vector(2, f32){ -4, -4 }));
+    assert(all(result2[1] == @Vector(2, f32){ -4, -4 }));
+    const result3 = matrixCalc("/", m1, m1);
+    assert(all(result3[0] == @Vector(2, f32){ 1, 1 }));
+    assert(all(result3[1] == @Vector(2, f32){ 1, 1 }));
+    const result4 = matrixCalc("==", m1, m1);
+    const result5 = matrixCalc("==", m1, m2);
+    assert(result4 == true);
+    assert(result5 == false);
+    const result6 = matrixCalc("!=", m1, m1);
+    const result7 = matrixCalc("!=", m1, m2);
+    assert(result6 == false);
+    assert(result7 == true);
+    const result9 = matrixCalc("*", m1, v1);
+    assert(all(result9 == @Vector(2, f32){ 50, 110 }));
+    const result10 = matrixCalc("*", v1, m1);
+    assert(all(result10 == @Vector(2, f32){ 70, 100 }));
+    const result11 = matrixCalc("*", m1, m2);
+    assert(all(result11[0] == @Vector(2, f32){ 19, 22 }));
+    assert(all(result11[1] == @Vector(2, f32){ 43, 50 }));
+    const result12 = matrixCalc("*", m2, m1);
+    assert(all(result12[0] == @Vector(2, f32){ 23, 34 }));
+    assert(all(result12[1] == @Vector(2, f32){ 31, 46 }));
 }
