@@ -64,7 +64,7 @@ pub const kernel = struct {
                 var position: @Vector(2, f32) = outCoord;
                 var vertical: f32 = mod(position[0], checkerSize * 2.0);
                 var horizontal: f32 = mod(position[1], checkerSize * 2.0);
-                dst = if (((vertical < checkerSize) != (horizontal < checkerSize))) colorB else colorA;
+                dst = @as(@Vector(4, f32), if (((vertical < checkerSize) != (horizontal < checkerSize))) colorA else colorB);
                 return dst;
             }
         };

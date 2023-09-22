@@ -223,7 +223,6 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
-  skip.
   it('should correctly translate warp.pbk', async function() {
     this.timeout(60000);
     const name = 'warp';
@@ -295,7 +294,7 @@ async function apply(name, sources, params = {}) {
   apply(input, output);
   const dstPixels = output.pixels.typedArray;
   sharp(dstPixels, {
-    raw: { width, height, channels, depth, premultiplied: false },
-  }).jpeg().toFile(`${imgOutDir}/${name}.jpg`);
+    raw: { width, height, channels, depth },
+  }).png().toFile(`${imgOutDir}/${name}.png`);
 }
 

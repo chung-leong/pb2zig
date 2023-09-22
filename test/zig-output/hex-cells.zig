@@ -67,7 +67,7 @@ pub const kernel = struct {
                 var po2: @Vector(2, f32) = floor((outCoord - base2) / grid + @as(@Vector(2, f32), @splat(0.5)));
                 po2 = po2 * grid + base2 - outCoord;
                 var dst2: f32 = po2[0] * po2[0] + po2[1] * po2[1];
-                po1 = if ((dst1 < dst2)) po2 else po1;
+                po1 = @as(@Vector(2, f32), if ((dst1 < dst2)) po1 else po2);
                 pxl = img.sampleNearest(po1 + outCoord);
                 return pxl;
             }

@@ -846,7 +846,7 @@ export class PixelBenderToZigTranslator {
 
   translateParentheses({ expression }) {
     const expr = this.translateExpression(expression);
-    if (/^\w+$/.test(expr)) {
+    if (/^\w+$/.test(expr) || /^@as\(.*\)$/.test(expr)) {
       // don't need the parentheses
       return expr;
     }
@@ -855,9 +855,10 @@ export class PixelBenderToZigTranslator {
 
   translateConditional({ condition, onTrue, onFalse }) {
     const c = this.translateExpression(condition);
-    const f = this.translateExpression(onTrue);
-    const t = this.translateExpression(onFalse);
-    return new ZigExpr(`if (${c}) ${t} else ${f}`, t.type);
+    const t = this.translateExpression(onTrue);
+    const f = this.translateExpression(onFalse);
+    const typeZ = getZigType(t.type);
+    return new ZigExpr(`@as(${typeZ}, if (${c}) ${t} else ${f})`, t.type);
   }
 }
 

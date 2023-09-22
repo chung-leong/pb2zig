@@ -88,7 +88,7 @@ pub const kernel = struct {
                 var coord: @Vector(2, f32) = outCoord;
                 var cur_radius: f32 = length(coord - center);
                 var color: @Vector(4, f32) = src.sampleNearest(coord);
-                var cond1: i32 = if ((cur_radius > focalSize)) 0 else 1;
+                var cond1: i32 = @as(i32, if ((cur_radius > focalSize)) 1 else 0);
                 if (invert == 1) {
                     if (cond1 == 0) {
                         cond1 = 1;

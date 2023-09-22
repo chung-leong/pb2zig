@@ -54,8 +54,8 @@ pub const kernel = struct {
                 var dst: @Vector(4, f32) = undefined;
                 
                 var coord: @Vector(2, f32) = outCoord;
-                coord[0] += vertical * (if ((cos(coord[1] / vertical) > 0.0)) -1.0 else 1.0);
-                coord[1] += horizontal * (if ((cos(coord[0] / horizontal) > 0.0)) -1.0 else 1.0);
+                coord[0] += vertical * @as(f32, if ((cos(coord[1] / vertical) > 0.0)) 1.0 else -1.0);
+                coord[1] += horizontal * @as(f32, if ((cos(coord[0] / horizontal) > 0.0)) 1.0 else -1.0);
                 dst = src.sampleNearest(coord);
                 return dst;
             }
