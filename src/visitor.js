@@ -337,18 +337,21 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   variable(ctx) {
     const name = this.name(ctx.Identifier);
-    const names = [ name ];
+    let property, element;
     if (ctx.property) {
-      for (const node of ctx.property) {
-        names.push
-        (this.visit(node));
-      }
+      property = this.visit(ctx.property);
+    } else if (ctx.element) {
+      element = this.visit(ctx.element);
     }
-    return this.create(N.VariableAccess, { names });
+    return this.create(N.VariableAccess, { name, property, element });
   }
 
   property(ctx) {
     return this.name(ctx.Identifier);
+  }
+
+  element(ctx) {
+    return this.visit(ctx.expression);
   }
 
   parentheses(ctx) {

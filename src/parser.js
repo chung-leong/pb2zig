@@ -367,11 +367,21 @@ export class PixelBenderParser extends CstParser {
     })
     $.RULE('variable', () => {
       $.CONSUME(T.Identifier)
-      $.MANY(() => $.SUBRULE($.property))
+      $.OPTION(() => {
+        $.OR([
+          { ALT: () => $.SUBRULE($.property) },
+          { ALT: () => $.SUBRULE($.element) },
+        ])
+      })
     })
     $.RULE('property', () => {
       $.CONSUME(T.Period)
       $.CONSUME(T.Identifier)
+    })
+    $.RULE('element', () => {
+      $.CONSUME(T.LSquare)
+      $.SUBRULE($.expression)
+      $.CONSUME(T.RSquare)
     })
     $.RULE('ifStatement', () => {
       $.CONSUME(T.If)

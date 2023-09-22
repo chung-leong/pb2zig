@@ -160,12 +160,14 @@ export class PixelBenderToZigTranslator {
         return object.map(clone);
       } else if (object && typeof(object) === 'object') {
         if (object instanceof N.VariableAccess) {
-          const [ name, prop ] = object.names;
+          const { name, property } = object;
           const arg = argsByName[name];
           if (arg) {
-            if (prop) {
+            if (property) {
+              // access the prop of the argument
               const argProp = new N.VariableAccess();
-              argProp.names = [ arg.names[0], prop ];
+              argProp.name = arg.name;
+              argProp.property = property;
               return argProp;
             } else {
               return arg;
@@ -623,16 +625,15 @@ export class PixelBenderToZigTranslator {
     return new ZigExpr(getZigLiteral(value, type), type);
   }
 
-  translateVariableAccess({ names }) {
-    const [ name, prop ] = names;
+  translateVariableAccess({ name, property, element }) {
     // expand the macro only if it wasn't possible to convert it to a variable
     const macro = this.hasVariable(name) ? null : this.expandMacro(name);
     const type = (macro) ? macro.type : this.getVariableType(name);
     // use macro if there's one, otherwise check to see
     // if the variable is aliased by a temporary variable
     const nameA = (macro) ? `${this.translateExpression(macro)}` : this.getVariableAlias(name);
-    if (prop) {
-      const indicesR = getSwizzleIndices(prop);
+    if (property) {
+      const indicesR = getSwizzleIndices(property);
       const typeS = getSwizzleType(type, indicesR);
       if (indicesR.length > 1) {
         const typeCZ = getChildZigType(typeS);
@@ -642,6 +643,10 @@ export class PixelBenderToZigTranslator {
         const [ index ] = indicesR;
         return new ZigExpr(`${nameA}[${index}]`, typeS);
       }
+    } else if (element) {
+      const index = this.translateExpression(element);
+      const typeC = getChildType(type);
+      return new ZigExpr(`${nameA}[${index}]`, typeC);
     } else {
       return new ZigExpr(nameA, type);
     }
@@ -749,7 +754,7 @@ export class PixelBenderToZigTranslator {
       '>': true,
     };
     if (isAssignment[operator]) {
-      const [ nameL, propL ] = operand1.names;
+      const { name: nameL, property: propL, element: elemL } = operand1;
       const typeL = this.getVariableType(nameL);
       if (propL) {
         // using vector write mask
@@ -757,9 +762,9 @@ export class PixelBenderToZigTranslator {
         if (indicesL.length > 1) {
           const typeS = getSwizzleType(typeL, indicesL);
           let valueR, indicesR;
-          if (operand2 instanceof N.VariableAccess && operand2.names[1]) {
+          if (operand2 instanceof N.VariableAccess && operand2.property) {
             // the right size has a mask too, get its indices
-            const [ nameR, propR ] = operand2.names;
+            const { name: nameR, property: propR } = operand2;
             const typeR = this.getVariableType(nameR);
             valueR = new ZigExpr(nameR, typeR);
             indicesR = getSwizzleIndices(propR);

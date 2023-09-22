@@ -96,7 +96,9 @@ export class VariableAssignment {
 }
 
 export class VariableAccess {
-  names;
+  name;
+  property;
+  element;
 }
 
 export class BinaryOperation {
