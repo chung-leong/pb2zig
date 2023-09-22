@@ -79,7 +79,12 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'circular-disks';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = {
+      size: 6,
+      radius: 0.45,
+      base: [ 340, 100 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate crystallize.pbk', async function() {
     this.timeout(60000);
@@ -115,7 +120,8 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'hex-cells';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = { size: 10 };
+    await apply(name, { img: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate invert-rgb.pbk', async function() {
     this.timeout(60000);

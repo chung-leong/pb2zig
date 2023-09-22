@@ -61,7 +61,6 @@ pub const kernel = struct {
                 var offset: @Vector(2, f32) = undefined;
                 var dist: f32 = undefined;
                 var c: @Vector(3, f32) = undefined;
-                var m: @Vector(3, f32) = undefined;
                 var p0: @Vector(3, f32) = undefined;
                 var p1: @Vector(3, f32) = undefined;
                 var p2: @Vector(3, f32) = undefined;
@@ -139,24 +138,6 @@ pub const Output = KernelOutput(u8, kernel);
 
 pub fn apply(input: Input, output: Output) void {
     processImage(kernel, input, output);
-}
-
-test "apply" {
-    const src_pixels: [1]@Vector(4, u8) = .{.{ 0, 0, 0, 0 }};
-    const input: Input = .{
-        .src = .{
-            .pixels = &src_pixels,
-            .width = 1,
-            .height = 1,
-        },
-    };
-    var dst_pixels: [1]@Vector(4, u8) = .{.{ 0, 0, 0, 0 }};
-    const output: Output = .{
-        .pixels = &dst_pixels,
-        .width = 1,
-        .height = 1,
-    };
-    apply(input, output);
 }
 
 pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) type {

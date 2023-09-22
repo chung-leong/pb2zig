@@ -352,7 +352,7 @@ export class PixelBenderToZigTranslator {
     const inputs = this.find(N.InputDeclaration);
     if (inputs.length > 0) {
       for (const { name } of inputs) {
-        this.add(`${name}: std.meta.fieldInfo(InputStruct, .src).type,`);
+        this.add(`${name}: std.meta.fieldInfo(InputStruct, .${name}).type,`);
        }
     }
     this.add(``);
@@ -1145,7 +1145,12 @@ const builtInfunctionArgTypes = {
     [ float3, float, float, float3 ],
     [ float4, float, float, float4 ],
   ],
-  length: fx__fx,
+  length: [
+    [ float, float ],
+    [ float, float2 ],
+    [ float, float3 ],
+    [ float, float4 ],
+  ],
   distance: f__fx_fx,
   dot: f__fx_fx,
   cross: fx__fx_fx,

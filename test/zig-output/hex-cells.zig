@@ -38,7 +38,7 @@ pub const kernel = struct {
             // parameter and input image fields
             size: f32,
             base: @Vector(2, f32),
-            img: std.meta.fieldInfo(InputStruct, .src).type,
+            img: std.meta.fieldInfo(InputStruct, .img).type,
             
             // constants
             const sqrt3: f32 = 1.7320508076;
@@ -89,24 +89,6 @@ pub const Output = KernelOutput(u8, kernel);
 
 pub fn apply(input: Input, output: Output) void {
     processImage(kernel, input, output);
-}
-
-test "apply" {
-    const src_pixels: [1]@Vector(4, u8) = .{.{ 0, 0, 0, 0 }};
-    const input: Input = .{
-        .src = .{
-            .pixels = &src_pixels,
-            .width = 1,
-            .height = 1,
-        },
-    };
-    var dst_pixels: [1]@Vector(4, u8) = .{.{ 0, 0, 0, 0 }};
-    const output: Output = .{
-        .pixels = &dst_pixels,
-        .width = 1,
-        .height = 1,
-    };
-    apply(input, output);
 }
 
 pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) type {

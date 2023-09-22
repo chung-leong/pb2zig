@@ -1,14 +1,6 @@
 const std = @import("std");
 const kernel = @import("./painting.zig").kernel;
 
-//---start of code
-pub const Input = KernelInput(u8, kernel);
-pub const Output = KernelOutput(u8, kernel);
-
-pub fn apply(input: Input, output: Output) void {
-    processImage(kernel, input, output);
-}
-
 test "apply" {
     const src_pixels: [1]@Vector(4, u8) = .{.{ 0, 0, 0, 0 }};
     const input: Input = .{
@@ -25,6 +17,14 @@ test "apply" {
         .height = 1,
     };
     apply(input, output);
+}
+
+//---start of code
+pub const Input = KernelInput(u8, kernel);
+pub const Output = KernelOutput(u8, kernel);
+
+pub fn apply(input: Input, output: Output) void {
+    processImage(kernel, input, output);
 }
 
 pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) type {

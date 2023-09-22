@@ -94,7 +94,7 @@ pub const kernel = struct {
                 var dst: @Vector(4, f32) = undefined;
                 
                 var po: @Vector(2, f32) = outCoord - base;
-                var polar: @Vector(2, f32) = @Vector(2, f32){ @floatFromInt(length(po)), atan2(po[1], po[0]) };
+                var polar: @Vector(2, f32) = @Vector(2, f32){ length(po), atan2(po[1], po[0]) };
                 polar[0] = size * floor(0.5 + polar[0] / size);
                 var phi: f32 = floor(DOUBLEPI * polar[0] / size);
                 if (phi > 0.1) {
@@ -103,7 +103,7 @@ pub const kernel = struct {
                 }
                 po = base + @as(@Vector(2, f32), @splat(polar[0])) * @Vector(2, f32){ cos(polar[1]), sin(polar[1]) };
                 dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
-                if (@as(bool[2], @splat((radius == 0))) * @as(@Vector(2, f32), @splat(size)) > length(po - outCoord)) {
+                if (radius * size > length(po - outCoord)) {
                     dst = src.sampleLinear(po);
                 }
                 return dst;
@@ -126,24 +126,6 @@ pub const Output = KernelOutput(u8, kernel);
 
 pub fn apply(input: Input, output: Output) void {
     processImage(kernel, input, output);
-}
-
-test "apply" {
-    const src_pixels: [1]@Vector(4, u8) = .{.{ 0, 0, 0, 0 }};
-    const input: Input = .{
-        .src = .{
-            .pixels = &src_pixels,
-            .width = 1,
-            .height = 1,
-        },
-    };
-    var dst_pixels: [1]@Vector(4, u8) = .{.{ 0, 0, 0, 0 }};
-    const output: Output = .{
-        .pixels = &dst_pixels,
-        .width = 1,
-        .height = 1,
-    };
-    apply(input, output);
 }
 
 pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) type {
