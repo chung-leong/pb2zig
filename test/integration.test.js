@@ -61,7 +61,7 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'chihuly';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    await apply(name, { inputImage: 'malgorzata-socha.png' });
   })
   it('should correctly translate circle-pattern.pbk', async function() {
     this.timeout(60000);
