@@ -35,6 +35,24 @@ describe('Integration tests', function() {
       text: 'fontmap.png',
     }, params);
   })
+  it('should correctly translate bezier-aligner.pbk', async function() {
+    this.timeout(60000);
+    const name = 'bezier-aligner';
+    await translate(name);
+    const params = {
+      startpoint: [ 12, 72 ],
+      control1: [ 240, 228 ],
+      control2: [ 336, 300 ],
+      endpoint: [ 600, 200 ],
+      scale: [ 0.5, 0.5 ],
+      imagewidth: 165
+    };
+    await apply(name, {
+      background: 'malgorzata-socha.png',
+      texture: 'telephone-cord.png'
+    }, params);
+  })
+
   it('should correctly translate bulge.pbk', async function() {
     this.timeout(60000);
     const name = 'bulge';
@@ -157,6 +175,12 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
+  it('should correctly translate Droste.pbk', async function() {
+    this.timeout(60000);
+    const name = 'Droste';
+    await translate(name);
+    await apply(name, { oImage: 'malgorzata-socha.png' });
+  })
   it('should correctly translate erode-diamond.pbk', async function() {
     this.timeout(60000);
     const name = 'erode-diamond';
@@ -200,6 +224,12 @@ describe('Integration tests', function() {
     const name = 'jitter';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate Mandelbulb.pbk', async function() {
+    this.timeout(60000);
+    const name = 'Mandelbulb';
+    await translate(name);
+    await apply(name, { oImage: 'malgorzata-socha.png' });
   })
   it('should correctly translate mercator.pbk', async function() {
     this.timeout(60000);
@@ -270,6 +300,12 @@ describe('Integration tests', function() {
     const name = 'random-pixelation';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate raytracer.pbk', async function() {
+    this.timeout(60000);
+    const name = 'raytracer';
+    await translate(name);
+    await apply(name, { oImage: 'malgorzata-socha.png' });
   })
   it('should correctly translate ripple-blocks.pbk', async function() {
     this.timeout(60000);
