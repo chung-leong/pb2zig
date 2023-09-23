@@ -1,7 +1,7 @@
 
 // Pixel Bender "simple" (translated using pb2zig)
-// namespace: Your Namespace
-// vendor: Your Vendor
+// namespace: pb2zig
+// vendor: Chung Leong
 // version: 1
 
 const std = @import("std");
@@ -9,40 +9,46 @@ const std = @import("std");
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .transform = .{
-            .type = [3]@Vector(3, f32),
-            .min_value = [3]@Vector(3, f32){
-                .{ -1.0, -1.0, -1.0 },
-                .{ -1.0, -1.0, -1.0 },
-                .{ -1.0, -1.0, -1.0 }
-            },
-            .max_value = [3]@Vector(3, f32){
-                .{ 1.0, 1.0, 1.0 },
-                .{ 1.0, 1.0, 1.0 },
-                .{ 1.0, 1.0, 1.0 }
-            },
-            .default_value = [3]@Vector(3, f32){
-                .{ 0.5, 0.0, 0.0 },
-                .{ 0.3, 1.0, 0.7 },
-                .{ 0.1, 0.3, 0.8 }
-            },
+        .strength = .{
+            .type = f32,
+            .min_value = 0,
+            .max_value = 100,
+            .default_value = 4,
         },
     };
     pub const input = .{
-        .src = .{ .channels = 3 },
+        .src = .{ .channels = 4 },
     };
     pub const output = .{
-        .dst = .{ .channels = 3 },
+        .dst = .{ .channels = 4 },
     };
     
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            transform: [3]@Vector(3, f32),
+            strength: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
+            // constants
+            const toYIQA: [4]@Vector(4, f32) = [4]@Vector(4, f32){
+                .{ 0.299, 0.587, 0.114, 0.0 },
+                .{ 0.595716, -0.274453, -0.321263, 0.0 },
+                .{ 0.211456, -0.522591, 0.31135, 0.0 },
+                .{ 0.0, 0.0, 0.0, 1.0 }
+            };
+            const toRGBA: [4]@Vector(4, f32) = [4]@Vector(4, f32){
+                .{ 0.999867, 0.956443, 0.620797, 0.0 },
+                .{ 1.000139, -0.272276, -0.647143, 0.0 },
+                .{ 0.999634, -1.106583, 1.70399, 0.0 },
+                .{ 0.0, 0.0, 0.0, 1.0 }
+            };
+            
             // built-in Pixel Bender functions
+            fn sqrt(v: anytype) @TypeOf(v) {
+                return @sqrt(v);
+            }
+            
             fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
                 return switch (operator[0]) {
                     '=', '!' => bool,
@@ -214,16 +220,26 @@ pub const kernel = struct {
             }
             
             // functions defined in kernel
+            fn hypot(a: f32, b: f32) f32 {
+                return sqrt(a * a + b * b);
+            }
+            
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const transform = self.transform;
+                const strength = self.strength;
                 const src = self.src;
                 
                 // output variable
-                var dst: @Vector(3, f32) = undefined;
+                var dst: @Vector(4, f32) = undefined;
                 
-                dst = src.sampleNearest(outCoord);
-                dst = matrixCalc("*", transform, dst);
+                var pRGBA: @Vector(4, f32) = src.sampleNearest(outCoord);
+                var pYIQA: @Vector(4, f32) = matrixCalc("*", toYIQA, pRGBA);
+                if (pYIQA[1] < 0 and pYIQA[2] < 0 and pYIQA[0] > 0.01) {
+                    pYIQA = @as(@Vector(4, f32), @splat(1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength));
+                    pYIQA = @as(@Vector(4, f32), @splat(0.0));
+                    pYIQA = @as(@Vector(4, f32), @splat(0.0));
+                }
+                dst = matrixCalc("*", toRGBA, pYIQA);
                 return dst;
             }
         };

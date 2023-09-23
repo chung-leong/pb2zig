@@ -137,7 +137,7 @@ export class ContinueStatement{
 }
 
 export class ReturnStatement{
-  value;
+  expression;
 }
 
 export class ExpressionStatement{

@@ -1,9 +1,9 @@
 
-// Pixel Bender "ZoomBlurFocus" (translated using pb2zig)
-// namespace: com.abril
-// vendor: Daniel Allegretti
+// Pixel Bender "sharpen" (translated using pb2zig)
+// namespace: com.rphelan
+// vendor: Ryan Phelan
 // version: 1
-// description: Ajustable zoom blur, you can control focal size, edge hardness and light. Based on ZoomBlur by Ryan Phelan.
+// description: Applies a sharpen effect to an image.
 
 const std = @import("std");
 
@@ -13,38 +13,14 @@ pub const kernel = struct {
         .amount = .{
             .type = f32,
             .min_value = 0.0,
-            .max_value = 0.5,
-            .default_value = 0.25,
+            .max_value = 20.0,
+            .default_value = 1.0,
         },
-        .center = .{
-            .type = @Vector(2, f32),
-            .min_value = .{ 0.0, 0.0 },
-            .max_value = .{ 900.0, 900.0 },
-            .default_value = .{ 200.0, 200.0 },
-        },
-        .focalSize = .{
-            .type = f32,
-            .min_value = 0.0,
-            .max_value = 500.0,
-            .default_value = 100.0,
-        },
-        .invert = .{
-            .type = i32,
-            .min_value = 0,
-            .max_value = 1,
-            .default_value = 0,
-        },
-        .vignette = .{
+        .radius = .{
             .type = f32,
             .min_value = 0.0,
             .max_value = 1.0,
-            .default_value = 0.6,
-        },
-        .edgeHardness = .{
-            .type = f32,
-            .min_value = 0.0,
-            .max_value = 1.0,
-            .default_value = 0.0,
+            .default_value = 0.1,
         },
     };
     pub const input = .{
@@ -59,91 +35,33 @@ pub const kernel = struct {
         return struct {
             // parameter and input image fields
             amount: f32,
-            center: @Vector(2, f32),
-            focalSize: f32,
-            invert: i32,
-            vignette: f32,
-            edgeHardness: f32,
+            radius: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn length(v: anytype) f32 {
-                return @typeInfo(@TypeOf(v)).Vector.len;
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
                 const amount = self.amount;
-                const center = self.center;
-                const focalSize = self.focalSize;
-                const invert = self.invert;
-                const vignette = self.vignette;
-                const edgeHardness = self.edgeHardness;
+                const radius = self.radius;
                 const src = self.src;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
                 var coord: @Vector(2, f32) = outCoord;
-                var cur_radius: f32 = length(coord - center);
-                var color: @Vector(4, f32) = src.sampleNearest(coord);
-                var cond1: i32 = @as(i32, if ((cur_radius > focalSize)) 1 else 0);
-                if (invert == 1) {
-                    if (cond1 == 0) {
-                        cond1 = 1;
-                    } else {
-                        cond1 = 0;
-                    }
-                }
-                var strength: f32 = undefined;
-                if (invert == 1) {
-                    strength = cur_radius / focalSize;
-                } else {
-                    strength = focalSize / cur_radius;
-                }
-                var tmpAmount: f32 = strength * amount;
-                coord -= center;
-                var tmpDst: @Vector(4, f32) = @as(@Vector(4, f32), @splat(0.0));
-                var scale: f32 = undefined;
-                scale = 1.0;
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (1.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (2.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (3.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (4.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (5.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (6.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (7.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (8.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (9.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (10.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (11.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (12.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (13.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                scale = 1.0 + tmpAmount * (14.0 / 14.0);
-                tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                tmpDst /= @as(@Vector(4, f32), @splat(15.0));
-                if (cond1 == 1) {
-                    dst = @as(@Vector(4, f32), @splat((1.0 - edgeHardness))) * ((color * @as(@Vector(4, f32), @splat(strength))) + (tmpDst * @as(@Vector(4, f32), @splat((1.0 - strength))))) + (tmpDst * @as(@Vector(4, f32), @splat(edgeHardness)));
-                    dst = @shuffle(f32, dst, @as(@Vector(3, f32), @splat(vignette)) * @shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(strength)) + (@shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat((1.0 - vignette)))), @Vector(4, i32){ -1, -2, -3, 3 });
-                } else {
-                    dst = color;
-                }
-                dst[3] = color[3];
+                var inputColor: @Vector(4, f32) = src.sampleLinear(coord);
+                dst = @shuffle(f32, dst, inputColor, @Vector(4, i32){ -1, -2, -3, 3 });
+                var hOffset: @Vector(2, f32) = @Vector(2, f32){ radius, 0.0 };
+                var vOffset: @Vector(2, f32) = @Vector(2, f32){ 0.0, radius };
+                var left: @Vector(4, f32) = src.sampleLinear(coord - hOffset) * @as(@Vector(4, f32), @splat(amount));
+                var right: @Vector(4, f32) = src.sampleLinear(coord + hOffset) * @as(@Vector(4, f32), @splat(amount));
+                var top: @Vector(4, f32) = src.sampleLinear(coord - vOffset) * @as(@Vector(4, f32), @splat(amount));
+                var bottom: @Vector(4, f32) = src.sampleLinear(coord + vOffset) * @as(@Vector(4, f32), @splat(amount));
+                dst = @shuffle(f32, dst, dst + (@shuffle(f32, top, undefined, @Vector(3, i32){ 0, 1, 2 })), @Vector(4, i32){ -1, -2, -3, 3 });
+                dst = @shuffle(f32, dst, dst - (@shuffle(f32, bottom, undefined, @Vector(3, i32){ 0, 1, 2 })), @Vector(4, i32){ -1, -2, -3, 3 });
+                dst = @shuffle(f32, dst, dst + left, @Vector(4, i32){ -1, -2, -3, 3 });
+                dst = @shuffle(f32, dst, dst - right, @Vector(4, i32){ -1, -2, -3, 3 });
+                dst[3] = inputColor[3];
                 return dst;
             }
         };

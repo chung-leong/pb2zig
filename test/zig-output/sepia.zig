@@ -1,45 +1,34 @@
 
-// Pixel Bender "simple" (translated using pb2zig)
-// namespace: Your Namespace
-// vendor: Your Vendor
-// version: 1
+// Pixel Bender "Sepia" (translated using pb2zig)
+// namespace: AIF
+// vendor: Adobe Systems
+// version: 2
+// description: a variable sepia filter
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .transform = .{
-            .type = [3]@Vector(3, f32),
-            .min_value = [3]@Vector(3, f32){
-                .{ -1.0, -1.0, -1.0 },
-                .{ -1.0, -1.0, -1.0 },
-                .{ -1.0, -1.0, -1.0 }
-            },
-            .max_value = [3]@Vector(3, f32){
-                .{ 1.0, 1.0, 1.0 },
-                .{ 1.0, 1.0, 1.0 },
-                .{ 1.0, 1.0, 1.0 }
-            },
-            .default_value = [3]@Vector(3, f32){
-                .{ 0.5, 0.0, 0.0 },
-                .{ 0.3, 1.0, 0.7 },
-                .{ 0.1, 0.3, 0.8 }
-            },
+        .intensity = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 1.0,
+            .default_value = 0.0,
         },
     };
     pub const input = .{
-        .src = .{ .channels = 3 },
+        .src = .{ .channels = 4 },
     };
     pub const output = .{
-        .dst = .{ .channels = 3 },
+        .dst = .{ .channels = 4 },
     };
     
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            transform: [3]@Vector(3, f32),
+            intensity: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
             // built-in Pixel Bender functions
@@ -216,14 +205,31 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const transform = self.transform;
+                const intensity = self.intensity;
                 const src = self.src;
                 
                 // output variable
-                var dst: @Vector(3, f32) = undefined;
+                var dst: @Vector(4, f32) = undefined;
                 
-                dst = src.sampleNearest(outCoord);
-                dst = matrixCalc("*", transform, dst);
+                var rgbaColor: @Vector(4, f32) = undefined;
+                var yiqaColor: @Vector(4, f32) = undefined;
+                var YIQMatrix: [4]@Vector(4, f32) = [4]@Vector(4, f32){
+                    .{ 0.299, 0.596, 0.212, 0.0 },
+                    .{ 0.587, -0.275, -0.523, 0.0 },
+                    .{ 0.114, -0.321, 0.311, 0.0 },
+                    .{ 0.0, 0.0, 0.0, 1.0 }
+                };
+                var inverseYIQ: [4]@Vector(4, f32) = [4]@Vector(4, f32){
+                    .{ 1.0, 1.0, 1.0, 0.0 },
+                    .{ 0.956, -0.272, -1.1, 0.0 },
+                    .{ 0.621, -0.647, 1.7, 0.0 },
+                    .{ 0.0, 0.0, 0.0, 1.0 }
+                };
+                rgbaColor = src.sampleNearest(outCoord);
+                yiqaColor = matrixCalc("*", YIQMatrix, rgbaColor);
+                yiqaColor[1] = intensity;
+                yiqaColor[2] = 0.0;
+                dst = matrixCalc("*", inverseYIQ, yiqaColor);
                 return dst;
             }
         };

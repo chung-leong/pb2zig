@@ -685,18 +685,26 @@ test "matrixCompMult" {
     assert(all(result[1] == @Vector(2, f32){ 9, 16 }));
 }
 
-pub fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) switch (operator[0]) {
-    '=', '!' => bool,
-    '+', '-', '/' => @TypeOf(p2),
-    '*' => switch (@typeInfo(@TypeOf(p2))) {
-        .Vector => @TypeOf(p2),
-        else => switch (@typeInfo(@TypeOf(p1))) {
-            .Vector => @TypeOf(p1),
-            else => @TypeOf(p2),
+pub fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
+    return switch (operator[0]) {
+        '=', '!' => bool,
+        '+', '-', '/' => switch (@typeInfo(T2)) {
+            .Array => T2,
+            else => T1,
         },
-    },
-    else => @compileError("Unknown operator: " ++ operator),
-} {
+        '*' => switch (@typeInfo(T2)) {
+            .Vector => T2,
+            else => switch (@typeInfo(T1)) {
+                .Vector => T1,
+                .Array => T1,
+                else => T2,
+            },
+        },
+        else => @compileError("Unknown operator: " ++ operator),
+    };
+}
+
+pub fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) MatrixCalcResult(operator, @TypeOf(p1), @TypeOf(p2)) {
     const calc = struct {
         fn @"Matrix * Vector"(m1: anytype, v2: anytype) @TypeOf(v2) {
             var result: @TypeOf(v2) = undefined;
@@ -735,12 +743,36 @@ pub fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) switc
             return @"Matrix * Vector"(t, v1);
         }
 
+        fn @"Matrix * Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
+            var result: @TypeOf(m1) = undefined;
+            inline for (m1, 0..) |row, r| {
+                result[r] = row * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+            }
+            return result;
+        }
+
+        fn @"Scalar * Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
+            return @"Matrix * Scalar"(m2, s1);
+        }
+
         fn @"Matrix + Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
             var result: @TypeOf(m2) = undefined;
             inline for (m1, 0..) |v, index| {
                 result[index] = v + m2[index];
             }
             return result;
+        }
+
+        fn @"Matrix + Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
+            var result: @TypeOf(m1) = undefined;
+            inline for (m1, 0..) |row, r| {
+                result[r] = row + @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+            }
+            return result;
+        }
+
+        fn @"Scalar + Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
+            return @"Matrix + Scalar"(m2, s1);
         }
 
         fn @"Matrix - Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
@@ -751,10 +783,42 @@ pub fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) switc
             return result;
         }
 
+        fn @"Matrix - Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
+            var result: @TypeOf(m1) = undefined;
+            inline for (m1, 0..) |row, r| {
+                result[r] = row - @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+            }
+            return result;
+        }
+
+        fn @"Scalar - Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
+            var result: @TypeOf(m2) = undefined;
+            inline for (m2, 0..) |row, r| {
+                result[r] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) - row;
+            }
+            return result;
+        }
+
         fn @"Matrix / Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
             var result: @TypeOf(m2) = undefined;
             inline for (m1, 0..) |v, index| {
                 result[index] = v / m2[index];
+            }
+            return result;
+        }
+
+        fn @"Matrix / Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
+            var result: @TypeOf(m1) = undefined;
+            inline for (m1, 0..) |row, r| {
+                result[r] = row / @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+            }
+            return result;
+        }
+
+        fn @"Scalar / Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
+            var result: @TypeOf(m2) = undefined;
+            inline for (m2, 0..) |row, r| {
+                result[r] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) / row;
             }
             return result;
         }
@@ -776,6 +840,7 @@ pub fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) switc
             return switch (@typeInfo(T)) {
                 .Vector => "Vector",
                 .Array => "Matrix",
+                .Float, .ComptimeFloat, .Int, .ComptimeInt => "Scalar",
                 else => @typeName(T),
             };
         }
@@ -827,4 +892,22 @@ test "matrixCalc" {
     const result12 = matrixCalc("*", m2, m1);
     assert(all(result12[0] == @Vector(2, f32){ 23, 34 }));
     assert(all(result12[1] == @Vector(2, f32){ 31, 46 }));
+    const result13 = matrixCalc("*", m1, 2);
+    assert(all(result13[0] == @Vector(2, f32){ 2, 4 }));
+    assert(all(result13[1] == @Vector(2, f32){ 6, 8 }));
+    const result14 = matrixCalc("+", m1, 0.5);
+    assert(all(result14[0] == @Vector(2, f32){ 1.5, 2.5 }));
+    assert(all(result14[1] == @Vector(2, f32){ 3.5, 4.5 }));
+    const result15 = matrixCalc("-", m1, 0.5);
+    assert(all(result15[0] == @Vector(2, f32){ 0.5, 1.5 }));
+    assert(all(result15[1] == @Vector(2, f32){ 2.5, 3.5 }));
+    const result16 = matrixCalc("-", 0, m1);
+    assert(all(result16[0] == @Vector(2, f32){ -1, -2 }));
+    assert(all(result16[1] == @Vector(2, f32){ -3, -4 }));
+    const result17 = matrixCalc("/", m1, 0.5);
+    assert(all(result17[0] == @Vector(2, f32){ 2, 4 }));
+    assert(all(result17[1] == @Vector(2, f32){ 6, 8 }));
+    const result18 = matrixCalc("/", 60, m1);
+    assert(all(result18[0] == @Vector(2, f32){ 60, 30 }));
+    assert(all(result18[1] == @Vector(2, f32){ 20, 15 }));
 }

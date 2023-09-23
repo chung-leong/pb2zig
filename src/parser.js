@@ -184,7 +184,10 @@ export class PixelBenderParser extends CstParser {
     })
     $.RULE('outputDeclaration', () => {
       $.CONSUME(T.Output)
-      $.CONSUME(T.Pixel)
+      $.OR([
+        { ALT: () => $.CONSUME(T.Pixel) },
+        { ALT: () => $.CONSUME(T.FloatVector) },
+      ])
       $.CONSUME(T.Identifier)
       $.CONSUME(T.Semicolon)
     })

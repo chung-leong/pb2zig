@@ -165,10 +165,7 @@ export class PixelBenderToZigTranslator {
           if (arg) {
             if (property) {
               // access the prop of the argument
-              const argProp = new N.VariableAccess();
-              argProp.name = arg.name;
-              argProp.property = property;
-              return argProp;
+              return this.createExpression(N.VariableAccess, { name: arg.name, property });
             } else {
               return arg;
             }
@@ -321,6 +318,7 @@ export class PixelBenderToZigTranslator {
     this.addConstants();
     this.addCalledFunctions();
     this.addMacroFunctions();
+    this.setFunctionArgTypes();
     this.addDefinedFunctions();
     this.add(`};`);
     this.add(`}`);
@@ -393,8 +391,16 @@ export class PixelBenderToZigTranslator {
     }
 
     // find matrix variables
-    const variables = this.find([ N.FunctionDefinition, N.FunctionArgument, N.VariableDeclaration ], true);
+    const variables = this.find([
+      N.FunctionDefinition,
+      N.FunctionArgument,
+      N.VariableDeclaration,
+      N.ConstantDeclaration,
+      N.DependentDeclaration,
+      N.Parameter,
+    ], true);
     if (variables.some(v => isMatrix(v.type))) {
+      inUse['MatrixCalcResult'] = true;
       inUse['matrixCalc'] = true;
     }
 
@@ -413,6 +419,17 @@ export class PixelBenderToZigTranslator {
         this.add(``);
         count++;
       }
+    }
+  }
+
+  setFunctionArgTypes() {
+    const defs = this.find(N.FunctionDefinition);
+    for (const { name, type, args } of defs) {
+      const types = [ type ];
+      for (const arg of args) {
+        types.push(arg.type);
+      }
+      this.setFunctionArgs(name, types);
     }
   }
 
@@ -514,6 +531,9 @@ export class PixelBenderToZigTranslator {
   addDefinedFunction(def) {
     const { name, type, args, statements } = def;
     this.startScope();
+    for (const arg of args) {
+      this.setVariableType(arg.name, arg.type);
+    }
     if (name === 'evaluatePixel') {
       this.add(`pub fn ${name}(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {`)
       this.add(`// input variables`);
@@ -604,6 +624,19 @@ export class PixelBenderToZigTranslator {
     this.add(`}`);
   }
 
+  addReturnStatement({ expression }) {
+    const expr = this.translateExpression(expression);
+    this.add(`return ${expr};`);
+  }
+
+  createExpression(c, props) {
+    const obj = new c;
+    for (const [ name, value ] of Object.entries(props)) {
+      obj[name] = value;
+    }
+    return obj;
+  }
+
   translateExpression(expression, typeExpected) {
     const fname = `translate${expression.constructor.name}`;
     const f = this[fname];
@@ -679,14 +712,30 @@ export class PixelBenderToZigTranslator {
 
   translateConstructorCall({ type, args }, typeExpected) {
     const argList = args.map(a => this.translateExpression(a, type));
-    const width = getVectorWidth(type);
-    if (width === 1) {
-      const arg = argList[0];
-      arg.convert(type);
-      return arg;
-    } else {
-      const childType = getChildType(type);
-      argList.forEach(a => a.convert(childType));
+    if (isMatrix(type)) {
+      const typeV = getChildType(type);
+      const width = getVectorWidth(typeV);
+      const initializers = [];
+      if (isVector(argList[0]?.type))  {
+        initializers.push(...argList);
+      } else if (argList.length === 1) {
+        const arg = argList[0];
+        arg.promote(typeV);
+        for (let i = 0; i < width; i++) {
+          initializers.push(arg);
+        }
+      } else {
+        for (let i = 0, j = 0; i < width; i++, j += width) {
+          const slice = argList.slice(j, j + width);
+          initializers.push(`.{ ${slice.join(', ')} }`);
+        }
+      }
+      const typeZ = getZigType(type);
+      return new ZigExpr(`${typeZ}{\n${initializers.join(',\n')}\n}`, type);
+  } else if (isVector(type)) {
+      const typeC = getChildType(type);
+      const width = getVectorWidth(type);
+      argList.forEach(a => a.convert(typeC));
       if (typeExpected === 'comptime') {
         if (argList.length === 1) {
           while (argList.length < width) {
@@ -704,6 +753,10 @@ export class PixelBenderToZigTranslator {
           return new ZigExpr(`${typeZ}{ ${argList.join(', ')} }`, type);
         }
       }
+    } else {
+      const arg = argList[0];
+      arg.convert(type);
+      return arg;
     }
   }
 
@@ -715,8 +768,8 @@ export class PixelBenderToZigTranslator {
       arg.convert(type);
       return arg;
     } else {
-      const childType = getChildType(type);
-      argList.forEach(a => a.convert(childType));
+      const typeC = getChildType(type);
+      argList.forEach(a => a.convert(typeC));
       if (argList.length === 1) {
         while (argList.length < width) {
           argList.push(argList[0]);
@@ -805,15 +858,31 @@ export class PixelBenderToZigTranslator {
         } else {
           const [ index ] = indicesL;
           const valueR = this.translateExpression(operand2, typeL);
-          const childType = getChildType(typeL);
+          const typeC = getChildType(typeL);
           this.add(`${nameL}[${index}] ${operator} ${valueR};`);
           if (typeExpected === 'void') {
             return null;
           }
           const tmp = this.addTempVariable(`${nameL}[${index}]`);
-          return new ZigExpr(tmp, childType);
+          return new ZigExpr(tmp, typeC);
         }
       } else {
+        if (isMatrix(typeL)) {
+          if (operator.length === 2) {
+            // += and friends--expand
+            const expression = this.createExpression(N.BinaryOperation, {
+              operator: operator.slice(0, 1),
+              operand1,
+              operand2,
+            });
+            const assignment = this.createExpression(N.BinaryOperation, {
+              operator: '=',
+              operand1,
+              operand2: expression,
+            });
+            return this.translateBinaryOperation(assignment, typeExpected);
+          }
+        }
         const valueR = this.translateExpression(operand2, typeL);
         valueR.promote(typeL);
         this.add(`${nameL} ${operator} ${valueR};`);
@@ -824,11 +893,31 @@ export class PixelBenderToZigTranslator {
         return new ZigExpr(tmp, typeL);
       }
     } else {
+      // not assignment
       const opL = this.translateExpression(operand1);
       const opR = this.translateExpression(operand2);
-      if (!opL.isVector() && opR.isVector()) {
+      if (isMatrix(opL.type) || isMatrix(opR.type)) {
+        let returnType;
+        switch (operator) {
+          case '==':
+          case '!=':
+            returnType = 'bool';
+            break;
+          case '+':
+          case '-':
+          case '/':
+            returnType = isMatrix(opL.type) ? opL.type : opR.type;
+            break;
+          case '*':
+            returnType = isVector(opL.type) ? opL.type : opR.type;
+            break;
+        }
+        return new ZigExpr(`matrixCalc("${operator}", ${opL}, ${opR})`, returnType);
+      }
+      // promote scale to vector or matrix
+      if (opL.isScalar() && opR.isVector()) {
         opL.promote(opR.type);
-      } else if (opL.isVector() && !opR.isVector()) {
+      } else if (opL.isVector() && opR.isScalar()) {
         opR.promote(opL.type);
       }
       const width = getVectorWidth(opL.type);
@@ -882,8 +971,18 @@ class ZigExpr {
     return isMatrix(this.type);
   }
 
+  isScalar() {
+    return !this.isMatrix() && !this.isVector();
+  }
+
   promote(type) {
-    if (this.type !== type && !isVector(this.type)) {
+    if (this.type !== type && !this.isVector()) {
+      if (!isVector(type)) {
+        throw new Error('Can only promote from scalar to vector');
+      }
+      if (this.isMatrix()) {
+        throw new Error('Cannot promote from matrix to vector');
+      }
       this.convert(getChildType(type));
       const typeZ = getZigType(type);
       this.text = `@as(${typeZ}, @splat(${this.text}))`;
@@ -964,7 +1063,13 @@ function getChildZigType(type) {
 }
 
 function getChildType(type) {
-  return isVector(type) ? type.slice(0, -1) : type;
+  if (isMatrix(type)) {
+    return type.slice(0, -2);
+  } else if (isVector(type)) {
+    return type.slice(0, -1);
+  } else {
+    return type;
+  }
 }
 
 function isVector(type) {

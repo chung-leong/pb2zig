@@ -151,8 +151,12 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   outputDeclaration(ctx) {
-    const typeP = this.name(ctx.Pixel);
-    const type = 'float' + typeP.slice(-1)
+    let type;
+    if (ctx.FloatVector) {
+      type = this.name(ctx.FloatVector);
+    } else {
+      type = 'float' + this.name(ctx.Pixel).slice(-1)
+    }
     const name = this.name(ctx.Identifier);
     return this.create(N.OutputDeclaration, { type, name });
   }
@@ -392,8 +396,8 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   returnStatement(ctx) {
-    const value = (ctx.expression) ? this.visit(ctx.expression) : undefined;
-    return this.create(N.ReturnStatement, { value });
+    const expression = (ctx.expression) ? this.visit(ctx.expression) : undefined;
+    return this.create(N.ReturnStatement, { expression });
   }
 
   expressionStatement(cxt) {
