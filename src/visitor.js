@@ -271,15 +271,11 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   expression(ctx) {
-    return this.visit(ctx.assignmentOperation);
-  }
-
-  assignmentOperation(ctx) {
     const expr = this.visit(ctx.ternaryOperation);
     if (ctx.assignmentOperator) {
-      const lvalue = this.visit(ctx.variable);
       const operator = this.visit(ctx.assignmentOperator);
-      const rvalue = expr;
+      const lvalue = expr;
+      const rvalue = this.visit(ctx.expression);
       return this.create(N.AssignmentOperation, { lvalue, operator, rvalue });
     } else {
       return expr;
@@ -294,64 +290,86 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const expr = this.visit(ctx.binaryOperation);
     if (ctx.Question) {
       const condition = expr;
-      const onTrue = this.visit(ctx.binaryOperation[1]);
-      const onFalse = this.visit(ctx.ternaryOperation);
+      const onTrue = this.visit(ctx.ternaryOperation[0]);
+      const onFalse = this.visit(ctx.ternaryOperation[1]);
       return this.create(N.Conditional, { condition, onTrue, onFalse });
     } else {
       return expr;
     }
   }
 
-  binaryOperator(ctx) {
-    return this.anyName(ctx);
-  }
-
   binaryOperation(ctx) {
     const expr = this.visit(ctx.unaryOperation);
-    if (ctx.binaryOperator) {
-      const operand1 = expr;
-      const operator = this.visit(ctx.binaryOperator);
-      const operand2 = this.visit(ctx.binaryOperation);
-      const exprL = this.create(N.BinaryOperation, { operand1, operator, operand2 });
-      if (operand2 instanceof N.BinaryOperation) {
-        const exprR = operand2;
-        const precedenceL = getPrecedence(exprL.operator);
-        const precedenceR = getPrecedence(exprR.operator);
-        if (precedenceL <= precedenceR) {
-          // the left op has higher precedence (left-associtivity)
-          // steal the operand from the right op and place the left op in its place
-          exprL.operand2 = exprR.operand1;
-          exprR.operand1 = exprL;
-          return exprR;
-        }
-      }
-      return exprL;
+    let operator, type;
+    if (ctx.arithmeticOperator) {
+      operator = this.visit(ctx.arithmeticOperator);
+      type = N.ArithmeticOperation;
+    } else if (ctx.comparisonOperator) {
+      operator = this.visit(ctx.comparisonOperator);
+      type = N.ComparisonOperation;
+    } else if (ctx.assignmentOperator) {
+      operator = this.visit(ctx.assignmentOperator);
+      type = N.AssignmentOperation;
     } else {
       return expr;
     }
+    const operand1 = expr;
+    const operand2 = this.visit(ctx.binaryOperation);
+    const exprL = this.create(type, { operand1, operator, operand2 });
+    if (operand2 instanceof N.BinaryOperation) {
+      const exprR = operand2;
+      const precedenceL = getPrecedence(exprL.operator);
+      const precedenceR = getPrecedence(exprR.operator);
+      if (precedenceL <= precedenceR) {
+        // the left op has higher precedence (left-associtivity)
+        // steal the operand from the right op and place the left op in its place
+        exprL.operand2 = exprR.operand1;
+        exprR.operand1 = exprL;
+        return exprR;
+      }
+    }
+    return exprL;
   }
 
-  binaryOperator(ctx) {
+  arithmeticOperator(ctx) {
+    return this.anyName(ctx);
+  }
+
+  comparisonOperator(ctx) {
+    return this.anyName(ctx);
+  }
+
+  assignmentOperator(ctx) {
     return this.anyName(ctx);
   }
 
   unaryOperation(ctx) {
     const expr = this.visit(ctx.nullaryOperation);
-    if (ctx.unaryOperator) {
-      const operator = this.visit(ctx.unaryOperator);
-      const operand = expr;
-      return this.create(N.UnaryOperation, { operator, operand });
+    let operator, type;
+    if (ctx.Minus) {
+      type = N.NegationOperation;
+    } else if (ctx.Exclam) {
+      type = N.NotOperation;
     } else {
       return expr;
     }
-  }
-
-  unaryOperator(ctx) {
-    return this.anyName(ctx);
+    const operand = expr;
+    return this.create(type, { operand });
   }
 
   nullaryOperation(ctx) {
-    return this.visitAny(ctx);
+    const expr = this.visitAny(ctx);
+    let property, element;
+    if (ctx.property) {
+      property = this.visit(ctx.property);
+    } else if (ctx.element) {
+      element = this.visit(ctx.element);
+    }
+    if (property || element) {
+      return this.create(N.ElementAccess, { expression: expr, property, element })
+    } else {
+      return expr;
+    }
   }
 
   incrementPrefix(ctx) {
@@ -364,7 +382,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const lvalue = this.visit(ctx.variable);
     if (ctx.incrementOperator) {
       const operator = this.visit(ctx.incrementOperator);
-      return this.create(N.IncrementOperation, { operator, post: true, lvalue });  
+      return this.create(N.IncrementOperation, { operator, post: true, lvalue });
     } else {
       return lvalue;
     }
@@ -486,7 +504,7 @@ function getPrecedence(operator) {
     case '--': return 2;
     case '!':
     case '-': return 3;
-    case '*': 
+    case '*':
     case '/': return 4;
     case '+':
     case '-': return 5;
@@ -500,11 +518,11 @@ function getPrecedence(operator) {
     case '||': return 9;
     case '^^': return 10;
     case '||': return 11;
-    case '?:': return 12;
-    case '=': 
-    case '+=': 
+    case '=':
+    case '+=':
     case '-=':
     case '*=':
-    case '/=': return 13;
+    case '/=': return 12;
+    case '?:': return 13;
   }
 }

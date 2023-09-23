@@ -1,39 +1,31 @@
 
-// Pixel Bender "CirclePixels" (translated using pb2zig)
-// namespace: be.neuroproductions
-// vendor: Neuro Productions
+// Pixel Bender "Distort" (translated using pb2zig)
+// namespace: net.nicoptere.filters
+// vendor: nicoptere
 // version: 1
-// description: circlePixels
+// description: displace
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .dist = .{
-            .type = f32,
-            .min_value = 1.0,
-            .max_value = 300.0,
-            .default_value = 100.0,
-            .description = "distance",
+        .amplitude = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ -100.0, -100.0 },
+            .max_value = .{ 100.0, 100.0 },
+            .default_value = .{ 0.0, 0.0 },
         },
-        .size = .{
-            .type = f32,
-            .min_value = 0.0,
-            .max_value = 2.0,
-            .default_value = 1.0,
-            .description = "size",
-        },
-        .edgeAlpha = .{
-            .type = f32,
-            .min_value = 0.0,
-            .max_value = 300.0,
-            .default_value = 2.0,
-            .description = "edgeAlpha",
+        .channels = .{
+            .type = @Vector(2, i32),
+            .min_value = .{ 0, 0 },
+            .max_value = .{ 3, 3 },
+            .default_value = .{ 0, 1 },
         },
     };
     pub const input = .{
         .src = .{ .channels = 4 },
+        .src1 = .{ .channels = 4 },
     };
     pub const output = .{
         .dst = .{ .channels = 4 },
@@ -43,50 +35,53 @@ pub const kernel = struct {
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            dist: f32,
-            size: f32,
-            edgeAlpha: f32,
+            amplitude: @Vector(2, f32),
+            channels: @Vector(2, i32),
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn distance(v1: anytype, v2: anytype) f32 {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-                    else => std.math.fabs(v1 - v2),
-                };
-            }
+            src1: std.meta.fieldInfo(InputStruct, .src1).type,
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const dist = self.dist;
-                const size = self.size;
-                const edgeAlpha = self.edgeAlpha;
+                const amplitude = self.amplitude;
+                const channels = self.channels;
                 const src = self.src;
+                const src1 = self.src1;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                var inP: @Vector(2, f32) = outCoord;
-                var xPos: f32 = (floor((inP[0]) / dist) * dist);
-                var yPos: f32 = (floor((inP[1]) / dist) * dist);
-                var newP: @Vector(2, f32) = undefined;
-                newP[0] = xPos;
-                newP[1] = yPos;
-                var distt: f32 = distance(inP - @as(@Vector(2, f32), @splat((dist / 2.0))), newP);
-                dst = src.sampleNearest(newP);
-                var ssize: f32 = size * dst[3];
-                if (2.0 * distt / ssize > dist) {
-                    dst[3] = 0.0;
-                } else {
-                    if (2.0 * distt / ssize > dist - edgeAlpha) {
-                        dst[3] = (dist - (2.0 * distt / ssize)) * dst[3] / edgeAlpha;
-                    }
+                var coord: @Vector(2, f32) = outCoord;
+                var pix: @Vector(4, f32) = src1.sampleNearest(coord);
+                var dx: f32 = undefined;
+                if (channels[0] == 0) {
+                    dx = coord[0] + (0.5 - pix[0]) * amplitude[0];
                 }
+                if (channels[0] == 1) {
+                    dx = coord[0] + (0.5 - pix[1]) * amplitude[0];
+                }
+                if (channels[0] == 2) {
+                    dx = coord[0] + (0.5 - pix[2]) * amplitude[0];
+                }
+                if (channels[0] == 3) {
+                    dx = coord[0] + (0.5 - pix[3]) * amplitude[0];
+                }
+                var dy: f32 = undefined;
+                if (channels[1] == 0) {
+                    dy = coord[1] + (0.5 - pix[0]) * amplitude[1];
+                }
+                if (channels[1] == 1) {
+                    dy = coord[1] + (0.5 - pix[1]) * amplitude[1];
+                }
+                if (channels[1] == 2) {
+                    dy = coord[1] + (0.5 - pix[2]) * amplitude[1];
+                }
+                if (channels[1] == 3) {
+                    dy = coord[1] + (0.5 - pix[3]) * amplitude[1];
+                }
+                var Opix: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ dx, dy });
+                Opix[3] = pix[3];
+                dst = Opix;
                 return dst;
             }
         };

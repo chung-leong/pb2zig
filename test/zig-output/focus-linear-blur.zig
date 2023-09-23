@@ -1,35 +1,32 @@
 
-// Pixel Bender "CirclePixels" (translated using pb2zig)
-// namespace: be.neuroproductions
-// vendor: Neuro Productions
+// Pixel Bender "FocusingLinearBlur" (translated using pb2zig)
+// namespace: FocusingLinearBlur
+// vendor: Petri Leskinen
 // version: 1
-// description: circlePixels
+// description: linear blur by a line equation
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .dist = .{
-            .type = f32,
-            .min_value = 1.0,
-            .max_value = 300.0,
-            .default_value = 100.0,
-            .description = "distance",
+        .lineEquation = .{
+            .type = @Vector(3, f32),
+            .min_value = .{ -1.0, -1.0, -100.0 },
+            .max_value = .{ 1.0, 1.0, 100.0 },
+            .default_value = .{ 0.707, -0.707, 30.0 },
         },
-        .size = .{
+        .uScale = .{
             .type = f32,
             .min_value = 0.0,
-            .max_value = 2.0,
+            .max_value = 10.0,
             .default_value = 1.0,
-            .description = "size",
         },
-        .edgeAlpha = .{
+        .vScale = .{
             .type = f32,
             .min_value = 0.0,
-            .max_value = 300.0,
-            .default_value = 2.0,
-            .description = "edgeAlpha",
+            .max_value = 10.0,
+            .default_value = 1.0,
         },
     };
     pub const input = .{
@@ -43,50 +40,30 @@ pub const kernel = struct {
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            dist: f32,
-            size: f32,
-            edgeAlpha: f32,
+            lineEquation: @Vector(3, f32),
+            uScale: f32,
+            vScale: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn distance(v1: anytype, v2: anytype) f32 {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-                    else => std.math.fabs(v1 - v2),
-                };
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const dist = self.dist;
-                const size = self.size;
-                const edgeAlpha = self.edgeAlpha;
+                const lineEquation = self.lineEquation;
+                const uScale = self.uScale;
+                const vScale = self.vScale;
                 const src = self.src;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                var inP: @Vector(2, f32) = outCoord;
-                var xPos: f32 = (floor((inP[0]) / dist) * dist);
-                var yPos: f32 = (floor((inP[1]) / dist) * dist);
-                var newP: @Vector(2, f32) = undefined;
-                newP[0] = xPos;
-                newP[1] = yPos;
-                var distt: f32 = distance(inP - @as(@Vector(2, f32), @splat((dist / 2.0))), newP);
-                dst = src.sampleNearest(newP);
-                var ssize: f32 = size * dst[3];
-                if (2.0 * distt / ssize > dist) {
-                    dst[3] = 0.0;
-                } else {
-                    if (2.0 * distt / ssize > dist - edgeAlpha) {
-                        dst[3] = (dist - (2.0 * distt / ssize)) * dst[3] / edgeAlpha;
-                    }
-                }
+                var val: f32 = lineEquation[0] * outCoord[0] + lineEquation[1] * outCoord[1] + lineEquation[2];
+                val *= 0.01;
+                var dir: @Vector(2, f32) = @as(@Vector(2, f32), @splat(val)) * @shuffle(f32, lineEquation, undefined, @Vector(2, i32){ 0, 1 });
+                var po: @Vector(2, f32) = @as(@Vector(2, f32), @splat(uScale)) * dir;
+                dst = src.sampleLinear(outCoord + po) + src.sampleLinear(outCoord - po);
+                po = @as(@Vector(2, f32), @splat(vScale)) * @Vector(2, f32){ dir[1], -dir[0] };
+                dst += src.sampleLinear(outCoord + po) + src.sampleLinear(outCoord - po);
+                dst *= @as(@Vector(4, f32), @splat(0.25));
                 return dst;
             }
         };

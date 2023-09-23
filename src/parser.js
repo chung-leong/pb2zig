@@ -22,6 +22,11 @@ const T = {
     group: 'preprocessor',
     pattern: /#\s*(if|ifdef|define|elif|endif)\b.*/,
   }),
+  Number: createToken({   // this needs to be ahead of T.Dot
+    name: 'Number',
+    pattern: /([0-9]*[.])?[0-9]+([eE][-+]?\d+)?/,
+    start_chars_hint: [ ...'0123456789.' ].map(c => c.charCodeAt(0)),
+  }),
 
   DblEql: createToken({ name: 'DblEqual', pattern: /==/ }),
   ExclamEql: createToken({ name: 'ExclamEql', pattern: /!=/ }),
@@ -96,10 +101,6 @@ const T = {
   Null: createToken({ name: 'Null', pattern: /null\b/ }),
   True: createToken({ name: 'True', pattern: /true\b/ }),
   False: createToken({ name: 'False', pattern: /false\b/ }),
-  Number: createToken({
-    name: 'Number',
-    pattern: /(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/
-  }),
   QuotedStr: createToken({
     name: 'QuotedStr',
     pattern: /"(?:[^\\"]|\\(?:[bfnrtv"\\/]|u[0-9a-fA-F]{4}))*"/
@@ -293,30 +294,17 @@ export class PixelBenderParser extends CstParser {
     })
     $.RULE('expression', () => {
       // assignment has the lowest precedence
-      // the rule below capture it and all operations with higher precedence
-      $.SUBRULE($.assignmentOperation);
-    })
-    $.RULE('assignmentOperation', () => {
-      $.OPTION(() => {
-        $.SUBRULE($.variable)
-        $.SUBRULE($.assignmentOperator)
-      })
       $.SUBRULE($.ternaryOperation)
-    })
-    $.RULE('assignmentOperator', () => {
-      $.OR([
-        { ALT: () => $.CONSUME(T.Equal) },
-        { ALT: () => $.CONSUME(T.PlusEql) },
-        { ALT: () => $.CONSUME(T.MinusEql) },
-        { ALT: () => $.CONSUME(T.AsteriskEql) },
-        { ALT: () => $.CONSUME(T.SlashEql) },
-      ])
+      $.OPTION(() => {
+        $.SUBRULE($.assignmentOperator)
+        $.SUBRULE($.expression)
+      })
     })
     $.RULE('ternaryOperation', () => {
       $.SUBRULE($.binaryOperation);
       $.OPTION(() => {
         $.CONSUME(T.Question)
-        $.SUBRULE1($.binaryOperation)
+        $.SUBRULE1($.ternaryOperation)
         $.CONSUME(T.Colon)
         // chaining is possible
         $.SUBRULE2($.ternaryOperation)
@@ -325,18 +313,25 @@ export class PixelBenderParser extends CstParser {
     $.RULE('binaryOperation', () => {
       $.SUBRULE1($.unaryOperation)
       $.OPTION(() => {
-        $.SUBRULE($.binaryOperator)
-        // chaining is possible--need to adjust the operands 
+        $.OR([
+          { ALT: () => $.SUBRULE($.arithmeticOperator) },
+          { ALT: () => $.SUBRULE($.comparisonOperator) },
+        ])
+        // chaining is possible--need to adjust the operands
         // based on correct precedence order in visitor
         $.SUBRULE2($.binaryOperation)
       })
     });
-    $.RULE('binaryOperator', () => {
+    $.RULE('arithmeticOperator', () => {
       $.OR([
         { ALT: () => $.CONSUME(T.Plus) },
         { ALT: () => $.CONSUME(T.Minus) },
         { ALT: () => $.CONSUME(T.Asterisk) },
         { ALT: () => $.CONSUME(T.Slash) },
+      ])
+    });
+    $.RULE('comparisonOperator', () => {
+      $.OR([
         { ALT: () => $.CONSUME(T.LAngle) },
         { ALT: () => $.CONSUME(T.RAngle) },
         { ALT: () => $.CONSUME(T.LAngleEql) },
@@ -348,18 +343,26 @@ export class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.DblCircum) },
       ])
     })
-    $.RULE('unaryOperation', () => {
-      $.OPTION(() => $.SUBRULE($.unaryOperator))
-      $.SUBRULE($.nullaryOperation)
-    })
-    $.RULE('unaryOperator', () => {
+    $.RULE('assignmentOperator', () => {
       $.OR([
-        { ALT: () => $.CONSUME(T.Minus) },
-        { ALT: () => $.CONSUME(T.Exclam) },
+        { ALT: () => $.CONSUME(T.Equal) },
+        { ALT: () => $.CONSUME(T.PlusEql) },
+        { ALT: () => $.CONSUME(T.MinusEql) },
+        { ALT: () => $.CONSUME(T.AsteriskEql) },
+        { ALT: () => $.CONSUME(T.SlashEql) },
       ])
     })
+    $.RULE('unaryOperation', () => {
+      $.OPTION(() => {
+        $.OR([
+          { ALT: () => $.CONSUME(T.Minus) },
+          { ALT: () => $.CONSUME(T.Exclam) },
+        ])
+      })
+      $.SUBRULE($.nullaryOperation)
+    })
     $.RULE('nullaryOperation', () => {
-      $.OR([
+      $.OR1([
         { ALT: () => $.SUBRULE($.parentheses) },
         { ALT: () => $.SUBRULE($.constructorCall) },
         { ALT: () => $.SUBRULE($.functionCall) },
@@ -367,6 +370,12 @@ export class PixelBenderParser extends CstParser {
         { ALT: () => $.SUBRULE($.incrementPostfix) },
         { ALT: () => $.SUBRULE($.literalValue) },
       ])
+      $.OPTION(() => {
+        $.OR2([
+          { ALT: () => $.SUBRULE($.property) },
+          { ALT: () => $.SUBRULE($.element) },
+        ])
+      })
     })
     $.RULE('parentheses', () => {
       $.CONSUME(T.LParen)
@@ -485,33 +494,54 @@ export const parser = new PixelBenderParser();
 export const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 
 export function parse(code) {
-  const lexResult = lexer.tokenize(code)
+  const lex = lexer.tokenize(code)
   const macroCSTs = [];
   const lexErrors = [];
   const parseErrors = [];
-  for (const token of lexResult.groups.preprocessor) {
+  for (const token of lex.groups.preprocessor) {
     let m;
     if (m = /#\s*define\s+(.*)/.exec(token.image)) {
-      const macro = parseMacro(m[1]);
+      const stringOffset = m[0].length - m[1].length;
+      const macro = parseMacro(m[1], {
+        offset: token.startOffset - 1 + stringOffset,
+        lineOffset: token.startLine - 1,
+        columnOffset: token.startColumn - 1 + stringOffset,
+      });
       macroCSTs.push(macro.cst);
       lexErrors.push(...macro.lexErrors);
       parseErrors.push(...macro.parseErrors);
     }
   }
-  parser.input = lexResult.tokens
+  parser.input = lex.tokens
   const cst = parser.pbk();
-  lexErrors.push(...lexResult.errors);
+  lexErrors.push(...lex.errors);
   parseErrors.push(...parser.errors);
   return { cst, macroCSTs, lexErrors, parseErrors };
 }
 
-function parseMacro(text) {
-  const lexResult = lexer.tokenize(text)
-  parser.input = lexResult.tokens;
-  return {
-    cst: parser.macroDeclaration(),
-    lexErrors: lexResult.errors,
-    parseErrors: parser.errors,
-  };
+function parseMacro(text, { offset, lineOffset, columnOffset }) {
+  const lex = lexer.tokenize(text);
+  parser.input = lex.tokens;
+  const cst = parser.macroDeclaration();
+  const lexErrors = lex.errors;
+  const parseErrors = parser.errors;
+  // adjust position reported position of errors
+  // there ought to be a better way than this...
+  for (const err of lexErrors) {
+    const oldOffset = err.offset;
+    err.offset += offset;
+    err.line += lineOffset;
+    err.column += columnOffset;
+    err.message = err.message.replace(oldOffset, err.offset);
+  }
+  for (const { token } of parseErrors) {
+    token.startOffset += offset;
+    token.endOffset += offset;
+    token.startLine += lineOffset;
+    token.endLine += lineOffset;
+    token.startColumn += columnOffset;
+    token.endColumn += columnOffset;
+  }
+  return { cst, lexErrors, parseErrors };
 }
 

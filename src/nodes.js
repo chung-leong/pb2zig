@@ -101,6 +101,12 @@ export class VariableAccess {
   element;
 }
 
+export class ElementAccess {
+  expression;
+  property;
+  element;
+}
+
 export class IncrementOperation {
   operator;
   post;
@@ -119,9 +125,23 @@ export class BinaryOperation {
   operand2;
 }
 
+export class ArithmeticOperation extends BinaryOperation {
+}
+
+export class ComparisonOperation extends BinaryOperation {
+}
+
+export class LogicalOperation extends BinaryOperation {
+}
+
 export class UnaryOperation {
-  operator;
   operand;
+}
+
+export class NegationOperation extends UnaryOperation {
+}
+
+export class NotOperation extends UnaryOperation {
 }
 
 export class Conditional {

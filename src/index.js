@@ -8,7 +8,8 @@ export function convertPixelBender(code) {
   if (errCount > 0) {
     const msgs = [];
     for (const err of lexErrors) {
-      msgs.push(`   [LEXER]: ${err.message}`);
+      const { message, line, column } = err;
+      msgs.push(`   [LEXER]: ${message} at line ${line}, column ${column}`);
     }
     for (const err of parseErrors) {
       const { message, token: { startLine, startColumn } } = err;;

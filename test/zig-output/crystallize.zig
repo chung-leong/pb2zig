@@ -239,9 +239,9 @@ pub const kernel = struct {
                 var dst: @Vector(4, f32) = undefined;
                 
                 var div: f32 = size;
-                var newP: @Vector(2, f32) = base1 + @as(@Vector(2, f32), @splat(matrixCalc("*", rot1r, div))) * (floor(matrixCalc("*", rot1, (outCoord - base1)) / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5)));
+                var newP: @Vector(2, f32) = base1 + matrixCalc("*", matrixCalc("*", rot1r, div), (floor(matrixCalc("*", rot1, (outCoord - base1)) / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5))));
                 div = 21.0 / 20.0 * size;
-                var p: @Vector(2, f32) = base2 + @as(@Vector(2, f32), @splat(matrixCalc("*", rot2r, div))) * (floor(matrixCalc("*", rot2, (outCoord - base2)) / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5)));
+                var p: @Vector(2, f32) = base2 + matrixCalc("*", matrixCalc("*", rot2r, div), (floor(matrixCalc("*", rot2, (outCoord - base2)) / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5))));
                 newP = @as(@Vector(2, f32), if (length(p - outCoord) < length(newP - outCoord)) p else newP);
                 div = 19.0 / 20.0 * size;
                 p = @as(@Vector(2, f32), @splat(div)) * (floor(outCoord / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5)));

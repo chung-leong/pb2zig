@@ -38,6 +38,12 @@ describe('Parser tests', function() {
     expect(ast.operand1).be.instanceOf(N.BinaryOperation);
     expect(ast.operand1.operator).to.equal('*');
   })
+  it('should parse a float without leading zero', function() {
+    const code = '.123';
+    const ast = parse(code);
+    expect(ast).to.be.instanceOf(N.Literal);
+    expect(ast.value).to.equal(0.123);
+  })
 })
 
 function parse(code, type = 'expression') {
@@ -51,5 +57,5 @@ function parse(code, type = 'expression') {
   if (parser.errors.length > 0) {
     throw new Error(parser.errors[0]);
   }
-  return ast; 
+  return ast;
 }

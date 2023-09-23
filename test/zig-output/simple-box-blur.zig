@@ -1,36 +1,15 @@
 
-// Pixel Bender "CirclePixels" (translated using pb2zig)
-// namespace: be.neuroproductions
-// vendor: Neuro Productions
-// version: 1
-// description: circlePixels
+// Pixel Bender "SimpleBoxBlur" (translated using pb2zig)
+// namespace: AIF
+// vendor: Adobe Systems
+// version: 2
+// description: A simple fixed-size box blur
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .dist = .{
-            .type = f32,
-            .min_value = 1.0,
-            .max_value = 300.0,
-            .default_value = 100.0,
-            .description = "distance",
-        },
-        .size = .{
-            .type = f32,
-            .min_value = 0.0,
-            .max_value = 2.0,
-            .default_value = 1.0,
-            .description = "size",
-        },
-        .edgeAlpha = .{
-            .type = f32,
-            .min_value = 0.0,
-            .max_value = 300.0,
-            .default_value = 2.0,
-            .description = "edgeAlpha",
-        },
     };
     pub const input = .{
         .src = .{ .channels = 4 },
@@ -42,51 +21,38 @@ pub const kernel = struct {
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
-            // parameter and input image fields
-            dist: f32,
-            size: f32,
-            edgeAlpha: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
-            // built-in Pixel Bender functions
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
             
-            fn distance(v1: anytype, v2: anytype) f32 {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-                    else => std.math.fabs(v1 - v2),
-                };
-            }
-            
-            // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const dist = self.dist;
-                const size = self.size;
-                const edgeAlpha = self.edgeAlpha;
                 const src = self.src;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                var inP: @Vector(2, f32) = outCoord;
-                var xPos: f32 = (floor((inP[0]) / dist) * dist);
-                var yPos: f32 = (floor((inP[1]) / dist) * dist);
-                var newP: @Vector(2, f32) = undefined;
-                newP[0] = xPos;
-                newP[1] = yPos;
-                var distt: f32 = distance(inP - @as(@Vector(2, f32), @splat((dist / 2.0))), newP);
-                dst = src.sampleNearest(newP);
-                var ssize: f32 = size * dst[3];
-                if (2.0 * distt / ssize > dist) {
-                    dst[3] = 0.0;
-                } else {
-                    if (2.0 * distt / ssize > dist - edgeAlpha) {
-                        dst[3] = (dist - (2.0 * distt / ssize)) * dst[3] / edgeAlpha;
-                    }
-                }
+                var denominator: f32 = 0.0;
+                var colorAccumulator: @Vector(4, f32) = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
+                var singlePixel: @Vector(2, f32) = pixelSize(src);
+                colorAccumulator += src.sampleNearest(outCoord + @Vector(2, f32){ -singlePixel[0], -singlePixel[1] });
+                denominator += 1.0;
+                colorAccumulator += src.sampleNearest(outCoord + @Vector(2, f32){ -singlePixel[0], 0.0 });
+                denominator += 1.0;
+                colorAccumulator += src.sampleNearest(outCoord + @Vector(2, f32){ -singlePixel[0], singlePixel[1] });
+                denominator += 1.0;
+                colorAccumulator += src.sampleNearest(outCoord + @Vector(2, f32){ 0.0, -singlePixel[1] });
+                denominator += 1.0;
+                colorAccumulator += src.sampleNearest(outCoord);
+                denominator += 1.0;
+                colorAccumulator += src.sampleNearest(outCoord + @Vector(2, f32){ 0.0, singlePixel[1] });
+                denominator += 1.0;
+                colorAccumulator += src.sampleNearest(outCoord + @Vector(2, f32){ singlePixel[0], -singlePixel[1] });
+                denominator += 1.0;
+                colorAccumulator += src.sampleNearest(outCoord + @Vector(2, f32){ singlePixel[0], 0.0 });
+                denominator += 1.0;
+                colorAccumulator += src.sampleNearest(outCoord + @Vector(2, f32){ singlePixel[0], singlePixel[1] });
+                denominator += 1.0;
+                dst = colorAccumulator / @as(@Vector(4, f32), @splat(denominator));
                 return dst;
             }
         };

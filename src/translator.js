@@ -184,16 +184,16 @@ export class PixelBenderToZigTranslator {
     return expanded;
   }
 
-  expandAssignmentOp({ operator, operand1, operand2 }) {
-    const expression = this.createExpression(N.BinaryOperation, {
+  expandAssignmentOp({ lvalue, operator, rvalue }) {
+    const expression = this.createExpression(N.ArithmeticOperation, {
       operator: operator.charAt(0),
-      operand1,
-      operand2,
+      operand1: lvalue,
+      operand2: rvalue,
     });
-    return this.createExpression(N.BinaryOperation, {
+    return this.createExpression(N.AssignmentOperation, {
       operator: '=',
-      operand1,
-      operand2: expression,
+      lvalue,
+      rvalue: expression,
     });
   }
 
@@ -683,14 +683,14 @@ export class PixelBenderToZigTranslator {
     // if the variable is aliased by a temporary variable
     const nameA = (macro) ? `${this.translateExpression(macro)}` : this.getVariableAlias(name);
     if (property) {
-      const indicesR = getSwizzleIndices(property);
-      const typeS = getSwizzleType(type, indicesR);
-      if (indicesR.length > 1) {
+      const indices = getSwizzleIndices(property);
+      const typeS = getSwizzleType(type, indices);
+      if (indices.length > 1) {
         const typeCZ = getChildZigType(typeS);
-        const mask = `@Vector(${indicesR.length}, i32){ ${indicesR.join(', ') } }`;
+        const mask = `@Vector(${indices.length}, i32){ ${indices.join(', ') } }`;
         return new ZigExpr(`@shuffle(${typeCZ}, ${nameA}, undefined, ${mask})`, typeS);
       } else {
-        const [ index ] = indicesR;
+        const [ index ] = indices;
         return new ZigExpr(`${nameA}[${index}]`, typeS);
       }
     } else if (element) {
@@ -702,17 +702,37 @@ export class PixelBenderToZigTranslator {
     }
   }
 
+  translateElementAccess({ expression, property, element }) {
+    const value = this.translateExpression(expression);
+    const { type } = value;
+    if (property) {
+      const indices = getSwizzleIndices(property);
+      const typeS = getSwizzleType(type, indices);
+      if (indices.length > 1) {
+        const typeCZ = getChildZigType(typeS);
+        const mask = `@Vector(${indices.length}, i32){ ${indices.join(', ') } }`;
+        return new ZigExpr(`@shuffle(${typeCZ}, ${value}, undefined, ${mask})`, typeS);
+      } else {
+        const [ index ] = indices;
+        return new ZigExpr(`${value}[${index}]`, typeS);
+      }
+    } else {
+      const index = this.translateExpression(element);
+      const typeC = getChildType(type);
+      return new ZigExpr(`${value}[${index}]`, typeC);
+    }
+  }
+
   translateIncrementOperation({ operator, lvalue, post }, typeExpected) {
-    const valueL = this.translateExpression(lvalue);
     let tmp;
     if (typeExpected !== 'void' && post) {
-      // save copy of variable when it's postfix 
-      tmp = this.addTempVariable(lvalue);        
+      // save copy of variable when it's postfix
+      tmp = this.addTempVariable(lvalue);
     }
     const assignment = this.createExpression(N.AssignmentOperation, {
       lvalue,
       operator: operator.charAt(0) + '=',
-      rvalue: this.createExpression(N.Literal, { value: 1, type })
+      rvalue: this.createExpression(N.Literal, { value: 1, type: 'int' })
     });
     const value = this.translateExpression(assignment, typeExpected);
     if (typeExpected === 'void') {
@@ -768,7 +788,7 @@ export class PixelBenderToZigTranslator {
       }
       const typeZ = getZigType(type);
       return new ZigExpr(`${typeZ}{\n${initializers.join(',\n')}\n}`, type);
-  } else if (isVector(type)) {
+    } else if (isVector(type)) {
       const typeC = getChildType(type);
       const width = getVectorWidth(type);
       argList.forEach(a => a.convert(typeC));
@@ -796,22 +816,60 @@ export class PixelBenderToZigTranslator {
     }
   }
 
-  translateLiteralConstructorCall({ type, args }) {
-    const argList = args.map(a => this.translateExpression(a, type));
-    const width = getVectorWidth(type);
-    if (width === 1) {
-      const arg = argList[0];
-      arg.convert(type);
-      return arg;
-    } else {
-      const typeC = getChildType(type);
-      argList.forEach(a => a.convert(typeC));
-      if (argList.length === 1) {
-        while (argList.length < width) {
-          argList.push(argList[0]);
-        }
+  translateArithmeticOperation({ operator, operand1, operand2 }) {
+    const opL = this.translateExpression(operand1);
+    const opR = this.translateExpression(operand2);
+    if (isMatrix(opL.type) || isMatrix(opR.type)) {
+      // matrix math requires function calls
+      let returnType;
+      switch (operator) {
+        case '+':
+        case '-':
+        case '/':
+          returnType = opL.isMatrix() ? opL.type : opR.type;
+          break;
+        case '*':
+          if (opL.isVector()) {
+            returnType = opL.type;
+          } else if (opR.isVector()) {
+            returnType = opR.type;
+          } else {
+            returnType = opL.isMatrix() ? opL.type : opR.type;
+          }
+          break;
       }
-      return new ZigExpr(`.{ ${argList.join(', ')} }`, type);
+      return new ZigExpr(`matrixCalc("${operator}", ${opL}, ${opR})`, returnType);
+    }
+    // promote scalar to vector
+    if (opL.isScalar() && opR.isVector()) {
+      opL.promote(opR.type);
+    } else if (opL.isVector() && opR.isScalar()) {
+      opR.promote(opL.type);
+    }
+    return new ZigExpr(`${opL} ${operator} ${opR}`, opL.type);
+  }
+
+  translateComparisonOperation({ operator, operand1, operand2 }) {
+    switch (operator) {
+      case '&&':
+        operator = 'and';
+        break;
+      case '||':
+        operator = 'or';
+        break;
+      case '^^':
+        operator = '!=';
+        break;
+    };
+    const opL = this.translateExpression(operand1);
+    const opR = this.translateExpression(operand2);
+    if (isMatrix(opL.type)) {
+      // matrix comparison requires function calls
+      return new ZigExpr(`matrixCalc("${operator}", ${opL}, ${opR})`, 'bool');
+    } else if (isVector(opL.type)) {
+      return new ZigExpr(`@reduce(.And, ${opL} ${operator} ${opR})`, 'bool');
+    } else {
+      return new ZigExpr(`${opL} ${operator} ${opR}`, 'bool');
     }
   }
 
@@ -825,9 +883,8 @@ export class PixelBenderToZigTranslator {
         if (operator.length === 2) {
           // += and friends--handle it a lvalue = lvalue + rvalue
           const assignment = this.expandAssignmentOp({ lvalue, operator, rvalue });
-          return this.translateBinaryOperation(assignment, typeExpected);
+          return this.translateAssignmentOperation(assignment, typeExpected);
         }
-
         const typeS = getSwizzleType(typeL, indicesL);
         let valueR, indicesR;
         if (rvalue instanceof N.VariableAccess && rvalue.property) {
@@ -840,9 +897,6 @@ export class PixelBenderToZigTranslator {
           // get the full vector and a list of sequential indices
           valueR = this.translateExpression(rvalue, typeS) ;
           indicesR = getVectorIndices(typeS);
-        }
-        if (operator.length === 2) {
-          valueR = new ZigExpr(`${nameL} ${operator} ${valueR}`, typeL);
         }
         // build the shuffle mask
         const indicesM = [];
@@ -885,7 +939,7 @@ export class PixelBenderToZigTranslator {
       // can't use translateExpression(operand1), since we want to write to
       // the variable itself, and not a temp var it's aliased to if there's one
       if (elemL) {
-        const index = this.translateExpression(element);
+        const index = this.translateExpression(elemL);
         const typeLC = getChildType(typeL);
         const valueR = this.translateExpression(rvalue, typeLC);
         valueR.promote(typeLC);
@@ -903,63 +957,14 @@ export class PixelBenderToZigTranslator {
     }
   }
 
-  translateBinaryOperation({ operator, operand1, operand2 }) {
-    switch (operator) {
-      case '&&':
-        operator = 'and';
-        break;
-      case '||':
-        operator = 'or';
-        break;
-      case '^^':
-        operator = '!=';
-        break;
-    };
-    const isLogical = {
-      '==': true,
-      '!=': true,
-      '>=': true,
-      '<=': true,
-      '<': true,
-      '>': true,
-    };
-    const opL = this.translateExpression(operand1);
-    const opR = this.translateExpression(operand2);
-    if (isMatrix(opL.type) || isMatrix(opR.type)) {
-      // matrix math requires function calls
-      let returnType;
-      switch (operator) {
-        case '==':
-        case '!=':
-          returnType = 'bool';
-          break;
-        case '+':
-        case '-':
-        case '/':
-          returnType = opL.isMatrix() ? opL.type : opR.type;
-          break;
-        case '*':
-          returnType = opL.isVector() ? opL.type : opR.type;
-          break;
-      }
-      return new ZigExpr(`matrixCalc("${operator}", ${opL}, ${opR})`, returnType);
-    }
-    // promote scale to vector or matrix
-    if (opL.isScalar() && opR.isVector()) {
-      opL.promote(opR.type);
-    } else if (opL.isVector() && opR.isScalar()) {
-      opR.promote(opL.type);
-    }
-    const width = getVectorWidth(opL.type);
-    const type = isLogical[operator] ? getType('bool', width) : opL.type;
-    return new ZigExpr(`${opL} ${operator} ${opR}`, type);
+  translateNegationOperation({ operand }) {
+    const op = this.translateExpression(operand);
+    return new ZigExpr(`-${op}`, op.type);
   }
 
-  translateUnaryOperation({ operator, operand }) {
+  translateNotOperation({ operand }) {
     const op = this.translateExpression(operand);
-    const isLogical = { '!': true };
-    const type = isLogical[operator] ? getType('bool', width) : op.type;
-    return new ZigExpr(`${operator}${op}`, op.type);
+    return new ZigExpr(`!${op}`, 'bool');
   }
 
   translateParentheses({ expression }) {
@@ -1206,7 +1211,7 @@ const fx__fx1_fx = [
   [ float4, float, float4 ],
 ];
 const fx__fx_fx_fx = [
-  [ float, float, float ],
+  [ float, float, float, float ],
   [ float2, float2, float2, float2 ],
   [ float3, float3, float3, float3 ],
   [ float4, float4, float4, float4 ],
@@ -1277,7 +1282,7 @@ const builtInfunctionArgTypes = {
     [ float3, float3, float, float ],
     [ float4, float4, float, float ],
   ],
-  min: [
+  mix: [
     ...fx__fx_fx_fx,
     [ float2, float2, float2, float ],
     [ float3, float3, float3, float ],

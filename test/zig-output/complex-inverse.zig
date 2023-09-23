@@ -1,35 +1,80 @@
 
-// Pixel Bender "CirclePixels" (translated using pb2zig)
-// namespace: be.neuroproductions
-// vendor: Neuro Productions
+// Pixel Bender "modPixelation" (translated using pb2zig)
+// namespace: complex rational 3
+// vendor: pixelero
 // version: 1
-// description: circlePixels
+// description: complex mapping z = d/[(z-a)(z-b)(z-c)]
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .dist = .{
+        .a = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ -5.0, -5.0 },
+            .max_value = .{ 5.0, 5.0 },
+            .default_value = .{ -0.3, -1.1 },
+        },
+        .b = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ -5.0, -5.0 },
+            .max_value = .{ 5.0, 5.0 },
+            .default_value = .{ 2.1, 0.1 },
+        },
+        .c = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ -5.0, -5.0 },
+            .max_value = .{ 5.0, 5.0 },
+            .default_value = .{ 0.6, 0.0 },
+        },
+        .d = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ -2.0, -2.0 },
+            .max_value = .{ 2.0, 2.0 },
+            .default_value = .{ 0.2, -1.12 },
+        },
+        .distort = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ 0.1, 0.1 },
+            .max_value = .{ 20.0, 20.0 },
+            .default_value = .{ 3.0, 1.7320508 },
+        },
+        .imagesize = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ 1.0, 1.0 },
+            .max_value = .{ 500.0, 400.0 },
+            .default_value = .{ 250.0, 188.0 },
+        },
+        .center = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ 1.0, 1.0 },
+            .max_value = .{ 1000.0, 1000.0 },
+            .default_value = .{ 220.0, 380.0 },
+        },
+        .focus = .{
+            .type = f32,
+            .min_value = -6.0,
+            .max_value = 10.0,
+            .default_value = 0.0,
+        },
+        .scale = .{
             .type = f32,
             .min_value = 1.0,
-            .max_value = 300.0,
-            .default_value = 100.0,
-            .description = "distance",
+            .max_value = 1000.0,
+            .default_value = 200.0,
         },
-        .size = .{
+        .fill = .{
             .type = f32,
-            .min_value = 0.0,
-            .max_value = 2.0,
-            .default_value = 1.0,
-            .description = "size",
+            .min_value = 0.01,
+            .max_value = 0.5,
+            .default_value = 0.2,
         },
-        .edgeAlpha = .{
-            .type = f32,
-            .min_value = 0.0,
-            .max_value = 300.0,
-            .default_value = 2.0,
-            .description = "edgeAlpha",
+        .bgcolor = .{
+            .type = @Vector(4, f32),
+            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
+            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
+            .default_value = .{ 0.0, 0.0, 0.0, 0.0 },
         },
     };
     pub const input = .{
@@ -43,50 +88,139 @@ pub const kernel = struct {
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            dist: f32,
-            size: f32,
-            edgeAlpha: f32,
+            a: @Vector(2, f32),
+            b: @Vector(2, f32),
+            c: @Vector(2, f32),
+            d: @Vector(2, f32),
+            distort: @Vector(2, f32),
+            imagesize: @Vector(2, f32),
+            center: @Vector(2, f32),
+            focus: f32,
+            scale: f32,
+            fill: f32,
+            bgcolor: @Vector(4, f32),
             src: std.meta.fieldInfo(InputStruct, .src).type,
+            
+            // constants
+            const sqr3: f32 = 1.7320508;
+            const halfPixel: @Vector(2, f32) = @Vector(2, f32){ 0.5, 0.5 };
             
             // built-in Pixel Bender functions
             fn floor(v: anytype) @TypeOf(v) {
                 return @floor(v);
             }
             
-            fn distance(v1: anytype, v2: anytype) f32 {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-                    else => std.math.fabs(v1 - v2),
+            fn fract(v: anytype) @TypeOf(v) {
+                return v - @floor(v);
+            }
+            
+            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @mod(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @mod(v1, v2),
+                    },
                 };
             }
             
-            // functions defined in kernel
+            fn mix(v1: anytype, v2: anytype, p: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(p))) {
+                    .Vector => v1 * (@as(@TypeOf(p), @splat(1)) - p) + v2 * p,
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => mix(v1, v2, @as(@TypeOf(v1), @splat(p))),
+                        else => v1 * (1 - p) + v2 * p,
+                    },
+                };
+            }
+            
+            // macro functions
+            fn complexMult(a: anytype, b: anytype) float2 {
+                return @Vector(2, f32){ @floatFromInt(a[0] * b[0] - a[1] * b[1]), @floatFromInt(a[0] * b[1] + a[1] * b[0]) };
+            }
+            fn complexSquared(a: anytype) float2 {
+                return @Vector(2, f32){ @floatFromInt(a[0] * a[0] - a[1] * a[1]), 2.0 * a[0] * a[1] };
+            }
+            fn complexInverse(b: anytype) float2 {
+                return @Vector(2, f32){ @floatFromInt(b[0]), @floatFromInt(-b[1]) } / @as(@Vector(2, f32), @splat(@floatFromInt((b[0] * b[0] + b[1] * b[1]))));
+            }
+            
+            
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const dist = self.dist;
-                const size = self.size;
-                const edgeAlpha = self.edgeAlpha;
+                const a = self.a;
+                const b = self.b;
+                const c = self.c;
+                const d = self.d;
+                const distort = self.distort;
+                const imagesize = self.imagesize;
+                const center = self.center;
+                const focus = self.focus;
+                const scale = self.scale;
+                const fill = self.fill;
+                const bgcolor = self.bgcolor;
                 const src = self.src;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                var inP: @Vector(2, f32) = outCoord;
-                var xPos: f32 = (floor((inP[0]) / dist) * dist);
-                var yPos: f32 = (floor((inP[1]) / dist) * dist);
-                var newP: @Vector(2, f32) = undefined;
-                newP[0] = xPos;
-                newP[1] = yPos;
-                var distt: f32 = distance(inP - @as(@Vector(2, f32), @splat((dist / 2.0))), newP);
-                dst = src.sampleNearest(newP);
-                var ssize: f32 = size * dst[3];
-                if (2.0 * distt / ssize > dist) {
-                    dst[3] = 0.0;
+                var po: @Vector(2, f32) = (outCoord - center) / @as(@Vector(2, f32), @splat(scale));
+                var po2: @Vector(2, f32) = po - a;
+                var po3: @Vector(2, f32) = po - b;
+                po2 = @Vector(2, f32){ po2[0] * po3[0] - po2[1] * po3[1], po2[0] * po3[1] + po2[1] * po3[0] };
+                po3 = po - c;
+                po2 = @Vector(2, f32){ po2[0] * po3[0] - po2[1] * po3[1], po2[0] * po3[1] + po2[1] * po3[0] };
+                po = @Vector(2, f32){ d[0] * po2[0] + d[1] * po2[1], -d[0] * po2[1] + d[1] * po2[0] } / @as(@Vector(2, f32), @splat((po2[0] * po2[0] + po2[1] * po2[1] + focus)));
+                var tmp: f32 = undefined;
+                var alf: f32 = 0.0;
+                var sqr3: f32 = 1.732;
+                po = (distort * po);
+                var z: @Vector(2, f32) = fract(po);
+                po = floor(po);
+                z[1] *= sqr3;
+                tmp = z[0] * z[0] + z[1] * z[1];
+                if (tmp < fill) {
+                    alf = 1.0;
+                    po -= halfPixel;
                 } else {
-                    if (2.0 * distt / ssize > dist - edgeAlpha) {
-                        dst[3] = (dist - (2.0 * distt / ssize)) * dst[3] / edgeAlpha;
+                    tmp = z[0] - 0.5;
+                    const tmp1 = tmp;
+                    tmp = z[1] - 0.5 * sqr3;
+                    const tmp2 = tmp;
+                    tmp = tmp1 * tmp1 + 1.0 * tmp2 * tmp2;
+                    const tmp3 = tmp;
+                    if (tmp3 < fill) {
+                        alf = 1.0;
+                    } else {
+                        tmp = z[1] - sqr3;
+                        const tmp4 = tmp;
+                        if (z[0] * z[0] + tmp4 * tmp4 < fill) {
+                            alf = 1.0;
+                            po[0] -= 0.5;
+                            po[1] += 0.5;
+                        } else {
+                            tmp = z[0] - 1.0;
+                            const tmp5 = tmp;
+                            tmp = z[1] - sqr3;
+                            const tmp6 = tmp;
+                            if (tmp5 * tmp5 + tmp6 * tmp6 < fill) {
+                                alf = 1.0;
+                                po += halfPixel;
+                            } else {
+                                tmp = z[0] - 1.0;
+                                const tmp7 = tmp;
+                                if (tmp7 * tmp7 + z[1] * z[1] < fill) {
+                                    alf = 1.0;
+                                    po[0] += 0.5;
+                                    po[1] += -0.5;
+                                }
+                            }
+                        }
                     }
                 }
+                po = mod(po, imagesize);
+                dst = src.sampleNearest(po);
+                dst = mix(bgcolor, dst, alf);
                 return dst;
             }
         };

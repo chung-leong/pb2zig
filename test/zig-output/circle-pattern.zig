@@ -1,35 +1,50 @@
 
-// Pixel Bender "CirclePixels" (translated using pb2zig)
-// namespace: be.neuroproductions
-// vendor: Neuro Productions
+// Pixel Bender "CirclePacking" (translated using pb2zig)
+// namespace: CirclePattern
+// vendor: Petri Leskinen
 // version: 1
-// description: circlePixels
+// description: CirclePattern
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .dist = .{
+        .fill = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 0.33,
+            .default_value = 0.23,
+        },
+        .scale = .{
             .type = f32,
             .min_value = 1.0,
-            .max_value = 300.0,
-            .default_value = 100.0,
-            .description = "distance",
-        },
-        .size = .{
-            .type = f32,
-            .min_value = 0.0,
-            .max_value = 2.0,
+            .max_value = 20.0,
             .default_value = 1.0,
-            .description = "size",
         },
-        .edgeAlpha = .{
+        .distort = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ 0.1, 0.1 },
+            .max_value = .{ 8.0, 8.0 },
+            .default_value = .{ 3.0, 1.7320508 },
+        },
+        .center = .{
+            .type = @Vector(2, f32),
+            .min_value = .{ -20.0, -20.0 },
+            .max_value = .{ 400.0, 400.0 },
+            .default_value = .{ 120.0, 130.0 },
+        },
+        .minSolid = .{
             .type = f32,
-            .min_value = 0.0,
-            .max_value = 300.0,
-            .default_value = 2.0,
-            .description = "edgeAlpha",
+            .min_value = 0.001,
+            .max_value = 0.1,
+            .default_value = 0.005,
+        },
+        .maxSolid = .{
+            .type = f32,
+            .min_value = 0.001,
+            .max_value = 1.0,
+            .default_value = 0.05,
         },
     };
     pub const input = .{
@@ -43,50 +58,135 @@ pub const kernel = struct {
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            dist: f32,
-            size: f32,
-            edgeAlpha: f32,
+            fill: f32,
+            scale: f32,
+            distort: @Vector(2, f32),
+            center: @Vector(2, f32),
+            minSolid: f32,
+            maxSolid: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
+            
+            // constants
+            const sqr3: f32 = 1.7320508;
+            const halfPixel: @Vector(2, f32) = @Vector(2, f32){ 0.5, 0.5 };
             
             // built-in Pixel Bender functions
             fn floor(v: anytype) @TypeOf(v) {
                 return @floor(v);
             }
             
-            fn distance(v1: anytype, v2: anytype) f32 {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-                    else => std.math.fabs(v1 - v2),
+            fn fract(v: anytype) @TypeOf(v) {
+                return v - @floor(v);
+            }
+            
+            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @max(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @max(v1, v2),
+                    },
+                };
+            }
+            
+            fn smoothStep(edge0: anytype, edge1: anytype, v: anytype) @TypeOf(v) {
+                return switch (@typeInfo(@TypeOf(edge0))) {
+                    .Vector => calc: {
+                        const T = @TypeOf(v);
+                        const ET = @typeInfo(T).Vector.child;
+                        const zeros: T = @splat(0);
+                        const ones: T = @splat(1);
+                        const twos: T = @splat(2);
+                        const threes: T = @splat(3);
+                        const value = (v - edge0) / (edge1 - edge0);
+                        const interpolated = value * value * (threes - twos * value);
+                        const result1 = @select(ET, v <= edge0, zeros, interpolated);
+                        const result2 = @select(ET, v >= edge1, ones, result1);
+                        break :calc result2;
+                    },
+                    else => switch (@typeInfo(@TypeOf(v))) {
+                        .Vector => smoothStep(@as(@TypeOf(v), @splat(edge0)), @as(@TypeOf(v), @splat(edge1)), v),
+                        else => calc: {
+                            if (v <= edge0) {
+                                break :calc 0;
+                            } else if (v >= edge1) {
+                                break :calc 1;
+                            } else {
+                                const value = (v - edge0) / (edge1 - edge0);
+                                const interpolated = value * value * (3 - 2 * value);
+                                break :calc interpolated;
+                            }
+                        },
+                    },
                 };
             }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const dist = self.dist;
-                const size = self.size;
-                const edgeAlpha = self.edgeAlpha;
+                const fill = self.fill;
+                const scale = self.scale;
+                const distort = self.distort;
+                const center = self.center;
+                const minSolid = self.minSolid;
+                const maxSolid = self.maxSolid;
                 const src = self.src;
                 
                 // output variable
                 var dst: @Vector(4, f32) = undefined;
                 
-                var inP: @Vector(2, f32) = outCoord;
-                var xPos: f32 = (floor((inP[0]) / dist) * dist);
-                var yPos: f32 = (floor((inP[1]) / dist) * dist);
-                var newP: @Vector(2, f32) = undefined;
-                newP[0] = xPos;
-                newP[1] = yPos;
-                var distt: f32 = distance(inP - @as(@Vector(2, f32), @splat((dist / 2.0))), newP);
-                dst = src.sampleNearest(newP);
-                var ssize: f32 = size * dst[3];
-                if (2.0 * distt / ssize > dist) {
-                    dst[3] = 0.0;
+                var z: @Vector(2, f32) = @as(@Vector(2, f32), @splat(scale * 0.001)) * (outCoord - center);
+                var pixelCheck: f32 = z[0] * z[0] + z[1] * z[1];
+                z /= @as(@Vector(2, f32), @splat(pixelCheck));
+                var znew: @Vector(2, f32) = distort * z;
+                z = fract(znew);
+                z[1] *= sqr3;
+                znew = floor(znew);
+                var tmp: f32 = z[0] * z[0] + z[1] * z[1];
+                var alf: f32 = 0.0;
+                if (tmp < fill) {
+                    alf = 1.0;
+                    znew -= halfPixel;
                 } else {
-                    if (2.0 * distt / ssize > dist - edgeAlpha) {
-                        dst[3] = (dist - (2.0 * distt / ssize)) * dst[3] / edgeAlpha;
+                    tmp = z[0] - 0.5;
+                    const tmp1 = tmp;
+                    tmp = z[1] - 0.5 * sqr3;
+                    const tmp2 = tmp;
+                    if (tmp1 * tmp1 + tmp2 * tmp2 < fill) {
+                        alf = 1.0;
+                    } else {
+                        tmp = z[1] - sqr3;
+                        const tmp3 = tmp;
+                        if (z[0] * z[0] + tmp3 * tmp3 < fill) {
+                            alf = 1.0;
+                            znew[0] -= 0.5;
+                            znew[1] += 0.5;
+                        } else {
+                            tmp = z[0] - 1.0;
+                            const tmp4 = tmp;
+                            tmp = z[1] - sqr3;
+                            const tmp5 = tmp;
+                            if (tmp4 * tmp4 + tmp5 * tmp5 < fill) {
+                                alf = 1.0;
+                                znew += halfPixel;
+                            } else {
+                                tmp = z[0] - 1.0;
+                                const tmp6 = tmp;
+                                if (tmp6 * tmp6 + z[1] * z[1] < fill) {
+                                    alf = 1.0;
+                                    znew[0] += 0.5;
+                                    znew[1] += -0.5;
+                                }
+                            }
+                        }
                     }
                 }
+                z = znew / distort * @as(@Vector(2, f32), @splat(scale)) * @as(@Vector(2, f32), @splat(0.001));
+                z /= @as(@Vector(2, f32), @splat(z[0] * z[0] + z[1] * z[1]));
+                tmp = 1.0 - smoothStep(minSolid, maxSolid, pixelCheck / scale);
+                alf = max(tmp, alf);
+                dst = src.sampleNearest(z + center);
+                dst[3] *= alf;
                 return dst;
             }
         };

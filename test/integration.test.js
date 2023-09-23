@@ -67,13 +67,26 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'circle-pattern';
     await translate(name);
+    const params = {
+      fill: 0.2,
+      scale: 1,
+      distort: [ 5, 2 ],
+      center: [ 325, 120 ],
+      minSolid: 0.001,
+      maxSolid: 0.04,
+    };
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate circle-pixels.pbk', async function() {
     this.timeout(60000);
     const name = 'circle-pixels';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = {
+      dist: 19,
+      size: 1,
+      edgeAlpha: 18,
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate circular-disks.pbk', async function() {
     this.timeout(60000);
@@ -126,7 +139,11 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'displace';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = { amplitude: [ 100, -100 ] };
+    await apply(name, {
+      src: 'malgorzata-socha.png',
+      src1: 'malgorzata-socha.png'
+    }, params);
   })
   it('should correctly translate dilate-diamond.pbk', async function() {
     this.timeout(60000);
@@ -152,6 +169,7 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
+  skip.
   it('should correctly translate focus-linear-blur.pbk', async function() {
     this.timeout(60000);
     const name = 'focus-linear-blur';

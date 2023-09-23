@@ -1,93 +1,158 @@
 
-// Pixel Bender "CirclePixels" (translated using pb2zig)
-// namespace: be.neuroproductions
-// vendor: Neuro Productions
+// Pixel Bender "Pencil" (translated using pb2zig)
+// namespace: ar.shader.pencil
+// vendor: Alan Ross
 // version: 1
-// description: circlePixels
+// description: Pencil
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .dist = .{
-            .type = f32,
-            .min_value = 1.0,
-            .max_value = 300.0,
-            .default_value = 100.0,
-            .description = "distance",
-        },
-        .size = .{
+        .n0 = .{
             .type = f32,
             .min_value = 0.0,
-            .max_value = 2.0,
-            .default_value = 1.0,
-            .description = "size",
+            .max_value = 100.0,
+            .default_value = 97.0,
         },
-        .edgeAlpha = .{
+        .n1 = .{
             .type = f32,
             .min_value = 0.0,
-            .max_value = 300.0,
-            .default_value = 2.0,
-            .description = "edgeAlpha",
+            .max_value = 100.0,
+            .default_value = 15.0,
+        },
+        .n2 = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 100.0,
+            .default_value = 97.0,
+        },
+        .n3 = .{
+            .type = f32,
+            .min_value = 0.0,
+            .max_value = 10.0,
+            .default_value = 9.7,
         },
     };
     pub const input = .{
         .src = .{ .channels = 4 },
     };
     pub const output = .{
-        .dst = .{ .channels = 4 },
+        .result = .{ .channels = 4 },
     };
     
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            dist: f32,
-            size: f32,
-            edgeAlpha: f32,
+            n0: f32,
+            n1: f32,
+            n2: f32,
+            n3: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
             // built-in Pixel Bender functions
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn distance(v1: anytype, v2: anytype) f32 {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-                    else => std.math.fabs(v1 - v2),
+            fn min(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @min(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @min(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @min(v1, v2),
+                    },
                 };
             }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const dist = self.dist;
-                const size = self.size;
-                const edgeAlpha = self.edgeAlpha;
+                const n0 = self.n0;
+                const n1 = self.n1;
+                const n2 = self.n2;
+                const n3 = self.n3;
                 const src = self.src;
                 
                 // output variable
-                var dst: @Vector(4, f32) = undefined;
+                var result: @Vector(4, f32) = undefined;
                 
-                var inP: @Vector(2, f32) = outCoord;
-                var xPos: f32 = (floor((inP[0]) / dist) * dist);
-                var yPos: f32 = (floor((inP[1]) / dist) * dist);
-                var newP: @Vector(2, f32) = undefined;
-                newP[0] = xPos;
-                newP[1] = yPos;
-                var distt: f32 = distance(inP - @as(@Vector(2, f32), @splat((dist / 2.0))), newP);
-                dst = src.sampleNearest(newP);
-                var ssize: f32 = size * dst[3];
-                if (2.0 * distt / ssize > dist) {
-                    dst[3] = 0.0;
+                var p: @Vector(2, f32) = outCoord;
+                var offset: @Vector(2, f32) = undefined;
+                var dist: f32 = undefined;
+                var temp: f32 = undefined;
+                var c: @Vector(4, f32) = undefined;
+                var m: @Vector(4, f32) = undefined;
+                var p0: @Vector(4, f32) = undefined;
+                var p1: @Vector(4, f32) = undefined;
+                var p2: @Vector(4, f32) = undefined;
+                var p3: @Vector(4, f32) = undefined;
+                var p4: @Vector(4, f32) = undefined;
+                var p5: @Vector(4, f32) = undefined;
+                var p6: @Vector(4, f32) = undefined;
+                var p7: @Vector(4, f32) = undefined;
+                var p8: @Vector(4, f32) = undefined;
+                dist = n3;
+                offset[0] = 0.0;
+                offset[1] = 0.0;
+                p0 = src.sampleNearest(p + offset);
+                offset[0] = -dist;
+                offset[1] = -dist;
+                p1 = src.sampleNearest(p + offset);
+                offset[0] = dist;
+                offset[1] = -dist;
+                p2 = src.sampleNearest(p + offset);
+                offset[0] = dist;
+                offset[1] = dist;
+                p3 = src.sampleNearest(p + offset);
+                offset[0] = -dist;
+                offset[1] = dist;
+                dist = n3 * 2.0;
+                p4 = src.sampleNearest(p + offset);
+                offset[0] = -dist;
+                offset[1] = -dist;
+                p5 = src.sampleNearest(p + offset);
+                offset[0] = dist;
+                offset[1] = -dist;
+                p6 = src.sampleNearest(p + offset);
+                offset[0] = dist;
+                offset[1] = dist;
+                p7 = src.sampleNearest(p + offset);
+                offset[0] = -dist;
+                offset[1] = dist;
+                p8 = src.sampleNearest(p + offset);
+                m = ((p0 * @as(@Vector(4, f32), @splat(n2))) + (p1 * @as(@Vector(4, f32), @splat(n0))) + (p2 * @as(@Vector(4, f32), @splat(n0))) + (p3 * @as(@Vector(4, f32), @splat(n0))) + (p4 * @as(@Vector(4, f32), @splat(n0))) + (p5 * @as(@Vector(4, f32), @splat(n1))) + (p6 * @as(@Vector(4, f32), @splat(n1))) + (p7 * @as(@Vector(4, f32), @splat(n1))) + (p8 * @as(@Vector(4, f32), @splat(n1)))) / @as(@Vector(4, f32), @splat((n2 + (4.0 * n0) + (4.0 * n1))));
+                temp = (p0[0] + p0[1] + p0[2]) / 3.0;
+                p0[2] = temp;
+                const tmp1 = p0[2];
+                p0[1] = tmp1;
+                const tmp2 = p0[1];
+                p0[0] = tmp2;
+                temp = (m[0] + m[1] + m[2]) / 3.0;
+                m[2] = temp;
+                const tmp3 = m[2];
+                m[1] = tmp3;
+                const tmp4 = m[1];
+                m[0] = tmp4;
+                m[0] = 1.0 - m[0];
+                m[1] = 1.0 - m[1];
+                m[2] = 1.0 - m[2];
+                if (m[0] >= 0.9995) {
+                    c[0] = 1.0;
                 } else {
-                    if (2.0 * distt / ssize > dist - edgeAlpha) {
-                        dst[3] = (dist - (2.0 * distt / ssize)) * dst[3] / edgeAlpha;
-                    }
+                    c[0] = min(p0[0] * 1.0 / (1.0 - m[0]), 1.0);
                 }
-                return dst;
+                if (m[1] >= 0.9995) {
+                    c[1] = 1.0;
+                } else {
+                    c[1] = min(p0[1] * 1.0 / (1.0 - m[1]), 1.0);
+                }
+                if (m[2] >= 0.9995) {
+                    c[2] = 1.0;
+                } else {
+                    c[2] = min(p0[2] * 1.0 / (1.0 - m[2]), 1.0);
+                }
+                c[3] = 1.0;
+                result = c;
+                return result;
             }
         };
     }

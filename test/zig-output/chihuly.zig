@@ -1,93 +1,150 @@
 
-// Pixel Bender "CirclePixels" (translated using pb2zig)
-// namespace: be.neuroproductions
-// vendor: Neuro Productions
+// Pixel Bender "chihuly" (translated using pb2zig)
+// namespace: com.everett-church.justin
+// vendor: Justin Everett-Church
 // version: 1
-// description: circlePixels
+// description: chihuly themed transition
 
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
     pub const parameters = .{
-        .dist = .{
+        .line = .{
             .type = f32,
-            .min_value = 1.0,
-            .max_value = 300.0,
+            .min_value = 1000.0,
+            .max_value = 1000.0,
+            .default_value = 200.0,
+        },
+        .height = .{
+            .type = f32,
+            .min_value = 1000.0,
+            .max_value = 1000.0,
             .default_value = 100.0,
-            .description = "distance",
         },
-        .size = .{
+        .stemScale = .{
             .type = f32,
-            .min_value = 0.0,
-            .max_value = 2.0,
+            .min_value = 0.01,
+            .max_value = 10.0,
             .default_value = 1.0,
-            .description = "size",
         },
-        .edgeAlpha = .{
+        .squiggleScale = .{
+            .type = f32,
+            .min_value = 0.01,
+            .max_value = 100.0,
+            .default_value = 1.0,
+        },
+        .animationIndex = .{
             .type = f32,
             .min_value = 0.0,
-            .max_value = 300.0,
-            .default_value = 2.0,
-            .description = "edgeAlpha",
+            .max_value = 6.28,
+            .default_value = 0.0,
         },
     };
     pub const input = .{
-        .src = .{ .channels = 4 },
+        .inputImage = .{ .channels = 4 },
     };
     pub const output = .{
-        .dst = .{ .channels = 4 },
+        .outputPixel = .{ .channels = 4 },
     };
     
     // generic kernel instance type
     fn Instance(comptime InputStruct: type) type {
         return struct {
             // parameter and input image fields
-            dist: f32,
-            size: f32,
-            edgeAlpha: f32,
-            src: std.meta.fieldInfo(InputStruct, .src).type,
+            line: f32,
+            height: f32,
+            stemScale: f32,
+            squiggleScale: f32,
+            animationIndex: f32,
+            inputImage: std.meta.fieldInfo(InputStruct, .inputImage).type,
             
             // built-in Pixel Bender functions
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
+            fn sin(v: anytype) @TypeOf(v) {
+                return @sin(v);
             }
             
-            fn distance(v1: anytype, v2: anytype) f32 {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-                    else => std.math.fabs(v1 - v2),
+            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @mod(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @mod(v1, v2),
+                    },
                 };
             }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
-                const dist = self.dist;
-                const size = self.size;
-                const edgeAlpha = self.edgeAlpha;
-                const src = self.src;
+                const line = self.line;
+                const height = self.height;
+                const stemScale = self.stemScale;
+                const squiggleScale = self.squiggleScale;
+                const animationIndex = self.animationIndex;
+                const inputImage = self.inputImage;
                 
                 // output variable
-                var dst: @Vector(4, f32) = undefined;
+                var outputPixel: @Vector(4, f32) = undefined;
                 
-                var inP: @Vector(2, f32) = outCoord;
-                var xPos: f32 = (floor((inP[0]) / dist) * dist);
-                var yPos: f32 = (floor((inP[1]) / dist) * dist);
-                var newP: @Vector(2, f32) = undefined;
-                newP[0] = xPos;
-                newP[1] = yPos;
-                var distt: f32 = distance(inP - @as(@Vector(2, f32), @splat((dist / 2.0))), newP);
-                dst = src.sampleNearest(newP);
-                var ssize: f32 = size * dst[3];
-                if (2.0 * distt / ssize > dist) {
-                    dst[3] = 0.0;
+                var coord: @Vector(2, f32) = outCoord;
+                var px: @Vector(4, f32) = inputImage.sampleNearest(coord);
+                var blankPx: @Vector(4, f32) = @as(@Vector(4, f32), @splat(0.0));
+                if (coord[1] < line) {
+                    outputPixel = px;
                 } else {
-                    if (2.0 * distt / ssize > dist - edgeAlpha) {
-                        dst[3] = (dist - (2.0 * distt / ssize)) * dst[3] / edgeAlpha;
+                    if (coord[1] < (line + height)) {
+                        var stemWidth: f32 = 30.0 * stemScale;
+                        var stemHeight: f32 = 0.8 * height;
+                        var period: f32 = 8.0;
+                        var amplitude: f32 = 10.0 * squiggleScale;
+                        var phase: f32 = coord[0] / stemWidth;
+                        var slope: f32 = 0.0;
+                        var shift: f32 = line / 10.0;
+                        var invTaperRatio: f32 = (coord[1] - line) / stemHeight;
+                        var taperRatio: f32 = 1.0 - invTaperRatio;
+                        var pxOffset: f32 = invTaperRatio * (amplitude * ((sin((phase + coord[1] / period) + animationIndex) + slope)));
+                        var taperPx: f32 = stemWidth * taperRatio;
+                        var cutRatio: f32 = mod(shift + coord[0] + pxOffset + taperPx / 2.0, stemWidth) / stemWidth;
+                        var ratioPerPixel: f32 = 1.0 / stemWidth;
+                        var tpx1: @Vector(4, f32) = inputImage.sampleNearest(coord + @Vector(2, f32){ pxOffset, 0.0 });
+                        tpx1 = @as(@Vector(4, f32), if (cutRatio < taperRatio) tpx1 else blankPx);
+                        stemWidth = 35.0 * stemScale;
+                        stemHeight = 1.0 * height;
+                        period = 10.0;
+                        amplitude = 10.0 * squiggleScale;
+                        phase = coord[0] / stemWidth;
+                        slope = 0.0;
+                        shift = -line / 8.0;
+                        invTaperRatio = (coord[1] - line) / stemHeight;
+                        taperRatio = 1.0 - invTaperRatio;
+                        pxOffset = invTaperRatio * (amplitude * ((sin(((phase + coord[1] / period) + animationIndex) * 1.5) + slope)));
+                        taperPx = stemWidth * taperRatio;
+                        cutRatio = mod(shift + coord[0] + pxOffset + taperPx / 2.0, stemWidth) / stemWidth;
+                        ratioPerPixel = 1.0 / stemWidth;
+                        var tpx2: @Vector(4, f32) = inputImage.sampleNearest(coord + @Vector(2, f32){ pxOffset, 0.0 });
+                        tpx2 = @as(@Vector(4, f32), if (cutRatio < taperRatio) tpx2 else blankPx);
+                        stemWidth = 25.0 * stemScale;
+                        stemHeight = 0.5 * height;
+                        period = 8.0;
+                        amplitude = 10.0 * squiggleScale;
+                        phase = coord[0] / stemWidth;
+                        slope = 0.0;
+                        shift = line / 4.0;
+                        invTaperRatio = (coord[1] - line) / stemHeight;
+                        taperRatio = 1.0 - invTaperRatio;
+                        pxOffset = invTaperRatio * (amplitude * ((sin((phase + coord[1] / period) + animationIndex * 2.0) + slope)));
+                        taperPx = stemWidth * taperRatio;
+                        cutRatio = mod(shift + coord[0] + pxOffset + taperPx / 2.0, stemWidth) / stemWidth;
+                        ratioPerPixel = 1.0 / stemWidth;
+                        var tpx3: @Vector(4, f32) = inputImage.sampleNearest(coord + @Vector(2, f32){ pxOffset, 0.0 });
+                        tpx3 = @as(@Vector(4, f32), if (cutRatio < taperRatio) tpx3 else blankPx);
+                        outputPixel = (tpx1 + tpx2 + tpx3) / @as(@Vector(4, f32), @splat((tpx1[3] + tpx2[3] + tpx3[3] + 0.000001)));
+                    } else {
+                        outputPixel = @as(@Vector(4, f32), @splat(0.0));
                     }
                 }
-                return dst;
+                return outputPixel;
             }
         };
     }
