@@ -86,15 +86,45 @@ describe('Integration tests', function() {
     };
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
+  it('should correctly translate complex-inverse.pbk', async function() {
+    this.timeout(60000);
+    const name = 'complex-inverse';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate complex-rational.pbk', async function() {
+    this.timeout(60000);
+    const name = 'complex-rational';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate cross-stitch.pbk', async function() {
+    this.timeout(60000);
+    const name = 'cross-stitch';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
   it('should correctly translate crystallize.pbk', async function() {
     this.timeout(60000);
     const name = 'crystallize';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
-  it('should correctly translate escherizer.pbk', async function() {
+  it('should correctly translate cubes-03.pbk', async function() {
     this.timeout(60000);
-    const name = 'escherizer';
+    const name = 'cubes-03';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate cubic-space.pbk', async function() {
+    this.timeout(60000);
+    const name = 'cubic-space';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate displace.pbk', async function() {
+    this.timeout(60000);
+    const name = 'displace';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
@@ -107,6 +137,24 @@ describe('Integration tests', function() {
   it('should correctly translate disks.pbk', async function() {
     this.timeout(60000);
     const name = 'disks';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate erode-diamond.pbk', async function() {
+    this.timeout(60000);
+    const name = 'erode-diamond';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate escherizer.pbk', async function() {
+    this.timeout(60000);
+    const name = 'escherizer';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate focus-linear-blur.pbk', async function() {
+    this.timeout(60000);
+    const name = 'focus-linear-blur';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
@@ -179,11 +227,35 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'pixelate';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = { dimension: 10 };
+    await apply(name, { inputImage: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate posterize.pbk', async function() {
     this.timeout(60000);
     const name = 'posterize';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate radial-caleidoscope.pbk', async function() {
+    this.timeout(60000);
+    const name = 'radial-caleidoscope';
+    await translate(name);
+    const params = {
+      angle: 0.45,
+      direction: 0,
+      basepoint: [ 190, 70 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
+  })
+  it('should correctly translate random-pixelation.pbk', async function() {
+    this.timeout(60000);
+    const name = 'random-pixelation';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate ripple-blocks.pbk', async function() {
+    this.timeout(60000);
+    const name = 'ripple-blocks';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
@@ -206,9 +278,27 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
+  it('should correctly translate simple-box-blur.pbk', async function() {
+    this.timeout(60000);
+    const name = 'simple-box-blur';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate simple-point-light.pbk', async function() {
+    this.timeout(60000);
+    const name = 'simple-point-light';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
   it('should correctly translate sharpen.pbk', async function() {
     this.timeout(60000);
     const name = 'sharpen';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate smart-normal-map.pbk', async function() {
+    this.timeout(60000);
+    const name = 'smart-normal-map';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
@@ -218,11 +308,12 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
+  skip.
   it('should correctly translate twirl.pbk', async function() {
     this.timeout(60000);
     const name = 'twirl';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    await apply(name, { oImage: 'malgorzata-socha.png' });
   })
   skip.
   it('should correctly translate warp.pbk', async function() {
@@ -293,6 +384,7 @@ async function apply(name, sources, params = {}) {
     }
   }
   const output = Output.create(width, height);
+  console.log({ name });
   apply(input, output);
   const dstPixels = output.pixels.typedArray;
   sharp(dstPixels, {

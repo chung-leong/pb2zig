@@ -365,25 +365,25 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   ifStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statements = this.visit(ctx.statement);
+    const statements = arrayOf(this.visit(ctx.statement));
     const elseClause = (ctx.elseClause) ? this.visit(ctx.elseClause) : undefined;
     return this.create(N.IfStatement, { condition, statements, elseClause });
   }
 
   elseClause(ctx) {
-    const statements = this.visit(ctx.statement);
+    const statements = arrayOf(this.visit(ctx.statement));
     return this.create(N.IfStatement, { statements });
   }
 
   whileStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statements = this.visit(ctx.statement);
+    const statements = arrayOf(this.visit(ctx.statement));
     return this.create(N.IfStatement, { condition, statements });
   }
 
   doWhileStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statements = this.visit(ctx.statement);
+    const statements = arrayOf(this.visit(ctx.statement));
     return this.create(N.IfStatement, { condition, statements });
   }
 
@@ -416,4 +416,8 @@ export function process(cst, macroCSTs) {
   const ast = visitor.visit(cst);
   const macroASTs = macroCSTs.map(cst => visitor.visit(cst));
   return { ast, macroASTs };
+}
+
+function arrayOf(a) {
+  return Array.isArray(a) ? a : [ a ];
 }

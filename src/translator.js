@@ -155,7 +155,7 @@ export class PixelBenderToZigTranslator {
         argsByName[argName] = args[index];
       }
     }
-    const clone = function(object) {
+    const clone = (object) => {
       if (Array.isArray(object)) {
         return object.map(clone);
       } else if (object && typeof(object) === 'object') {
@@ -449,6 +449,10 @@ export class PixelBenderToZigTranslator {
   addDefinedFunctions() {
     const defs = this.find(N.FunctionDefinition);
     for (const [ index, def ] of defs.entries()) {
+      const { type, args } = def;
+      if (isUnsupported(type) || args.some(a => isUnsupported(a.type))) {
+        continue;
+      }
       if (index === 0) {
         this.add(`// functions defined in kernel`);
       } else {
@@ -820,7 +824,7 @@ export class PixelBenderToZigTranslator {
       '>': true,
     };
     if (isAssignment[operator]) {
-      const { name: nameL, property: propL } = operand1;
+      const { name: nameL, property: propL, element: elemL } = operand1;
       const typeL = this.getVariableType(nameL);
       if (propL) {
         // using vector write mask
@@ -887,10 +891,19 @@ export class PixelBenderToZigTranslator {
           return this.translateBinaryOperation(assignment, typeExpected);
         }
       } else {
-        const valueL = this.translateExpression(operand1);
-        const valueR = this.translateExpression(operand2, valueL.type);
-        valueR.promote(valueL.type);
-        this.add(`${valueL} ${operator} ${valueR};`);
+        // can't use translateExpression(operand1), since we want to write to
+        // the variable itself, and not a temp var it's aliased to if there's one
+        if (elemL) {
+          const index = this.translateExpression(element);
+          const typeLC = getChildType(typeL);
+          const valueR = this.translateExpression(operand2, typeLC);
+          valueR.promote(typeLC);
+          this.add(`${nameL}[${index}] ${operator} ${valueR};`);
+        } else {
+          const valueR = this.translateExpression(operand2, typeL);
+          valueR.promote(typeL);
+          this.add(`${nameL} ${operator} ${valueR};`);
+        }
         if (typeExpected === 'void') {
           return null;
         }
@@ -1083,6 +1096,10 @@ function isVector(type) {
 
 function isMatrix(type) {
   return /^\w+\dx\d$/.test(type);
+}
+
+function isUnsupported(type) {
+  return [ 'region', 'imageRef' ].includes(type);
 }
 
 function getVectorWidth(type) {

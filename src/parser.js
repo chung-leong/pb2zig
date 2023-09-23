@@ -81,6 +81,7 @@ const T = {
   String: createToken({ name: 'String', pattern: /string\b/ }),
   Void: createToken({ name: 'Void', pattern: /void\b/ }),
   Region: createToken({ name: 'Region', pattern: /region\b/ }),
+  ImageRef: createToken({ name: 'ImageRef', pattern: /imageRef\b/ }),
 
   Input: createToken({ name: 'Input', pattern: /input\b/ }),
   Output: createToken({ name: 'Output', pattern: /output\b/ }),
@@ -174,6 +175,8 @@ export class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.FloatMatrix) },
         { ALT: () => $.CONSUME(T.String) },
         { ALT: () => $.CONSUME(T.Pixel) },
+        { ALT: () => $.CONSUME(T.Region) },
+        { ALT: () => $.CONSUME(T.ImageRef) },
       ])
     })
     $.RULE('inputDeclaration', () => {
