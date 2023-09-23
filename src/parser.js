@@ -32,6 +32,7 @@ const T = {
   LAngleEql: createToken({ name: 'LAngleEql', pattern: /<=/ }),
   RAngleEql: createToken({ name: 'RAngleEql', pattern: />=/ }),
   DblPlus: createToken({ name: 'DblPlus', pattern: /\+\+/ }),
+  DblMinus: createToken({ name: 'DblMinus', pattern: /\-\-/ }),
   DblAmp: createToken({ name: 'DblAnd', pattern: /&&/ }),
   DblPipe: createToken({ name: 'DblPipe', pattern: /\|\|/ }),
   DblCircum: createToken({ name: 'DblCircum', pattern: /\^\^/ }),
@@ -291,6 +292,25 @@ export class PixelBenderParser extends CstParser {
       })
     })
     $.RULE('expression', () => {
+      $.SUBRULE($.assignmentOperation);
+    })
+    $.RULE('assignmentOperation', () => {
+      $.OPTION(() => {
+        $.SUBRULE($.variable)
+        $.SUBRULE($.assignmentOperator)
+      })
+      $.SUBRULE($.ternaryOperation)
+    })
+    $.RULE('assignmentOperator', () => {
+      $.OR([
+        { ALT: () => $.CONSUME(T.Equal) },
+        { ALT: () => $.CONSUME(T.PlusEql) },
+        { ALT: () => $.CONSUME(T.MinusEql) },
+        { ALT: () => $.CONSUME(T.AsteriskEql) },
+        { ALT: () => $.CONSUME(T.SlashEql) },
+      ])
+    })
+    $.RULE('ternaryOperation', () => {
       $.SUBRULE($.binaryOperation);
       $.OPTION(() => {
         $.CONSUME(T.Question)
@@ -321,11 +341,6 @@ export class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.DblAmp) },
         { ALT: () => $.CONSUME(T.DblPipe) },
         { ALT: () => $.CONSUME(T.DblCircum) },
-        { ALT: () => $.CONSUME(T.Equal) },
-        { ALT: () => $.CONSUME(T.PlusEql) },
-        { ALT: () => $.CONSUME(T.MinusEql) },
-        { ALT: () => $.CONSUME(T.AsteriskEql) },
-        { ALT: () => $.CONSUME(T.SlashEql) },
       ])
     })
     $.RULE('unaryOperation', () => {
@@ -338,7 +353,6 @@ export class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.Exclam) },
       ])
     })
-
     $.RULE('nullaryOperation', () => {
       $.OR([
         { ALT: () => $.SUBRULE($.parentheses) },

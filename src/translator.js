@@ -796,7 +796,95 @@ export class PixelBenderToZigTranslator {
     }
   }
 
-  translateBinaryOperation({ operator, operand1, operand2 }, typeExpected) {
+  translateAssignmentOperation({ lvalue, operator, rvalue }, typeExpected) {
+    const { name: nameL, property: propL, element: elemL } = lvalue;
+    const typeL = this.getVariableType(nameL);
+    if (propL) {
+      // using vector write mask
+      const indicesL = getSwizzleIndices(propL);
+      if (indicesL.length > 1) {
+        if (operator.length === 2) {
+          // += and friends--handle it a lvalue = lvalue + rvalue
+          const assignment = this.expandAssignmentOp({ lvalue, operator, rvalue });
+          return this.translateBinaryOperation(assignment, typeExpected);
+        }
+
+        const typeS = getSwizzleType(typeL, indicesL);
+        let valueR, indicesR;
+        if (rvalue instanceof N.VariableAccess && rvalue.property) {
+          // the right size has a mask too, get its indices
+          const { name: nameR, property: propR } = rvalue;
+          const typeR = this.getVariableType(nameR);
+          valueR = new ZigExpr(nameR, typeR);
+          indicesR = getSwizzleIndices(propR);
+        } else {
+          // get the full vector and a list of sequential indices
+          valueR = this.translateExpression(rvalue, typeS) ;
+          indicesR = getVectorIndices(typeS);
+        }
+        if (operator.length === 2) {
+          valueR = new ZigExpr(`${nameL} ${operator} ${valueR}`, typeL);
+        }
+        // build the shuffle mask
+        const indicesM = [];
+        const widthL = getVectorWidth(typeL);
+        for (let i = 0; i < widthL; i++) {
+          if (indicesL.includes(i)) {
+            // use rvalue--index is negative
+            indicesM.push(~indicesR[i]);
+          } else {
+            // keep lvalue
+            indicesM.push(`${i}`);
+          }
+        }
+        const mask1 = `@Vector(${indicesM.length}, i32){ ${indicesM.join(', ') } }`;
+        const typeCZ = getChildZigType(typeL);
+        this.add(`${nameL} = @shuffle(${typeCZ}, ${nameL}, ${valueR}, ${mask1});`);
+        if (typeExpected === 'void') {
+          // the result isn't used, so it doesn't matter that the width is wrong
+          return null;
+        }
+        const tmp = this.addTempVariable(nameL);
+        const mask2 = `@Vector(${indicesL.length}, i32){ ${indicesL.join(', ') } }`;
+        return new ZigExpr(`@shuffle(${typeCZ}, ${tmp}, undefined, ${mask2})`, typeS);
+      } else {
+        const [ index ] = indicesL;
+        const valueR = this.translateExpression(rvalue, typeL);
+        const typeC = getChildType(typeL);
+        this.add(`${nameL}[${index}] ${operator} ${valueR};`);
+        if (typeExpected === 'void') {
+          return null;
+        }
+        const tmp = this.addTempVariable(`${nameL}[${index}]`);
+        return new ZigExpr(tmp, typeC);
+      }
+    } else {
+      if (isMatrix(typeL) && operator.length === 2) {
+        const assignment = this.expandAssignmentOp({ lvalue, operator, rvalue });
+        return this.translateBinaryOperation(assignment, typeExpected);
+      }
+      // can't use translateExpression(operand1), since we want to write to
+      // the variable itself, and not a temp var it's aliased to if there's one
+      if (elemL) {
+        const index = this.translateExpression(element);
+        const typeLC = getChildType(typeL);
+        const valueR = this.translateExpression(rvalue, typeLC);
+        valueR.promote(typeLC);
+        this.add(`${nameL}[${index}] ${operator} ${valueR};`);
+      } else {
+        const valueR = this.translateExpression(rvalue, typeL);
+        valueR.promote(typeL);
+        this.add(`${nameL} ${operator} ${valueR};`);
+      }
+      if (typeExpected === 'void') {
+        return null;
+      }
+      const tmp = this.addTempVariable(nameL);
+      return new ZigExpr(tmp, typeL);
+    }
+  }
+
+  translateBinaryOperation({ operator, operand1, operand2 }) {
     switch (operator) {
       case '&&':
         operator = 'and';
@@ -808,13 +896,6 @@ export class PixelBenderToZigTranslator {
         operator = '!=';
         break;
     };
-    const isAssignment = {
-      '=': true,
-      '+=': true,
-      '-=': true,
-      '*=': true,
-      '/=': true,
-    };
     const isLogical = {
       '==': true,
       '!=': true,
@@ -823,125 +904,36 @@ export class PixelBenderToZigTranslator {
       '<': true,
       '>': true,
     };
-    if (isAssignment[operator]) {
-      const { name: nameL, property: propL, element: elemL } = operand1;
-      const typeL = this.getVariableType(nameL);
-      if (propL) {
-        // using vector write mask
-        const indicesL = getSwizzleIndices(propL);
-        if (indicesL.length > 1) {
-          if (operator.length === 2) {
-            // += and friends--handle it a lvalue = lvalue + rvalue
-            const assignment = this.expandAssignmentOp({ operator, operand1, operand2 });
-            return this.translateBinaryOperation(assignment, typeExpected);
-          }
-
-          const typeS = getSwizzleType(typeL, indicesL);
-          let valueR, indicesR;
-          if (operand2 instanceof N.VariableAccess && operand2.property) {
-            // the right size has a mask too, get its indices
-            const { name: nameR, property: propR } = operand2;
-            const typeR = this.getVariableType(nameR);
-            valueR = new ZigExpr(nameR, typeR);
-            indicesR = getSwizzleIndices(propR);
-          } else {
-            // get the full vector and a list of sequential indices
-            valueR = this.translateExpression(operand2, typeS) ;
-            indicesR = getVectorIndices(typeS);
-          }
-          if (operator.length === 2) {
-            valueR = new ZigExpr(`${nameL} ${operator} ${valueR}`, typeL);
-          }
-          // build the shuffle mask
-          const indicesM = [];
-          const widthL = getVectorWidth(typeL);
-          for (let i = 0; i < widthL; i++) {
-            if (indicesL.includes(i)) {
-              // use rvalue--index is negative
-              indicesM.push(~indicesR[i]);
-            } else {
-              // keep lvalue
-              indicesM.push(`${i}`);
-            }
-          }
-          const mask1 = `@Vector(${indicesM.length}, i32){ ${indicesM.join(', ') } }`;
-          const typeCZ = getChildZigType(typeL);
-          this.add(`${nameL} = @shuffle(${typeCZ}, ${nameL}, ${valueR}, ${mask1});`);
-          if (typeExpected === 'void') {
-            // the result isn't used, so it doesn't matter that the width is wrong
-            return null;
-          }
-          const tmp = this.addTempVariable(nameL);
-          const mask2 = `@Vector(${indicesL.length}, i32){ ${indicesL.join(', ') } }`;
-          return new ZigExpr(`@shuffle(${typeCZ}, ${tmp}, undefined, ${mask2})`, typeS);
-        } else {
-          const [ index ] = indicesL;
-          const valueR = this.translateExpression(operand2, typeL);
-          const typeC = getChildType(typeL);
-          this.add(`${nameL}[${index}] ${operator} ${valueR};`);
-          if (typeExpected === 'void') {
-            return null;
-          }
-          const tmp = this.addTempVariable(`${nameL}[${index}]`);
-          return new ZigExpr(tmp, typeC);
-        }
-      } else if (isMatrix(typeL)) {
-        if (operator.length === 2) {
-          const assignment = this.expandAssignmentOp({ operator, operand1, operand2 });
-          return this.translateBinaryOperation(assignment, typeExpected);
-        }
-      } else {
-        // can't use translateExpression(operand1), since we want to write to
-        // the variable itself, and not a temp var it's aliased to if there's one
-        if (elemL) {
-          const index = this.translateExpression(element);
-          const typeLC = getChildType(typeL);
-          const valueR = this.translateExpression(operand2, typeLC);
-          valueR.promote(typeLC);
-          this.add(`${nameL}[${index}] ${operator} ${valueR};`);
-        } else {
-          const valueR = this.translateExpression(operand2, typeL);
-          valueR.promote(typeL);
-          this.add(`${nameL} ${operator} ${valueR};`);
-        }
-        if (typeExpected === 'void') {
-          return null;
-        }
-        const tmp = this.addTempVariable(nameL);
-        return new ZigExpr(tmp, typeL);
+    const opL = this.translateExpression(operand1);
+    const opR = this.translateExpression(operand2);
+    if (isMatrix(opL.type) || isMatrix(opR.type)) {
+      // matrix math requires function calls
+      let returnType;
+      switch (operator) {
+        case '==':
+        case '!=':
+          returnType = 'bool';
+          break;
+        case '+':
+        case '-':
+        case '/':
+          returnType = opL.isMatrix() ? opL.type : opR.type;
+          break;
+        case '*':
+          returnType = opL.isVector() ? opL.type : opR.type;
+          break;
       }
-    } else {
-      // not assignment
-      const opL = this.translateExpression(operand1);
-      const opR = this.translateExpression(operand2);
-      if (isMatrix(opL.type) || isMatrix(opR.type)) {
-        let returnType;
-        switch (operator) {
-          case '==':
-          case '!=':
-            returnType = 'bool';
-            break;
-          case '+':
-          case '-':
-          case '/':
-            returnType = isMatrix(opL.type) ? opL.type : opR.type;
-            break;
-          case '*':
-            returnType = isVector(opL.type) ? opL.type : opR.type;
-            break;
-        }
-        return new ZigExpr(`matrixCalc("${operator}", ${opL}, ${opR})`, returnType);
-      }
-      // promote scale to vector or matrix
-      if (opL.isScalar() && opR.isVector()) {
-        opL.promote(opR.type);
-      } else if (opL.isVector() && opR.isScalar()) {
-        opR.promote(opL.type);
-      }
-      const width = getVectorWidth(opL.type);
-      const type = isLogical[operator] ? getType('bool', width) : opL.type;
-      return new ZigExpr(`${opL} ${operator} ${opR}`, type);
+      return new ZigExpr(`matrixCalc("${operator}", ${opL}, ${opR})`, returnType);
     }
+    // promote scale to vector or matrix
+    if (opL.isScalar() && opR.isVector()) {
+      opL.promote(opR.type);
+    } else if (opL.isVector() && opR.isScalar()) {
+      opR.promote(opL.type);
+    }
+    const width = getVectorWidth(opL.type);
+    const type = isLogical[operator] ? getType('bool', width) : opL.type;
+    return new ZigExpr(`${opL} ${operator} ${opR}`, type);
   }
 
   translateUnaryOperation({ operator, operand }) {
@@ -964,6 +956,9 @@ export class PixelBenderToZigTranslator {
     const c = this.translateExpression(condition);
     const t = this.translateExpression(onTrue);
     const f = this.translateExpression(onFalse);
+    console.log(`c = ${c}`);
+    console.log(`t = ${t}`);
+    console.log(`f = ${f}`);
     const typeZ = getZigType(t.type);
     return new ZigExpr(`@as(${typeZ}, if (${c}) ${t} else ${f})`, t.type);
   }
@@ -1091,11 +1086,11 @@ function getChildType(type) {
 }
 
 function isVector(type) {
-  return /^\w+\d$/.test(type);
+  return /^[_a-z]+\d$/i.test(type);
 }
 
 function isMatrix(type) {
-  return /^\w+\dx\d$/.test(type);
+  return /^[_a-z]+\dx\d$/i.test(type);
 }
 
 function isUnsupported(type) {

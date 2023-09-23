@@ -101,6 +101,12 @@ export class VariableAccess {
   element;
 }
 
+export class AssignmentOperation {
+  operator;
+  lvalue;
+  rvalue;
+}
+
 export class BinaryOperation {
   operator;
   operand1;

@@ -271,6 +271,26 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   expression(ctx) {
+    return this.visit(ctx.assignmentOperation);
+  }
+
+  assignmentOperation(ctx) {
+    const expr = this.visit(ctx.ternaryOperation);
+    if (ctx.assignmentOperator) {
+      const lvalue = this.visit(ctx.variable);
+      const operator = this.visit(ctx.assignmentOperator);
+      const rvalue = expr;
+      return this.create(N.AssignmentOperation, { lvalue, operator, rvalue });
+    } else {
+      return expr;
+    }
+  }
+
+  assignmentOperator(ctx) {
+    return this.anyName(ctx);
+  }
+
+  ternaryOperation(ctx) {
     const expr = this.visit(ctx.binaryOperation);
     if (ctx.Question) {
       const condition = expr;
@@ -282,12 +302,16 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     }
   }
 
+  binaryOperator(ctx) {
+    return this.anyName(ctx);
+  }
+
   binaryOperation(ctx) {
     const expr = this.visit(ctx.unaryOperation);
     if (ctx.binaryOperator) {
       const operand1 = expr;
       const operator = this.visit(ctx.binaryOperator);
-      const operand2 = this.visit(ctx.expression) ;
+      const operand2 = this.visit(ctx.expression);
       return this.create(N.BinaryOperation, { operand1, operator, operand2 });
     } else {
       return expr;
