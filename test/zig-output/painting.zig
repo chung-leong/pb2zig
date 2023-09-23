@@ -169,9 +169,9 @@ pub const kernel = struct {
                 offset[1] = 0.0;
                 p8 = src.sampleNearest(p + offset);
                 if (all(lessThan(c, temp))) {
-                    c = @shuffle(f32, c, c + @as(@Vector(4, f32), @splat(n2)), @Vector(4, i32){ -1, -2, -3, 3 });
+                    c = @shuffle(f32, c, @shuffle(f32, c, undefined, @Vector(3, i32){ 0, 1, 2 }) + @as(@Vector(3, f32), @splat(n2)), @Vector(4, i32){ -1, -2, -3, 3 });
                 } else {
-                    c = @shuffle(f32, c, c - @as(@Vector(4, f32), @splat(n2)), @Vector(4, i32){ -1, -2, -3, 3 });
+                    c = @shuffle(f32, c, @shuffle(f32, c, undefined, @Vector(3, i32){ 0, 1, 2 }) - @as(@Vector(3, f32), @splat(n2)), @Vector(4, i32){ -1, -2, -3, 3 });
                 }
                 if (any(lessThan(c, p0))) {
                     c = p0;

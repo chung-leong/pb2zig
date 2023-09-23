@@ -669,8 +669,8 @@ test "normalize" {
 
 pub fn matrixCompMult(m1: anytype, m2: anytype) @TypeOf(m2) {
     var result: @TypeOf(m2) = undefined;
-    inline for (m1, 0..) |v, index| {
-        result[index] = v * m2[index];
+    inline for (m1, 0..) |column, c| {
+        result[c] = column * m2[c];
     }
     return result;
 }
@@ -706,10 +706,10 @@ pub fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, compti
 
 pub fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) MatrixCalcResult(operator, @TypeOf(p1), @TypeOf(p2)) {
     const calc = struct {
-        fn @"Matrix * Vector"(m1: anytype, v2: anytype) @TypeOf(v2) {
-            var result: @TypeOf(v2) = undefined;
-            inline for (m1, 0..) |row, r| {
-                result[r] = @reduce(.Add, row * v2);
+        fn @"Vector * Matrix"(v1: anytype, m2: anytype) @TypeOf(v1) {
+            var result: @TypeOf(v1) = undefined;
+            inline for (m2, 0..) |column, c| {
+                result[c] = @reduce(.Add, column * v1);
             }
             return result;
         }
@@ -717,36 +717,35 @@ pub fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) Matri
         fn @"Matrix * Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
             const ar = @typeInfo(@TypeOf(m2)).Array;
             var result: @TypeOf(m2) = undefined;
-            comptime var c = 0;
-            inline while (c < ar.len) : (c += 1) {
-                comptime var i = 0;
-                var column: ar.child = undefined;
-                inline while (i < ar.len) : (i += 1) {
-                    column[i] = m2[i][c];
+            comptime var r = 0;
+            inline while (r < ar.len) : (r += 1) {
+                var row: ar.child = undefined;
+                inline for (m1, 0..) |column, c| {
+                    row[c] = column[r];
                 }
-                inline for (m1, 0..) |row, r| {
-                    result[r][c] = @reduce(.Add, row * column);
+                inline for (m2, 0..) |column, c| {
+                    result[c][r] = @reduce(.Add, row * column);
                 }
             }
             return result;
         }
 
-        fn @"Vector * Matrix"(v1: anytype, m2: anytype) @TypeOf(v1) {
-            const ar = @typeInfo(@TypeOf(m2)).Array;
-            var t: @TypeOf(m2) = undefined;
-            inline for (m2, 0..) |row, r| {
-                comptime var c = 0;
-                inline while (c < ar.len) : (c += 1) {
-                    t[c][r] = row[c];
+        fn @"Matrix * Vector"(m1: anytype, v2: anytype) @TypeOf(v2) {
+            const ar = @typeInfo(@TypeOf(m1)).Array;
+            var t1: @TypeOf(m1) = undefined;
+            inline for (m1, 0..) |column, c| {
+                comptime var r = 0;
+                inline while (r < ar.len) : (r += 1) {
+                    t1[r][c] = column[r];
                 }
             }
-            return @"Matrix * Vector"(t, v1);
+            return @"Vector * Matrix"(v2, t1);
         }
 
         fn @"Matrix * Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
             var result: @TypeOf(m1) = undefined;
-            inline for (m1, 0..) |row, r| {
-                result[r] = row * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+            inline for (m1, 0..) |column, c| {
+                result[c] = column * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
             }
             return result;
         }
@@ -757,16 +756,16 @@ pub fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) Matri
 
         fn @"Matrix + Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
             var result: @TypeOf(m2) = undefined;
-            inline for (m1, 0..) |v, index| {
-                result[index] = v + m2[index];
+            inline for (m1, 0..) |column, c| {
+                result[c] = column + m2[c];
             }
             return result;
         }
 
         fn @"Matrix + Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
             var result: @TypeOf(m1) = undefined;
-            inline for (m1, 0..) |row, r| {
-                result[r] = row + @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+            inline for (m1, 0..) |column, c| {
+                result[c] = column + @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
             }
             return result;
         }
@@ -777,55 +776,55 @@ pub fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) Matri
 
         fn @"Matrix - Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
             var result: @TypeOf(m2) = undefined;
-            inline for (m1, 0..) |v, index| {
-                result[index] = v - m2[index];
+            inline for (m1, 0..) |column, c| {
+                result[c] = column - m2[c];
             }
             return result;
         }
 
         fn @"Matrix - Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
             var result: @TypeOf(m1) = undefined;
-            inline for (m1, 0..) |row, r| {
-                result[r] = row - @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+            inline for (m1, 0..) |column, c| {
+                result[c] = column - @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
             }
             return result;
         }
 
         fn @"Scalar - Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
             var result: @TypeOf(m2) = undefined;
-            inline for (m2, 0..) |row, r| {
-                result[r] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) - row;
+            inline for (m2, 0..) |column, c| {
+                result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) - column;
             }
             return result;
         }
 
         fn @"Matrix / Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
             var result: @TypeOf(m2) = undefined;
-            inline for (m1, 0..) |v, index| {
-                result[index] = v / m2[index];
+            inline for (m1, 0..) |column, c| {
+                result[c] = column / m2[c];
             }
             return result;
         }
 
         fn @"Matrix / Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
             var result: @TypeOf(m1) = undefined;
-            inline for (m1, 0..) |row, r| {
-                result[r] = row / @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+            inline for (m1, 0..) |column, c| {
+                result[c] = column / @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
             }
             return result;
         }
 
         fn @"Scalar / Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
             var result: @TypeOf(m2) = undefined;
-            inline for (m2, 0..) |row, r| {
-                result[r] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) / row;
+            inline for (m2, 0..) |column, c| {
+                result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) / column;
             }
             return result;
         }
 
         fn @"Matrix == Matrix"(m1: anytype, m2: anytype) bool {
-            inline for (m1, 0..) |v, index| {
-                if (!@reduce(.And, v == m2[index])) {
+            inline for (m1, 0..) |column, c| {
+                if (!@reduce(.And, column == m2[c])) {
                     return false;
                 }
             }
@@ -883,15 +882,15 @@ test "matrixCalc" {
     assert(result6 == false);
     assert(result7 == true);
     const result9 = matrixCalc("*", m1, v1);
-    assert(all(result9 == @Vector(2, f32){ 50, 110 }));
+    assert(all(result9 == @Vector(2, f32){ 70, 100 }));
     const result10 = matrixCalc("*", v1, m1);
-    assert(all(result10 == @Vector(2, f32){ 70, 100 }));
+    assert(all(result10 == @Vector(2, f32){ 50, 110 }));
     const result11 = matrixCalc("*", m1, m2);
-    assert(all(result11[0] == @Vector(2, f32){ 19, 22 }));
-    assert(all(result11[1] == @Vector(2, f32){ 43, 50 }));
+    assert(all(result11[0] == @Vector(2, f32){ 23, 34 }));
+    assert(all(result11[1] == @Vector(2, f32){ 31, 46 }));
     const result12 = matrixCalc("*", m2, m1);
-    assert(all(result12[0] == @Vector(2, f32){ 23, 34 }));
-    assert(all(result12[1] == @Vector(2, f32){ 31, 46 }));
+    assert(all(result12[0] == @Vector(2, f32){ 19, 22 }));
+    assert(all(result12[1] == @Vector(2, f32){ 43, 50 }));
     const result13 = matrixCalc("*", m1, 2);
     assert(all(result13[0] == @Vector(2, f32){ 2, 4 }));
     assert(all(result13[1] == @Vector(2, f32){ 6, 8 }));

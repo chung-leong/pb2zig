@@ -292,7 +292,6 @@ async function apply(name, sources, params = {}) {
     }
   }
   const output = Output.create(width, height);
-  console.log({ name });
   apply(input, output);
   const dstPixels = output.pixels.typedArray;
   sharp(dstPixels, {

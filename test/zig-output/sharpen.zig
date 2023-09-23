@@ -57,10 +57,10 @@ pub const kernel = struct {
                 var right: @Vector(4, f32) = src.sampleLinear(coord + hOffset) * @as(@Vector(4, f32), @splat(amount));
                 var top: @Vector(4, f32) = src.sampleLinear(coord - vOffset) * @as(@Vector(4, f32), @splat(amount));
                 var bottom: @Vector(4, f32) = src.sampleLinear(coord + vOffset) * @as(@Vector(4, f32), @splat(amount));
-                dst = @shuffle(f32, dst, dst + (@shuffle(f32, top, undefined, @Vector(3, i32){ 0, 1, 2 })), @Vector(4, i32){ -1, -2, -3, 3 });
-                dst = @shuffle(f32, dst, dst - (@shuffle(f32, bottom, undefined, @Vector(3, i32){ 0, 1, 2 })), @Vector(4, i32){ -1, -2, -3, 3 });
-                dst = @shuffle(f32, dst, dst + left, @Vector(4, i32){ -1, -2, -3, 3 });
-                dst = @shuffle(f32, dst, dst - right, @Vector(4, i32){ -1, -2, -3, 3 });
+                dst = @shuffle(f32, dst, @shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) + (@shuffle(f32, top, undefined, @Vector(3, i32){ 0, 1, 2 })), @Vector(4, i32){ -1, -2, -3, 3 });
+                dst = @shuffle(f32, dst, @shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) - (@shuffle(f32, bottom, undefined, @Vector(3, i32){ 0, 1, 2 })), @Vector(4, i32){ -1, -2, -3, 3 });
+                dst = @shuffle(f32, dst, @shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) + @shuffle(f32, left, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
+                dst = @shuffle(f32, dst, @shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) - @shuffle(f32, right, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
                 dst[3] = inputColor[3];
                 return dst;
             }

@@ -45,11 +45,11 @@ pub const kernel = struct {
                 var dst: @Vector(4, f32) = undefined;
                 
                 dst = src.sampleNearest(outCoord);
-                dst = @shuffle(f32, dst, dst * dst, @Vector(4, i32){ -4, -1, -1, 3 });
+                dst = @shuffle(f32, dst, @shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
                 dst[3] = max(max(dst[0], dst[1]), dst[2]);
                 dst[3] *= 254.0 / 255.0;
                 if (dst[3] != 0.0) {
-                    dst = @shuffle(f32, dst, dst / dst, @Vector(4, i32){ -4, -1, -1, 3 });
+                    dst = @shuffle(f32, dst, @shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
                 }
                 return dst;
             }

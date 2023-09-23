@@ -11,23 +11,23 @@ kernel simple
     <
         minValue: 0;
         maxValue: 100;
-        defaultValue: 4;
+        defaultValue: 2;
     >;
 
     input image4 src;
     output pixel4 dst;
-    const float4x4 toYIQA = float4x4(
-		0.299000, 0.587000,  0.114000,  0.0,
-		0.595716, -0.274453, -0.321263, 0.0,
-		0.211456, -0.522591, 0.311350,  0.0,
-		0.0,      0.0,       0.0,       1.0
-	);
-    const float4x4 toRGBA = float4x4(
-		0.999867, 0.956443,  0.620797,  0.0,
-		1.000139, -0.272276, -0.647143, 0.0,
-		0.999634, -1.106583, 1.703990,   0.0,
-		0.0,      0.0,       0.0,       1.0
-	);
+    const float4x4 YIQMatrix = float4x4(
+        0.299,  0.596,  0.212, 0.000,
+        0.587, -0.275, -0.523, 0.000,
+        0.114, -0.321,  0.311, 0.000,
+        0.000,  0.000,  0.000, 1.000
+    );
+    const float4x4 inverseYIQ = float4x4(
+        1.0,    1.0,    1.0,    0.0,
+        0.956, -0.272, -1.10,  0.0,
+        0.621, -0.647,  1.70,   0.0,
+        0.0,    0.0,    0.0,    1.0
+    );
 
     float hypot(float a, float b) {
         return sqrt(a * a + b * b);
@@ -38,19 +38,19 @@ kernel simple
     {
         float4 pRGBA = sampleNearest(src, outCoord());
         // convert to YIQA color space
-        float4 pYIQA = toYIQA * pRGBA;
+        float4 pYIQA = YIQMatrix * pRGBA;
 
         // the south-west quadrance is greenish
         // see https://en.wikipedia.org/wiki/YIQ
 		if(pYIQA[1] < 0 && pYIQA[2] < 0 && pYIQA[0] > 0.01) {
             // reduces alpha based on how green and bright it is
-			pYIQA[3] = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
+ 			pYIQA[3] = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
             // discard chroma component
 			pYIQA[1] = 0;
             pYIQA[2] = 0;
     	}
 
         // convert back from YIQA
-        dst = toRGBA * pYIQA;
+        dst = inverseYIQ * pYIQA;
     }
 }

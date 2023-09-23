@@ -184,6 +184,19 @@ export class PixelBenderToZigTranslator {
     return expanded;
   }
 
+  expandAssignmentOp({ operator, operand1, operand2 }) {
+    const expression = this.createExpression(N.BinaryOperation, {
+      operator: operator.slice(0, 1),
+      operand1,
+      operand2,
+    });
+    return this.createExpression(N.BinaryOperation, {
+      operator: '=',
+      operand1,
+      operand2: expression,
+    });
+  }
+
   setFunctionArgs(name, argTypes) {
     this.functionArgTypes[name] = argTypes;
   }
@@ -807,12 +820,18 @@ export class PixelBenderToZigTranslator {
       '>': true,
     };
     if (isAssignment[operator]) {
-      const { name: nameL, property: propL, element: elemL } = operand1;
+      const { name: nameL, property: propL } = operand1;
       const typeL = this.getVariableType(nameL);
       if (propL) {
         // using vector write mask
         const indicesL = getSwizzleIndices(propL);
         if (indicesL.length > 1) {
+          if (operator.length === 2) {
+            // += and friends--handle it a lvalue = lvalue + rvalue
+            const assignment = this.expandAssignmentOp({ operator, operand1, operand2 });
+            return this.translateBinaryOperation(assignment, typeExpected);
+          }
+
           const typeS = getSwizzleType(typeL, indicesL);
           let valueR, indicesR;
           if (operand2 instanceof N.VariableAccess && operand2.property) {
@@ -827,11 +846,7 @@ export class PixelBenderToZigTranslator {
             indicesR = getVectorIndices(typeS);
           }
           if (operator.length === 2) {
-            // += and friends--need to perform the arithmetic operation first
-            if (!valueR.isVector()) {
-              valueR.promote(typeL);
-            }
-            valueR = new ZigExpr(`${nameL} ${operator.charAt(0)} ${valueR}`, typeL);
+            valueR = new ZigExpr(`${nameL} ${operator} ${valueR}`, typeL);
           }
           // build the shuffle mask
           const indicesM = [];
@@ -866,26 +881,16 @@ export class PixelBenderToZigTranslator {
           const tmp = this.addTempVariable(`${nameL}[${index}]`);
           return new ZigExpr(tmp, typeC);
         }
-      } else {
-        if (isMatrix(typeL)) {
-          if (operator.length === 2) {
-            // += and friends--expand
-            const expression = this.createExpression(N.BinaryOperation, {
-              operator: operator.slice(0, 1),
-              operand1,
-              operand2,
-            });
-            const assignment = this.createExpression(N.BinaryOperation, {
-              operator: '=',
-              operand1,
-              operand2: expression,
-            });
-            return this.translateBinaryOperation(assignment, typeExpected);
-          }
+      } else if (isMatrix(typeL)) {
+        if (operator.length === 2) {
+          const assignment = this.expandAssignmentOp({ operator, operand1, operand2 });
+          return this.translateBinaryOperation(assignment, typeExpected);
         }
-        const valueR = this.translateExpression(operand2, typeL);
-        valueR.promote(typeL);
-        this.add(`${nameL} ${operator} ${valueR};`);
+      } else {
+        const valueL = this.translateExpression(operand1);
+        const valueR = this.translateExpression(operand2, valueL.type);
+        valueR.promote(valueL.type);
+        this.add(`${valueL} ${operator} ${valueR};`);
         if (typeExpected === 'void') {
           return null;
         }
