@@ -191,7 +191,8 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'sepia';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = { intensity: 0.2 };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate slices.pbk', async function() {
     this.timeout(60000);
