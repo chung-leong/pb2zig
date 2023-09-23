@@ -294,8 +294,8 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const expr = this.visit(ctx.binaryOperation);
     if (ctx.Question) {
       const condition = expr;
-      const onTrue = this.visit(ctx.expression[0]);
-      const onFalse = this.visit(ctx.expression[1]);
+      const onTrue = this.visit(ctx.binaryOperation[1]);
+      const onFalse = this.visit(ctx.ternaryOperation);
       return this.create(N.Conditional, { condition, onTrue, onFalse });
     } else {
       return expr;
@@ -311,8 +311,21 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     if (ctx.binaryOperator) {
       const operand1 = expr;
       const operator = this.visit(ctx.binaryOperator);
-      const operand2 = this.visit(ctx.expression);
-      return this.create(N.BinaryOperation, { operand1, operator, operand2 });
+      const operand2 = this.visit(ctx.binaryOperation);
+      const exprL = this.create(N.BinaryOperation, { operand1, operator, operand2 });
+      if (operand2 instanceof N.BinaryOperation) {
+        const exprR = operand2;
+        const precedenceL = getPrecedence(exprL.operator);
+        const precedenceR = getPrecedence(exprR.operator);
+        if (precedenceL <= precedenceR) {
+          // the left op has higher precedence (left-associtivity)
+          // steal the operand from the right op and place the left op in its place
+          exprL.operand2 = exprR.operand1;
+          exprR.operand1 = exprL;
+          return exprR;
+        }
+      }
+      return exprL;
     } else {
       return expr;
     }
@@ -339,6 +352,26 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   nullaryOperation(ctx) {
     return this.visitAny(ctx);
+  }
+
+  incrementPrefix(ctx) {
+    const operator = this.visit(ctx.incrementOperator);
+    const lvalue = this.visit(ctx.variable);
+    return this.create(N.IncrementOperation, { operator, post: false, lvalue });
+  }
+
+  incrementPostfix(ctx) {
+    const lvalue = this.visit(ctx.variable);
+    if (ctx.incrementOperator) {
+      const operator = this.visit(ctx.incrementOperator);
+      return this.create(N.IncrementOperation, { operator, post: true, lvalue });  
+    } else {
+      return lvalue;
+    }
+  }
+
+  incrementOperator(ctx) {
+    return this.anyName(ctx);
   }
 
   functionCall(ctx) {
@@ -434,7 +467,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 }
 
-const visitor = new PixelBenderAstVisitor();
+export const visitor = new PixelBenderAstVisitor();
 
 export function process(cst, macroCSTs) {
   const ast = visitor.visit(cst);
@@ -444,4 +477,34 @@ export function process(cst, macroCSTs) {
 
 function arrayOf(a) {
   return Array.isArray(a) ? a : [ a ];
+}
+
+function getPrecedence(operator) {
+  switch (operator) {
+    case '.': return 1;
+    case '++':
+    case '--': return 2;
+    case '!':
+    case '-': return 3;
+    case '*': 
+    case '/': return 4;
+    case '+':
+    case '-': return 5;
+    case '<':
+    case '>':
+    case '<=':
+    case '>=': return 6;
+    case '==':
+    case '!=': return 7;
+    case '&&': return 8;
+    case '||': return 9;
+    case '^^': return 10;
+    case '||': return 11;
+    case '?:': return 12;
+    case '=': 
+    case '+=': 
+    case '-=':
+    case '*=':
+    case '/=': return 13;
+  }
 }

@@ -292,6 +292,8 @@ export class PixelBenderParser extends CstParser {
       })
     })
     $.RULE('expression', () => {
+      // assignment has the lowest precedence
+      // the rule below capture it and all operations with higher precedence
       $.SUBRULE($.assignmentOperation);
     })
     $.RULE('assignmentOperation', () => {
@@ -314,16 +316,19 @@ export class PixelBenderParser extends CstParser {
       $.SUBRULE($.binaryOperation);
       $.OPTION(() => {
         $.CONSUME(T.Question)
-        $.SUBRULE1($.expression)
+        $.SUBRULE1($.binaryOperation)
         $.CONSUME(T.Colon)
-        $.SUBRULE2($.expression)
+        // chaining is possible
+        $.SUBRULE2($.ternaryOperation)
       })
     })
     $.RULE('binaryOperation', () => {
-      $.SUBRULE($.unaryOperation)
+      $.SUBRULE1($.unaryOperation)
       $.OPTION(() => {
         $.SUBRULE($.binaryOperator)
-        $.SUBRULE($.expression)
+        // chaining is possible--need to adjust the operands 
+        // based on correct precedence order in visitor
+        $.SUBRULE2($.binaryOperation)
       })
     });
     $.RULE('binaryOperator', () => {
@@ -358,8 +363,9 @@ export class PixelBenderParser extends CstParser {
         { ALT: () => $.SUBRULE($.parentheses) },
         { ALT: () => $.SUBRULE($.constructorCall) },
         { ALT: () => $.SUBRULE($.functionCall) },
+        { ALT: () => $.SUBRULE($.incrementPrefix) },
+        { ALT: () => $.SUBRULE($.incrementPostfix) },
         { ALT: () => $.SUBRULE($.literalValue) },
-        { ALT: () => $.SUBRULE($.variable) },
       ])
     })
     $.RULE('parentheses', () => {
@@ -372,6 +378,22 @@ export class PixelBenderParser extends CstParser {
       $.CONSUME(T.LParen)
       $.SUBRULE($.argumentList)
       $.CONSUME(T.RParen)
+    })
+    $.RULE('incrementPrefix', () => {
+      $.SUBRULE($.incrementOperator)
+      $.SUBRULE($.variable)
+    })
+    $.RULE('incrementPostfix', () => {
+      $.SUBRULE($.variable)
+      $.OPTION(() => {
+        $.SUBRULE($.incrementOperator)
+      })
+    })
+    $.RULE('incrementOperator', () => {
+      $.OR([
+        { ALT: () => $.CONSUME(T.DblPlus) },
+        { ALT: () => $.CONSUME(T.DblMinus) },
+      ])
     })
     $.RULE('argumentList', () => {
       $.MANY_SEP({
@@ -458,8 +480,8 @@ export class PixelBenderParser extends CstParser {
 }
 
 const allTokens = Object.values(T);
-const lexer = new Lexer(allTokens);
-const parser = new PixelBenderParser();
+export const lexer = new Lexer(allTokens);
+export const parser = new PixelBenderParser();
 export const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 
 export function parse(code) {

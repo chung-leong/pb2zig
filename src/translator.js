@@ -186,7 +186,7 @@ export class PixelBenderToZigTranslator {
 
   expandAssignmentOp({ operator, operand1, operand2 }) {
     const expression = this.createExpression(N.BinaryOperation, {
-      operator: operator.slice(0, 1),
+      operator: operator.charAt(0),
       operand1,
       operand2,
     });
@@ -702,6 +702,25 @@ export class PixelBenderToZigTranslator {
     }
   }
 
+  translateIncrementOperation({ operator, lvalue, post }, typeExpected) {
+    const valueL = this.translateExpression(lvalue);
+    let tmp;
+    if (typeExpected !== 'void' && post) {
+      // save copy of variable when it's postfix 
+      tmp = this.addTempVariable(lvalue);        
+    }
+    const assignment = this.createExpression(N.AssignmentOperation, {
+      lvalue,
+      operator: operator.charAt(0) + '=',
+      rvalue: this.createExpression(N.Literal, { value: 1, type })
+    });
+    const value = this.translateExpression(assignment, typeExpected);
+    if (typeExpected === 'void') {
+      return null;
+    }
+    return (tmp) ? new ZigExpr(tmp, lvalue.type) : value;
+  }
+
   translateFunctionCall({ name, args }) {
     if (!this.hasFunction(name)) {
       const expanded = this.expandMacro(name, args);
@@ -956,9 +975,6 @@ export class PixelBenderToZigTranslator {
     const c = this.translateExpression(condition);
     const t = this.translateExpression(onTrue);
     const f = this.translateExpression(onFalse);
-    console.log(`c = ${c}`);
-    console.log(`t = ${t}`);
-    console.log(`f = ${f}`);
     const typeZ = getZigType(t.type);
     return new ZigExpr(`@as(${typeZ}, if (${c}) ${t} else ${f})`, t.type);
   }
