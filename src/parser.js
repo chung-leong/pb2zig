@@ -355,6 +355,7 @@ export class PixelBenderParser extends CstParser {
     $.RULE('unaryOperation', () => {
       $.OPTION(() => {
         $.OR([
+          { ALT: () => $.CONSUME(T.Plus) },
           { ALT: () => $.CONSUME(T.Minus) },
           { ALT: () => $.CONSUME(T.Exclam) },
         ])

@@ -138,7 +138,8 @@ export class UnaryOperation {
   operand;
 }
 
-export class NegationOperation extends UnaryOperation {
+export class SignOperation extends UnaryOperation {
+  sign;
 }
 
 export class NotOperation extends UnaryOperation {

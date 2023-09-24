@@ -957,9 +957,9 @@ export class PixelBenderToZigTranslator {
     }
   }
 
-  translateNegationOperation({ operand }) {
+  translateSignOperation({ sign, operand }) {
     const op = this.translateExpression(operand);
-    return new ZigExpr(`-${op}`, op.type);
+    return (sign === '+') ? op : new ZigExpr(`-${op}`, op.type);
   }
 
   translateNotOperation({ operand }) {
@@ -1033,14 +1033,16 @@ class ZigExpr {
       } else if (type === 'float') {
         const value = parseFloat(this.text);
         if (isNaN(value)) {
-          this.text = `@floatFromInt(${this.text})`;
+          const typeZ = getZigType(type);
+          this.text = `@as(${typeZ}, @floatFromInt(${this.text}))`;
         } else {
           this.text = getZigLiteral(value, type);
         }
       } else if (type === 'int') {
         const value = parseInt(this.text);
         if (isNaN(value)) {
-          this.text = `@intFromFloat(${this.text})`;
+          const typeZ = getZigType(type);
+          this.text = `@as(${typeZ}, @intFromFloat(${this.text}))`;
         } else {
           this.text = getZigLiteral(value, type);
         }

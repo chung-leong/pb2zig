@@ -345,16 +345,13 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   unaryOperation(ctx) {
     const expr = this.visit(ctx.nullaryOperation);
-    let operator, type;
-    if (ctx.Minus) {
-      type = N.NegationOperation;
+    if (ctx.Minus || ctx.Plus) {
+      return this.create(N.SignOperation, { sign: (ctx.Minus) ? '-' : '+', operand: expr });
     } else if (ctx.Exclam) {
-      type = N.NotOperation;
+      return this.create(N.NotOperation, { operand: expr });
     } else {
       return expr;
     }
-    const operand = expr;
-    return this.create(type, { operand });
   }
 
   nullaryOperation(ctx) {
