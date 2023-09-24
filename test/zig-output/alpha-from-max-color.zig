@@ -1,16 +1,15 @@
 
 // Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
-// namespace: AfterEffects
-// vendor: Adobe Systems Incorporated
-// version: 2
-// description: Estimate alpha based on color channels.
-// displayname: Alpha From Max Color
-// category: Utility
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "AfterEffects";
+    pub const vendor = "Adobe Systems Incorporated";
+    pub const version = 2;
+    pub const description = "Estimate alpha based on color channels.";
+    pub const displayname = "Alpha From Max Color";
+    pub const category = "Utility";
     pub const parameters = .{
     };
     pub const input = .{
@@ -24,17 +23,6 @@ pub const kernel = struct {
     fn Instance(comptime InputStruct: type) type {
         return struct {
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
-                    },
-                };
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
@@ -52,6 +40,17 @@ pub const kernel = struct {
                     dst = @shuffle(f32, dst, @shuffle(f32, dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
                 }
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @max(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @max(v1, v2),
+                    },
+                };
             }
         };
     }

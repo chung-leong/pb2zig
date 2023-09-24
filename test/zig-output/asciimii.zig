@@ -1,14 +1,13 @@
 
 // Pixel Bender "AsciiMii" (translated using pb2zig)
-// namespace: com.greyboxware.asciimii
-// vendor: Richard Zurad
-// version: 1
-// description: Filter to mimic the TEXTp effect from YouTube's 2010 April Fools joke
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "com.greyboxware.asciimii";
+    pub const vendor = "Richard Zurad";
+    pub const version = 1;
+    pub const description = "Filter to mimic the TEXTp effect from YouTube's 2010 April Fools joke";
     pub const parameters = .{
         .size = .{
             .type = i32,
@@ -40,25 +39,6 @@ pub const kernel = struct {
             src: std.meta.fieldInfo(InputStruct, .src).type,
             text: std.meta.fieldInfo(InputStruct, .text).type,
             
-            // built-in Pixel Bender functions
-            fn sqrt(v: anytype) @TypeOf(v) {
-                return @sqrt(v);
-            }
-            
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @mod(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @mod(v1, v2),
-                    },
-                };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
@@ -85,6 +65,25 @@ pub const kernel = struct {
                 dst = @shuffle(f32, dst, @shuffle(f32, mosaicPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }) * @shuffle(f32, charPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
                 dst[3] = mosaicPixel4[3];
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn sqrt(v: anytype) @TypeOf(v) {
+                return @sqrt(v);
+            }
+            
+            fn floor(v: anytype) @TypeOf(v) {
+                return @floor(v);
+            }
+            
+            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @mod(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @mod(v1, v2),
+                    },
+                };
             }
         };
     }

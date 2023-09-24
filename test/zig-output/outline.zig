@@ -1,13 +1,13 @@
 
 // Pixel Bender "outline" (translated using pb2zig)
-// namespace: outline
-// vendor: Shogo Kimura
-// version: 1
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "outline";
+    pub const vendor = "Shogo Kimura";
+    pub const version = 1;
+    pub const description = "";
     pub const parameters = .{
         .difference = .{
             .type = @Vector(2, f32),
@@ -46,24 +46,6 @@ pub const kernel = struct {
             color: @Vector(4, f32),
             bgcolor: @Vector(4, f32),
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
-                    },
-                };
-            }
-            
-            fn distance(v1: anytype, v2: anytype) f32 {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-                    else => std.math.fabs(v1 - v2),
-                };
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
@@ -109,6 +91,24 @@ pub const kernel = struct {
                     }
                 }
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @max(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @max(v1, v2),
+                    },
+                };
+            }
+            
+            fn distance(v1: anytype, v2: anytype) f32 {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
+                    else => std.math.fabs(v1 - v2),
+                };
             }
         };
     }

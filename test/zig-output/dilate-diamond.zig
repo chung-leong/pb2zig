@@ -1,14 +1,13 @@
 
 // Pixel Bender "Dilate_diamond" (translated using pb2zig)
-// namespace: com.gasubasu
-// vendor: gasubasu
-// version: 1
-// description: flash compatible dilate filter 'diamond'
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "com.gasubasu";
+    pub const vendor = "gasubasu";
+    pub const version = 1;
+    pub const description = "flash compatible dilate filter 'diamond'";
     pub const parameters = .{
     };
     pub const input = .{

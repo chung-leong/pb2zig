@@ -1,14 +1,13 @@
 
 // Pixel Bender "CrossStitch" (translated using pb2zig)
-// namespace: net.ghostradio.pb
-// vendor: ghostRadio.net
-// version: 1
-// description: Cross-stitch effect
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "net.ghostradio.pb";
+    pub const vendor = "ghostRadio.net";
+    pub const version = 1;
+    pub const description = "Cross-stitch effect";
     pub const parameters = .{
         .size = .{
             .type = i32,
@@ -31,21 +30,6 @@ pub const kernel = struct {
             // parameter and input image fields
             size: i32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @mod(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @mod(v1, v2),
-                    },
-                };
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
@@ -74,6 +58,21 @@ pub const kernel = struct {
                     outputPx = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 }
                 return outputPx;
+            }
+            
+            // built-in Pixel Bender functions
+            fn floor(v: anytype) @TypeOf(v) {
+                return @floor(v);
+            }
+            
+            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @mod(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @mod(v1, v2),
+                    },
+                };
             }
         };
     }

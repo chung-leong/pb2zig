@@ -1,13 +1,13 @@
 
 // Pixel Bender "Crystallize" (translated using pb2zig)
-// namespace: by Petri Leskinen
-// version: 1
-// description: Crystallize -filter
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "by Petri Leskinen";
+    pub const vendor = "";
+    pub const version = 1;
+    pub const description = "Crystallize -filter";
     pub const parameters = .{
         .size = .{
             .type = f32,
@@ -50,6 +50,27 @@ pub const kernel = struct {
                 .{ 0.5, 0.866 }
             };
             const base2: @Vector(2, f32) = @Vector(2, f32){ -100.0, 2400.0 };
+            
+            // functions defined in kernel
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+                // input variables
+                const size = self.size;
+                const src = self.src;
+                
+                // output variable
+                var dst: @Vector(4, f32) = undefined;
+                
+                var div: f32 = size;
+                var newP: @Vector(2, f32) = base1 + matrixCalc("*", matrixCalc("*", rot1r, div), (floor(matrixCalc("*", rot1, (outCoord - base1)) / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5))));
+                div = 21.0 / 20.0 * size;
+                var p: @Vector(2, f32) = base2 + matrixCalc("*", matrixCalc("*", rot2r, div), (floor(matrixCalc("*", rot2, (outCoord - base2)) / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5))));
+                newP = @as(@Vector(2, f32), if (length(p - outCoord) < length(newP - outCoord)) p else newP);
+                div = 19.0 / 20.0 * size;
+                p = @as(@Vector(2, f32), @splat(div)) * (floor(outCoord / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5)));
+                newP = @as(@Vector(2, f32), if (length(p - outCoord) < length(newP - outCoord)) p else newP);
+                dst = src.sampleNearest(newP);
+                return dst;
+            }
             
             // built-in Pixel Bender functions
             fn floor(v: anytype) @TypeOf(v) {
@@ -227,27 +248,6 @@ pub const kernel = struct {
                 }
                 const f = @field(calc, fname);
                 return f(p1, p2);
-            }
-            
-            // functions defined in kernel
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const size = self.size;
-                const src = self.src;
-                
-                // output variable
-                var dst: @Vector(4, f32) = undefined;
-                
-                var div: f32 = size;
-                var newP: @Vector(2, f32) = base1 + matrixCalc("*", matrixCalc("*", rot1r, div), (floor(matrixCalc("*", rot1, (outCoord - base1)) / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5))));
-                div = 21.0 / 20.0 * size;
-                var p: @Vector(2, f32) = base2 + matrixCalc("*", matrixCalc("*", rot2r, div), (floor(matrixCalc("*", rot2, (outCoord - base2)) / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5))));
-                newP = @as(@Vector(2, f32), if (length(p - outCoord) < length(newP - outCoord)) p else newP);
-                div = 19.0 / 20.0 * size;
-                p = @as(@Vector(2, f32), @splat(div)) * (floor(outCoord / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5)));
-                newP = @as(@Vector(2, f32), if (length(p - outCoord) < length(newP - outCoord)) p else newP);
-                dst = src.sampleNearest(newP);
-                return dst;
             }
         };
     }

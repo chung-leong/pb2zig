@@ -1,13 +1,13 @@
 
 // Pixel Bender "simple" (translated using pb2zig)
-// namespace: pb2zig
-// vendor: Chung Leong
-// version: 1
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "pb2zig";
+    pub const vendor = "Chung Leong";
+    pub const version = 1;
+    pub const description = "";
     pub const parameters = .{
         .strength = .{
             .type = f32,
@@ -43,6 +43,30 @@ pub const kernel = struct {
                 .{ 0.621, -0.647, 1.7, 0.0 },
                 .{ 0.0, 0.0, 0.0, 1.0 }
             };
+            
+            // functions defined in kernel
+            fn hypot(a: f32, b: f32) f32 {
+                return sqrt(a * a + b * b);
+            }
+            
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+                // input variables
+                const strength = self.strength;
+                const src = self.src;
+                
+                // output variable
+                var dst: @Vector(4, f32) = undefined;
+                
+                var pRGBA: @Vector(4, f32) = src.sampleNearest(outCoord);
+                var pYIQA: @Vector(4, f32) = matrixCalc("*", YIQMatrix, pRGBA);
+                if (pYIQA[1] < 0 and pYIQA[2] < 0 and pYIQA[0] > 0.01) {
+                    pYIQA[3] = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
+                    pYIQA[1] = 0.0;
+                    pYIQA[2] = 0.0;
+                }
+                dst = matrixCalc("*", inverseYIQ, pYIQA);
+                return dst;
+            }
             
             // built-in Pixel Bender functions
             fn sqrt(v: anytype) @TypeOf(v) {
@@ -216,30 +240,6 @@ pub const kernel = struct {
                 }
                 const f = @field(calc, fname);
                 return f(p1, p2);
-            }
-            
-            // functions defined in kernel
-            fn hypot(a: f32, b: f32) f32 {
-                return sqrt(a * a + b * b);
-            }
-            
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const strength = self.strength;
-                const src = self.src;
-                
-                // output variable
-                var dst: @Vector(4, f32) = undefined;
-                
-                var pRGBA: @Vector(4, f32) = src.sampleNearest(outCoord);
-                var pYIQA: @Vector(4, f32) = matrixCalc("*", YIQMatrix, pRGBA);
-                if (pYIQA[1] < 0 and pYIQA[2] < 0 and pYIQA[0] > 0.01) {
-                    pYIQA[3] = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
-                    pYIQA[1] = 0.0;
-                    pYIQA[2] = 0.0;
-                }
-                dst = matrixCalc("*", inverseYIQ, pYIQA);
-                return dst;
             }
         };
     }

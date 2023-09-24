@@ -253,12 +253,12 @@ describe('Integration tests', function() {
     const name = 'metallic';
     await translate(name);
     const params = {
-      lightsource: [ 240, 230, 50, 0 ],
+      lightsource: [ 240, 230, 50 ],
       shininess: 35,
       shadow: 0.4,
       relief: 3.25,
       stripesize: [ 256, 10 ],
-      viewDirection: [ 0.5, 0.02, 1, 0 ],
+      viewDirection: [ 0.5, 0.02, 1 ],
     };
     await apply(name, {
       source: 'zig-logo.png',

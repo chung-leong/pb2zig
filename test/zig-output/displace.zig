@@ -1,14 +1,13 @@
 
 // Pixel Bender "Distort" (translated using pb2zig)
-// namespace: net.nicoptere.filters
-// vendor: nicoptere
-// version: 1
-// description: displace
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "net.nicoptere.filters";
+    pub const vendor = "nicoptere";
+    pub const version = 1;
+    pub const description = "displace";
     pub const parameters = .{
         .amplitude = .{
             .type = @Vector(2, f32),

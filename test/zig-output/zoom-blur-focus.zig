@@ -1,14 +1,13 @@
 
 // Pixel Bender "ZoomBlurFocus" (translated using pb2zig)
-// namespace: com.abril
-// vendor: Daniel Allegretti
-// version: 1
-// description: Ajustable zoom blur, you can control focal size, edge hardness and light. Based on ZoomBlur by Ryan Phelan.
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "com.abril";
+    pub const vendor = "Daniel Allegretti";
+    pub const version = 1;
+    pub const description = "Ajustable zoom blur, you can control focal size, edge hardness and light. Based on ZoomBlur by Ryan Phelan.";
     pub const parameters = .{
         .amount = .{
             .type = f32,
@@ -65,11 +64,6 @@ pub const kernel = struct {
             vignette: f32,
             edgeHardness: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn length(v: anytype) f32 {
-                return @typeInfo(@TypeOf(v)).Vector.len;
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
@@ -145,6 +139,11 @@ pub const kernel = struct {
                 }
                 dst[3] = color[3];
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn length(v: anytype) f32 {
+                return @typeInfo(@TypeOf(v)).Vector.len;
             }
         };
     }

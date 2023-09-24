@@ -1,14 +1,13 @@
 
 // Pixel Bender "InvertRGB" (translated using pb2zig)
-// namespace: AIF
-// vendor: Adobe Systems, Inc.
-// version: 2
-// description: Invert the Red, Green and Blue channels of an image
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "AIF";
+    pub const vendor = "Adobe Systems, Inc.";
+    pub const version = 2;
+    pub const description = "Invert the Red, Green and Blue channels of an image";
     pub const parameters = .{
     };
     pub const input = .{

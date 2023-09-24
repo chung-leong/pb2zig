@@ -1,14 +1,13 @@
 
 // Pixel Bender "SmartNormalMap" (translated using pb2zig)
-// namespace: com.smartpage.filters
-// vendor: smart-page.net - Jan-C. Frischmuth
-// version: 1
-// description: Generates a normalmap using condensed or sobel-edge.
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "com.smartpage.filters";
+    pub const vendor = "smart-page.net - Jan-C. Frischmuth";
+    pub const version = 1;
+    pub const description = "Generates a normalmap using condensed or sobel-edge.";
     pub const parameters = .{
         .soft_sobel = .{
             .type = i32,

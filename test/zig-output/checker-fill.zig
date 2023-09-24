@@ -1,14 +1,13 @@
 
 // Pixel Bender "CheckerFill" (translated using pb2zig)
-// namespace: com.adobe.example
-// vendor: Adobe Systems Inc.
-// version: 1
-// description: A checkered field generator
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "com.adobe.example";
+    pub const vendor = "Adobe Systems Inc.";
+    pub const version = 1;
+    pub const description = "A checkered field generator";
     pub const parameters = .{
         .checkerSize = .{
             .type = f32,
@@ -40,17 +39,6 @@ pub const kernel = struct {
             colorA: @Vector(4, f32),
             colorB: @Vector(4, f32),
             
-            // built-in Pixel Bender functions
-            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @mod(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @mod(v1, v2),
-                    },
-                };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
@@ -66,6 +54,17 @@ pub const kernel = struct {
                 var horizontal: f32 = mod(position[1], checkerSize * 2.0);
                 dst = @as(@Vector(4, f32), if (((vertical < checkerSize) != (horizontal < checkerSize))) colorA else colorB);
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @mod(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @mod(v1, v2),
+                    },
+                };
             }
         };
     }

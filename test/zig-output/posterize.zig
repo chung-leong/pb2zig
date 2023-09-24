@@ -1,14 +1,13 @@
 
 // Pixel Bender "Posterizer" (translated using pb2zig)
-// namespace: Posterizer
-// vendor: Petri Leskinen
-// version: 1
-// description: Posterizes an image using 2 to 8 specified colors
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "Posterizer";
+    pub const vendor = "Petri Leskinen";
+    pub const version = 1;
+    pub const description = "Posterizes an image using 2 to 8 specified colors";
     pub const parameters = .{
         .color1 = .{
             .type = @Vector(4, f32),

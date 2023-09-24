@@ -1,14 +1,13 @@
 
 // Pixel Bender "SimpleBoxBlur" (translated using pb2zig)
-// namespace: AIF
-// vendor: Adobe Systems
-// version: 2
-// description: A simple fixed-size box blur
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "AIF";
+    pub const vendor = "Adobe Systems";
+    pub const version = 2;
+    pub const description = "A simple fixed-size box blur";
     pub const parameters = .{
     };
     pub const input = .{

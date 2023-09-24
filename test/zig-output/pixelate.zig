@@ -1,14 +1,13 @@
 
 // Pixel Bender "Pixelate" (translated using pb2zig)
-// namespace: AIF
-// vendor: Adobe Systems
-// version: 2
-// description: pixelate an image
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "AIF";
+    pub const vendor = "Adobe Systems";
+    pub const version = 2;
+    pub const description = "pixelate an image";
     pub const parameters = .{
         .dimension = .{
             .type = i32,
@@ -31,11 +30,6 @@ pub const kernel = struct {
             dimension: i32,
             inputImage: std.meta.fieldInfo(InputStruct, .inputImage).type,
             
-            // built-in Pixel Bender functions
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
             
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
@@ -50,6 +44,11 @@ pub const kernel = struct {
                 sc *= @as(@Vector(2, f32), @splat(dimAsFloat));
                 outputPixel = inputImage.sampleNearest(sc);
                 return outputPixel;
+            }
+            
+            // built-in Pixel Bender functions
+            fn floor(v: anytype) @TypeOf(v) {
+                return @floor(v);
             }
         };
     }

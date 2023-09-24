@@ -1,10 +1,5 @@
 
 // Pixel Bender "stereographics" (translated using pb2zig)
-// namespace: advanced stereographic projection
-// vendor: frank reitberger
-// version: 1
-// description: enhanced by warp(s), turn(s), scale(s) & zoom(s)
-
 const std = @import("std");
 
 pub const kernel = struct {
@@ -13,6 +8,10 @@ pub const kernel = struct {
     const DOUPLEPI = 6.28318531;
     
     // kernel information
+    pub const namespace = "advanced stereographic projection";
+    pub const vendor = "frank reitberger";
+    pub const version = 1;
+    pub const description = "enhanced by warp(s), turn(s), scale(s) & zoom(s)";
     pub const parameters = .{
         .center = .{
             .type = @Vector(2, f32),
@@ -84,33 +83,6 @@ pub const kernel = struct {
             warp: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
-            // built-in Pixel Bender functions
-            fn sin(v: anytype) @TypeOf(v) {
-                return @sin(v);
-            }
-            
-            fn cos(v: anytype) @TypeOf(v) {
-                return @cos(v);
-            }
-            
-            fn atan(v: anytype) @TypeOf(v) {
-                return switch (@typeInfo(@TypeOf(v))) {
-                    .Vector => calc: {
-                        var result: @TypeOf(v) = undefined;
-                        comptime var i = 0;
-                        inline while (i < @typeInfo(@TypeOf(v)).Vector.len) : (i += 1) {
-                            result[i] = atan(v[i]);
-                        }
-                        break :calc result;
-                    },
-                    else => std.math.atan(v),
-                };
-            }
-            
-            fn sqrt(v: anytype) @TypeOf(v) {
-                return @sqrt(v);
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
@@ -141,6 +113,33 @@ pub const kernel = struct {
                 var vy: f32 = radius * sin(ny);
                 dst = src.sampleLinear(center + @Vector(2, f32){ vx, vy * damp });
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn sin(v: anytype) @TypeOf(v) {
+                return @sin(v);
+            }
+            
+            fn cos(v: anytype) @TypeOf(v) {
+                return @cos(v);
+            }
+            
+            fn atan(v: anytype) @TypeOf(v) {
+                return switch (@typeInfo(@TypeOf(v))) {
+                    .Vector => calc: {
+                        var result: @TypeOf(v) = undefined;
+                        comptime var i = 0;
+                        inline while (i < @typeInfo(@TypeOf(v)).Vector.len) : (i += 1) {
+                            result[i] = atan(v[i]);
+                        }
+                        break :calc result;
+                    },
+                    else => std.math.atan(v),
+                };
+            }
+            
+            fn sqrt(v: anytype) @TypeOf(v) {
+                return @sqrt(v);
             }
         };
     }

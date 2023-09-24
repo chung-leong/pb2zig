@@ -1,10 +1,5 @@
 
 // Pixel Bender "RadialCaleidoscope" (translated using pb2zig)
-// namespace: RadialCaleidoscope
-// vendor: Petri Leskinen
-// version: 1
-// description: Caleidoscope -effect for radial reflection
-
 const std = @import("std");
 
 pub const kernel = struct {
@@ -13,6 +8,10 @@ pub const kernel = struct {
     const DOUPLEPI = 6.28318531;
     
     // kernel information
+    pub const namespace = "RadialCaleidoscope";
+    pub const vendor = "Petri Leskinen";
+    pub const version = 1;
+    pub const description = "Caleidoscope -effect for radial reflection";
     pub const parameters = .{
         .angle = .{
             .type = f32,
@@ -48,6 +47,31 @@ pub const kernel = struct {
             direction: f32,
             basepoint: @Vector(2, f32),
             src: std.meta.fieldInfo(InputStruct, .src).type,
+            
+            // functions defined in kernel
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+                // input variables
+                const angle = self.angle;
+                const direction = self.direction;
+                const basepoint = self.basepoint;
+                const src = self.src;
+                
+                // output variable
+                var dst: @Vector(4, f32) = undefined;
+                
+                var po: @Vector(2, f32) = outCoord - basepoint;
+                var theta: f32 = atan2(po[1], po[0]) - direction + 2.0 * DOUPLEPI;
+                var radius: f32 = sqrt(po[0] * po[0] + po[1] * po[1]);
+                var newAngle: f32 = mod(theta, angle);
+                var section: f32 = floor(theta / angle);
+                if (mod(section, 2.0) > 0.5) {
+                    newAngle = angle - newAngle;
+                }
+                newAngle += direction;
+                const tmp1 = newAngle;
+                dst = src.sampleLinear(basepoint + @Vector(2, f32){ radius * cos(tmp1), radius * sin(tmp1) });
+                return dst;
+            }
             
             // built-in Pixel Bender functions
             fn sin(v: anytype) @TypeOf(v) {
@@ -88,31 +112,6 @@ pub const kernel = struct {
                         else => @mod(v1, v2),
                     },
                 };
-            }
-            
-            // functions defined in kernel
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const angle = self.angle;
-                const direction = self.direction;
-                const basepoint = self.basepoint;
-                const src = self.src;
-                
-                // output variable
-                var dst: @Vector(4, f32) = undefined;
-                
-                var po: @Vector(2, f32) = outCoord - basepoint;
-                var theta: f32 = atan2(po[1], po[0]) - direction + 2.0 * DOUPLEPI;
-                var radius: f32 = sqrt(po[0] * po[0] + po[1] * po[1]);
-                var newAngle: f32 = mod(theta, angle);
-                var section: f32 = floor(theta / angle);
-                if (mod(section, 2.0) > 0.5) {
-                    newAngle = angle - newAngle;
-                }
-                newAngle += direction;
-                const tmp1 = newAngle;
-                dst = src.sampleLinear(basepoint + @Vector(2, f32){ radius * cos(tmp1), radius * sin(tmp1) });
-                return dst;
             }
         };
     }

@@ -1,14 +1,13 @@
 
 // Pixel Bender "FocusingLinearBlur" (translated using pb2zig)
-// namespace: FocusingLinearBlur
-// vendor: Petri Leskinen
-// version: 1
-// description: linear blur by a line equation
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "FocusingLinearBlur";
+    pub const vendor = "Petri Leskinen";
+    pub const version = 1;
+    pub const description = "linear blur by a line equation";
     pub const parameters = .{
         .lineEquation = .{
             .type = @Vector(3, f32),

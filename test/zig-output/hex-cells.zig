@@ -1,14 +1,13 @@
 
 // Pixel Bender "HexCells" (translated using pb2zig)
-// namespace: Hex cells � not just pixels
-// vendor: Petri Leskinen
-// version: 1
-// description: Hexagonal Tiling
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "Hex cells � not just pixels";
+    pub const vendor = "Petri Leskinen";
+    pub const version = 1;
+    pub const description = "Hexagonal Tiling";
     pub const parameters = .{
         .size = .{
             .type = f32,
@@ -44,11 +43,6 @@ pub const kernel = struct {
             const sqrt3: f32 = 1.7320508076;
             const halfSqrt3: f32 = 0.866025404;
             
-            // built-in Pixel Bender functions
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
@@ -70,6 +64,11 @@ pub const kernel = struct {
                 po1 = @as(@Vector(2, f32), if ((dst1 < dst2)) po1 else po2);
                 pxl = img.sampleNearest(po1 + outCoord);
                 return pxl;
+            }
+            
+            // built-in Pixel Bender functions
+            fn floor(v: anytype) @TypeOf(v) {
+                return @floor(v);
             }
         };
     }

@@ -1,14 +1,13 @@
 
 // Pixel Bender "CirclePacking" (translated using pb2zig)
-// namespace: CirclePattern
-// vendor: Petri Leskinen
-// version: 1
-// description: CirclePattern
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "CirclePattern";
+    pub const vendor = "Petri Leskinen";
+    pub const version = 1;
+    pub const description = "CirclePattern";
     pub const parameters = .{
         .fill = .{
             .type = f32,
@@ -69,57 +68,6 @@ pub const kernel = struct {
             // constants
             const sqr3: f32 = 1.7320508;
             const halfPixel: @Vector(2, f32) = @Vector(2, f32){ 0.5, 0.5 };
-            
-            // built-in Pixel Bender functions
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn fract(v: anytype) @TypeOf(v) {
-                return v - @floor(v);
-            }
-            
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
-                    },
-                };
-            }
-            
-            fn smoothStep(edge0: anytype, edge1: anytype, v: anytype) @TypeOf(v) {
-                return switch (@typeInfo(@TypeOf(edge0))) {
-                    .Vector => calc: {
-                        const T = @TypeOf(v);
-                        const ET = @typeInfo(T).Vector.child;
-                        const zeros: T = @splat(0);
-                        const ones: T = @splat(1);
-                        const twos: T = @splat(2);
-                        const threes: T = @splat(3);
-                        const value = (v - edge0) / (edge1 - edge0);
-                        const interpolated = value * value * (threes - twos * value);
-                        const result1 = @select(ET, v <= edge0, zeros, interpolated);
-                        const result2 = @select(ET, v >= edge1, ones, result1);
-                        break :calc result2;
-                    },
-                    else => switch (@typeInfo(@TypeOf(v))) {
-                        .Vector => smoothStep(@as(@TypeOf(v), @splat(edge0)), @as(@TypeOf(v), @splat(edge1)), v),
-                        else => calc: {
-                            if (v <= edge0) {
-                                break :calc 0;
-                            } else if (v >= edge1) {
-                                break :calc 1;
-                            } else {
-                                const value = (v - edge0) / (edge1 - edge0);
-                                const interpolated = value * value * (3 - 2 * value);
-                                break :calc interpolated;
-                            }
-                        },
-                    },
-                };
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
@@ -188,6 +136,57 @@ pub const kernel = struct {
                 dst = src.sampleNearest(z + center);
                 dst[3] *= alf;
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn floor(v: anytype) @TypeOf(v) {
+                return @floor(v);
+            }
+            
+            fn fract(v: anytype) @TypeOf(v) {
+                return v - @floor(v);
+            }
+            
+            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @max(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @max(v1, v2),
+                    },
+                };
+            }
+            
+            fn smoothStep(edge0: anytype, edge1: anytype, v: anytype) @TypeOf(v) {
+                return switch (@typeInfo(@TypeOf(edge0))) {
+                    .Vector => calc: {
+                        const T = @TypeOf(v);
+                        const ET = @typeInfo(T).Vector.child;
+                        const zeros: T = @splat(0);
+                        const ones: T = @splat(1);
+                        const twos: T = @splat(2);
+                        const threes: T = @splat(3);
+                        const value = (v - edge0) / (edge1 - edge0);
+                        const interpolated = value * value * (threes - twos * value);
+                        const result1 = @select(ET, v <= edge0, zeros, interpolated);
+                        const result2 = @select(ET, v >= edge1, ones, result1);
+                        break :calc result2;
+                    },
+                    else => switch (@typeInfo(@TypeOf(v))) {
+                        .Vector => smoothStep(@as(@TypeOf(v), @splat(edge0)), @as(@TypeOf(v), @splat(edge1)), v),
+                        else => calc: {
+                            if (v <= edge0) {
+                                break :calc 0;
+                            } else if (v >= edge1) {
+                                break :calc 1;
+                            } else {
+                                const value = (v - edge0) / (edge1 - edge0);
+                                const interpolated = value * value * (3 - 2 * value);
+                                break :calc interpolated;
+                            }
+                        },
+                    },
+                };
             }
         };
     }

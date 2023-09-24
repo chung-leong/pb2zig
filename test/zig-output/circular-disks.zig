@@ -1,14 +1,13 @@
 
 // Pixel Bender "Tiling" (translated using pb2zig)
-// namespace: CircularDisks
-// vendor: Petri Leskinen
-// version: 1
-// description: Disk tiling
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "CircularDisks";
+    pub const vendor = "Petri Leskinen";
+    pub const version = 1;
+    pub const description = "Disk tiling";
     pub const parameters = .{
         .size = .{
             .type = f32,
@@ -51,6 +50,33 @@ pub const kernel = struct {
             // constants
             const DOUBLEPI: f32 = 6.2831846;
             
+            // functions defined in kernel
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+                // input variables
+                const size = self.size;
+                const radius = self.radius;
+                const base = self.base;
+                const src = self.src;
+                
+                // output variable
+                var dst: @Vector(4, f32) = undefined;
+                
+                var po: @Vector(2, f32) = outCoord - base;
+                var polar: @Vector(2, f32) = @Vector(2, f32){ length(po), atan2(po[1], po[0]) };
+                polar[0] = size * floor(0.5 + polar[0] / size);
+                var phi: f32 = floor(DOUBLEPI * polar[0] / size);
+                if (phi > 0.1) {
+                    phi = DOUBLEPI / phi;
+                    polar[1] = phi * floor(0.5 + polar[1] / phi);
+                }
+                po = base + @as(@Vector(2, f32), @splat(polar[0])) * @Vector(2, f32){ cos(polar[1]), sin(polar[1]) };
+                dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
+                if (radius * size > length(po - outCoord)) {
+                    dst = src.sampleLinear(po);
+                }
+                return dst;
+            }
+            
             // built-in Pixel Bender functions
             fn sin(v: anytype) @TypeOf(v) {
                 return @sin(v);
@@ -80,33 +106,6 @@ pub const kernel = struct {
             
             fn length(v: anytype) f32 {
                 return @typeInfo(@TypeOf(v)).Vector.len;
-            }
-            
-            // functions defined in kernel
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const size = self.size;
-                const radius = self.radius;
-                const base = self.base;
-                const src = self.src;
-                
-                // output variable
-                var dst: @Vector(4, f32) = undefined;
-                
-                var po: @Vector(2, f32) = outCoord - base;
-                var polar: @Vector(2, f32) = @Vector(2, f32){ length(po), atan2(po[1], po[0]) };
-                polar[0] = size * floor(0.5 + polar[0] / size);
-                var phi: f32 = floor(DOUBLEPI * polar[0] / size);
-                if (phi > 0.1) {
-                    phi = DOUBLEPI / phi;
-                    polar[1] = phi * floor(0.5 + polar[1] / phi);
-                }
-                po = base + @as(@Vector(2, f32), @splat(polar[0])) * @Vector(2, f32){ cos(polar[1]), sin(polar[1]) };
-                dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
-                if (radius * size > length(po - outCoord)) {
-                    dst = src.sampleLinear(po);
-                }
-                return dst;
             }
         };
     }

@@ -1,14 +1,13 @@
 
 // Pixel Bender "Sepia" (translated using pb2zig)
-// namespace: AIF
-// vendor: Adobe Systems
-// version: 2
-// description: a variable sepia filter
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "AIF";
+    pub const vendor = "Adobe Systems";
+    pub const version = 2;
+    pub const description = "a variable sepia filter";
     pub const parameters = .{
         .intensity = .{
             .type = f32,
@@ -30,6 +29,37 @@ pub const kernel = struct {
             // parameter and input image fields
             intensity: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
+            
+            // functions defined in kernel
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+                // input variables
+                const intensity = self.intensity;
+                const src = self.src;
+                
+                // output variable
+                var dst: @Vector(4, f32) = undefined;
+                
+                var rgbaColor: @Vector(4, f32) = undefined;
+                var yiqaColor: @Vector(4, f32) = undefined;
+                var YIQMatrix: [4]@Vector(4, f32) = [4]@Vector(4, f32){
+                    .{ 0.299, 0.596, 0.212, 0.0 },
+                    .{ 0.587, -0.275, -0.523, 0.0 },
+                    .{ 0.114, -0.321, 0.311, 0.0 },
+                    .{ 0.0, 0.0, 0.0, 1.0 }
+                };
+                var inverseYIQ: [4]@Vector(4, f32) = [4]@Vector(4, f32){
+                    .{ 1.0, 1.0, 1.0, 0.0 },
+                    .{ 0.956, -0.272, -1.1, 0.0 },
+                    .{ 0.621, -0.647, 1.7, 0.0 },
+                    .{ 0.0, 0.0, 0.0, 1.0 }
+                };
+                rgbaColor = src.sampleNearest(outCoord);
+                yiqaColor = matrixCalc("*", YIQMatrix, rgbaColor);
+                yiqaColor[1] = intensity;
+                yiqaColor[2] = 0.0;
+                dst = matrixCalc("*", inverseYIQ, yiqaColor);
+                return dst;
+            }
             
             // built-in Pixel Bender functions
             fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
@@ -199,37 +229,6 @@ pub const kernel = struct {
                 }
                 const f = @field(calc, fname);
                 return f(p1, p2);
-            }
-            
-            // functions defined in kernel
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const intensity = self.intensity;
-                const src = self.src;
-                
-                // output variable
-                var dst: @Vector(4, f32) = undefined;
-                
-                var rgbaColor: @Vector(4, f32) = undefined;
-                var yiqaColor: @Vector(4, f32) = undefined;
-                var YIQMatrix: [4]@Vector(4, f32) = [4]@Vector(4, f32){
-                    .{ 0.299, 0.596, 0.212, 0.0 },
-                    .{ 0.587, -0.275, -0.523, 0.0 },
-                    .{ 0.114, -0.321, 0.311, 0.0 },
-                    .{ 0.0, 0.0, 0.0, 1.0 }
-                };
-                var inverseYIQ: [4]@Vector(4, f32) = [4]@Vector(4, f32){
-                    .{ 1.0, 1.0, 1.0, 0.0 },
-                    .{ 0.956, -0.272, -1.1, 0.0 },
-                    .{ 0.621, -0.647, 1.7, 0.0 },
-                    .{ 0.0, 0.0, 0.0, 1.0 }
-                };
-                rgbaColor = src.sampleNearest(outCoord);
-                yiqaColor = matrixCalc("*", YIQMatrix, rgbaColor);
-                yiqaColor[1] = intensity;
-                yiqaColor[2] = 0.0;
-                dst = matrixCalc("*", inverseYIQ, yiqaColor);
-                return dst;
             }
         };
     }

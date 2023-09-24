@@ -1,14 +1,13 @@
 
 // Pixel Bender "Distort" (translated using pb2zig)
-// namespace: net.nicoptere.filters
-// vendor: nicoptere
-// version: 1
-// description: bulge
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "net.nicoptere.filters";
+    pub const vendor = "nicoptere";
+    pub const version = 1;
+    pub const description = "bulge";
     pub const parameters = .{
         .center = .{
             .type = @Vector(2, f32),
@@ -38,6 +37,27 @@ pub const kernel = struct {
             amplitude: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
+            // functions defined in kernel
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+                // input variables
+                const center = self.center;
+                const amplitude = self.amplitude;
+                const src = self.src;
+                
+                // output variable
+                var dst: @Vector(4, f32) = undefined;
+                
+                var coord: @Vector(2, f32) = outCoord;
+                var dx: f32 = coord[0] - center[0];
+                var dy: f32 = coord[1] - center[1];
+                var a: f32 = atan2(dy, dx);
+                var r: f32 = sqrt(dx * dx + dy * dy);
+                r *= r / sqrt(center[0] * center[1]) / amplitude;
+                var dest: @Vector(2, f32) = @Vector(2, f32){ center[0] + cos(a) * r, center[1] + sin(a) * r };
+                dst = src.sampleNearest(dest);
+                return dst;
+            }
+            
             // built-in Pixel Bender functions
             fn sin(v: anytype) @TypeOf(v) {
                 return @sin(v);
@@ -63,27 +83,6 @@ pub const kernel = struct {
             
             fn sqrt(v: anytype) @TypeOf(v) {
                 return @sqrt(v);
-            }
-            
-            // functions defined in kernel
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const center = self.center;
-                const amplitude = self.amplitude;
-                const src = self.src;
-                
-                // output variable
-                var dst: @Vector(4, f32) = undefined;
-                
-                var coord: @Vector(2, f32) = outCoord;
-                var dx: f32 = coord[0] - center[0];
-                var dy: f32 = coord[1] - center[1];
-                var a: f32 = atan2(dy, dx);
-                var r: f32 = sqrt(dx * dx + dy * dy);
-                r *= r / sqrt(center[0] * center[1]) / amplitude;
-                var dest: @Vector(2, f32) = @Vector(2, f32){ center[0] + cos(a) * r, center[1] + sin(a) * r };
-                dst = src.sampleNearest(dest);
-                return dst;
             }
         };
     }

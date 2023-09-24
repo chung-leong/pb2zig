@@ -1,14 +1,13 @@
 
 // Pixel Bender "Distort" (translated using pb2zig)
-// namespace: net.nicoptere.filters
-// vendor: nicoptere
-// version: 1
-// description: mercator
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "net.nicoptere.filters";
+    pub const vendor = "nicoptere";
+    pub const version = 1;
+    pub const description = "mercator";
     pub const parameters = .{
         .center = .{
             .type = f32,
@@ -38,11 +37,6 @@ pub const kernel = struct {
             width: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
-            // built-in Pixel Bender functions
-            fn sin(v: anytype) @TypeOf(v) {
-                return @sin(v);
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
@@ -58,6 +52,11 @@ pub const kernel = struct {
                 var dest: @Vector(2, f32) = @Vector(2, f32){ center - (center - pos[0]) * sin((pi / width) * pos[1]), pos[1] };
                 dst = src.sampleNearest(dest);
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn sin(v: anytype) @TypeOf(v) {
+                return @sin(v);
             }
         };
     }

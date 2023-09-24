@@ -1,14 +1,13 @@
 
 // Pixel Bender "modPixelation" (translated using pb2zig)
-// namespace: complex rational
-// vendor: pixelero
-// version: 1
-// description: complex mapping f(z)= (az2+b)/(cz2+d)
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "complex rational";
+    pub const vendor = "pixelero";
+    pub const version = 1;
+    pub const description = "complex mapping f(z)= (az2+b)/(cz2+d)";
     pub const parameters = .{
         .a = .{
             .type = @Vector(2, f32),
@@ -66,11 +65,6 @@ pub const kernel = struct {
             center: @Vector(2, f32),
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
-            // built-in Pixel Bender functions
-            fn fract(v: anytype) @TypeOf(v) {
-                return v - @floor(v);
-            }
-            
             // macro functions
             fn complexMult(a: anytype, b: anytype) @Vector(2, f32) {
                 return @Vector(2, f32){ @as(f32, @floatFromInt(a[0] * b[0] - a[1] * b[1])), @as(f32, @floatFromInt(a[0] * b[1] + a[1] * b[0])) };
@@ -103,6 +97,11 @@ pub const kernel = struct {
                 po = @Vector(2, f32){ po[0] * po2[0] + po[1] * po2[1], -po[0] * po2[1] + po[1] * po2[0] } / @as(@Vector(2, f32), @splat((po2[0] * po2[0] + po2[1] * po2[1])));
                 dst = src.sampleLinear(size * fract(po / size));
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn fract(v: anytype) @TypeOf(v) {
+                return v - @floor(v);
             }
         };
     }

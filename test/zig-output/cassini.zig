@@ -1,10 +1,5 @@
 
 // Pixel Bender "cassini" (translated using pb2zig)
-// namespace: cassini pattern
-// vendor: frank reitberger
-// version: 1
-// description: cassini pattern
-
 const std = @import("std");
 
 pub const kernel = struct {
@@ -13,6 +8,10 @@ pub const kernel = struct {
     const DOUPLEPI = 6.28318531;
     
     // kernel information
+    pub const namespace = "cassini pattern";
+    pub const vendor = "frank reitberger";
+    pub const version = 1;
+    pub const description = "cassini pattern";
     pub const parameters = .{
         .imageWH = .{
             .type = @Vector(2, f32),
@@ -59,6 +58,32 @@ pub const kernel = struct {
             zoom: f32,
             lambda: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
+            
+            // functions defined in kernel
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+                // input variables
+                const imageWH = self.imageWH;
+                const poi = self.poi;
+                const zoom = self.zoom;
+                const lambda = self.lambda;
+                const src = self.src;
+                
+                // output variable
+                var dst: @Vector(4, f32) = undefined;
+                
+                var center: @Vector(2, f32) = @Vector(2, f32){ imageWH[0] / 2.0, imageWH[1] / 2.0 };
+                var po: @Vector(2, f32) = outCoord - center;
+                var zm: f32 = 10.0 / zoom;
+                var l1: f32 = lambda;
+                var xx: f32 = zm * (po[0]) / (imageWH[0] / 2.0) * PI;
+                var d: f32 = zm * po[1] / (poi[1] / 2.0) * (PI / 2.0);
+                var phi: f32 = asin(sin(d) * cos(xx));
+                var l: f32 = l1 + atan2(tan(xx), cos(d));
+                var nx: f32 = mod((l * (poi[0] / 2.0) / PI + (poi[0] / 2.0)), (poi[0] - 1.0) - (poi[0] / 2.0));
+                var ny: f32 = phi * ((poi[1] / 2.0)) / (PI / 2.0);
+                dst = src.sampleLinear(center + @Vector(2, f32){ nx, ny });
+                return dst;
+            }
             
             // built-in Pixel Bender functions
             fn sin(v: anytype) @TypeOf(v) {
@@ -109,32 +134,6 @@ pub const kernel = struct {
                         else => @mod(v1, v2),
                     },
                 };
-            }
-            
-            // functions defined in kernel
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const imageWH = self.imageWH;
-                const poi = self.poi;
-                const zoom = self.zoom;
-                const lambda = self.lambda;
-                const src = self.src;
-                
-                // output variable
-                var dst: @Vector(4, f32) = undefined;
-                
-                var center: @Vector(2, f32) = @Vector(2, f32){ imageWH[0] / 2.0, imageWH[1] / 2.0 };
-                var po: @Vector(2, f32) = outCoord - center;
-                var zm: f32 = 10.0 / zoom;
-                var l1: f32 = lambda;
-                var xx: f32 = zm * (po[0]) / (imageWH[0] / 2.0) * PI;
-                var d: f32 = zm * po[1] / (poi[1] / 2.0) * (PI / 2.0);
-                var phi: f32 = asin(sin(d) * cos(xx));
-                var l: f32 = l1 + atan2(tan(xx), cos(d));
-                var nx: f32 = mod((l * (poi[0] / 2.0) / PI + (poi[0] / 2.0)), (poi[0] - 1.0) - (poi[0] / 2.0));
-                var ny: f32 = phi * ((poi[1] / 2.0)) / (PI / 2.0);
-                dst = src.sampleLinear(center + @Vector(2, f32){ nx, ny });
-                return dst;
             }
         };
     }

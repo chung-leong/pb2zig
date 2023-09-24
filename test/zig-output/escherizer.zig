@@ -1,14 +1,13 @@
 
 // Pixel Bender "deformer" (translated using pb2zig)
-// namespace: escher/-droste effect
-// vendor: Frank Reitberger
-// version: 1
-// description: escherizer ...dissected for use with flash
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "escher/-droste effect";
+    pub const vendor = "Frank Reitberger";
+    pub const version = 1;
+    pub const description = "escherizer ...dissected for use with flash";
     pub const parameters = .{
         .size = .{
             .type = @Vector(2, f32),
@@ -88,6 +87,63 @@ pub const kernel = struct {
             yPos: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
+            // functions defined in kernel
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+                // input variables
+                const size = self.size;
+                const radians = self.radians;
+                const rotate = self.rotate;
+                const zoom = self.zoom;
+                const center = self.center;
+                const range = self.range;
+                const xPos = self.xPos;
+                const yPos = self.yPos;
+                const src = self.src;
+                
+                // output variable
+                var dst: @Vector(4, f32) = undefined;
+                
+                var pos: @Vector(2, f32) = outCoord;
+                var PI: f32 = 3.1415926535;
+                var r1: f32 = 0.0;
+                var r2: f32 = 0.0;
+                var logRad: f32 = log(radians[1] / radians[0]);
+                var alfa: f32 = atan(logRad / (PI * 2.0));
+                var xShift: f32 = cos(alfa);
+                var yShift: f32 = sin(alfa);
+                var cosAngle: f32 = cos(rotate * PI / 180.0);
+                var sinAngle: f32 = sin(rotate * PI / 180.0);
+                var xZoom: f32 = cosAngle * zoom;
+                var yZoom: f32 = sinAngle * zoom;
+                var startX: f32 = center[0] - (xPos * cosAngle + yPos * sinAngle) * zoom;
+                var startY: f32 = center[1] + (-xPos * sinAngle + yPos * cosAngle) * zoom;
+                var ix: f32 = startX + xZoom * ceil(pos[0]) + yZoom * ceil(pos[1]);
+                var iy: f32 = startY + yZoom * ceil(pos[0]) - xZoom * ceil(pos[1]);
+                var distRad: f32 = log(ix * ix + iy * iy) / 2.0;
+                var f: f32 = atan2(iy, ix) + PI;
+                var i: f32 = (distRad * xShift + f * yShift) / xShift;
+                var j: f32 = (f * xShift - distRad * yShift) / xShift;
+                i = mod(i, logRad);
+                j = mod(j, PI * 2.0);
+                var z: f32 = exp(i) * radians[0];
+                r1 = range[0] + z * cos(j);
+                r2 = range[1] - z * sin(j);
+                if (r1 < 0.0) {
+                    r1 = mod(r1, size[0]) * -1.0;
+                }
+                if (r2 < 0.0) {
+                    r2 = mod(r2, size[1]) * -1.0;
+                }
+                if (r1 > size[0]) {
+                    r1 = mod(r1, size[0]);
+                }
+                if (r2 > size[1]) {
+                    r2 = mod(r2, size[1]);
+                }
+                dst = src.sampleNearest(@Vector(2, f32){ r1, r2 });
+                return dst;
+            }
+            
             // built-in Pixel Bender functions
             fn sin(v: anytype) @TypeOf(v) {
                 return @sin(v);
@@ -145,63 +201,6 @@ pub const kernel = struct {
                         else => @mod(v1, v2),
                     },
                 };
-            }
-            
-            // functions defined in kernel
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const size = self.size;
-                const radians = self.radians;
-                const rotate = self.rotate;
-                const zoom = self.zoom;
-                const center = self.center;
-                const range = self.range;
-                const xPos = self.xPos;
-                const yPos = self.yPos;
-                const src = self.src;
-                
-                // output variable
-                var dst: @Vector(4, f32) = undefined;
-                
-                var pos: @Vector(2, f32) = outCoord;
-                var PI: f32 = 3.1415926535;
-                var r1: f32 = 0.0;
-                var r2: f32 = 0.0;
-                var logRad: f32 = log(radians[1] / radians[0]);
-                var alfa: f32 = atan(logRad / (PI * 2.0));
-                var xShift: f32 = cos(alfa);
-                var yShift: f32 = sin(alfa);
-                var cosAngle: f32 = cos(rotate * PI / 180.0);
-                var sinAngle: f32 = sin(rotate * PI / 180.0);
-                var xZoom: f32 = cosAngle * zoom;
-                var yZoom: f32 = sinAngle * zoom;
-                var startX: f32 = center[0] - (xPos * cosAngle + yPos * sinAngle) * zoom;
-                var startY: f32 = center[1] + (-xPos * sinAngle + yPos * cosAngle) * zoom;
-                var ix: f32 = startX + xZoom * ceil(pos[0]) + yZoom * ceil(pos[1]);
-                var iy: f32 = startY + yZoom * ceil(pos[0]) - xZoom * ceil(pos[1]);
-                var distRad: f32 = log(ix * ix + iy * iy) / 2.0;
-                var f: f32 = atan2(iy, ix) + PI;
-                var i: f32 = (distRad * xShift + f * yShift) / xShift;
-                var j: f32 = (f * xShift - distRad * yShift) / xShift;
-                i = mod(i, logRad);
-                j = mod(j, PI * 2.0);
-                var z: f32 = exp(i) * radians[0];
-                r1 = range[0] + z * cos(j);
-                r2 = range[1] - z * sin(j);
-                if (r1 < 0.0) {
-                    r1 = mod(r1, size[0]) * -1.0;
-                }
-                if (r2 < 0.0) {
-                    r2 = mod(r2, size[1]) * -1.0;
-                }
-                if (r1 > size[0]) {
-                    r1 = mod(r1, size[0]);
-                }
-                if (r2 > size[1]) {
-                    r2 = mod(r2, size[1]);
-                }
-                dst = src.sampleNearest(@Vector(2, f32){ r1, r2 });
-                return dst;
             }
         };
     }

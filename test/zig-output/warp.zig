@@ -1,10 +1,5 @@
 
 // Pixel Bender "warp" (translated using pb2zig)
-// namespace: warp filter
-// vendor: frank reitberger
-// version: 1
-// description: warps image vice versa and back
-
 const std = @import("std");
 
 pub const kernel = struct {
@@ -13,6 +8,10 @@ pub const kernel = struct {
     const DOUPLEPI = 6.28318531;
     
     // kernel information
+    pub const namespace = "warp filter";
+    pub const vendor = "frank reitberger";
+    pub const version = 1;
+    pub const description = "warps image vice versa and back";
     pub const parameters = .{
         .image_h = .{
             .type = f32,
@@ -60,15 +59,6 @@ pub const kernel = struct {
             spread: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
-            // built-in Pixel Bender functions
-            fn sin(v: anytype) @TypeOf(v) {
-                return @sin(v);
-            }
-            
-            fn sign(v: anytype) @TypeOf(v) {
-                return std.math.sign(v);
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
@@ -103,6 +93,15 @@ pub const kernel = struct {
                     dst = src.sampleLinear(outCoord);
                 }
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn sin(v: anytype) @TypeOf(v) {
+                return @sin(v);
+            }
+            
+            fn sign(v: anytype) @TypeOf(v) {
+                return std.math.sign(v);
             }
         };
     }

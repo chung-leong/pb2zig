@@ -1,14 +1,13 @@
 
 // Pixel Bender "twirl" (translated using pb2zig)
-// namespace: Pixel Bender Samples
-// vendor: Adobe Systems
-// version: 2
-// description: twist an image around
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "Pixel Bender Samples";
+    pub const vendor = "Adobe Systems";
+    pub const version = 2;
+    pub const description = "twist an image around";
     pub const parameters = .{
         .radius = .{
             .type = f32,
@@ -54,6 +53,38 @@ pub const kernel = struct {
             
             // constants
             const PI: f32 = 3.14159265;
+            
+            
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+                // input variables
+                const radius = self.radius;
+                const center = self.center;
+                const twirlAngle = self.twirlAngle;
+                const gaussOrSinc = self.gaussOrSinc;
+                const oImage = self.oImage;
+                
+                // output variable
+                var outputColor: @Vector(4, f32) = undefined;
+                
+                var twirlAngleRadians: f32 = radians(twirlAngle);
+                var relativePos: @Vector(2, f32) = outCoord - center;
+                var distFromCenter: f32 = length(relativePos);
+                distFromCenter /= radius;
+                var adjustedRadians: f32 = undefined;
+                var sincWeight: f32 = sin(distFromCenter) * twirlAngleRadians / distFromCenter;
+                var gaussWeight: f32 = exp(-1.0 * distFromCenter * distFromCenter) * twirlAngleRadians;
+                adjustedRadians = @as(f32, if ((distFromCenter == 0.0)) twirlAngleRadians else sincWeight);
+                adjustedRadians = @as(f32, if ((gaussOrSinc == 1)) adjustedRadians else gaussWeight);
+                var cosAngle: f32 = cos(adjustedRadians);
+                var sinAngle: f32 = sin(adjustedRadians);
+                var rotationMat: [2]@Vector(2, f32) = [2]@Vector(2, f32){
+                    .{ cosAngle, sinAngle },
+                    .{ -sinAngle, cosAngle }
+                };
+                relativePos = matrixCalc("*", rotationMat, relativePos);
+                outputColor = oImage.sampleLinear(relativePos + center);
+                return outputColor;
+            }
             
             // built-in Pixel Bender functions
             fn radians(v: anytype) @TypeOf(v) {
@@ -247,38 +278,6 @@ pub const kernel = struct {
                 }
                 const f = @field(calc, fname);
                 return f(p1, p2);
-            }
-            
-            
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const radius = self.radius;
-                const center = self.center;
-                const twirlAngle = self.twirlAngle;
-                const gaussOrSinc = self.gaussOrSinc;
-                const oImage = self.oImage;
-                
-                // output variable
-                var outputColor: @Vector(4, f32) = undefined;
-                
-                var twirlAngleRadians: f32 = radians(twirlAngle);
-                var relativePos: @Vector(2, f32) = outCoord - center;
-                var distFromCenter: f32 = length(relativePos);
-                distFromCenter /= radius;
-                var adjustedRadians: f32 = undefined;
-                var sincWeight: f32 = sin(distFromCenter) * twirlAngleRadians / distFromCenter;
-                var gaussWeight: f32 = exp(-1.0 * distFromCenter * distFromCenter) * twirlAngleRadians;
-                adjustedRadians = @as(f32, if ((distFromCenter == 0.0)) twirlAngleRadians else sincWeight);
-                adjustedRadians = @as(f32, if ((gaussOrSinc == 1)) adjustedRadians else gaussWeight);
-                var cosAngle: f32 = cos(adjustedRadians);
-                var sinAngle: f32 = sin(adjustedRadians);
-                var rotationMat: [2]@Vector(2, f32) = [2]@Vector(2, f32){
-                    .{ cosAngle, sinAngle },
-                    .{ -sinAngle, cosAngle }
-                };
-                relativePos = matrixCalc("*", rotationMat, relativePos);
-                outputColor = oImage.sampleLinear(relativePos + center);
-                return outputColor;
             }
         };
     }

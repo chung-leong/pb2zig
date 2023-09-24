@@ -1,14 +1,13 @@
 
 // Pixel Bender "modPixelation" (translated using pb2zig)
-// namespace: complex rational 3
-// vendor: pixelero
-// version: 1
-// description: complex mapping z = d/[(z-a)(z-b)(z-c)]
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "complex rational 3";
+    pub const vendor = "pixelero";
+    pub const version = 1;
+    pub const description = "complex mapping z = d/[(z-a)(z-b)(z-c)]";
     pub const parameters = .{
         .a = .{
             .type = @Vector(2, f32),
@@ -105,43 +104,14 @@ pub const kernel = struct {
             const sqr3: f32 = 1.7320508;
             const halfPixel: @Vector(2, f32) = @Vector(2, f32){ 0.5, 0.5 };
             
-            // built-in Pixel Bender functions
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn fract(v: anytype) @TypeOf(v) {
-                return v - @floor(v);
-            }
-            
-            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @mod(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @mod(v1, v2),
-                    },
-                };
-            }
-            
-            fn mix(v1: anytype, v2: anytype, p: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(p))) {
-                    .Vector => v1 * (@as(@TypeOf(p), @splat(1)) - p) + v2 * p,
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => mix(v1, v2, @as(@TypeOf(v1), @splat(p))),
-                        else => v1 * (1 - p) + v2 * p,
-                    },
-                };
-            }
-            
             // macro functions
-            fn complexMult(a: anytype, b: anytype) float2 {
+            fn complexMult(a: anytype, b: anytype) @Vector(2, f32) {
                 return @Vector(2, f32){ @as(f32, @floatFromInt(a[0] * b[0] - a[1] * b[1])), @as(f32, @floatFromInt(a[0] * b[1] + a[1] * b[0])) };
             }
-            fn complexSquared(a: anytype) float2 {
+            fn complexSquared(a: anytype) @Vector(2, f32) {
                 return @Vector(2, f32){ @as(f32, @floatFromInt(a[0] * a[0] - a[1] * a[1])), 2.0 * a[0] * a[1] };
             }
-            fn complexInverse(b: anytype) float2 {
+            fn complexInverse(b: anytype) @Vector(2, f32) {
                 return @Vector(2, f32){ @as(f32, @floatFromInt(b[0])), @as(f32, @floatFromInt(-b[1])) } / @as(@Vector(2, f32), @splat(@as(f32, @floatFromInt((b[0] * b[0] + b[1] * b[1])))));
             }
             
@@ -222,6 +192,35 @@ pub const kernel = struct {
                 dst = src.sampleNearest(po);
                 dst = mix(bgcolor, dst, alf);
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn floor(v: anytype) @TypeOf(v) {
+                return @floor(v);
+            }
+            
+            fn fract(v: anytype) @TypeOf(v) {
+                return v - @floor(v);
+            }
+            
+            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @mod(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @mod(v1, v2),
+                    },
+                };
+            }
+            
+            fn mix(v1: anytype, v2: anytype, p: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(p))) {
+                    .Vector => v1 * (@as(@TypeOf(p), @splat(1)) - p) + v2 * p,
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => mix(v1, v2, @as(@TypeOf(v1), @splat(p))),
+                        else => v1 * (1 - p) + v2 * p,
+                    },
+                };
             }
         };
     }

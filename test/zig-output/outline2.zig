@@ -1,14 +1,13 @@
 
 // Pixel Bender "Outline" (translated using pb2zig)
-// namespace: ar.shader.outline
-// vendor: Alan Ross
-// version: 1
-// description: Outline
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "ar.shader.outline";
+    pub const vendor = "Alan Ross";
+    pub const version = 1;
+    pub const description = "Outline";
     pub const parameters = .{
         .n0 = .{
             .type = f32,
@@ -37,15 +36,6 @@ pub const kernel = struct {
             n0: f32,
             n1: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn all(v: anytype) bool {
-                return @reduce(.And, v);
-            }
-            
-            fn greaterThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
-                return v1 > v2;
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
@@ -119,6 +109,15 @@ pub const kernel = struct {
                 c[2] = c[2] * p0[2] / 0.5;
                 dst = c;
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn all(v: anytype) bool {
+                return @reduce(.And, v);
+            }
+            
+            fn greaterThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
+                return v1 > v2;
             }
         };
     }

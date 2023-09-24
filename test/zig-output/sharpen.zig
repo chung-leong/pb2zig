@@ -1,14 +1,13 @@
 
 // Pixel Bender "sharpen" (translated using pb2zig)
-// namespace: com.rphelan
-// vendor: Ryan Phelan
-// version: 1
-// description: Applies a sharpen effect to an image.
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "com.rphelan";
+    pub const vendor = "Ryan Phelan";
+    pub const version = 1;
+    pub const description = "Applies a sharpen effect to an image.";
     pub const parameters = .{
         .amount = .{
             .type = f32,

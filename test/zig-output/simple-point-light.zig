@@ -1,13 +1,13 @@
 
 // Pixel Bender "SimplePointLight" (translated using pb2zig)
-// namespace: navhali
-// vendor: John Engler
-// description: Simple point light--playing with PixelBender
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "navhali";
+    pub const vendor = "John Engler";
+    pub const version = 0;
+    pub const description = "Simple point light--playing with PixelBender";
     pub const parameters = .{
         .center = .{
             .type = @Vector(2, f32),
@@ -51,6 +51,24 @@ pub const kernel = struct {
             attenuationDecay: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
+            // functions defined in kernel
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+                // input variables
+                const center = self.center;
+                const attenuationDelta = self.attenuationDelta;
+                const attenuationSpeed = self.attenuationSpeed;
+                const attenuationDecay = self.attenuationDecay;
+                const src = self.src;
+                
+                // output variable
+                var dst: @Vector(4, f32) = undefined;
+                
+                var out_pixel_coord: @Vector(2, f32) = outCoord;
+                var attenuation: f32 = pow(attenuationDelta / pow(distance(out_pixel_coord, center), attenuationDecay), attenuationSpeed);
+                dst = @as(@Vector(4, f32), @splat(attenuation)) * src.sampleNearest(out_pixel_coord);
+                return dst;
+            }
+            
             // built-in Pixel Bender functions
             fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v1))) {
@@ -71,24 +89,6 @@ pub const kernel = struct {
                     .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
                     else => std.math.fabs(v1 - v2),
                 };
-            }
-            
-            // functions defined in kernel
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const center = self.center;
-                const attenuationDelta = self.attenuationDelta;
-                const attenuationSpeed = self.attenuationSpeed;
-                const attenuationDecay = self.attenuationDecay;
-                const src = self.src;
-                
-                // output variable
-                var dst: @Vector(4, f32) = undefined;
-                
-                var out_pixel_coord: @Vector(2, f32) = outCoord;
-                var attenuation: f32 = pow(attenuationDelta / pow(distance(out_pixel_coord, center), attenuationDecay), attenuationSpeed);
-                dst = @as(@Vector(4, f32), @splat(attenuation)) * src.sampleNearest(out_pixel_coord);
-                return dst;
             }
         };
     }

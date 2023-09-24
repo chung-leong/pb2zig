@@ -1,13 +1,12 @@
 
 // Pixel Bender "simple" (translated using pb2zig)
-// namespace: Your Namespace
-// vendor: Your Vendor
-// version: 1
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "Your Namespace";
+    pub const vendor = "Your Vendor";
+    pub const version = 1;
     pub const parameters = .{
         .transform = .{
             .type = [3]@Vector(3, f32),
@@ -41,6 +40,20 @@ pub const kernel = struct {
             // parameter and input image fields
             transform: [3]@Vector(3, f32),
             src: std.meta.fieldInfo(InputStruct, .src).type,
+            
+            // functions defined in kernel
+            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
+                // input variables
+                const transform = self.transform;
+                const src = self.src;
+                
+                // output variable
+                var dst: @Vector(3, f32) = undefined;
+                
+                dst = src.sampleNearest(outCoord);
+                dst = matrixCalc("*", transform, dst);
+                return dst;
+            }
             
             // built-in Pixel Bender functions
             fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
@@ -210,20 +223,6 @@ pub const kernel = struct {
                 }
                 const f = @field(calc, fname);
                 return f(p1, p2);
-            }
-            
-            // functions defined in kernel
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const transform = self.transform;
-                const src = self.src;
-                
-                // output variable
-                var dst: @Vector(3, f32) = undefined;
-                
-                dst = src.sampleNearest(outCoord);
-                dst = matrixCalc("*", transform, dst);
-                return dst;
             }
         };
     }

@@ -1,14 +1,13 @@
 
 // Pixel Bender "randomPixelation" (translated using pb2zig)
-// namespace: random size pixelation
-// vendor: pixelero
-// version: 1
-// description: random size pixelation
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "random size pixelation";
+    pub const vendor = "pixelero";
+    pub const version = 1;
+    pub const description = "random size pixelation";
     pub const parameters = .{
         .n0 = .{
             .type = f32,
@@ -66,17 +65,6 @@ pub const kernel = struct {
             randomPoint: @Vector(2, f32),
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
-            // built-in Pixel Bender functions
-            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @mod(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @mod(v1, v2),
-                    },
-                };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
@@ -96,6 +84,17 @@ pub const kernel = struct {
                 var ds: @Vector(2, f32) = mod(p, n0) + mod(p, n1) + mod(p, n2) - @as(@Vector(2, f32), @splat(0.5)) * @as(@Vector(2, f32), @splat((n0 + n1 + n2)));
                 dst = src.sampleLinear(outCoord - @as(@Vector(2, f32), @splat(0.333333)) * ds);
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @mod(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @mod(v1, v2),
+                    },
+                };
             }
         };
     }

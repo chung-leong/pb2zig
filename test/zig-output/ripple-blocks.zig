@@ -1,13 +1,13 @@
 
 // Pixel Bender "RippleBlocks" (translated using pb2zig)
-// namespace: Allen Chou
-// version: 1
-// description: box-shaped ripple effect
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "Allen Chou";
+    pub const vendor = "";
+    pub const version = 1;
+    pub const description = "box-shaped ripple effect";
     pub const parameters = .{
         .amplitude = .{
             .type = @Vector(2, f32),
@@ -44,15 +44,6 @@ pub const kernel = struct {
             phase: @Vector(2, f32),
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
-            // built-in Pixel Bender functions
-            fn sin(v: anytype) @TypeOf(v) {
-                return @sin(v);
-            }
-            
-            fn cos(v: anytype) @TypeOf(v) {
-                return @cos(v);
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
@@ -69,6 +60,15 @@ pub const kernel = struct {
                 coord[1] += amplitude[1] * cos((coord[1] / wavelength[1]) + phase[1]);
                 dst = src.sampleLinear(@Vector(2, f32){ coord[0], coord[1] });
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn sin(v: anytype) @TypeOf(v) {
+                return @sin(v);
+            }
+            
+            fn cos(v: anytype) @TypeOf(v) {
+                return @cos(v);
             }
         };
     }

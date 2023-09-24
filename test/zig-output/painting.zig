@@ -1,14 +1,13 @@
 
 // Pixel Bender "Painting" (translated using pb2zig)
-// namespace: ar.shader.painting
-// vendor: Alan Ross
-// version: 1
-// description: Painting
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "ar.shader.painting";
+    pub const vendor = "Alan Ross";
+    pub const version = 1;
+    pub const description = "Painting";
     pub const parameters = .{
         .n0 = .{
             .type = f32,
@@ -44,19 +43,6 @@ pub const kernel = struct {
             n1: f32,
             n2: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn any(v: anytype) bool {
-                return @reduce(.Or, v);
-            }
-            
-            fn all(v: anytype) bool {
-                return @reduce(.And, v);
-            }
-            
-            fn lessThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
-                return v1 < v2;
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
@@ -257,6 +243,19 @@ pub const kernel = struct {
                 }
                 dst = c;
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn any(v: anytype) bool {
+                return @reduce(.Or, v);
+            }
+            
+            fn all(v: anytype) bool {
+                return @reduce(.And, v);
+            }
+            
+            fn lessThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
+                return v1 < v2;
             }
         };
     }

@@ -1,14 +1,13 @@
 
 // Pixel Bender "CirclePixels" (translated using pb2zig)
-// namespace: be.neuroproductions
-// vendor: Neuro Productions
-// version: 1
-// description: circlePixels
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "be.neuroproductions";
+    pub const vendor = "Neuro Productions";
+    pub const version = 1;
+    pub const description = "circlePixels";
     pub const parameters = .{
         .dist = .{
             .type = f32,
@@ -48,18 +47,6 @@ pub const kernel = struct {
             edgeAlpha: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
-            // built-in Pixel Bender functions
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-            
-            fn distance(v1: anytype, v2: anytype) f32 {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-                    else => std.math.fabs(v1 - v2),
-                };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
@@ -88,6 +75,18 @@ pub const kernel = struct {
                     }
                 }
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn floor(v: anytype) @TypeOf(v) {
+                return @floor(v);
+            }
+            
+            fn distance(v1: anytype, v2: anytype) f32 {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
+                    else => std.math.fabs(v1 - v2),
+                };
             }
         };
     }

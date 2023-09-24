@@ -1,14 +1,13 @@
 
 // Pixel Bender "VertexRenderer" (translated using pb2zig)
-// namespace: Metallic
-// vendor: Petri Leskinen
-// version: 1
-// description: Metallic -effect
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "Metallic";
+    pub const vendor = "Petri Leskinen";
+    pub const version = 1;
+    pub const description = "Metallic -effect";
     pub const parameters = .{
         .lightsource = .{
             .type = @Vector(3, f32),
@@ -72,55 +71,6 @@ pub const kernel = struct {
             viewDirection: @Vector(3, f32),
             source: std.meta.fieldInfo(InputStruct, .source).type,
             stripe: std.meta.fieldInfo(InputStruct, .stripe).type,
-            
-            // built-in Pixel Bender functions
-            fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => calc: {
-                        var result: @TypeOf(v1) = undefined;
-                        comptime var i = 0;
-                        inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
-                            result[i] = pow(v1[i], v2[i]);
-                        }
-                        break :calc result;
-                    },
-                    else => std.math.pow(@TypeOf(v1), v1, v2),
-                };
-            }
-            
-            fn sqrt(v: anytype) @TypeOf(v) {
-                return @sqrt(v);
-            }
-            
-            fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
-                return switch (@typeInfo(@TypeOf(min_val))) {
-                    .Vector => calc: {
-                        const T = @typeInfo(@TypeOf(v)).Vector.child;
-                        const result1 = @select(T, v < min_val, min_val, v);
-                        const result2 = @select(T, result1 > max_val, max_val, result1);
-                        break :calc result2;
-                    },
-                    else => switch (@typeInfo(@TypeOf(v))) {
-                        .Vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
-                        else => calc: {
-                            if (v < min_val) {
-                                break :calc min_val;
-                            } else if (v > max_val) {
-                                break :calc max_val;
-                            } else {
-                                break :calc v;
-                            }
-                        },
-                    },
-                };
-            }
-            
-            fn dot(v1: anytype, v2: anytype) f32 {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => @reduce(.Add, v1 * v2),
-                    else => v1 * v2,
-                };
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
@@ -188,6 +138,55 @@ pub const kernel = struct {
                     dst[3] *= sourcesample[3];
                 }
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => calc: {
+                        var result: @TypeOf(v1) = undefined;
+                        comptime var i = 0;
+                        inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+                            result[i] = pow(v1[i], v2[i]);
+                        }
+                        break :calc result;
+                    },
+                    else => std.math.pow(@TypeOf(v1), v1, v2),
+                };
+            }
+            
+            fn sqrt(v: anytype) @TypeOf(v) {
+                return @sqrt(v);
+            }
+            
+            fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
+                return switch (@typeInfo(@TypeOf(min_val))) {
+                    .Vector => calc: {
+                        const T = @typeInfo(@TypeOf(v)).Vector.child;
+                        const result1 = @select(T, v < min_val, min_val, v);
+                        const result2 = @select(T, result1 > max_val, max_val, result1);
+                        break :calc result2;
+                    },
+                    else => switch (@typeInfo(@TypeOf(v))) {
+                        .Vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
+                        else => calc: {
+                            if (v < min_val) {
+                                break :calc min_val;
+                            } else if (v > max_val) {
+                                break :calc max_val;
+                            } else {
+                                break :calc v;
+                            }
+                        },
+                    },
+                };
+            }
+            
+            fn dot(v1: anytype, v2: anytype) f32 {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => @reduce(.Add, v1 * v2),
+                    else => v1 * v2,
+                };
             }
         };
     }

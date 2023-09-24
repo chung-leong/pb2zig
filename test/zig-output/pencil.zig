@@ -1,14 +1,13 @@
 
 // Pixel Bender "Pencil" (translated using pb2zig)
-// namespace: ar.shader.pencil
-// vendor: Alan Ross
-// version: 1
-// description: Pencil
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "ar.shader.pencil";
+    pub const vendor = "Alan Ross";
+    pub const version = 1;
+    pub const description = "Pencil";
     pub const parameters = .{
         .n0 = .{
             .type = f32,
@@ -51,17 +50,6 @@ pub const kernel = struct {
             n2: f32,
             n3: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
-            
-            // built-in Pixel Bender functions
-            fn min(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @min(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @min(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @min(v1, v2),
-                    },
-                };
-            }
             
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
@@ -153,6 +141,17 @@ pub const kernel = struct {
                 c[3] = 1.0;
                 result = c;
                 return result;
+            }
+            
+            // built-in Pixel Bender functions
+            fn min(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @min(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @min(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @min(v1, v2),
+                    },
+                };
             }
         };
     }

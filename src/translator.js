@@ -16,7 +16,7 @@ export class PixelBenderToZigTranslator {
     this.reset();
     this.ast = ast;
     this.macroASTs = macroASTs;
-    this.addMetadata();
+    this.addHeading();
     this.addImports();
     this.addKernel();
     this.addProcessFunctions();
@@ -231,20 +231,15 @@ export class PixelBenderToZigTranslator {
     this.add(``);
   }
 
-  addMetadata() {
+  addHeading() {
     const { name, meta } = this.ast;
     this.add(`// Pixel Bender "${name}" (translated using pb2zig)`);
-    for (const [ field, literal ] of Object.entries(meta)) {
-      if (literal?.value) {
-        this.add(`// ${field}: ${literal.value}`);
-      }
-    }
-    this.add(``);
   }
 
   addKernel() {
     this.add(`pub const kernel = struct {`);
     this.addGlobalConstants();
+    this.addMetadata();
     this.addParameterDecls();
     this.addInput();
     this.addOutput();
@@ -255,9 +250,17 @@ export class PixelBenderToZigTranslator {
     this.add(`};`);
   }
 
+  addMetadata() {
+    this.add(`// kernel information`);
+    for (const [ field, literal ] of Object.entries(this.ast.meta)) {
+      if (literal) {
+        this.add(`pub const ${field} = ${this.translateLiteral(literal)};`);
+      }
+    }
+  }
+
   addParameterDecls() {
     const params = this.find(N.Parameter);
-    this.add(`// kernel information`);
     this.add(`pub const parameters = .{`);
     for (const param of params) {
       const {
@@ -329,10 +332,10 @@ export class PixelBenderToZigTranslator {
     this.addParameterFields();
     this.addInputFields();
     this.addConstants();
-    this.addCalledFunctions();
     this.addMacroFunctions();
     this.setFunctionArgTypes();
     this.addDefinedFunctions();
+    this.addCalledFunctions();
     this.add(`};`);
     this.add(`}`);
   }
@@ -425,11 +428,11 @@ export class PixelBenderToZigTranslator {
       // excluding "pub"
       const func = m[1], name = m[2];
       if (inUse[name]) {
+        this.add(``);
         if (count === 0) {
           this.add(`// built-in Pixel Bender functions`);
         }
         this.add(func);
-        this.add(``);
         count++;
       }
     }

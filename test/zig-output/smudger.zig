@@ -1,14 +1,13 @@
 
 // Pixel Bender "smudge" (translated using pb2zig)
-// namespace: smudger
-// vendor: Frank Reitberger
-// version: 1
-// description: generates a smudged pattern
-
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
+    pub const namespace = "smudger";
+    pub const vendor = "Frank Reitberger";
+    pub const version = 1;
+    pub const description = "generates a smudged pattern";
     pub const parameters = .{
         .amount = .{
             .type = f32,
@@ -32,11 +31,6 @@ pub const kernel = struct {
             amount: f32,
             src: std.meta.fieldInfo(InputStruct, .src).type,
             
-            // built-in Pixel Bender functions
-            fn cos(v: anytype) @TypeOf(v) {
-                return @cos(v);
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
                 // input variables
@@ -52,6 +46,11 @@ pub const kernel = struct {
                 var pnt: @Vector(2, f32) = @Vector(2, f32){ nx * ny, nx * ny };
                 dst = src.sampleNearest(outCoord + pnt * @as(@Vector(2, f32), @splat(amount)));
                 return dst;
+            }
+            
+            // built-in Pixel Bender functions
+            fn cos(v: anytype) @TypeOf(v) {
+                return @cos(v);
             }
         };
     }
