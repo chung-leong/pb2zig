@@ -180,11 +180,10 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
         }
         
-        inline fn toUnsigned(value: f32) u32 {
-            // allow negative value to be interpreted as large integers
-            // to simplify bound-checking
+        inline fn toUnsigned(value: i32) u32 {
+            // allow negative value to be interpreted as large integers to simplify bound-checking
             @setRuntimeSafety(false);
-            return @intFromFloat(value);
+            return @as(u32, @intCast(value));
         }
         
         fn contrain(pixel: FPixel, max: f32) FPixel {
@@ -218,11 +217,13 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             return result;
         }
         
-        pub fn getPixel(self: @This(), x: u32, y: u32) FPixel {
-            if (x >= self.width or y >= self.height) {
+        pub fn getPixel(self: @This(), x: i32, y: i32) FPixel {
+            const ux = toUnsigned(x);
+            const uy = toUnsigned(y);
+            if (ux >= self.width or uy >= self.height) {
                 return @as(FPixel, @splat(0));
             }
-            const index = (y * self.width) + x;
+            const index = (uy * self.width) + ux;
             const pixel = self.pixels[index];
             return switch (@typeInfo(T)) {
                 .Float => pixel,
@@ -248,22 +249,18 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
         
         pub fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
-            const x = toUnsigned(coord[0]);
-            const y = toUnsigned(coord[1]);
+            const x: i32 = @intFromFloat(coord[0]);
+            const y: i32 = @intFromFloat(coord[1]);
             return self.getPixel(x, y);
         }
         
         pub fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
-            const x = toUnsigned(coord[0]);
-            const y = toUnsigned(coord[1]);
+            const x: i32 = @intFromFloat(coord[0]);
+            const y: i32 = @intFromFloat(coord[1]);
             const fx = (coord[0] - 0.5) - @floor(coord[0] - 0.5);
             const fy = (coord[1] - 0.5) - @floor(coord[1] - 0.5);
             if (fx + fy == 0) {
-                if (x < self.width and y < self.height) {
-                    return self.getPixel(x, y);
-                } else {
-                    return @as(FPixel, @splat(0));
-                }
+                return self.getPixel(x, y);
             } else {
                 const fx1: f32 = 1.0 - fx;
                 const fy1: f32 = 1.0 - fy;

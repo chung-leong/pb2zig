@@ -193,7 +193,6 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
-  skip.
   it('should correctly translate focus-linear-blur.pbk', async function() {
     this.timeout(60000);
     const name = 'focus-linear-blur';
@@ -362,19 +361,28 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
-  skip.
   it('should correctly translate twirl.pbk', async function() {
     this.timeout(60000);
     const name = 'twirl';
     await translate(name);
-    await apply(name, { oImage: 'malgorzata-socha.png' });
+    const params = {
+      radius: 300,
+      center: [ 250, 330 ],
+      twirlAngle: 55,
+    };
+    await apply(name, { oImage: 'malgorzata-socha.png' }, params);
   })
-  skip.
   it('should correctly translate warp.pbk', async function() {
     this.timeout(60000);
     const name = 'warp';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = {
+      image_h: 300,
+      center: [ 340, 180 ],
+      tick: 0.5,
+      spread: 460,
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate wave.pbk', async function() {
     this.timeout(60000);
@@ -438,7 +446,6 @@ async function apply(name, sources, params = {}) {
     }
   }
   const output = Output.create(width, height);
-  console.log({ name });
   apply(input, output);
   const dstPixels = output.pixels.typedArray;
   sharp(dstPixels, {
