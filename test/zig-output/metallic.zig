@@ -180,7 +180,7 @@ pub const kernel = struct {
                     var v: @Vector(3, f32) = (@as(@Vector(3, f32), @splat(2.0)) * normal * @as(@Vector(3, f32), @splat(dot(viewDirection, normal))) / @as(@Vector(3, f32), @splat((normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]))) - viewDirection);
                     var spec: f32 = dot(v, lightbeam);
                     if (spec > 0.0) {
-                        spec = pow(spec, @floatFromInt(shininess));
+                        spec = pow(spec, @as(f32, @floatFromInt(shininess)));
                         refl += spec;
                     }
                     refl = clamp(refl, 0.0, 1.0);

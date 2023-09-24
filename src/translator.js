@@ -512,9 +512,11 @@ export class PixelBenderToZigTranslator {
           }
           const expr = this.translateExpression(expression);
           const argList = args.map(name => `${name}: anytype`);
-          let returnType = expr.type;
-          if (returnType === 'anytype') {
+          let returnType;
+          if (expr.type === 'anytype') {
             returnType = `@TypeOf(${args[0]})`;
+          } else {
+            returnType = getZigType(expr.type);
           }
           if (count === 0) {
             this.add(`// macro functions`);

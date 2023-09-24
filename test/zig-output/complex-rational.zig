@@ -72,14 +72,14 @@ pub const kernel = struct {
             }
             
             // macro functions
-            fn complexMult(a: anytype, b: anytype) float2 {
-                return @Vector(2, f32){ @floatFromInt(a[0] * b[0] - a[1] * b[1]), @floatFromInt(a[0] * b[1] + a[1] * b[0]) };
+            fn complexMult(a: anytype, b: anytype) @Vector(2, f32) {
+                return @Vector(2, f32){ @as(f32, @floatFromInt(a[0] * b[0] - a[1] * b[1])), @as(f32, @floatFromInt(a[0] * b[1] + a[1] * b[0])) };
             }
-            fn complexSquared(a: anytype) float2 {
-                return @Vector(2, f32){ @floatFromInt(a[0] * a[0] - a[1] * a[1]), 2.0 * a[0] * a[1] };
+            fn complexSquared(a: anytype) @Vector(2, f32) {
+                return @Vector(2, f32){ @as(f32, @floatFromInt(a[0] * a[0] - a[1] * a[1])), 2.0 * a[0] * a[1] };
             }
-            fn complexDiv(a: anytype, b: anytype) float2 {
-                return @Vector(2, f32){ @floatFromInt(a[0] * b[0] + a[1] * b[1]), @floatFromInt(-a[0] * b[1] + a[1] * b[0]) } / @as(@Vector(2, f32), @splat(@floatFromInt((b[0] * b[0] + b[1] * b[1]))));
+            fn complexDiv(a: anytype, b: anytype) @Vector(2, f32) {
+                return @Vector(2, f32){ @as(f32, @floatFromInt(a[0] * b[0] + a[1] * b[1])), @as(f32, @floatFromInt(-a[0] * b[1] + a[1] * b[0])) } / @as(@Vector(2, f32), @splat(@as(f32, @floatFromInt((b[0] * b[0] + b[1] * b[1])))));
             }
             
             // functions defined in kernel

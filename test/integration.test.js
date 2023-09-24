@@ -127,7 +127,15 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'complex-rational';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = {
+      a: [ 0.8, 0.6 ],
+      b: [ -110, 22 ],
+      c: [ 0, 0 ],
+      d: [ 62, 34 ],
+      size: [ 390, 290 ],
+      center: [ 160, 200 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate cross-stitch.pbk', async function() {
     this.timeout(60000);
@@ -244,7 +252,18 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'metallic';
     await translate(name);
-    await apply(name, { src: 'zig-logo.png' });
+    const params = {
+      lightsource: [ 240, 230, 50, 0 ],
+      shininess: 35,
+      shadow: 0.4,
+      relief: 3.25,
+      stripesize: [ 256, 10 ],
+      viewDirection: [ 0.5, 0.02, 1, 0 ],
+    };
+    await apply(name, {
+      source: 'zig-logo.png',
+      stripe: 'stripe.png',
+    }, params);
   })
   it('should correctly translate outline.pbk', async function() {
     this.timeout(60000);

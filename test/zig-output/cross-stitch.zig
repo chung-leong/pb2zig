@@ -58,17 +58,17 @@ pub const kernel = struct {
                 
                 var cPos: @Vector(2, f32) = outCoord;
                 var tlPos: @Vector(2, f32) = undefined;
-                tlPos[0] = floor(cPos[0] / @floatFromInt(size));
-                tlPos[1] = floor(cPos[1] / @floatFromInt(size));
-                tlPos *= @as(@Vector(2, f32), @splat(@floatFromInt(size)));
-                var remX: i32 = @intFromFloat(mod(cPos[0], @floatFromInt(size)));
-                var remY: i32 = @intFromFloat(mod(cPos[1], @floatFromInt(size)));
+                tlPos[0] = floor(cPos[0] / @as(f32, @floatFromInt(size)));
+                tlPos[1] = floor(cPos[1] / @as(f32, @floatFromInt(size)));
+                tlPos *= @as(@Vector(2, f32), @splat(@as(f32, @floatFromInt(size))));
+                var remX: i32 = @as(i32, @intFromFloat(mod(cPos[0], @as(f32, @floatFromInt(size)))));
+                var remY: i32 = @as(i32, @intFromFloat(mod(cPos[1], @as(f32, @floatFromInt(size)))));
                 if (remX == 0 and remY == 0) {
                     tlPos = cPos;
                 }
                 var blPos: @Vector(2, f32) = tlPos;
-                blPos[1] += @floatFromInt(size - 1);
-                if ((remX == remY) or (((@intFromFloat(cPos[0]) - @intFromFloat(blPos[0])) == (@intFromFloat(blPos[1]) - @intFromFloat(cPos[1]))))) {
+                blPos[1] += @as(f32, @floatFromInt(size - 1));
+                if ((remX == remY) or @as(i32, @intFromFloat(cPos[0])) - @as(i32, @intFromFloat(blPos[0])) == @as(i32, @intFromFloat(blPos[1])) - @as(i32, @intFromFloat(cPos[1]))) {
                     outputPx = src.sampleNearest(tlPos);
                 } else {
                     outputPx = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
