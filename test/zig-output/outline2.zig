@@ -233,19 +233,20 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
         
         pub fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
-            const x: i32 = @intFromFloat(coord[0]);
-            const y: i32 = @intFromFloat(coord[1]);
-            const fx = (coord[0] - 0.5) - @floor(coord[0] - 0.5);
-            const fy = (coord[1] - 0.5) - @floor(coord[1] - 0.5);
-            if (fx + fy == 0) {
+            const c = coord - @as(@Vector(2, f32), @splat(0.5));
+            const x: i32 = @intFromFloat(c[0]);
+            const y: i32 = @intFromFloat(c[1]);
+            const f0 = c - @floor(c);
+            if (@reduce(.Add, f0) == 0) {
                 return self.getPixel(x, y);
             } else {
-                const fx1: f32 = 1.0 - fx;
-                const fy1: f32 = 1.0 - fy;
-                const w00: f32 = fx1 * fy1;
-                const w10: f32 = fx * fy1;
-                const w01: f32 = fx1 * fy;
-                const w11: f32 = fx * fy;
+                const f1 = @as(@Vector(2, f32), @splat(1)) - f0;
+                const w: @Vector(4, f32) = .{
+                    f1[0] * f1[1],
+                    f0[0] * f1[1],
+                    f1[0] * f0[1],
+                    f0[0] * f0[1],
+                };
                 const p00 = self.getPixel(x, y);
                 const p01 = self.getPixel(x, y + 1);
                 const p10 = self.getPixel(x + 1, y);
@@ -253,7 +254,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
                 var result: FPixel = undefined;
                 comptime var i = 0;
                 inline while (i < len) : (i += 1) {
-                    result[i] = p00[i] * w00 + p10[i] * w10 + p01[i] * w01 + p11[i] * w11;
+                    const p: @Vector(4, f32) = .{ p00[i], p10[i], p01[i], p11[i] };
+                    result[i] = @reduce(.Add, p * w);
                 }
                 return result;
             }
