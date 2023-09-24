@@ -12,7 +12,7 @@
 
 kernel smudge
 
-<   
+<
     namespace:          "smudger";
     vendor:             "Frank Reitberger";
     version:            1;
@@ -26,26 +26,26 @@ kernel smudge
         maxValue:     float(5.0);
         defaultValue: float(0.5);
         description:  "amount";
-    >; 
-    
-    
+    >;
+
+
     input image4 src;
-    output pixel4 dst; 
-    
+    output pixel4 dst;
+
     void
     evaluatePixel()
     {
         float2 pos   = outCoord();
-        
+
         //////////////////////////
         // patterize transition
-        //////////////////////////  
+        //////////////////////////
         float nx     = 5.0 * (cos(pos.y / 5.0));
-        float ny     = 5.0 * (cos(pos.x / 6.0));  
+        float ny     = 5.0 * (cos(pos.x / 6.0));
         float2 pnt   = float2(  nx*ny , nx* ny  );
-        dst = sampleNearest( src, outCoord() + pnt * amount);        
-        
-         
-    }    
-    
+        dst = sampleNearest( src, outCoord() + pnt * amount);
+
+
+    }
+
 }

@@ -17,10 +17,10 @@ kernel Crystallize
         defaultValue: float(20);
         description: "size";
     >;
-    
+
     input image4 src;
     output pixel4 dst;
-    
+
     // rot1: rotation matrix, 18 degrees
     // rot1r: reverse rotation, -18 degrees
     // base1: rotation base point (somewhere far enough from origin)
@@ -30,21 +30,21 @@ kernel Crystallize
 
     // rot2: rotation matrix, 30 degrees
     // rot2r: reverse rotation, -30 degrees
-    // base2: base point 
+    // base2: base point
     const float2x2 rot2 = float2x2(0.866,0.5,-0.5,0.866); // 30 degress
     const float2x2 rot2r = float2x2(0.866,-0.5,0.5,0.866);
     const float2 base2= float2(-100,2400);
-    
+
     void
     evaluatePixel()
     {
         // Crystallize, pseudo Voronoi-diagram using three nearby points,
-        // calculated from 'randomly' placed and rotated rectangular grids 
-        
+        // calculated from 'randomly' placed and rotated rectangular grids
+
         // 1st grid and point
         float div=size;
         float2 newP= base1 + rot1r*div*( floor( rot1*(outCoord()-base1)/div ) +0.5);
-        
+
         // 2nd grid
         div= 21.0/20.0*size; // factor 21, I picked some number that has no common denominators with the default size 20
         float2 p= base2 + rot2r*div*( floor( rot2*(outCoord()-base2)/div  ) +0.5);
@@ -56,7 +56,7 @@ kernel Crystallize
         p= div*( floor( outCoord()/div  ) +0.5);
         // comparing distance
         newP =  length(p-outCoord()) < length(newP-outCoord()) ? p : newP;
-        
+
         // the new color is picked from the nearist point
         dst = sampleNearest(src,newP);
     }

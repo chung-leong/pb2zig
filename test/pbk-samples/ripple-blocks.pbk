@@ -13,14 +13,14 @@ kernel RippleBlocks
     maxValue:     float2(100, 100);
     defaultValue: float2( 20,  20);
     >;
-    
+
     parameter float2 wavelength
     <
     minValue:     float2(   1.0,    1.0);
     maxValue:     float2( 100.0,  100.0);
     defaultValue: float2(  10.0,   10.0);
     >;
-   
+
     parameter float2 phase
     <
     minValue:     float2(  0.0,   0.0);
@@ -37,7 +37,7 @@ kernel RippleBlocks
         float2 coord = outCoord();
         coord.x += amplitude.x * sin((coord.x / wavelength.x) + phase.x);
         coord.y += amplitude.y * cos((coord.y / wavelength.y) + phase.y);
-        
+
         dst = sample(src, float2(coord.x, coord.y));
     }
 }

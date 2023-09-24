@@ -10,7 +10,7 @@
  * 				- Incorporated the scalar derivative method as described here:
  *			    - http://www.fractalforums.com/mandelbulb-implementation/realtime-renderingoptimisations/
  *		1.0.3	- Created a quick version of the script as using a boolean flag to determine
- *				  which distance estimation method created long compilation times. 
+ *				  which distance estimation method created long compilation times.
  *                This is the slower but more versatile version.
  * 		1.0.4 	- Fixed issue with older graphic cards and the specular highlights
  *
@@ -112,7 +112,7 @@ kernel Mandelbulb
 		defaultValue:0.58;
 		description: "Emphasise the structure edges based on the number of steps it takes to reach a point in the fractal.";
 	>;
-	
+
 	parameter float bounding
 	<
 		minValue:1.0;
@@ -201,7 +201,7 @@ kernel Mandelbulb
 		description: "Background colour.";
         aeUIControl: "aeColor";
 	>;
-    
+
     parameter float colorBackgroundTransparency
 	<
 		minValue:float(0.0);
@@ -227,7 +227,7 @@ kernel Mandelbulb
 		description: "Ambient light colour.";
         aeUIControl: "aeColor";
 	>;
-	
+
 	parameter float colorAmbientIntensity
 	<
 		minValue:float(0);
@@ -326,7 +326,7 @@ kernel Mandelbulb
 	dependent float3 eye;
 	dependent float3x3 viewRotation, objRotation;
 	output pixel4 dst;
-	
+
 
 	// The fractal calculation
 	//
@@ -405,7 +405,7 @@ kernel Mandelbulb
 		// step size, or if whether we are within the threshold of the surface.
 		return 0.5 * r * log(r)/r_dz;
 	}
-	
+
 
 	// Intersect bounding sphere
 	//
@@ -651,7 +651,7 @@ kernel Mandelbulb
 										   0, s3, c3);
 
 		objRotation = objRotationX * objRotationY * objRotationZ;
-		
+
 		eye = (cameraPosition + cameraPositionFine);
 		if (eye == float3(0, 0, 0)) eye = float3(0, 0.0001, 0);
 

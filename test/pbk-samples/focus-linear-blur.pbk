@@ -39,28 +39,28 @@ kernel FocusingLinearBlur
     {
         //  val = factor for blurring,
         //  distance to the line (Ax+Bx+C)/sqrt(A*A+B*B),
-        //  multiplied by 0.01: if A and B are normalized (in actionscript code), 
+        //  multiplied by 0.01: if A and B are normalized (in actionscript code),
         //  we get the correct blurring in the distance of 100 pixels for line
-        float val = lineEquation[0]*outCoord().x + 
-                    lineEquation[1]*outCoord().y + 
+        float val = lineEquation[0]*outCoord().x +
+                    lineEquation[1]*outCoord().y +
                     lineEquation[2] ;
         val *= 0.01;
-        
+
         //  vector (A,B) perpendicular to line
         //  uScale gives to radius
         float2 dir = val* lineEquation.xy;
         float2 po = uScale* dir;
-        
+
         //  samples from two points
         dst =     sampleLinear(src, outCoord()+po) +
                   sampleLinear(src, outCoord()-po);
-       
+
        //   rotate 90 degrees for the parallel samples
        //   radius by vScale
        po = vScale* float2(dir.y, -dir.x);
         dst +=   sampleLinear(src, outCoord()+po) +
                   sampleLinear(src, outCoord()-po);
-    
+
         // 4 sampled points, count the average
        dst *= 0.25;
 

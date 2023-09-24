@@ -1,6 +1,6 @@
 
 <languageVersion: 1.0;>
- 
+
 kernel sharpen
 <   namespace : "com.rphelan";
     vendor : "Ryan Phelan";
@@ -13,7 +13,7 @@ kernel sharpen
         maxValue:20.0;
         defaultValue:1.0;
     >;
-    
+
     parameter float radius
     <
         minValue:0.0;
@@ -23,19 +23,19 @@ kernel sharpen
 
     input image4 src;
     output float4 dst;
-    
+
     void
     evaluatePixel()
     {
         // Obtain the input pixel coordinate
         float2 coord = outCoord();
-    
+
         // Obtain the input pixel color
         float4 inputColor = sampleLinear(src, coord);
 
         // Start with the original color
         dst.rgb = inputColor.rgb;
-        
+
         // Offset the color by the surrounding pixels
         float2 hOffset = float2(radius, 0.0);
         float2 vOffset = float2(0.0, radius);
@@ -43,12 +43,12 @@ kernel sharpen
         float4 right = sampleLinear(src, coord + hOffset) * amount;
         float4 top = sampleLinear(src, coord - vOffset) * amount;
         float4 bottom = sampleLinear(src, coord + vOffset) * amount;
-        
+
         dst.rgb += (top.rgb);
         dst.rgb -= (bottom.rgb);
         dst.rgb += left.rgb;
         dst.rgb -= right.rgb;
-        
+
         // set the alpha value equal to the alpha of the input
         dst.a = inputColor.a;
     }

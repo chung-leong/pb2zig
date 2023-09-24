@@ -13,7 +13,7 @@
  *				  which distance estimation method created long compilation times.
  * 		1.0.4 	- Fixed issue with older graphic cards and the specular highlights
  *
- * 
+ *
  * Copyright (c) 2009 Tom Beddard
  * http://www.subblue.com
  *
@@ -192,7 +192,7 @@ kernel MandelbulbQuick
 		description: "Background colour.";
         aeUIControl: "aeColor";
 	>;
-    
+
     parameter float colorBackgroundTransparency
 	<
 		minValue:float(0.0);
@@ -218,7 +218,7 @@ kernel MandelbulbQuick
 		description: "Ambient light colour.";
         aeUIControl: "aeColor";
 	>;
-	
+
 	parameter float colorAmbientIntensity
 	<
 		minValue:float(0);
@@ -377,7 +377,7 @@ kernel MandelbulbQuick
 
 		return 0.5 * log(r) * r / dr;
 	}
-	
+
 
 	// Intersect bounding sphere
 	//
@@ -623,7 +623,7 @@ kernel MandelbulbQuick
 										   0, s3, c3);
 
 		objRotation = objRotationX * objRotationY * objRotationZ;
-		
+
 		eye = (cameraPosition + cameraPositionFine);
 		if (eye == float3(0, 0, 0)) eye = float3(0, 0.0001, 0);
 

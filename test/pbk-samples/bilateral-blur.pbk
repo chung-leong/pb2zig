@@ -27,32 +27,32 @@ kernel BilateralBlur
         float2 pt, curPt;
         float4 p0, p, tempP, totalP;
         float w, totalWeight;
-        
+
         curPt = outCoord();
         totalP = float4(0.0,0.0,0.0,0.0);
         totalWeight = 0.0;
-        
+
         /*
         The two Gaussian functions are combined into one for better preformance.
         Only 9x9 area is sampled for each pixel.
-        
+
         Copy and paste the below comment block to Flash to gen the codes below.
-        
+
         function formatNumber(num:Number,forceSign:Boolean = true):String{
             var str:String = num.toString();
             if (num-Math.floor(num) == 0){
                 str += ".0";
             }
-            
+
             if (num < 0){
                 return str;
             }else {
                 return "+"+str;
             }
         }
-        
+
         var sampleLength:uint = 4;
-        
+
         trace("p0 = sampleNearest(src,curPt);")
         for (var x:int = -sampleLength ; x<=sampleLength ; x++){
         	if (x == -sampleLength){
@@ -68,10 +68,10 @@ kernel BilateralBlur
 	        	}
                 trace("p = sampleNearest(src,pt);")
                 trace("tempP = abs(p0-p);")
-                trace("w = exp(" + 
-                            "-0.5*(" + 
-                                "pow("+formatNumber(Point.distance(new Point(),new Point(x,y)),false)+"/d,2.0)+pow((tempP[0]+tempP[1]+tempP[2]+tempP[3])/r,2.0)" + 
-                            ")" + 
+                trace("w = exp(" +
+                            "-0.5*(" +
+                                "pow("+formatNumber(Point.distance(new Point(),new Point(x,y)),false)+"/d,2.0)+pow((tempP[0]+tempP[1]+tempP[2]+tempP[3])/r,2.0)" +
+                            ")" +
                         ");");
                 trace("p *= w;")
                 trace("totalP += p;")

@@ -23,15 +23,15 @@ kernel RadialCaleidoscope
         <
         minValue:float(0.0001);
         maxValue:float(PI);
-        defaultValue:float(0.628318531); 
+        defaultValue:float(0.628318531);
         >;
     parameter float direction
         <
         minValue:float(0.0);
         maxValue:float(DOUPLEPI);
         defaultValue:float(0.0001);
-        >;     
-    parameter float2 basepoint 
+        >;
+    parameter float2 basepoint
         // or 'centerpoint'
         <
         minValue:float2(0.01);
@@ -41,7 +41,7 @@ kernel RadialCaleidoscope
 
     input image4 src;
     output pixel4 dst;
-    
+
     void
     evaluatePixel()
     {
@@ -51,14 +51,14 @@ kernel RadialCaleidoscope
         //  always in the positive range
         float theta = atan(po.y,po.x)-direction +2.0*DOUPLEPI;
         float radius = sqrt(po.x*po.x+po.y*po.y);
-        
+
         //  use modulo-operation to convert angle to the correct section
         float newAngle = mod(theta,angle);
         float section = floor(theta/angle);
-        
+
         //  every 'odd' section is mirrored
         if (mod(section,2.0)>0.5) newAngle = angle-newAngle;
-        
+
         //  convert polar angle and radius back to cartesian system and get the sample
         dst = sampleLinear(src,basepoint+float2(radius *cos(newAngle += direction), radius *sin(newAngle)));
     }

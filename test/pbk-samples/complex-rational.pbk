@@ -1,22 +1,22 @@
 <languageVersion : 1.0;>
 kernel modPixelation
-< 
-	namespace : "complex rational"; 
+<
+	namespace : "complex rational";
 	vendor : "pixelero";
 	version : 1;
 	description : "complex mapping f(z)= (az2+b)/(cz2+d)";
 >
 // also an example of using preprocessor directive #define in pb-code:
 // defining complex multiplication, division and square:
-// 
+//
 // multiply: a*b = (a0+i a1)(b0+i b1) = a0b0-a1b1 + i(a1b0+a0b1)
 #define complexMult(a,b) float2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x)
 #define complexSquared(a) float2(a.x*a.x-a.y*a.y, 2.0*a.x*a.y)
 // division: a/b =
-// (a0+i a1)/(b0+i b1) = 
+// (a0+i a1)/(b0+i b1) =
 // (a0+i a1)*(b0-i b1)/[ (b0+i b1) * (b0-ib1)] =
 // (a0+i a1)*(b0-i b1) / (b02 + b12)
-// 
+//
 #define complexDiv(a,b) float2(a.x*b.x+a.y*b.y, -a.x*b.y+a.y*b.x)/(b.x*b.x+b.y*b.y)
 {
 	parameter float2 a
@@ -69,7 +69,7 @@ kernel modPixelation
 		float2 po2 = d+complexMult(c,po);
 		po = b+complexMult(a,po);
 		po = complexDiv(po, po2);
-		
+
 		dst = sample(src,size*fract(po/size));
 	}
 }

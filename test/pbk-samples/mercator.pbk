@@ -1,6 +1,6 @@
     <languageVersion : 1.0;>
     kernel Distort
-    <  
+    <
         namespace : "net.nicoptere.filters";
         vendor : "nicoptere";
         version : 1;
@@ -19,22 +19,22 @@
     >;
     parameter float width
     <
-    
+
         minValue: 0.0;
         maxValue: 4096.0;
         defaultValue: 0.0;
-        
+
     >;
     void
-    evaluatePixel() 
+    evaluatePixel()
     {
-    
+
         float pi = 3.14159265358979;
-        
+
         float2 pos = outCoord();
-        
+
         float2 dest = float2( center - ( center - pos.x ) * sin( ( pi / width ) * pos.y ), pos.y );
-        
+
         dst = sampleNearest( src, dest );
 
     }

@@ -66,66 +66,66 @@ output pixel4 dst;
 void evaluatePixel() {
 
     float2 z= scale*0.001*(outCoord()-center);
-    
+
     //  inverse size, divide by distanceSquared
     float pixelCheck = z.x*z.x+z.y*z.y;
     z /= pixelCheck;
-    
+
     float2 znew = distort*z;
     z = fract(znew);
     z.y *= sqr3; // cell size 1 by sqr(3)
-    
+
     znew = floor(znew);
-    
+
     float tmp = z.x*z.x + z.y*z.y;
-    
+
     // alpha value, 1 if inside circle, 0 otherwise
-    float alf = 0.0; 
-    
-    //  rectangular to hexagonal 
-    //  division pattern: 
+    float alf = 0.0;
+
+    //  rectangular to hexagonal
+    //  division pattern:
     //  O O
     //   O
     //  O O
-    
-    if (tmp<fill) { 
+
+    if (tmp<fill) {
         // lower left circle,znew = coordinates for new center point for pixel to be sampled
         alf = 1.0;
         znew -= halfPixel;
-        
-    } else if ((tmp=z.x-0.5)*tmp +(tmp=z.y-0.5*sqr3)*tmp <fill) { 
+
+    } else if ((tmp=z.x-0.5)*tmp +(tmp=z.y-0.5*sqr3)*tmp <fill) {
         // center circle
-        alf = 1.0; 
-    
+        alf = 1.0;
+
     } else if (z.x*z.x +(tmp=z.y-sqr3)*tmp <fill) {
         // upper left circle
         alf = 1.0;
         znew.x -= 0.5;
         znew.y += 0.5;
-        
+
     } else if ((tmp=z.x-1.0)*tmp +(tmp=z.y-sqr3)*tmp <fill) {
         // upper right circle
         alf = 1.0;
         znew += halfPixel;
-        
+
     } else if ((tmp=z.x-1.0)*tmp +z.y*z.y <fill) {
         // lower right circle
         alf = 1.0;
         znew.x += 0.5;
         znew.y += -0.5;
     }
-    
+
     //  re-inverse size, divide by distanceSquared
     z = znew/distort*scale*0.001;
     z /= z.x*z.x+z.y*z.y;
-    
-    // 
+
+    //
     tmp = 1.0-smoothStep(minSolid, maxSolid, pixelCheck/scale);
     alf =max(tmp,alf);
-    
+
     dst= sampleNearest(src,z+center);
     dst.a *= alf;
-    
+
     }
 }
 

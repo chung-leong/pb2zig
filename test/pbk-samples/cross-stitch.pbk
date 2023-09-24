@@ -22,26 +22,26 @@ kernel CrossStitch
     evaluatePixel()
     {
         float2 cPos = outCoord();
-        
+
         // get the pixel at the top-left of the square
         float2 tlPos;
         tlPos.x = floor(cPos.x / float(size));
         tlPos.y = floor(cPos.y / float(size));
         tlPos *= float(size);
-        
+
         int remX = int(mod(cPos.x, float(size)));
         int remY = int(mod(cPos.y, float(size)));
-        
+
         if (remX == 0 && remY == 0)
         {
             tlPos = cPos;
         }
-        
+
         // also save the bottom-left
         float2 blPos = tlPos;
         blPos.y += float(size - 1);
-        
-                   
+
+
         // if it's a diagonal from the top-left to bottom-right, or bottom-left to top-right,
         // draw it the same color as the top-left
         if ((remX == remY) || // TL to BR

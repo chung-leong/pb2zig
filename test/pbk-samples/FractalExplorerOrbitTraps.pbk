@@ -10,40 +10,40 @@
  *         - Added a rotate option.
  *         - Separated out the alpha channel into a separate control for After Effects
  *           compatibility.
- * 
- * 
+ *
+ *
  * Copyright (c) 2009 Tom Beddard
  * http://www.subblue.com
- * 
+ *
  * For more Flash and PixelBender based generative graphics experiments see:
  * http://www.subblue.com/blog
- * 
- * Licensed under the MIT License: 
+ *
+ * Licensed under the MIT License:
  * http://www.opensource.org/licenses/mit-license.php
- * 
- * 
- * 
+ *
+ *
+ *
  * What is this?
  * =======================================
- * This filter enables you to map an image onto a Mandelbrot or Julia set fractals in real-time 
+ * This filter enables you to map an image onto a Mandelbrot or Julia set fractals in real-time
  * at high resolutions. It can be used in the free Adobe PixelBender Toolkit, via the PixelBender
- * plugin for Photoshop CS4 and as a filter in AfterEffects CS4, where you can also animate all 
+ * plugin for Photoshop CS4 and as a filter in AfterEffects CS4, where you can also animate all
  * the parameters too!
- * 
+ *
  * PixelBender download and installation instructions are available at:
  * http://labs.adobe.com/technologies/pixelbender/
- * 
+ *
  * A PDF user guide for this filter and any updates are available at:
  * http://www.subblue.com/projects/fractal_explorer
- * 
- * 
- * 
+ *
+ *
+ *
  * Quick start
  * =======================================
- * The filter defaults to a Julia set or power 3. If you apply it to an image that has a 
+ * The filter defaults to a Julia set or power 3. If you apply it to an image that has a
  * reasonable amount of transparency around it then the result you should see is the image
  * mapped into three branches.
- * 
+ *
  * 1) Change the 'sizeInput' sliders to match the pixel size of the source image
  * 2) Change the 'sizeOutput' sliders to set the pixel size of the rendered output
  * 3) Change the 'power' and 'mu' parameters to explore different shapes.
@@ -51,41 +51,41 @@
  *    Since mu are complex numbers the two sliders correspond to the real and
  *    imaginary components, e.g. c = a + bi
  * 4) Check the mandelbrot option to switch from Julia mode to Mandelbrot mode.
- *    In the Mandelbrot mode the 'mu' sliders don't change anything anything as mu is defined 
+ *    In the Mandelbrot mode the 'mu' sliders don't change anything anything as mu is defined
  *    explicitly by the pixel coordinates.
- * 
- * 
+ *
+ *
  * Help
  * =======================================
- * I recommend you download the full PDF user guide that has lots of example images explaining 
+ * I recommend you download the full PDF user guide that has lots of example images explaining
  * the parameters:
  * http://www.subblue.com/projects/fractal_explorer
- * 
+ *
  * center & centerFineTune:
  *   Pan the fractal. The fine tune option is handy for small tweaks especially at large zooms.
- * 
+ *
  * colorBackground:
  *   The background colour, RGB.
- * 
+ *
  * colorAlpha:
  *   The control is separate from the colorBackground control for After Effects compatibility.
- * 
+ *
  * iterations:
- *   This sets the number of iterations for each pixel before bailout. Increase this to get 
+ *   This sets the number of iterations for each pixel before bailout. Increase this to get
  *   the source image repeated more at smaller scales. Large values can really make things crawl!
  *
  * antialiasing:
  *   Crude oversampling. The number of samples^2 per pixel, so 1, 4 or 9.
  *   Only increase this value once you are ready for the final rendering.
- * 
+ *
  * power:
  *   This is the power that the fractal equation is raised to:
  *   z' = z^power + mu
  *   The standard Julia and Mandelbrot sets have an power of 2.0
- * 
+ *
  * powerFineTune:
  *   For fine tweaking. The most symmetrical results will be achieved with whole number powers.
- * 
+ *
  * mandelbrot:
  *   Switch from the default Julia mode to the standard Mode.
  *   In Julia mode the mu value is used as the starting point for every pixel whereas in Mandelbrot
@@ -96,16 +96,16 @@
  *   z' = z^exponent + mu
  *   Changing these will give the biggest variety of images. When you hit on something interesting
  *   use the muFineTune sliders to tweak it more accurately.
- *   
+ *
  * orbitTrap:
  *   An orbit trap is a way of mapping a bitmap image into the fractal space.
- *   Make sure you have an image with a transparent outside on the layer you are applying 
+ *   Make sure you have an image with a transparent outside on the layer you are applying
  *   the filter.
- *   For each pixel the fractal equation is calculated until the bailout value is reached or 
+ *   For each pixel the fractal equation is calculated until the bailout value is reached or
  *   the number of iterations meets the value defined by the detail parameter. For each iteration
  *   z can be mapped onto the same xy coordinates used by the image on the layer. If z maps onto a
  *   non-transparent pixel then it will use that colour instead of the backgroundColor
- *   
+ *
  * orbitTrapBlend:
  *   Blends higher iteration orbits into the background colour to give the impression of depth.
  *
@@ -113,45 +113,45 @@
  *   This attempts to remove any fringing effect you might get from the edge of an image cut-out.
  *   Use this in combination with the backgroundColor alpha channel slider (the 4th one) to fine
  *   tune any fringing effects.
- *   
+ *
  * orbitTrapOffset & orbitTrapScale:
  *   Tweak the mapping of the bitmap image into the complex plane for the fractal equation to sample
- * 
+ *
  * orbitTrapRotation:
  *   Change the rotation of the source image before it is translated and mapped onto the fractal
  *
  * orbitTrapSpin:
  *   Change the rotation of the scaled and rotated source image on the fractal - ends up changing
  *   the overall effect.
- * 
+ *
  * iterationColorBlend:
  *   This blends the background colour as a ratio of the current iteration count. It can give the
  *   impression of depth as the higher iteration count features will be deeper into the fractal.
- * 
+ *
  * rotate:
  *   Rotate the fractal plane around the origin.
- * 
+ *
  * sizeInput:
  *   Set this to the size of the source image (as PixelBender doesn't know anything
  *   about the size of the input image)
- * 
- * sizeOutput: 
+ *
+ * sizeOutput:
  *   Set this to the size you want to render the final fractal.
- * 
+ *
  * zoom:
  *   An exponential zoom. Zoom too deep and you may get odd looking pixels as the floating point
  *   used by PixelBender runs out of precision.
- *   
+ *
  * zoomFineTune:
  *   Linear zoom for fine tuning, handy when you zoom in a long way.
- * 
- * 
- * 
+ *
+ *
+ *
  * As loops aren't supported with Hydra code it curently isn't possible to export this
  * for use in Flash.
- * 
- * 
- * 
+ *
+ *
+ *
  */
 
 <languageVersion : 1.0;>
@@ -161,7 +161,7 @@ kernel FractalExplorerOrbitTraps
     vendor : "Tom Beddard";
     version : 1;
     description : "Fractal explorer with orbit traps";
-    displayname: "Fractal Explorer with Orbit Traps"; 
+    displayname: "Fractal Explorer with Orbit Traps";
     category: "Pixel Bender";
 >
 
@@ -196,7 +196,7 @@ kernel FractalExplorerOrbitTraps
 {
     input  image4 src;
     output pixel4 dst;
-    
+
     parameter int antialiasing
     <
         minValue:1;
@@ -212,7 +212,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:float2(0.0, 0.0);
 		description:"The center of the fractal.";
     >;
-    
+
     parameter float2 centerFineTune
     <
         minValue:float2(-1.0, -1.0);
@@ -220,7 +220,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:float2(0.0, 0.0);
 		description:"Fine tune the center position.";
     >;
-    
+
     parameter int2 sizeInput
     <
         minValue:int2(100, 100);
@@ -228,7 +228,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:int2(300, 300);
 		description:"The input size of the source image";
     >;
-    
+
     parameter int2 sizeOutput
     <
         minValue:int2(100, 100);
@@ -236,13 +236,13 @@ kernel FractalExplorerOrbitTraps
         defaultValue:int2(640, 480);
 		description:"The output size of the rendered fractal.";
     >;
-	
+
     parameter bool mandelbrot
     <
         defaultValue:false;
 		description:"Use the standard Mandelbrot equation.";
     >;
-	
+
     parameter float power
     <
         minValue:-12.0;
@@ -250,7 +250,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:3.0;
 		description:"Raise z to the power e in the fractal formula: z' = z^e + mu";
     >;
-    
+
     parameter float powerFineTune
     <
         minValue:-0.1;
@@ -266,7 +266,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:float2(0.5, 0.0);
 		description:"The complex parameter of the fractal formula: z' = z^e + mu";
     >;
-    
+
     parameter float2 muFineTune
     <
         minValue:float2(-0.01, -0.01);
@@ -274,7 +274,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:float2(0.0, 0.0);
 		description:"Fine tune mu.";
     >;
-    
+
     parameter int iterations
     <
         minValue:1;
@@ -282,7 +282,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:10;
 		description:"The maximum number of iterations for each pixel before bailout. Use to increase detail at the fractal edges.";
     >;
-    
+
     parameter int iterationsOffset
     <
         minValue:0;
@@ -290,7 +290,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:0;
         description:"Offset the start of the iteration count";
     >;
-    
+
     parameter pixel3 colorBackground
     <
         minValue:pixel3(0.0, 0.0, 0.0);
@@ -299,7 +299,7 @@ kernel FractalExplorerOrbitTraps
 		description:"The background colour.";
         aeUIControl: "aeColor";
     >;
-	
+
     parameter float colorAlpha
     <
         minValue:0.0;
@@ -307,13 +307,13 @@ kernel FractalExplorerOrbitTraps
         defaultValue:1.0;
 		description:"Separate alpha channel for After Effects compatibility.";
     >;
-    
+
     parameter bool orbitTrap
     <
         defaultValue:true;
 		description:"Use the source image as an orbit trap.";
     >;
-    
+
     parameter float orbitTrapEdgeDetail
     <
         minValue:0.2;
@@ -321,7 +321,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:0.9;
 		description:"Fine tune the masking at the transparent edge of the source image.";
     >;
-    
+
     parameter float orbitTrapScale
     <
         minValue:0.01;
@@ -329,7 +329,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:0.6;
 		description:"The relative scale of the source image.";
     >;
-    
+
     parameter float orbitTrapRotation
     <
         minValue:-180.0;
@@ -337,7 +337,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:0.0;
 		description:"Rotate the image map.";
     >;
-    
+
     parameter float orbitTrapSpin
     <
         minValue:-180.0;
@@ -345,7 +345,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:0.0;
 		description:"Rotate mapped image.";
     >;
-    
+
     parameter float2 orbitTrapOffset
     <
         minValue:float2(-2.0, -2.0);
@@ -353,7 +353,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:float2(0.5, 0.0);
 		description:"The relative position of the source image.";
     >;
-    
+
     parameter float iterationColorBlend
     <
         minValue:0.0;
@@ -361,7 +361,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:0.0;
 		description:"Add the illusion of depth by blending subsequent iterations into the background.";
     >;
-    
+
     parameter float rotate
     <
         minValue:-180.0;
@@ -369,7 +369,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:0.0;
 		description:"Rotate the fractal.";
     >;
-    
+
     parameter float zoom
     <
         minValue:-1.0;
@@ -377,7 +377,7 @@ kernel FractalExplorerOrbitTraps
         defaultValue:0.1;
 		description:"Primary zoom.";
     >;
-    
+
     parameter float zoomFineTune
     <
         minValue:-1.0;
@@ -385,13 +385,13 @@ kernel FractalExplorerOrbitTraps
         defaultValue:0.0;
 		description:"Fine tune the zoom.";
     >;
-    
+
     region generated()
     {
         return region(float4(0, 0, sizeOutput.x, sizeOutput.y));
     }
-    
-    
+
+
     // Calculations common to all pixels
     dependent float x1, x2, y1, zoomFactor, spanX, spanY, sampleStep, sampleContribution;
     dependent float2 scale, bitmap2complex;
@@ -404,21 +404,21 @@ kernel FractalExplorerOrbitTraps
     {
         float x0 = center.x;
         float y0 = center.y;
-        
+
 		minIterations = iterationsOffset >= iterations ? iterations - 1 : iterationsOffset;
-		
+
         // Set min and max limits for x and y in the complex plane
         zoomFactor = exp(zoom + zoomFineTune);
         x1 = x0 - 2.0 / zoomFactor;
         x2 = x0 + 2.0 / zoomFactor;
-        
+
         spanX = x2 - x1;
         spanY = spanX * (float(sizeOutput.y) / float(sizeOutput.x));
         y1 = y0 - spanY / 2.0;
-        
+
         x1 += centerFineTune.x * spanX;
         y1 += centerFineTune.y * spanY;
-        
+
         if (rotate != 0.0) {
             float rc = cos(radians(rotate));
             float rs = sin(radians(rotate));
@@ -427,9 +427,9 @@ kernel FractalExplorerOrbitTraps
             x1 = xy.x;
             y1 = xy.y;
         }
-        
+
         scale = float2(spanX / float(sizeOutput.x), spanY / float(sizeOutput.y));
-        
+
         // Scaling factor to map bitmap pixel coordinates onto the complex plane
         bitmap2complex = float2(min(float(sizeInput.x), float(sizeInput.y)) / 2.0) / float2(orbitTrapScale);
         float otrc = cos(radians(orbitTrapRotation));
@@ -438,28 +438,28 @@ kernel FractalExplorerOrbitTraps
         float otsc = cos(radians(orbitTrapSpin));
         float otss = sin(radians(orbitTrapSpin));
         orbitSpin = float2x2(otsc, otss, -otss, otsc);
-        
+
         // Define colours
         color_background = pixel4(colorBackground.r, colorBackground.g, colorBackground.b, colorAlpha);
-        
+
         // Super sampling
         sampleStep = 1.0 / float(antialiasing);
         sampleContribution = 1.0 / pow(float(antialiasing), 2.0);
     }
-    
+
 
     pixel4 orbitMapping(pixel4 c, float2 w)
     {
         pixel4 color = pixel4(0.0, 0.0, 0.0, 0.0);
         float2 sp = float2(sizeInput / 2) + (w * orbitSpin + orbitTrapOffset) * orbitRotation * bitmap2complex;
         pixel4 s = sample(src, sp);
-        
+
         if (s.a > 0.0) {
             color = mix(c, s, s.a);
         }
         return color;
     }
-    
+
 
     pixel4 colorMapping(float n, float2 z)
     {
@@ -467,12 +467,12 @@ kernel FractalExplorerOrbitTraps
         p = pow(p, 2.0);
         return mix(color_background, pixel4(1.0, 1.0, 1.0, 1.0), p);
     }
-    
-    
+
+
     /**
      *  Standard formula
      *	z' = z^e + mu
-     *  
+     *
      *  Julia:      mu = a + bi which is the same for all points
      *  Mandelbrot: e = 2.0, mu = x + yi where x and y are derived from the pixel coordinates
      *  Glynn:      e = 1.5, mu = -0.2 + 0i
@@ -482,21 +482,21 @@ kernel FractalExplorerOrbitTraps
         pixel4 color = color_background;
         color.a = orbitTrapEdgeDetail;
         float2 z;
-        
+
         if (rotate != 0.0) {
             z = float2(x1, y1) + p * scale * rotation;
         } else {
             z = float2(x1, y1) + p * scale;
         }
-        
+
         float  e = power + powerFineTune;
         float2 c = mandelbrot ? z : (mu + muFineTune);
         int n = 0;
         float blend = 1.0;
-        
+
         while (n < iterations) {
             z = complexPower(z, e) + c;
-            
+
             if (n >= minIterations) {
                 if (orbitTrap) {
                     color = orbitMapping(color, float2(z / 2.0));
@@ -507,21 +507,21 @@ kernel FractalExplorerOrbitTraps
                     break;
                 }
             }
-            
+
             n += 1;
         }
-        
+
         if (iterationColorBlend > 0.0) blend = clamp(1.0 - (float(n - minIterations) / float(iterations - minIterations)) * iterationColorBlend, 0.0, 1.0);
         color = mix(color_background, color, color.a * blend);
-        
+
         return color;
     }
-    
-    
+
+
     void evaluatePixel()
     {
         pixel4 c = pixel4(0.0, 0.0, 0.0, 1.0);
-        
+
         if (antialiasing > 1) {
             // Average detailSuperSample^2 points per pixel
             for (float i = 0.0; i < 1.0; i += sampleStep)
@@ -530,7 +530,7 @@ kernel FractalExplorerOrbitTraps
         } else {
            c = renderPoint(outCoord());
         }
-        
+
         dst = c;
     }
 }

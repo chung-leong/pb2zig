@@ -12,14 +12,14 @@ kernel TerrainRaytracer
     input image4 diffuseMap;
     input image4 sphereMap;
     output pixel4 dst;
-    
+
     parameter float width < defaultValue: 800.0; >;
     parameter float height < defaultValue: 600.0; >;
     parameter float fogDist < minValue: 1.0; maxValue: 5000.0; defaultValue: 1100.0; >;
     parameter float minFogDist < minValue: 1.0; maxValue: 5000.0; defaultValue: 400.0; >;
     parameter float elevation < minValue: 1.0; maxValue: 1000.0; defaultValue: 130.0; >;
     parameter float2 mapScale < minValue: float2(0.01, 0.01); maxValue: float2(20.0, 20.0); defaultValue: float2(1.0, 1.0); >;
-    
+
     parameter float3 camPosition < minValue: float3(-1000.0); maxValue: float3(1000.0); defaultValue: float3(110.0, 100.0, -300.0); >;
     parameter float rotationX < minValue: -5.0; maxValue: 5.0; defaultValue: 0.0; >;
     parameter float rotationY < minValue: -5.0; maxValue: 5.0; defaultValue: 0.0; >;
@@ -27,18 +27,18 @@ kernel TerrainRaytracer
     parameter float4 diffuseColor < minValue: float4(0.0); maxValue: float4(1.0); defaultValue: float4(1.0, .8, .5, 1.0); >;
     parameter float4 specularColor < minValue: float4(0.0); maxValue: float4(1.0); defaultValue: float4(1.0, 1.0, 1.0, 0.0); >;
     parameter float4 ambient < minValue: float4(0.0); maxValue: float4(1.0); defaultValue: float4(0.05, 0.05, 0.1, 0.0); >;
-    
+
     // nice morning light:
     // ambient(.05, .05, .15), diffuse(1, .56, .2), specular(.78, .9, .0)
     // daylight = current default
-    
+
     #define updatePos() h = sampleLinear(heightMap, mod(pos.xz/mapScale, 2048.0)).y*elevation; dist = pos.y-h; if (dist > 0.0) { lp = pos; pos += rayStep*dir; lh = h; t+= rayStep; rayStep += 0.02; }
-    
+
     void evaluatePixel()
     {
         float3 pos, dir;
         float2 coord = outCoord();
-        
+
         // I know, not good to do this every pixel
         float cx = cos(-rotationX);
         float sx = sin(-rotationX);
@@ -49,7 +49,7 @@ kernel TerrainRaytracer
         float3 transMatX = float3( cy, 0.0, sy );
         float3 transMatY = float3( sx*sy, cx, -sx*cy );
         float3 transMatZ = float3( -cx*sy, sx, cx*cy );
-     
+
         // create ray, based on focal length 1.5
         float3 dirT;
         dirT.x = coord.x/width - .5;
@@ -58,16 +58,16 @@ kernel TerrainRaytracer
         dir.x = dot(transMatX, dirT);
         dir.y = dot(transMatY, dirT);
         dir.z = dot(transMatZ, dirT);
-        
+
         float cur = sampleLinear(heightMap, mod(camPosition.xz/mapScale, 2048.0)).y*elevation + 20.0;
-        
+
         pos = dir+ camPosition;
         if (cur > camPosition.y) pos.y += cur - camPosition.y;
-        
+
         float dist;
         float rayStep = 1.0;
         float t = 1.0;
-        
+
         updatePos();
         updatePos();
         updatePos();
@@ -348,18 +348,18 @@ kernel TerrainRaytracer
         updatePos();
         updatePos();
         updatePos();
-        
-        
+
+
         dst.a = 1.0;
-       
+
         float ld = lp.y-lh;
         pos = lp + (lp-pos)*ld/(dist-ld);
-        
+
         float3 tlight = light/length(light);
         float2 coord2D = mod(pos.xz/mapScale, 2048.0);
         float3 normal = sampleLinear(normalMap, coord2D).xzy-.5;
         normal /= length(normal);
-        
+
         float4 diffuse = max(-dot(normal, tlight), 0.0)*diffuseColor;
         float3 halfVec = (dir + tlight);
         halfVec /= length(halfVec);
@@ -367,10 +367,10 @@ kernel TerrainRaytracer
         if (specular < 0.0) specular = 0.0;
         specular = pow(specular, 5.0)*h/elevation;
         float4 tex = sampleLinear(diffuseMap, coord2D);
-        
-        
+
+
         //dst.xyz = normal*.5+.5;
-        
+
         // we could add lower fog too
         /*float fog = smoothStep(pos.y, 0.0, elevation*.25);
         dst.xyz = dst.xyz*fog + float3(.5, .5, .5)*(1.0-fog);*/
@@ -398,7 +398,7 @@ kernel TerrainRaytracer
             updatePos();
             updatePos();
             updatePos();
-            
+
             if (dist < 0.0) diffuse *= .25;
             dst = (diffuse+ambient)*tex + specular*specularColor;
             float3 d = camPosition-pos;
@@ -410,12 +410,12 @@ kernel TerrainRaytracer
             float angle = atan(dir.z, dir.x);
             float rad = abs(dir.y - 1.0);
             float2 coord2d = float2(cos(angle)*rad, sin(angle)*rad);
-            if (rad > 1.0) 
+            if (rad > 1.0)
                 dst = float4(.59, .73, .886, 1.0);
             else
                 dst = sampleLinear(sphereMap, (1.0+coord2d)*1024.0);
         }
-        
+
         dst.a = 1.0;
     }
 }

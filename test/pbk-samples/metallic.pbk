@@ -60,7 +60,7 @@ parameter float2 stripesize
     description: "the size for input 'stripe'";
 >;
 
-//  
+//
 parameter float3 viewDirection
 <
     minValue:float3(-1,-1,-1);
@@ -82,22 +82,22 @@ void evaluatePixel() {
 
     float2 po = outCoord();
     float4 tmp4;
-    
+
     dst = sampleLinear(source, po);
-    
+
     //  if on a transparent area skip the rest:
     if (dst.a>0.01) {
-        
+
         float4 sourcesample = dst;
         /*  define the normal vector by sampled pixels
             normal = ( 1,0,dx ) X ( 0,1,dy) =
-            
+
             i       j       k
             1       0       dx
             0       1       dy
-            
+
             = -dx, -dy, 1
-        
+
         */
 
         //  for 3x3 sample, uncomment for exporting Metallic.pbj
@@ -105,13 +105,13 @@ void evaluatePixel() {
         float3 normal =float3(
                      pixelHeight(sampleLinear(source,po-float2(1,0))) // pixelHeight converts pixel4 to float
                     -pixelHeight(sampleLinear(source,po+float2(1,0))),
-                    
+
                     -pixelHeight(sampleLinear(source,po+float2(0,1)))
                     +pixelHeight(sampleLinear(source,po-float2(0,1))),
-                    
+
                     2.0/relief);
         */
-        
+
         //  for 5x5 sample:
         /*  how to count value for f'(0) if values in four adjacent points are known:
             series approximations:
@@ -122,24 +122,24 @@ void evaluatePixel() {
             adding all these together and solving for f' gives:
 			f' = ( f(x+2h)+f(x+h)-f(x-h)-f(x-2h) )/6
         */
-        
+
         // uncomment for exporting Metallic4.pbj
         /*
         float3 normal =float3(
                      pixelHeight(sampleLinear(source,po+float2(-2,0)))
-                    +pixelHeight(sampleLinear(source,po+float2(-1,0)))  
+                    +pixelHeight(sampleLinear(source,po+float2(-1,0)))
                     -pixelHeight(sampleLinear(source,po+float2(1,0)))
                     -pixelHeight(sampleLinear(source,po+float2(2,0)))
                     ,
-                    
+
                      pixelHeight(sampleLinear(source,po+float2(0,-2)))
-                    +pixelHeight(sampleLinear(source,po+float2(0,-1)))  
+                    +pixelHeight(sampleLinear(source,po+float2(0,-1)))
                     -pixelHeight(sampleLinear(source,po+float2(0,1)))
                     -pixelHeight(sampleLinear(source,po+float2(0,2))),
-                    
+
                     6.0/relief);
         */
-        
+
         //  for 7x7 sample:
         /*  how to count value for f'(0) if values in four adjacent points are known:
             series approximations:
@@ -152,51 +152,51 @@ void evaluatePixel() {
             adding all these together and solving for f' gives:
 			f' = ( f(x+3h)+f(x+2h)+f(x+h)-f(x-h)-f(x-2h)-f(x+3h) )/12
         */
-        
+
          float3 normal =float3(
                      pixelHeight(sampleLinear(source,po+float2(-3,0)))
                     +pixelHeight(sampleLinear(source,po+float2(-2,0)))
-                    +pixelHeight(sampleLinear(source,po+float2(-1,0)))  
+                    +pixelHeight(sampleLinear(source,po+float2(-1,0)))
                     -pixelHeight(sampleLinear(source,po+float2(1,0)))
                     -pixelHeight(sampleLinear(source,po+float2(2,0)))
                     -pixelHeight(sampleLinear(source,po+float2(3,0)))
                     ,
-                    
+
                      pixelHeight(sampleLinear(source,po+float2(0,-3)))
                     +pixelHeight(sampleLinear(source,po+float2(0,-2)))
-                    +pixelHeight(sampleLinear(source,po+float2(0,-1)))  
+                    +pixelHeight(sampleLinear(source,po+float2(0,-1)))
                     -pixelHeight(sampleLinear(source,po+float2(0,1)))
                     -pixelHeight(sampleLinear(source,po+float2(0,2)))
                     -pixelHeight(sampleLinear(source,po+float2(0,3))),
-                    
+
                     12.0/relief);
-                    
+
         //  normalize the vector
         float len= 1.0/sqrt(normal.x*normal.x + normal.y*normal.y +normal.z*normal.z+0.00000001);
         normal *= len;
-        
+
         //  get the unit vector for light direction
         float3 lightbeam =lightsource;
         lightbeam.xy -= po;
        lightbeam.z -= 5.0*relief*(pixelHeight(sourcesample)-1.0);
         len = 1.0/sqrt(lightbeam.x*lightbeam.x+lightbeam.y*lightbeam.y+lightbeam.z*lightbeam.z +0.00000001);
         lightbeam *=len;
-        
+
         //  diffuse shading by the dotproduct of the normal vector and light direction
         float refl = shadow+(1.0-shadow)*dot(normal,lightbeam);
-        
+
         //  specular component, v = reflecting vector by viewDirection and normal
         float3 v = reflectVector(viewDirection,normal);
-        
+
         //  angle between reflection and light direction, spec=1 if parallel
         float spec = dot(v,lightbeam);
         if (spec>0.0) {
             spec = pow(spec,float(shininess));
             refl += spec;
         }
-        
+
         refl = clamp(refl, 0.0, 1.0);
-        
+
         //  sample the correct shade for input 'stripe'
         dst = sampleLinear (stripe, float2(0.5+(stripesize.x-1.0)*refl,stripesize.y) );
         //  mix the alpha with input 'source'

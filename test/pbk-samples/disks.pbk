@@ -31,7 +31,7 @@ kernel Tiling
         defaultValue: float(32);
         description: "Pattern Size";
     >;
-    
+
     parameter float radius
     <
         minValue: float(0.1);
@@ -39,7 +39,7 @@ kernel Tiling
         defaultValue: float(0.67);
         description: "radius: how much a disks fills up its space";
     >;
-    
+
     parameter float2 base
     <
         minValue: float2(-200,-200);
@@ -57,8 +57,8 @@ kernel Tiling
         description: "Rotation around Base Point";
     >;
     */
-    
-    parameter float2x2 rotation 
+
+    parameter float2x2 rotation
     <
         minValue: float2x2(-1,-1,-1,-1);
         maxValue: float2x2(1,1,1,1);
@@ -66,22 +66,22 @@ kernel Tiling
         description: "Rotation around Base Point";
     >;
     //  btw: enter 1,-0.5,0.0,0.866 for a rectangular pattern
-    
-    
-    // sqrt(3)/2, a constant always needed for hexagon maths 
+
+
+    // sqrt(3)/2, a constant always needed for hexagon maths
     const float halfSqrt3 = 0.866025404;
-    
+
     /*  coordinate system for hexagonal pattern, angle between x and y 60 degrees
     *   transform hcs and it's inverse hcsR
     */
     const float2x2 hcs  = float2x2(halfSqrt3, 0.5, 0.0, 1.0);
     const float2x2 hcsR = inverse2x2(hcs);
-    
-    
+
+
     input image4 src;
     output pixel4 pxlOut;
-    
-    
+
+
     void evaluatePixel()
     {
         /* // replaced by presetting rotation in actionscript:
@@ -90,63 +90,63 @@ kernel Tiling
         float2x2 rotation = float2x2(cs,sn,-sn,cs);
         */
         float2x2 rotationR = inverse2x2(rotation);
-        
+
         //  Transform from screen to hexagonal system:
         float2x2 rot = rotation*hcs/size;
         //  Reverse, from hexagonal to screen coordinates:
         float2x2 rotR = hcsR*size*rotationR;
-        
+
         //  Transform to hexagonal system, integer coordinates
         float2 p = floor((outCoord()-base)*rot+0.5);
-        
+
         //  init output to (0,0,0,0)
         pxlOut = pixel4(0);
-        
+
         //  switch back to image coordinates, sample the pixel
         float2 p1 = p*rotR +base -outCoord();
         pixel4 pxl = sampleNearest(src, p1+outCoord());
-        
-        //  if new point inside the disk, add sampled value to the output 
+
+        //  if new point inside the disk, add sampled value to the output
         float dist = distanceSquared(p1);
         addPixel;
-        
-        //  repeat same for neighbour cells, float2(+-1,+-1) 
+
+        //  repeat same for neighbour cells, float2(+-1,+-1)
         addSample(float2(-1,-1));
         addSample(float2(-1,0));
-        
+
         addSample(float2(0,-1));
         addSample(float2(0,1));
-        
+
         addSample(float2(1,-1));
         addSample(float2(1,0));
         addSample(float2(1,1));
         addSample(float2(-1,1)); // 1.0
-            
+
         //  for larger radii more sampled points are needed:
         if (radius>2.25) {
-        
+
             addSample(float2(-2,0));    // 2.4
             addSample(float2(-2,-1));   // 2.4
-            
+
             addSample(float2(-1,-2));   // 2.25
-            
+
             addSample(float2(0,-2));    // 2.4
             addSample(float2(0,2));     // 2.4
-            
+
             addSample(float2(1,2));     // 2.25
-            
+
             addSample(float2(2,0));     // 2.25
             addSample(float2(2,1));     // 2.25
-            
+
             if (radius>3.0) {
                 addSample(float2(-2,-2));
                 addSample(float2(2,2));
             }
-            
+
         }
         //  adjust because in most cases there are several overlapping disks:
-        // 
-        pxlOut *= 0.5/radius; // luminocity; 
+        //
+        pxlOut *= 0.5/radius; // luminocity;
         // if (samplesTaken>0) pxlOut /= float(samplesTaken);
     }
 }
