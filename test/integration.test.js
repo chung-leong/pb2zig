@@ -175,7 +175,7 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'dilate-diamond';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    await apply(name, { i: 'malgorzata-socha.png' });
   })
   it('should correctly translate disks.pbk', async function() {
     this.timeout(60000);
@@ -448,7 +448,7 @@ async function translate(name) {
 async function apply(name, sources, params = {}) {
   const { apply, allocate } = await import(`${zigDir}/${name}.zig`);
   const input = { ...params };
-  let width = 250, height = 250, channels = 4, depth = 'uchar', srcCount = 0;
+  let width = 400, height = 400, channels = 4, depth = 'uchar', srcCount = 0;
   for (const [ srcName, filename ] of Object.entries(sources)) {
     let img = sharp(`${imgInDir}/${filename}`);
     img = img.ensureAlpha();
