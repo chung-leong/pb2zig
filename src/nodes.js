@@ -161,9 +161,19 @@ export class IfStatement {
   elseClause;
 }
 
+export class ForStatement {
+  initializers;
+  condition;
+  incrementals;
+  statements;
+}
+
 export class WhileStatement {
   condition;
   statements;
+}
+
+export class BreakStatement{
 }
 
 export class ContinueStatement{

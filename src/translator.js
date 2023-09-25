@@ -224,7 +224,7 @@ export class PixelBenderToZigTranslator {
       }
       throw new Error(`${name}(${types.join(', ')}) does not exists"`);
     } else {
-      const index = args.findIndex((arg, i) => arg.type !== argTypes[i + 1]);
+      const index = findMismatch(argTypes);
       if (index !== -1) {
         throw new Error(`${name}() expects argument ${index + 1} to be ${argTypes[index + 1]}, got ${types[index]}`);
       }
@@ -535,9 +535,10 @@ export class PixelBenderToZigTranslator {
         try {
           this.startScope();
           for (const name of args) {
-            this.variableTypes[name] = 'anytype';
+            this.variableTypes[name] = 'typeof(name)';
           }
           const expr = this.translateExpression(expression);
+          // TODO: detect argument type instead using anytype
           const argList = args.map(name => `${name}: anytype`);
           let returnType;
           if (expr.type === 'anytype') {
@@ -545,14 +546,19 @@ export class PixelBenderToZigTranslator {
           } else {
             returnType = getZigType(expr.type);
           }
+          const argTypes = [ returnType, ...args.map(n => 'anytype') ];
+          this.functionArgTypes[name] = argTypes;
           if (count === 0) {
             this.add(`// macro functions`);
+          } else {
+            this.add(``);
           }
           this.add(`fn ${name}(${argList.join(', ')}) ${returnType} {`);
           this.add(`return ${expr};`);
           this.add(`}`)
           count++;
         } catch (err) {
+          console.log(name, err.message);
           // must be expanded
         } finally {
           this.endScope();
@@ -718,6 +724,35 @@ export class PixelBenderToZigTranslator {
     this.add(`}`);
   }
 
+  addForStatement({ initializers, condition, incrementals, statements }) {
+    const hasDecl = !!initializers.find(i => i instanceof N.VariableDeclaration);
+    if (hasDecl) {
+      // need to start a new code block
+      this.add('{');
+      this.startScope();
+    }
+    this.addStatements(initializers);
+    const c = this.translateExpression(condition);
+    this.add(`while (${c}) {`)
+    this.startScope();
+    this.addStatements(statements);
+    this.addStatements(incrementals);
+    this.endScope();
+    this.add('}');
+    if (hasDecl) {
+      this.endScope();
+      this.add('}');
+    }
+  }
+
+  addBreakStatement() {
+    this.add(`break;`);
+  }
+
+  addContinueStatement() {
+    this.add(`continue;`);
+  }
+
   addReturnStatement({ expression }) {
     const expr = this.translateExpression(expression);
     this.add(`return ${expr};`);
@@ -878,7 +913,7 @@ export class PixelBenderToZigTranslator {
   }
 
   translateConstructorCall({ type, args }, typeExpected) {
-    const argList = args.map(a => this.translateExpression(a, type));
+    const argList = args.map(a => this.translateExpression(a));
     if (isMatrix(type)) {
       const typeV = getChildType(type);
       const width = getVectorWidth(typeV);
@@ -1160,10 +1195,6 @@ class ZigExpr {
   }
 }
 
-function getType(baseType, width) {
-  return (width > 1) ? baseType + width : baseType;
-}
-
 function getZigType(type) {
   if (type === undefined) {
     return undefined;
@@ -1200,12 +1231,18 @@ function getZigType(type) {
   return zigType;
 }
 
+function isGeneric(type) {
+  return type.startsWith('typeOf(')
+}
+
 function getChildZigType(type) {
   return getZigType(getChildType(type));
 }
 
 function getChildType(type) {
-  if (isMatrix(type)) {
+  if (isGeneric(type)) {
+    return `${type}.child`;
+  } if (isMatrix(type)) {
     return type.slice(0, -2);
   } else if (isVector(type)) {
     return type.slice(0, -1);
@@ -1230,6 +1267,9 @@ function getVectorWidth(type) {
   if (type === undefined) {
     return undefined;
   }
+  if (isGeneric(type)) {
+    return `${type}.len`;
+  }
   return parseInt(type.slice(-1), '') || 1;
 }
 
@@ -1243,14 +1283,12 @@ function getVectorIndices(type) {
 }
 
 function getSwizzleIndices(prop) {
-  if (prop) {
-    const map = {
-      r: 0, g: 1, b: 2, a: 3,
-      x: 0, y: 1, z: 2, w: 3,
-      s: 0, t: 1, p: 2, q: 3,
-    };
-    return [ ...prop ].map(c => map[c]);
-  }
+  const map = {
+    r: 0, g: 1, b: 2, a: 3,
+    x: 0, y: 1, z: 2, w: 3,
+    s: 0, t: 1, p: 2, q: 3,
+  };
+  return [ ...prop ].map(c => map[c]);
 }
 
 function getSwizzleType(type, indices) {

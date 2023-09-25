@@ -447,10 +447,44 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     return this.create(N.IfStatement, { statements });
   }
 
+  forStatement(ctx) {
+    const initializers = this.visit(ctx.forInitializer);
+    const condition = this.visit(ctx.forCondition);
+    const incrementals = this.visit(ctx.forIncremental);
+    const statements = arrayOf(this.visit(ctx.statement));
+    return this.create(N.ForStatement, { initializers, condition, incrementals, statements });
+  }
+
+  forInitializer(ctx) {
+    if (ctx.variableDeclaration) {
+      return this.visit(ctx.variableDeclaration);
+    } else if (ctx.expressionStatement) {
+      return [ this.visit(ctx.expressionStatement) ];
+    } else {
+      return [];
+    }
+  }
+
+  forCondition(ctx) {
+    if (ctx.expressionStatement) {
+      const stmt = this.visit(ctx.expressionStatement)
+      return stmt.expression;
+    }
+  }
+
+  forIncremental(ctx) {
+    const stmts = [];
+    for (const node of ctx.expression) {
+      const expression = this.visit(node);
+      stmts.push(this.create(N.ExpressionStatement, { expression }));
+    }
+    return stmts;
+  }
+
   whileStatement(ctx) {
     const condition = this.visit(ctx.expression);
     const statements = arrayOf(this.visit(ctx.statement));
-    return this.create(N.IfStatement, { condition, statements });
+    return this.create(N.WhileStatement, { condition, statements });
   }
 
   doWhileStatement(ctx) {

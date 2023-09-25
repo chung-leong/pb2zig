@@ -244,6 +244,7 @@ export class PixelBenderParser extends CstParser {
         { ALT: () => $.SUBRULE($.constantDeclaration) },
         { ALT: () => $.SUBRULE($.expressionStatement) },
         { ALT: () => $.SUBRULE($.ifStatement) },
+        { ALT: () => $.SUBRULE($.forStatement) },
         { ALT: () => $.SUBRULE($.whileStatement) },
         { ALT: () => $.SUBRULE($.doWhileStatement) },
         { ALT: () => $.SUBRULE($.continueStatement) },
@@ -462,6 +463,34 @@ export class PixelBenderParser extends CstParser {
       $.SUBRULE($.expression)
       $.CONSUME(T.RParen)
       $.CONSUME(T.Semicolon)
+    })
+    $.RULE('forStatement', () => {
+      $.CONSUME(T.For)
+      $.CONSUME(T.LParen)
+      $.SUBRULE($.forInitializer)
+      $.SUBRULE($.forCondition)
+      $.SUBRULE($.forIncremental)
+      $.CONSUME(T.RParen)
+      $.SUBRULE($.statement)
+    })
+    $.RULE('forInitializer', () => {
+      $.OR([
+        { ALT: () => $.SUBRULE($.variableDeclaration) },
+        { ALT: () => $.SUBRULE($.expressionStatement) },
+        { ALT: () => $.SUBRULE($.emptyStatement) },
+      ])
+    })
+    $.RULE('forCondition', () => {
+      $.OR([
+        { ALT: () => $.SUBRULE($.expressionStatement) },
+        { ALT: () => $.SUBRULE($.emptyStatement) },
+      ])
+    })
+    $.RULE('forIncremental', () => {
+      $.MANY_SEP({
+        SEP: T.Comma,
+        DEF: () => $.SUBRULE($.expression),
+      })
     })
     $.RULE('continueStatement', () => {
       $.CONSUME(T.Continue)
