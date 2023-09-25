@@ -446,7 +446,7 @@ async function translate(name) {
 }
 
 async function apply(name, sources, params = {}) {
-  const { apply, Output } = await import(`${zigDir}/${name}.zig`);
+  const { apply, allocate } = await import(`${zigDir}/${name}.zig`);
   const input = { ...params };
   let width = 250, height = 250, channels = 4, depth = 'uchar', srcCount = 0;
   for (const [ srcName, filename ] of Object.entries(sources)) {
@@ -464,11 +464,14 @@ async function apply(name, sources, params = {}) {
       height = info.height;
     }
   }
-  const output = Output.create(width, height);
+  const output = allocate(width, height);
   apply(input, output);
-  const dstPixels = output.pixels.typedArray;
-  sharp(dstPixels, {
-    raw: { width, height, channels, depth },
-  }).png().toFile(`${imgOutDir}/${name}.png`);
+  const outputImages = Object.values(output);
+  for (const [ index, image ] of outputImages.entries())  {
+    const filename = (outputImages.length > 1) ? name + index : name;
+    const dstPixels = image.pixels.typedArray;
+    sharp(dstPixels, {
+      raw: { width, height, channels, depth },
+    }).png().toFile(`${imgOutDir}/${filename}.png`);
+  }
 }
-
