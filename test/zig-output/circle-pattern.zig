@@ -109,12 +109,12 @@ pub const kernel = struct {
                     const tmp1 = tmp;
                     tmp = z[1] - 0.5 * sqr3;
                     const tmp2 = tmp;
-                    if (tmp1 * tmp + tmp2 * tmp < fill) {
+                    if (tmp1 * tmp1 + tmp2 * tmp2 < fill) {
                         alf = 1.0;
                     } else {
                         tmp = z[1] - sqr3;
                         const tmp3 = tmp;
-                        if (z[0] * z[0] + tmp3 * tmp < fill) {
+                        if (z[0] * z[0] + tmp3 * tmp3 < fill) {
                             alf = 1.0;
                             znew[0] -= 0.5;
                             znew[1] += 0.5;
@@ -123,13 +123,13 @@ pub const kernel = struct {
                             const tmp4 = tmp;
                             tmp = z[1] - sqr3;
                             const tmp5 = tmp;
-                            if (tmp4 * tmp + tmp5 * tmp < fill) {
+                            if (tmp4 * tmp4 + tmp5 * tmp5 < fill) {
                                 alf = 1.0;
                                 znew += halfPixel;
                             } else {
                                 tmp = z[0] - 1.0;
                                 const tmp6 = tmp;
-                                if (tmp6 * tmp + z[1] * z[1] < fill) {
+                                if (tmp6 * tmp6 + z[1] * z[1] < fill) {
                                     alf = 1.0;
                                     znew[0] += 0.5;
                                     znew[1] += -0.5;

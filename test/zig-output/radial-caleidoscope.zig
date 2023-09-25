@@ -81,7 +81,7 @@ pub const kernel = struct {
                 }
                 newAngle += direction;
                 const tmp1 = newAngle;
-                self.dst = self.input.src.sampleLinear(basepoint + @Vector(2, f32){ radius * cos(tmp1), radius * sin(newAngle) });
+                self.dst = self.input.src.sampleLinear(basepoint + @Vector(2, f32){ radius * cos(tmp1), radius * sin(tmp1) });
                 
                 self.setOutputPixel();
             }

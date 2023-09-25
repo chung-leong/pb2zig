@@ -126,8 +126,24 @@ export class PixelBenderToZigTranslator {
     } while(this.variableTypes[name]);
     this.variableTypes[name] = value.type;
     this.add(`const ${name} = ${value};`);
-    this.variableAliases.push({ lvalue, name });
-    return new ZigExpr(name, value.type);
+    const tmp = new ZigExpr(name, value.type);
+    this.variableAliases.unshift({ lvalue, tmp });
+    return tmp;
+  }
+
+  findTempVariable(lvalue) {
+    if (!this.variableAliases) {
+      return;
+    }
+    const list = this.variableAliases;
+    this.variableAliases = null;
+    const expr1 = this.translateExpression(lvalue);
+    const entry = list.find(e => {
+      const expr2 = this.translateExpression(e.lvalue);
+      return (`${expr1}` === `${expr2}`);
+    });
+    this.variableAliases = list;
+    return entry?.tmp;
   }
 
   hasFunction(name) {
@@ -588,8 +604,7 @@ export class PixelBenderToZigTranslator {
           this.variableTypes[name] = type;
           count++;
         } else {
-          // translateVariableAccess() should return self.[name] so the
-          // variable can be modified
+          // resolveVariable() should return self.[name] so the variable can be modified
         }
       } else {
         // the variable is either a reference to an input/output image or undefined
@@ -749,7 +764,12 @@ export class PixelBenderToZigTranslator {
     return value;
   }
 
-  translateVariableAccess({ name, property, element }) {
+  translateVariableAccess(expression) {
+    const tmp = this.findTempVariable(expression);
+    if (tmp) {
+      return tmp;
+    }
+    const { name, property, element } = expression;
     let value = this.resolveVariable(name);
     if (property) {
       const indices = getSwizzleIndices(property);
