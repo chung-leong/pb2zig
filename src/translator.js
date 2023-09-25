@@ -18,15 +18,21 @@ export class PixelBenderToZigTranslator {
   evaluatingDependents;
   variableAliases;
   macros;
+  options;
 
-  translate(ast, macroASTs) {
+  translate(ast, macroASTs, options = {}) {
+    const {
+      kernelOnly = false,
+    } = options;
     this.reset();
     this.ast = ast;
     this.macroASTs = macroASTs;
     this.addHeading();
     this.addImports();
     this.addKernel();
-    this.addProcessFunctions();
+    if (!kernelOnly) {
+      this.addProcessFunctions();
+    }
     return this.lines.join('\n');
   }
 
@@ -745,6 +751,25 @@ export class PixelBenderToZigTranslator {
     }
   }
 
+  addWhileStatement({ condition, statements }) {
+    const c = this.translateExpression(condition);
+    this.add(`while (${c}) {`)
+    this.startScope();
+    this.addStatements(statements);
+    this.endScope();
+    this.add('}');
+  }
+
+  addDoWhileStatement({ condition, statements }) {
+    const c = this.translateExpression(condition);
+    this.add(`while (true) {`)
+    this.startScope();
+    this.addStatements(statements);
+    this.add(`if (${c}) continue else break;`);
+    this.endScope();
+    this.add('}');
+  }
+
   addBreakStatement() {
     this.add(`break;`);
   }
@@ -1126,8 +1151,8 @@ export class PixelBenderToZigTranslator {
 
 const translater = new PixelBenderToZigTranslator();
 
-export function translate(ast, macroASTs) {
-  return translater.translate(ast, macroASTs);
+export function translate(ast, macroASTs, options) {
+  return translater.translate(ast, macroASTs, options);
 }
 
 class ZigExpr {

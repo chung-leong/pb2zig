@@ -490,7 +490,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   doWhileStatement(ctx) {
     const condition = this.visit(ctx.expression);
     const statements = arrayOf(this.visit(ctx.statement));
-    return this.create(N.IfStatement, { condition, statements });
+    return this.create(N.DoWhileStatement, { condition, statements });
   }
 
   continueStatement(ctx) {

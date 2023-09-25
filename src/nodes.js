@@ -173,6 +173,11 @@ export class WhileStatement {
   statements;
 }
 
+export class DoWhileStatement {
+  condition;
+  statements;
+}
+
 export class BreakStatement{
 }
 
