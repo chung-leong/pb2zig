@@ -153,7 +153,8 @@ pub const kernel = struct {
             
             // built-in Pixel Bender functions
             fn length(v: anytype) f32 {
-                return @typeInfo(@TypeOf(v)).Vector.len;
+                const sum = @reduce(.Add, v * v);
+                return @sqrt(sum);
             }
         };
     }

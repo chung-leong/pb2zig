@@ -400,6 +400,8 @@ describe('Integration tests', function() {
       radius: 300,
       center: [ 250, 330 ],
       twirlAngle: 55,
+      outputWidth: 512,
+      outputHeight: 480,
     };
     await apply(name, { oImage: 'malgorzata-socha.png' }, params);
   })
@@ -457,7 +459,12 @@ async function translate(name) {
   }
 }
 
-async function apply(name, sources, params = {}) {
+async function apply(name, sources, options = {}) {
+  const {
+    outputWidth,
+    outputHeight,
+    ...params
+  } = options;
   const { apply, allocate } = await import(`${zigDir}/${name}.zig`);
   const input = { ...params };
   let width = 400, height = 400, channels = 4, depth = 'uchar', srcCount = 0;
@@ -475,6 +482,12 @@ async function apply(name, sources, params = {}) {
       width = info.width;
       height = info.height;
     }
+  }
+  if (outputWidth !== undefined) {
+    width = outputWidth;
+  }
+  if (outputHeight !== undefined) {
+    height = outputHeight;
   }
   const output = allocate(width, height);
   apply(input, output);

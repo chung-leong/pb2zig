@@ -118,7 +118,8 @@ pub const kernel = struct {
             }
             
             fn length(v: anytype) f32 {
-                return @typeInfo(@TypeOf(v)).Vector.len;
+                const sum = @reduce(.Add, v * v);
+                return @sqrt(sum);
             }
         };
     }

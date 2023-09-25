@@ -596,14 +596,15 @@ test "smoothStep" {
 }
 
 pub fn length(v: anytype) f32 {
-    return @typeInfo(@TypeOf(v)).Vector.len;
+    const sum = @reduce(.Add, v * v);
+    return @sqrt(sum);
 }
 
 test "length" {
-    const vector1: @Vector(3, f32) = .{ 6, 6, 7 };
+    const vector1: @Vector(3, f32) = .{ 3, 3, 3 };
     const vector2: @Vector(2, f32) = .{ 1, 2 };
-    assert(length(vector1) == 3);
-    assert(length(vector2) == 2);
+    assert(length(vector1) == @sqrt(27.0));
+    assert(length(vector2) == @sqrt(5.0));
 }
 
 pub fn distance(v1: anytype, v2: anytype) f32 {

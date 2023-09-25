@@ -93,7 +93,8 @@ pub const kernel = struct {
             }
             
             fn length(v: anytype) f32 {
-                return @typeInfo(@TypeOf(v)).Vector.len;
+                const sum = @reduce(.Add, v * v);
+                return @sqrt(sum);
             }
             
             fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
