@@ -121,7 +121,19 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'complex-inverse';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = {
+      a: [ -0.2, -0.4 ],
+      b: [ -0.7, -1.1 ],
+      c: [ 0, 0.1 ],
+      d: [ 2, -1.6 ],
+      distort: [ 20, 20 ],
+      imagesize: [ 500, 225 ],
+      center: [ 420, 420 ],
+      focus: 0,
+      scale: 300,
+      fill: 0.5,
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate complex-rational.pbk', async function() {
     this.timeout(60000);

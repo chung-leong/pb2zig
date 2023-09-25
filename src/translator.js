@@ -568,22 +568,34 @@ export class PixelBenderToZigTranslator {
     const referenced = {};
     let variableTypes = { ...this.variableTypes };
     const scopeStack = [];
-    this.walk(statements, (node) => {
+    const cb = (node) => {
       if (node instanceof N.VariableAccess) {
-        if (!variableTypes[node.name]) {
-          referenced[node.name] = true;
+        const expanded = this.expandMacro(node.name);
+        if (expanded) {
+          this.walk(expanded, cb);
+        } else {
+          if (!variableTypes[node.name]) {
+            referenced[node.name] = true;
+          }
         }
       } else if (node.statements) {
         scopeStack.push(variableTypes);
         variableTypes = { ...variableTypes };
       } else if (node instanceof N.VariableDeclaration) {
         variableTypes[node.name] = node.type;
+      } else if (node instanceof N.FunctionCall) {
+        const expanded = this.expandMacro(node.name, node.args);
+        if (expanded) {
+          this.walk(expanded, cb);
+        }
       }
-    }, (node) => {
+    };
+    const cbExit = (node) => {
       if (node.statements) {
         variableTypes = scopeStack.pop();
       }
-    });
+    };
+    this.walk(statements, cb, cbExit);
     return Object.keys(referenced);
   }
 
