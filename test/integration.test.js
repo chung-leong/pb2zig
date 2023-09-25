@@ -193,7 +193,7 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'erode-diamond';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    await apply(name, { i: 'malgorzata-socha.png' });
   })
   it('should correctly translate escherizer.pbk', async function() {
     this.timeout(60000);
