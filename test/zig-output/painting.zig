@@ -442,7 +442,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
         
         pub fn pixelSize(self: @This()) @Vector(2, f32) {
-            return .{ @floatFromInt(self.width), @floatFromInt(self.height) };
+            _ = self;
+            return .{ 1, 1 };
         }
         
         pub fn pixelAspectRatio(self: @This()) f32 {

@@ -564,7 +564,7 @@ export class PixelBenderToZigTranslator {
           this.add(`}`)
           count++;
         } catch (err) {
-          console.log(name, err.message);
+          // console.log(name, err.message);
           // must be expanded
         } finally {
           this.endScope();
