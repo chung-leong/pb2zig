@@ -232,7 +232,7 @@ const ImageSize = struct {
 
 pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     const param_fields = std.meta.fields(@TypeOf(Kernel.parameters));
-    const input_fields = std.meta.fields(@TypeOf(Kernel.input_images));
+    const input_fields = std.meta.fields(@TypeOf(Kernel.inputImages));
     const field_count = param_fields.len + input_fields.len;
     comptime var struct_fields: [field_count]std.builtin.Type.StructField = undefined;
     inline for (param_fields, 0..) |field, index| {
@@ -255,7 +255,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     const offset = param_fields.len;
     inline for (input_fields, 0..) |field, index| {
-        const input = @field(Kernel.input_images, field.name);
+        const input = @field(Kernel.inputImages, field.name);
         const ImageT = Image(T, input.channels, false);
         struct_fields[offset + index] = .{
             .name = field.name,
@@ -276,10 +276,10 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
 }
 
 pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
-    const output_fields = std.meta.fields(@TypeOf(Kernel.output_images));
+    const output_fields = std.meta.fields(@TypeOf(Kernel.outputImages));
     comptime var struct_fields: [output_fields.len]std.builtin.Type.StructField = undefined;
     inline for (output_fields, 0..) |field, index| {
-        const output = @field(Kernel.output_images, field.name);
+        const output = @field(Kernel.outputImages, field.name);
         const ImageT = Image(T, output.channels, true);
         struct_fields[index] = .{
             .name = field.name,

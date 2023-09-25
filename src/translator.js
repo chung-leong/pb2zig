@@ -110,7 +110,7 @@ export class PixelBenderToZigTranslator {
   }
 
   startScope() {
-    this.scopeStack.push(this.scope);
+    this.scopeStack.push(this.variableTypes);
     this.variableTypes = { ...this.variableTypes };
   }
 
@@ -123,7 +123,7 @@ export class PixelBenderToZigTranslator {
     let name;
     do {
       name = `tmp${count++}`;
-    } while(this.hasVariable(name));
+    } while(this.variableTypes[name]);
     this.variableTypes[name] = value.type;
     this.add(`const ${name} = ${value};`);
     this.variableAliases.push({ lvalue, name });
@@ -319,7 +319,7 @@ export class PixelBenderToZigTranslator {
 
   addInputImages() {
     const inputs = this.find(N.InputDeclaration);
-    this.add(`pub const input_images = .{`);
+    this.add(`pub const inputImages = .{`);
     for (const { name, type } of inputs) {
       const channels = getVectorWidth(type);
       this.add(`.${name} = .{ .channels = ${channels} },`);
@@ -330,7 +330,7 @@ export class PixelBenderToZigTranslator {
 
   addOutputImages() {
     const outputs = this.find(N.OutputDeclaration);
-    this.add(`pub const output_images = .{`);
+    this.add(`pub const outputImages = .{`);
     for (const { name, type } of outputs) {
       const channels = getVectorWidth(type);
       this.add(`.${name} = .{ .channels = ${channels} },`);
@@ -550,22 +550,22 @@ export class PixelBenderToZigTranslator {
 
   findExternalReferences(statements) {
     const referenced = {};
-    let scope = { ...this.scope };
+    let variableTypes = { ...this.variableTypes };
     const scopeStack = [];
     this.walk(statements, (node) => {
       if (node instanceof N.VariableAccess) {
-        if (!scope[node.name]) {
+        if (!variableTypes[node.name]) {
           referenced[node.name] = true;
         }
       } else if (node.statements) {
-        scopeStack.push(scope);
-        scope = { ...scope };
+        scopeStack.push(variableTypes);
+        variableTypes = { ...variableTypes };
       } else if (node instanceof N.VariableDeclaration) {
-        scope[node.name] = node.type;
+        variableTypes[node.name] = node.type;
       }
     }, (node) => {
       if (node.statements) {
-        scope = scopeStack.pop();
+        variableTypes = scopeStack.pop();
       }
     });
     return Object.keys(referenced);
@@ -603,7 +603,7 @@ export class PixelBenderToZigTranslator {
 
   addDefinedFunction(def) {
     const { name, type, args, statements } = def;
-    this.startScope(name);
+    this.startScope();
     for (const arg of args) {
       this.variableTypes[arg.name] = arg.type;
     }
@@ -611,7 +611,7 @@ export class PixelBenderToZigTranslator {
     const external = this.findExternalReferences(statements);
     if (external.length > 0) {
       // need self variable if the function access external variables
-      argList.push(`self: *@This()`);
+      argList.unshift(`self: *@This()`);
       this.functionReceivers[name] = 'self';
     }
     let prefix = '';

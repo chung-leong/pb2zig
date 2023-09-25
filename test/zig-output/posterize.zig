@@ -1,4 +1,3 @@
-
 // Pixel Bender "Posterizer" (translated using pb2zig)
 const std = @import("std");
 
@@ -11,143 +10,149 @@ pub const kernel = struct {
     pub const parameters = .{
         .color1 = .{
             .type = @Vector(4, f32),
-            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
-            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
-            .default_value = .{ 0.441, 0.5859375, 0.62109375, 1.0 },
-            .parameter_type = "colorRGBA",
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.441, 0.5859375, 0.62109375, 1.0 },
+            .parameterType = "colorRGBA",
         },
         .color2 = .{
             .type = @Vector(4, f32),
-            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
-            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
-            .default_value = .{ 0.839, 0.101, 0.1289, 1.0 },
-            .parameter_type = "colorRGBA",
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.839, 0.101, 0.1289, 1.0 },
+            .parameterType = "colorRGBA",
         },
         .color3 = .{
             .type = @Vector(4, f32),
-            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
-            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
-            .default_value = .{ 0.0, 0.195, 0.3, 1.0 },
-            .parameter_type = "colorRGBA",
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 0.195, 0.3, 1.0 },
+            .parameterType = "colorRGBA",
         },
         .color4 = .{
             .type = @Vector(4, f32),
-            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
-            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
-            .default_value = .{ 0.983, 0.89, 0.656, 1.0 },
-            .parameter_type = "colorRGBA",
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.983, 0.89, 0.656, 1.0 },
+            .parameterType = "colorRGBA",
         },
         .color5 = .{
             .type = @Vector(4, f32),
-            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
-            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
-            .default_value = .{ 0.0, 0.0, 0.0, 1.0 },
-            .parameter_type = "colorRGBA",
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0, 1.0 },
+            .parameterType = "colorRGBA",
         },
         .color6 = .{
             .type = @Vector(4, f32),
-            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
-            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
-            .default_value = .{ 1.0, 0.0, 0.0, 1.0 },
-            .parameter_type = "colorRGBA",
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 1.0, 0.0, 0.0, 1.0 },
+            .parameterType = "colorRGBA",
         },
         .color7 = .{
             .type = @Vector(4, f32),
-            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
-            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
-            .default_value = .{ 0.0, 1.0, 0.0, 1.0 },
-            .parameter_type = "colorRGBA",
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 1.0, 0.0, 1.0 },
+            .parameterType = "colorRGBA",
         },
         .color8 = .{
             .type = @Vector(4, f32),
-            .min_value = .{ 0.0, 0.0, 0.0, 0.0 },
-            .max_value = .{ 1.0, 1.0, 1.0, 1.0 },
-            .default_value = .{ 0.0, 0.0, 1.0, 1.0 },
-            .parameter_type = "colorRGBA",
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 0.0, 1.0, 1.0 },
+            .parameterType = "colorRGBA",
         },
         .numColors = .{
             .type = i32,
-            .min_value = 2,
-            .max_value = 8,
-            .default_value = 4,
+            .minValue = 2,
+            .maxValue = 8,
+            .defaultValue = 4,
         },
         .blur = .{
             .type = f32,
-            .min_value = 0.0,
-            .max_value = 4.0,
-            .default_value = 0.5,
+            .minValue = 0.0,
+            .maxValue = 4.0,
+            .defaultValue = 0.5,
         },
     };
-    pub const input = .{
+    pub const inputImages = .{
         .src = .{ .channels = 4 },
     };
-    pub const output = .{
+    pub const outputImages = .{
         .dst = .{ .channels = 4 },
     };
     
     // generic kernel instance type
-    fn Instance(comptime InputStruct: type) type {
+    fn Instance(comptime InputStruct: type, comptime OutputStruct: type) type {
         return struct {
-            // parameter and input image fields
-            color1: @Vector(4, f32),
-            color2: @Vector(4, f32),
-            color3: @Vector(4, f32),
-            color4: @Vector(4, f32),
-            color5: @Vector(4, f32),
-            color6: @Vector(4, f32),
-            color7: @Vector(4, f32),
-            color8: @Vector(4, f32),
-            numColors: i32,
-            blur: f32,
-            src: std.meta.fieldInfo(InputStruct, .src).type,
+            input: InputStruct,
+            output: OutputStruct,
+            outputCoord: @Vector(2, u32) = @splat(0),
+            
+            // output pixel
+            dst: @Vector(4, f32) = undefined,
+            
+            fn clearOutputPixel(self: *@This()) void {
+                self.dst = @splat(0);
+            }
+            
+            fn setOutputPixel(self: *@This()) void {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
+            }
+            
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
             
             // functions defined in kernel
-            pub fn evaluatePixel(self: @This(), outCoord: @Vector(2, f32)) @Vector(4, f32) {
-                // input variables
-                const color1 = self.color1;
-                const color2 = self.color2;
-                const color3 = self.color3;
-                const color4 = self.color4;
-                const color5 = self.color5;
-                const color6 = self.color6;
-                const color7 = self.color7;
-                const color8 = self.color8;
-                const numColors = self.numColors;
-                const blur = self.blur;
-                const src = self.src;
-                
-                // output variable
-                var dst: @Vector(4, f32) = undefined;
+            pub fn evaluatePixel(self: *@This()) void {
+                self.clearOutputPixel();
+                const blur = self.input.blur;
+                const color1 = self.input.color1;
+                const color2 = self.input.color2;
+                const numColors = self.input.numColors;
+                const color3 = self.input.color3;
+                const color4 = self.input.color4;
+                const color5 = self.input.color5;
+                const color6 = self.input.color6;
+                const color7 = self.input.color7;
+                const color8 = self.input.color8;
                 
                 var dist: f32 = undefined;
                 var minDist: f32 = undefined;
                 var tmp: f32 = undefined;
-                var po: @Vector(4, f32) = src.sampleLinear(outCoord);
-                po += src.sampleLinear(outCoord + @Vector(2, f32){ blur, 0.0 }) + src.sampleLinear(outCoord + @Vector(2, f32){ -blur, 0.0 });
-                po += src.sampleLinear(outCoord + @Vector(2, f32){ 0.0, blur }) + src.sampleLinear(outCoord + @Vector(2, f32){ 0.0, -blur });
+                var po: @Vector(4, f32) = self.input.src.sampleLinear(self.outCoord());
+                po += self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ blur, 0.0 }) + self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ -blur, 0.0 });
+                po += self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, blur }) + self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, -blur });
                 if (po[3] < 0.01) {
-                    dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
+                    self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 } else {
                     po /= @as(@Vector(4, f32), @splat(po[3]));
-                    dst = color1;
-                    tmp = po[0] - dst[0];
+                    self.dst = color1;
+                    tmp = po[0] - self.dst[0];
                     const tmp1 = tmp;
-                    tmp = po[1] - dst[1];
+                    tmp = po[1] - self.dst[1];
                     const tmp2 = tmp;
-                    tmp = po[2] - dst[2];
+                    tmp = po[2] - self.dst[2];
                     const tmp3 = tmp;
-                    minDist = tmp1 * tmp1 + tmp2 * tmp2 + tmp3 * tmp3;
+                    minDist = tmp1 * tmp + tmp2 * tmp + tmp3 * tmp;
                     tmp = po[0] - color2[0];
                     const tmp4 = tmp;
                     tmp = po[1] - color2[1];
                     const tmp5 = tmp;
                     tmp = po[2] - color2[2];
                     const tmp6 = tmp;
-                    dist = tmp4 * tmp4 + tmp5 * tmp5 + tmp6 * tmp6;
+                    dist = tmp4 * tmp + tmp5 * tmp + tmp6 * tmp;
                     const tmp7 = dist;
                     if (tmp7 < minDist) {
-                        minDist = tmp7;
-                        dst = color2;
+                        minDist = dist;
+                        self.dst = color2;
                     }
                     tmp = po[0] - color3[0];
                     const tmp8 = tmp;
@@ -155,11 +160,11 @@ pub const kernel = struct {
                     const tmp9 = tmp;
                     tmp = po[2] - color3[2];
                     const tmp10 = tmp;
-                    dist = tmp8 * tmp8 + tmp9 * tmp9 + tmp10 * tmp10;
+                    dist = tmp8 * tmp + tmp9 * tmp + tmp10 * tmp;
                     const tmp11 = dist;
                     if (numColors > 2 and tmp11 < minDist) {
-                        minDist = tmp11;
-                        dst = color3;
+                        minDist = dist;
+                        self.dst = color3;
                     }
                     tmp = po[0] - color4[0];
                     const tmp12 = tmp;
@@ -167,11 +172,11 @@ pub const kernel = struct {
                     const tmp13 = tmp;
                     tmp = po[2] - color4[2];
                     const tmp14 = tmp;
-                    dist = tmp12 * tmp12 + tmp13 * tmp13 + tmp14 * tmp14;
+                    dist = tmp12 * tmp + tmp13 * tmp + tmp14 * tmp;
                     const tmp15 = dist;
                     if (numColors > 3 and tmp15 < minDist) {
-                        minDist = tmp15;
-                        dst = color4;
+                        minDist = dist;
+                        self.dst = color4;
                     }
                     tmp = po[0] - color5[0];
                     const tmp16 = tmp;
@@ -179,11 +184,11 @@ pub const kernel = struct {
                     const tmp17 = tmp;
                     tmp = po[2] - color5[2];
                     const tmp18 = tmp;
-                    dist = tmp16 * tmp16 + tmp17 * tmp17 + tmp18 * tmp18;
+                    dist = tmp16 * tmp + tmp17 * tmp + tmp18 * tmp;
                     const tmp19 = dist;
                     if (numColors > 4 and tmp19 < minDist) {
-                        minDist = tmp19;
-                        dst = color5;
+                        minDist = dist;
+                        self.dst = color5;
                     }
                     tmp = po[0] - color6[0];
                     const tmp20 = tmp;
@@ -191,11 +196,11 @@ pub const kernel = struct {
                     const tmp21 = tmp;
                     tmp = po[2] - color6[2];
                     const tmp22 = tmp;
-                    dist = tmp20 * tmp20 + tmp21 * tmp21 + tmp22 * tmp22;
+                    dist = tmp20 * tmp + tmp21 * tmp + tmp22 * tmp;
                     const tmp23 = dist;
                     if (numColors > 5 and tmp23 < minDist) {
-                        minDist = tmp23;
-                        dst = color6;
+                        minDist = dist;
+                        self.dst = color6;
                     }
                     tmp = po[0] - color7[0];
                     const tmp24 = tmp;
@@ -203,11 +208,11 @@ pub const kernel = struct {
                     const tmp25 = tmp;
                     tmp = po[2] - color7[2];
                     const tmp26 = tmp;
-                    dist = tmp24 * tmp24 + tmp25 * tmp25 + tmp26 * tmp26;
+                    dist = tmp24 * tmp + tmp25 * tmp + tmp26 * tmp;
                     const tmp27 = dist;
                     if (numColors > 6 and tmp27 < minDist) {
-                        minDist = tmp27;
-                        dst = color7;
+                        minDist = dist;
+                        self.dst = color7;
                     }
                     tmp = po[0] - color8[0];
                     const tmp28 = tmp;
@@ -215,24 +220,24 @@ pub const kernel = struct {
                     const tmp29 = tmp;
                     tmp = po[2] - color8[2];
                     const tmp30 = tmp;
-                    dist = tmp28 * tmp28 + tmp29 * tmp29 + tmp30 * tmp30;
+                    dist = tmp28 * tmp + tmp29 * tmp + tmp30 * tmp;
                     const tmp31 = dist;
                     if (numColors > 7 and tmp31 < minDist) {
-                        dst = color8;
+                        self.dst = color8;
                     }
                 }
-                return dst;
+                
+                self.setOutputPixel();
             }
         };
     }
     
     // kernel instance creation function
-    pub fn create(inputStruct: anytype) Instance(@TypeOf(inputStruct)) {
-        var instance: Instance(@TypeOf(inputStruct)) = undefined;
-        inline for (std.meta.fields(@TypeOf(inputStruct))) |field| {
-            @field(instance, field.name) = @field(inputStruct, field.name);
-        }
-        return instance;
+    pub fn create(input: anytype, output: anytype) Instance(@TypeOf(input), @TypeOf(output)) {
+        return .{
+            .input = input,
+            .output = output,
+        };
     }
 };
 
@@ -243,9 +248,22 @@ pub fn apply(input: Input, output: Output) void {
     processImage(kernel, input, output);
 }
 
+pub fn allocate(allocator: std.mem.Allocator, width: u32, height: u32) !Output {
+    var output: Output = undefined;
+    inline for (std.meta.fields(Output)) |field| {
+        const ImageT = @TypeOf(@field(output, field.name));
+        @field(output, field.name) = .{
+            .pixels = try allocator.alloc(ImageT.Pixel, height * width),
+            .width = width,
+            .height = height,
+        };
+    }
+    return output;
+}
+
 pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) type {
     return struct {
-        pub const Pixel = @Vector(len, T);
+        pub const Pixel = @Vector(4, T);
         pub const FPixel = @Vector(len, f32);
         pub const channels = len;
         
@@ -253,18 +271,57 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         width: u32,
         height: u32,
         
-        pub fn create(allocator: std.mem.Allocator, width: u32, height: u32) !@This() {
-            return .{
-                .pixels = try allocator.alloc(Pixel, width * height),
-                .width = width,
-                .height = height,
+        fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
+            if (len == 4) {
+                return pixel;
+            }
+            const mask: @Vector(len, i32) = switch (len) {
+                1 => .{0},
+                2 => .{ 0, 3 },
+                3 => .{ 0, 1, 2 },
+                else => @compileError("Unsupported number of channels: " ++ len),
             };
+            return @shuffle(f32, pixel, undefined, mask);
         }
         
-        inline fn toUnsigned(value: i32) u32 {
-            // allow negative value to be interpreted as large integers to simplify bound-checking
-            @setRuntimeSafety(false);
-            return @as(u32, @intCast(value));
+        fn floatPixelFromPBPixel(pixel: FPixel) Pixel {
+            if (len == 4) {
+                return pixel;
+            }
+            const alpha: @Vector(1, T) = if (len == 1 or len == 3) .{1} else undefined;
+            const mask: @Vector(len, i32) = switch (len) {
+                1 => .{ 0, 0, 0, -1 },
+                2 => .{ 0, 0, 0, 1 },
+                3 => .{ 0, 1, 2, -1 },
+                else => @compileError("Unsupported number of channels: " ++ len),
+            };
+            return @shuffle(T, pixel, alpha, mask);
+        }
+        
+        fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
+            // https://github.com/ziglang/zig/issues/16267
+            var numerator: FPixel = undefined;
+            switch (len) {
+                1 => numerator[0] = @floatFromInt(pixel[0]),
+                2 => {
+                    numerator[0] = @floatFromInt(pixel[0]);
+                    numerator[3] = @floatFromInt(pixel[3]);
+                },
+                3 => {
+                    numerator[0] = @floatFromInt(pixel[0]);
+                    numerator[1] = @floatFromInt(pixel[1]);
+                    numerator[2] = @floatFromInt(pixel[2]);
+                },
+                4 => {
+                    numerator[0] = @floatFromInt(pixel[0]);
+                    numerator[1] = @floatFromInt(pixel[1]);
+                    numerator[2] = @floatFromInt(pixel[2]);
+                    numerator[3] = @floatFromInt(pixel[3]);
+                },
+                else => @compileError("Unsupported number of channels: " ++ len),
+            }
+            const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
+            return numerator / denominator;
         }
         
         fn contrain(pixel: FPixel, max: f32) FPixel {
@@ -275,40 +332,58 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             return pixel3;
         }
         
-        fn floatPixelFromInt(pixel: Pixel) FPixel {
-            // https://github.com/ziglang/zig/issues/16267
-            var numerator: FPixel = undefined;
-            comptime var i = 0;
-            inline while (i < len) : (i += 1) {
-                numerator[i] = @floatFromInt(pixel[i]);
-            }
-            const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
-            return numerator / denominator;
-        }
-        
-        fn intPixelFromFloat(pixel: FPixel) Pixel {
+        fn intPixelFromPBPixel(pixel: FPixel) Pixel {
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
             const product: FPixel = contrain(pixel * multiplier, max);
             var result: Pixel = undefined;
-            comptime var i = 0;
-            inline while (i < len) : (i += 1) {
-                result[i] = @intFromFloat(product[i]);
+            switch (len) {
+                1 => {
+                    result[0] = @intFromFloat(product[0]);
+                    result[1] = @intFromFloat(product[0]);
+                    result[2] = @intFromFloat(product[0]);
+                    result[3] = std.math.maxInt(T);
+                },
+                2 => {
+                    result[0] = @intFromFloat(product[0]);
+                    result[1] = @intFromFloat(product[0]);
+                    result[2] = @intFromFloat(product[0]);
+                    result[3] = @intFromFloat(product[1]);
+                },
+                3 => {
+                    result[0] = @intFromFloat(product[0]);
+                    result[1] = @intFromFloat(product[1]);
+                    result[2] = @intFromFloat(product[2]);
+                    result[3] = std.math.maxInt(T);
+                },
+                4 => {
+                    result[0] = @intFromFloat(product[0]);
+                    result[1] = @intFromFloat(product[1]);
+                    result[2] = @intFromFloat(product[2]);
+                    result[3] = @intFromFloat(product[3]);
+                },
+                else => @compileError("Unsupported number of channels: " ++ len),
             }
             return result;
         }
         
+        inline fn unsign(value: i32) u32 {
+            // allow negative values to be interpreted as large integers to simplify bound-checking
+            @setRuntimeSafety(false);
+            return @as(u32, @intCast(value));
+        }
+        
         pub fn getPixel(self: @This(), x: i32, y: i32) FPixel {
-            const ux = toUnsigned(x);
-            const uy = toUnsigned(y);
+            const ux = unsign(x);
+            const uy = unsign(y);
             if (ux >= self.width or uy >= self.height) {
                 return @as(FPixel, @splat(0));
             }
             const index = (uy * self.width) + ux;
             const pixel = self.pixels[index];
             return switch (@typeInfo(T)) {
-                .Float => pixel,
-                .Int => floatPixelFromInt(pixel),
+                .Float => pbPixelFromFloatPixel(pixel),
+                .Int => pbPixelFromIntPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
         }
@@ -318,15 +393,20 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
                 return;
             }
             const index = (y * self.width) + x;
-            switch (@typeInfo(T)) {
-                .Float => {
-                    self.pixels[index] = pixel;
-                },
-                .Int => {
-                    self.pixels[index] = intPixelFromFloat(pixel);
-                },
+            self.pixels[index] = switch (@typeInfo(T)) {
+                .Float => floatPixelFromPBPixel(pixel),
+                .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
-            }
+            };
+        }
+        
+        pub fn pixelSize(self: @This()) @Vector(2, f32) {
+            return .{ @floatFromInt(self.width), @floatFromInt(self.height) };
+        }
+        
+        pub fn pixelAspectRatio(self: @This()) f32 {
+            _ = self;
+            return 1;
         }
         
         pub fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
@@ -366,16 +446,21 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
     };
 }
 
+const ImageSize = struct {
+    x: u32,
+    y: u32,
+};
+
 pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     const param_fields = std.meta.fields(@TypeOf(Kernel.parameters));
-    const input_fields = std.meta.fields(@TypeOf(Kernel.input));
+    const input_fields = std.meta.fields(@TypeOf(Kernel.inputImages));
     const field_count = param_fields.len + input_fields.len;
     comptime var struct_fields: [field_count]std.builtin.Type.StructField = undefined;
     inline for (param_fields, 0..) |field, index| {
         const param = @field(Kernel.parameters, field.name);
         const default_value: ?*const anyopaque = get_def: {
-            if (@hasField(@TypeOf(param), "default_value")) {
-                const value: param.type = param.default_value;
+            if (@hasField(@TypeOf(param), "defaultValue")) {
+                const value: param.type = param.defaultValue;
                 break :get_def @ptrCast(&value);
             } else {
                 break :get_def null;
@@ -391,7 +476,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     const offset = param_fields.len;
     inline for (input_fields, 0..) |field, index| {
-        const input = @field(Kernel.input, field.name);
+        const input = @field(Kernel.inputImages, field.name);
         const ImageT = Image(T, input.channels, false);
         struct_fields[offset + index] = .{
             .name = field.name,
@@ -412,26 +497,52 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
 }
 
 pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
-    const output_fields = std.meta.fields(@TypeOf(Kernel.output));
-    if (output_fields.len > 1) {
-        @compileError("Cannot handle multiple output: " ++ output_fields.len);
+    const output_fields = std.meta.fields(@TypeOf(Kernel.outputImages));
+    comptime var struct_fields: [output_fields.len]std.builtin.Type.StructField = undefined;
+    inline for (output_fields, 0..) |field, index| {
+        const output = @field(Kernel.outputImages, field.name);
+        const ImageT = Image(T, output.channels, true);
+        struct_fields[index] = .{
+            .name = field.name,
+            .type = ImageT,
+            .default_value = null,
+            .is_comptime = false,
+            .alignment = @alignOf(ImageT),
+        };
     }
-    const output = @field(kernel.output, output_fields[0].name);
-    return Image(T, output.channels, true);
+    return @Type(.{
+        .Struct = .{
+            .layout = .Auto,
+            .fields = &struct_fields,
+            .decls = &.{},
+            .is_tuple = false,
+        },
+    });
 }
 
 pub fn processImage(comptime Kernel: type, input: anytype, output: anytype) void {
-    const instance = Kernel.create(input);
-    var coord: @Vector(2, f32) = .{ 0, 0 };
-    var y: u32 = 0;
-    while (y < output.height) : (y += 1) {
-        var x: u32 = 0;
-        coord[0] = 0;
-        while (x < output.width) : (x += 1) {
-            const pixel = instance.evaluatePixel(coord);
-            output.setPixel(x, y, pixel);
-            coord[0] += 1;
+    var instance = Kernel.create(input, output);
+    const width: u32 = get: {
+        inline for (std.meta.fields(@TypeOf(output))) |field| {
+            const image = @field(output, field.name);
+            break :get image.width;
         }
-        coord[1] += 1;
+        break :get 0;
+    };
+    const height: u32 = get: {
+        inline for (std.meta.fields(@TypeOf(output))) |field| {
+            const image = @field(output, field.name);
+            break :get image.height;
+        }
+        break :get 0;
+    };
+    var y: u32 = 0;
+    while (y < height) : (y += 1) {
+        var x: u32 = 0;
+        instance.outputCoord[1] = y;
+        while (x < width) : (x += 1) {
+            instance.outputCoord[0] = x;
+            instance.evaluatePixel();
+        }
     }
 }
