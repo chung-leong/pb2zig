@@ -410,9 +410,9 @@ export class PixelBenderToZigTranslator {
     this.add(`// generic kernel instance type`);
     this.add(`fn Instance(comptime InputStruct: type, comptime OutputStruct: type) type {`);
     this.add(`return struct {`);
-    this.addInputOutput();
+    this.addInputOutputFields();
+    this.addDependentFields();
     this.addConstants();
-    this.addDependents();
     this.addDefinedFunctions();
     this.addMacroFunctions();
     this.addCalledFunctions();
@@ -420,37 +420,22 @@ export class PixelBenderToZigTranslator {
     this.add(`}`);
   }
 
-  addInputOutput() {
+  addInputOutputFields() {
     this.add(`input: InputStruct,`);
     this.add(`output: OutputStruct,`);
     this.add(`outputCoord: @Vector(2, u32) = @splat(0),`);
     this.add(``);
-    this.add(`// output pixel`);
+    let count = 0;
     for (const [ name, type ] of Object.entries(this.outputVariables)) {
       const typeZ = getZigType(type);
+      if (count++ === 0) {
+        this.add(`// output pixel`);
+      }
       this.add(`${name}: ${typeZ} = undefined,`);
     }
-    this.add(``);
-    this.add(`fn clearOutputPixel(self: *@This()) void {`)
-    for (const [ name, type ] of Object.entries(this.outputVariables)) {
-      this.add(`self.${name} = @splat(0);`);
+    if (count > 0) {
+      this.add(``);
     }
-    this.add(`}`)
-    this.add(``);
-    this.add(`fn setOutputPixel(self: *@This()) void {`)
-    this.add(`const x = self.outputCoord[0];`);
-    this.add(`const y = self.outputCoord[1];`);
-    for (const [ name, type ] of Object.entries(this.outputVariables)) {
-      this.add(`self.output.${name}.setPixel(x, y, self.${name});`);
-    }
-    this.add(`}`)
-    this.add(``);
-    this.add(`fn outCoord(self: *@This()) @Vector(2, f32) {`);
-    this.add(`const x = self.outputCoord[0];`);
-    this.add(`const y = self.outputCoord[1];`);
-    this.add(`return .{ @floatFromInt(x), @floatFromInt(y) };`);
-    this.add(`}`);
-    this.add(``);
   }
 
   addConstants() {
@@ -465,7 +450,12 @@ export class PixelBenderToZigTranslator {
     }
   }
 
-  addDependents() {
+  addDependentFields() {
+    // set the types of constants now in case array-dimensions involve constants
+    const constDecls = this.find([ N.ConstantDeclaration, N.FunctionDefinition ]).filter(d => d instanceof N.ConstantDeclaration);
+    for (const { name, type } of constDecls) {
+      this.variables[name] = type;
+    }
     const decls = this.find(N.DependentDeclaration);
     if (decls.length > 0) {
       this.add(`// dependent variables`);
@@ -523,10 +513,25 @@ export class PixelBenderToZigTranslator {
       inUse['matrixCalc'] = true;
     }
 
+    let count = 0
+    if (inUse.outCoord) {
+      this.add(``);
+      this.add(`
+        // built-in Pixel Bender functions
+        fn outCoord(self: *@This()) @Vector(2, f32) {
+          const x = self.outputCoord[0];
+          const y = self.outputCoord[1];
+          return .{ @floatFromInt(x), @floatFromInt(y) };
+        }
+      `);
+      count++;
+    }
+
+    // get functions from file
     const codeURL = new URL('../zig/functions.zig', import.meta.url);
     const code = readFileSync(fileURLToPath(codeURL), 'utf-8');
     const regExp = /pub (fn (\w+)[\s\S]*?\n})/g;
-    let m, count = 0;
+    let m;
     while (m = regExp.exec(code)) {
       // excluding "pub"
       const func = m[1], name = m[2];
@@ -693,13 +698,19 @@ export class PixelBenderToZigTranslator {
       const prefix = publicMethods.includes(name) ? 'pub ' : '';
       this.add(`${prefix}fn ${name}(${argList.join(', ')}) ${getZigType(type)} {`);
       if (name === 'evaluatePixel') {
-        this.add(`self.clearOutputPixel();`);
+        for (const [ name, type ] of Object.entries(this.outputVariables)) {
+          this.add(`self.${name} = @splat(0);`);
+        }
       }
       this.addExternalReferences(f.external);
       this.addStatements(statements);
       if (name === 'evaluatePixel') {
         this.add(``);
-        this.add(`self.setOutputPixel();`);
+        this.add(`const x = self.outputCoord[0];`);
+        this.add(`const y = self.outputCoord[1];`);
+        for (const [ name, type ] of Object.entries(this.outputVariables)) {
+          this.add(`self.output.${name}.setPixel(x, y, self.${name});`);
+        }
       }
       this.endScope();
       this.add('}');
@@ -758,10 +769,10 @@ export class PixelBenderToZigTranslator {
     const typeZ = getZigType(type);
     if (width) {
       const widthExpr = this.translateExpression(width, 'int');
-      this.add(`${name}: [${widthExpr}]${typeZ},`)
+      this.add(`${name}: [${widthExpr}]${typeZ} = undefined,`)
       this.dependentVariables[name] = type + '[]';
     } else {
-      this.add(`${name}: ${typeZ},`)
+      this.add(`${name}: ${typeZ} = undefined,`)
       this.dependentVariables[name] = type;
     }
   }

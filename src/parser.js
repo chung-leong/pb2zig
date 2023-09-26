@@ -89,12 +89,13 @@ const T = {
   Region: createToken({ name: 'Region', pattern: /region\b/ }),
   ImageRef: createToken({ name: 'ImageRef', pattern: /imageRef\b/ }),
 
+  InOut: createToken({ name: 'InOut', pattern: /inout\b/ }),
+  In: createToken({ name: 'In', pattern: /in\b/ }),
+  Out: createToken({ name: 'Out', pattern: /out\b/ }),
   Input: createToken({ name: 'Input', pattern: /input\b/ }),
   Output: createToken({ name: 'Output', pattern: /output\b/ }),
   Const: createToken({ name: 'Const', pattern: /const\b/ }),
   Dependent: createToken({ name: 'Dependent', pattern: /dependent\b/ }),
-  In: createToken({ name: 'In', pattern: /in\b/ }),
-  Out: createToken({ name: 'Out', pattern: /out\b/ }),
   Kernel: createToken({ name: 'Kernel', pattern: /kernel\b/ }),
   Parameter: createToken({ name: 'Parameter', pattern: /parameter\b/ }),
 
@@ -226,8 +227,16 @@ export class PixelBenderParser extends CstParser {
       ])
     })
     $.RULE('argumentDeclaration', () => {
+      $.OPTION(() => $.SUBRULE($.argumentDirection))
       $.SUBRULE($.type)
       $.CONSUME(T.Identifier)
+    })
+    $.RULE('argumentDirection', () => {
+      $.OR([
+        { ALT: () => $.CONSUME(T.In) },
+        { ALT: () => $.CONSUME(T.Out) },
+        { ALT: () => $.CONSUME(T.InOut) },
+      ])
     })
     $.RULE('typelessArgumentDeclaration', () => {
       $.CONSUME(T.Identifier)

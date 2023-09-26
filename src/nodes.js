@@ -76,6 +76,7 @@ export class Literal {
 }
 
 export class FunctionArgument {
+  direction;
   type;
   name;
 }
