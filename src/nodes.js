@@ -44,6 +44,7 @@ export class ConstantDeclaration {
 export class DependentDeclaration {
   type;
   name;
+  width;
 }
 
 export class InputDeclaration  {
@@ -87,12 +88,6 @@ export class FunctionCall {
 export class ConstructorCall {
   type;
   args;
-}
-
-export class VariableAssignment {
-  operator;
-  lvalue;
-  expression;
 }
 
 export class VariableAccess {

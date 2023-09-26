@@ -411,8 +411,8 @@ export class PixelBenderToZigTranslator {
     this.add(`fn Instance(comptime InputStruct: type, comptime OutputStruct: type) type {`);
     this.add(`return struct {`);
     this.addInputOutput();
-    this.addDependents();
     this.addConstants();
+    this.addDependents();
     this.addDefinedFunctions();
     this.addMacroFunctions();
     this.addCalledFunctions();
@@ -469,8 +469,8 @@ export class PixelBenderToZigTranslator {
     const decls = this.find(N.DependentDeclaration);
     if (decls.length > 0) {
       this.add(`// dependent variables`);
-      for (const { name, type } of decls) {
-        this.add(`${name}: ${type},`);
+      for (const decl of decls) {
+        this.addStatement(decl);
       }
       this.add(``);
     }
@@ -620,6 +620,10 @@ export class PixelBenderToZigTranslator {
     const defs = this.find(N.FunctionDefinition);
     // set the function prototype first
     const calledBy = {};
+    const publicMethods = [
+      'evaluateDependents',
+      'evaluatePixel',
+    ];
     for (const { name, type, args, statements } of defs) {
       if (isUnsupported(type) || args.some(a => isUnsupported(a.type))) {
         continue;
@@ -630,7 +634,7 @@ export class PixelBenderToZigTranslator {
         returnType: type,
         argTypes: args.map(a => a.type),
         overloaded: false,
-        receiver: (external.length > 0) ? 'self' : null,
+        receiver: (external.length > 0 || publicMethods.includes(name)) ? 'self' : null,
         external,
       };
       // note that this function is calling the other function
@@ -676,6 +680,7 @@ export class PixelBenderToZigTranslator {
         this.add(``);
       }
       this.startScope();
+      this.evaluatingDependents = name == 'evaluateDependents';
       // add arguments to scope
       for (const arg of args) {
         this.variables[arg.name] = arg.type;
@@ -685,10 +690,6 @@ export class PixelBenderToZigTranslator {
         // need self if the function access external variables
         argList.unshift(`self: *@This()`);
       }
-      const publicMethods = [
-        'evaluateDependents',
-        'evaluatePixel',
-      ];
       const prefix = publicMethods.includes(name) ? 'pub ' : '';
       this.add(`${prefix}fn ${name}(${argList.join(', ')}) ${getZigType(type)} {`);
       if (name === 'evaluatePixel') {
@@ -751,6 +752,18 @@ export class PixelBenderToZigTranslator {
     const valueR = this.translateExpression(initializer, type);
     this.add(`const ${name}: ${getZigType(type)} = ${valueR};`);
     this.variables[name] = type;
+  }
+
+  addDependentDeclaration({ type, name, width }) {
+    const typeZ = getZigType(type);
+    if (width) {
+      const widthExpr = this.translateExpression(width, 'int');
+      this.add(`${name}: [${widthExpr}]${typeZ},`)
+      this.dependentVariables[name] = type + '[]';
+    } else {
+      this.add(`${name}: ${typeZ},`)
+      this.dependentVariables[name] = type;
+    }
   }
 
   addExpressionStatement({ expression }) {
@@ -1310,21 +1323,17 @@ function getZigType(type) {
   return zigType;
 }
 
-function isGeneric(type) {
-  return type.startsWith('typeOf(')
-}
-
 function getChildZigType(type) {
   return getZigType(getChildType(type));
 }
 
 function getChildType(type) {
-  if (isGeneric(type)) {
-    return `${type}.child`;
-  } if (isMatrix(type)) {
+  if (isMatrix(type)) {
     return type.slice(0, -2);
   } else if (isVector(type)) {
     return type.slice(0, -1);
+  } else if (isArray(type)) {
+    return type.slice(0, -2);
   } else {
     return type;
   }
@@ -1338,16 +1347,17 @@ function isMatrix(type) {
   return /^[_a-z]+\dx\d$/i.test(type);
 }
 
+function isArray(type) {
+  return /^[_a-z]+\[\]$/i.test(type);
+}
+
 function isUnsupported(type) {
   return [ 'region', 'imageRef' ].includes(type);
 }
 
 function getVectorWidth(type) {
-  if (type === undefined) {
-    return undefined;
-  }
-  if (isGeneric(type)) {
-    return `${type}.len`;
+  if (!isVector(type)) {
+    throw new Error(`Not a vector: ${type}`);
   }
   return parseInt(type.slice(-1), '') || 1;
 }

@@ -252,10 +252,18 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   dependentDeclaration(ctx) {
     const type = this.visit(ctx.type);
     const list = [];
-    for (const node of ctx.Identifier) {
-      console.log(node);
+    for (const node of ctx.identifierWithArrayLength) {
+      const decl = this.visit(node);
+      decl.type = type;
+      list.push(decl);
     }
     return list;
+  }
+
+  identifierWithArrayLength(ctx) {
+    const name = this.name(ctx.Identifier);
+    const width = this.visit(ctx.expression);
+    return this.create(N.DependentDeclaration, { name, width });
   }
 
   identifierWithInit(ctx) {

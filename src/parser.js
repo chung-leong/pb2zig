@@ -275,9 +275,17 @@ export class PixelBenderParser extends CstParser {
       $.SUBRULE($.type)
       $.AT_LEAST_ONE_SEP({
         SEP: T.Comma,
-        DEF: () => $.CONSUME(T.Identifier),
+        DEF: () => $.SUBRULE($.identifierWithArrayLength),
       })
       $.CONSUME(T.Semicolon)
+    })
+    $.RULE('identifierWithArrayLength', () => {
+      $.CONSUME(T.Identifier)
+      $.OPTION(() => {
+        $.CONSUME(T.LSquare)
+        $.SUBRULE($.expression)
+        $.CONSUME(T.RSquare)
+      })
     })
     $.RULE('identifierWithInit', () => {
       $.CONSUME(T.Identifier),

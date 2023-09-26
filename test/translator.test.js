@@ -78,7 +78,41 @@ describe('Translator tests', function() {
     const result = convertPixelBender(pbkCode, { kernelOnly: true });
     expect(result).to.contain('fn addMul(a: f32, b: f32, c: f32) f32 {');
   })
+  it('should correctly translate dependent declaration', function() {
+    const pbkCode = `
+    <languageVersion : 1.0;>
+    kernel test
+    <namespace : "Test"; vendor : "Vendor"; version : 1;>
+    {
+      input image4 src;
+      output pixel4 dst;
 
+      const int COUNT1 = 5;
+      const int COUNT2 = 4;
+      dependent float number;
+      dependent float array[COUNT1*COUNT2];
+
+
+      void
+      evaluateDependents()
+      {
+        array[1] = 1;
+      }
+
+      void
+      evaluatePixel()
+      {
+        float value = array[1];
+      }
+    }
+    `;
+    const result = convertPixelBender(pbkCode, { kernelOnly: true });
+    expect(result).to.contain('array: [COUNT1 * COUNT2]f32,');
+    expect(result).to.contain('number: f32,');
+    expect(result).to.contain('const array = self.array;');
+    expect(result).to.contain('var value: f32 = array[1];');
+    expect(result).to.contain('self.array[1] = 1.0;');
+  })
 })
 
 function addPBKWrapper(statements) {
