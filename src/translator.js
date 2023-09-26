@@ -3,28 +3,24 @@ import { fileURLToPath } from 'url';
 import * as N from './nodes.js';
 
 export class PixelBenderToZigTranslator {
-  lines;
-  indent;
+  lines = [];
+  indent = 0;
   ast;
   macroASTs;
-  scopeStack;
-  functionReceivers;
-  functionArgTypes;
-  variableTypes;
-  parameterVariables;
-  inputVariables;
-  outputVariables;
-  dependentVariables;
-  evaluatingDependents;
-  variableAliases;
-  macros;
-  options;
+  scopeStack = [];
+  functions = { ...builtInFunctions };
+  variables = {};
+  parameterVariables = {};
+  inputVariables = {};
+  outputVariables = {};
+  dependentVariables = {};
+  evaluatingDependents = false;
+  variableAliases = [];
 
   translate(ast, macroASTs, options = {}) {
     const {
       kernelOnly = false,
     } = options;
-    this.reset();
     this.ast = ast;
     this.macroASTs = macroASTs;
     this.addHeading();
@@ -34,24 +30,6 @@ export class PixelBenderToZigTranslator {
       this.addProcessFunctions();
     }
     return this.lines.join('\n');
-  }
-
-  reset() {
-    this.lines = [];
-    this.indent = 0;
-    this.scopeStack = [];
-    this.variableTypes = {};
-    this.functionReceivers = {};
-    this.functionArgTypes = { ...builtInfunctionArgTypes };
-    this.parameterVariables = {};
-    this.inputVariables = {};
-    this.outputVariables = {};
-    this.dependentVariables = {};
-    this.evaluatingDependents = false;
-    this.variableAliases = [];
-    this.macros = {};
-    this.ast = null;
-    this.macroASTs = null;
   }
 
   add(text) {
@@ -116,12 +94,16 @@ export class PixelBenderToZigTranslator {
   }
 
   startScope() {
-    this.scopeStack.push(this.variableTypes);
-    this.variableTypes = { ...this.variableTypes };
+    const { variables, functions } = this;
+    this.scopeStack.push({ variables, functions });
+    this.variables = { ...variables };
+    this.functions = { ...functions };
   }
 
   endScope() {
-    this.variableTypes = this.scopeStack.pop();
+    const { variables, functions } = this.scopeStack.pop();
+    this.variables = variables;
+    this.functions = functions;
   }
 
   addTempVariable(lvalue, value) {
@@ -129,8 +111,8 @@ export class PixelBenderToZigTranslator {
     let name;
     do {
       name = `tmp${count++}`;
-    } while(this.variableTypes[name]);
-    this.variableTypes[name] = value.type;
+    } while(this.variables[name]);
+    this.variables[name] = value.type;
     this.add(`const ${name} = ${value};`);
     const tmp = new ZigExpr(name, value.type);
     this.variableAliases.unshift({ lvalue, tmp });
@@ -150,10 +132,6 @@ export class PixelBenderToZigTranslator {
     });
     this.variableAliases = list;
     return entry?.tmp;
-  }
-
-  hasFunction(name) {
-    return !!this.functionArgTypes[name];
   }
 
   expandMacro(name, args = null) {
@@ -213,28 +191,28 @@ export class PixelBenderToZigTranslator {
     });
   }
 
-  getReturnValueType(name, args) {
-    const argTypes = this.functionArgTypes[name];
-    if (!argTypes) {
+  getReturnType(name, args) {
+    const f = this.functions[name];
+    if (!f) {
       throw new Error(`Undeclared function: ${name}()`);
     }
-    const overloaded = Array.isArray(argTypes[0]);
+    const { argTypes, returnType, overloaded } = f;
     const types = args.map(a => a?.type);
-    const findMismatch = (argTypes) => types.findIndex((type, i) => type !== argTypes[i + 1]);
+    const findMismatch = (list) => types.findIndex((type, i) => type !== list[i]);
     if (overloaded) {
-      for (const argTypesN of argTypes) {
+      for (const [ n, argTypesN ] of argTypes.entries()) {
         const index = findMismatch(argTypesN);
         if (index === -1) {
-          return argTypesN[0];
+          return returnType[n];
         }
       }
-      throw new Error(`${name}(${types.join(', ')}) does not exists"`);
+      throw new Error(`${name}(${types.join(', ')}) does not exist"`);
     } else {
       const index = findMismatch(argTypes);
       if (index !== -1) {
         throw new Error(`${name}() expects argument ${index + 1} to be ${argTypes[index + 1]}, got ${types[index]}`);
       }
-      return argTypes[0];
+      return returnType;
     }
   }
 
@@ -274,7 +252,7 @@ export class PixelBenderToZigTranslator {
             this.add(`// constants`);
           }
           this.add(`const ${name} = ${expr};`);
-          this.variableTypes[name] = expr.type;
+          this.variables[name] = expr.type;
           count++;
         } catch (err) {
           // if the expression uses variables not defined in the global
@@ -476,7 +454,7 @@ export class PixelBenderToZigTranslator {
     }
 
     // find matrix variables
-    const variables = this.find([
+    const decls = this.find([
       N.FunctionDefinition,
       N.FunctionArgument,
       N.VariableDeclaration,
@@ -484,7 +462,7 @@ export class PixelBenderToZigTranslator {
       N.DependentDeclaration,
       N.Parameter,
     ], true);
-    if (variables.some(v => isMatrix(v.type))) {
+    if (decls.some(v => isMatrix(v.type))) {
       inUse['MatrixCalcResult'] = true;
       inUse['matrixCalc'] = true;
     }
@@ -507,28 +485,129 @@ export class PixelBenderToZigTranslator {
     }
   }
 
+  findExternalReferences(args, statements) {
+    const referenced = {};
+    let variables = { ...this.variables };
+    for (const arg of args) {
+      variables[arg.name] = arg.type;
+    }
+    const scopeStack = [];
+    const cb = (node) => {
+      if (node instanceof N.VariableAccess) {
+        const expanded = this.expandMacro(node.name);
+        if (expanded) {
+          this.walk(expanded, cb);
+        } else {
+          if (!variables[node.name]) {
+            referenced[node.name] = true;
+          }
+        }
+      } else if (node.statements) {
+        scopeStack.push(variables);
+        variables = { ...variables };
+      } else if (node instanceof N.VariableDeclaration) {
+        variables[node.name] = node.type;
+      } else if (node instanceof N.FunctionCall) {
+        const expanded = this.expandMacro(node.name, node.args);
+        if (expanded) {
+          this.walk(expanded, cb);
+        }
+      }
+    };
+    const cbExit = (node) => {
+      if (node.statements) {
+        variables = scopeStack.pop();
+      }
+    };
+    this.walk(statements, cb, cbExit);
+    return Object.keys(referenced);
+  }
+
+  addExternalReferences(names) {
+    let count = 0;
+    for (const name of names) {
+      // variables outside a function's scope are either parameters,
+      // global constants, or dependent variables
+      let type;
+      if (type = this.parameterVariables[name]) {
+        this.add(`const ${name} = self.input.${name};`);
+        this.variables[name] = type;
+        count++;
+      } else if (type = this.dependentVariables[name]) {
+        if (!this.evaluatingDependents) {
+          // place value in a const or it cannot be unintentionally changed
+          this.add(`const ${name} = self.${name};`);
+          this.variables[name] = type;
+          count++;
+        } else {
+          // resolveVariable() should return self.[name] so the variable can be modified
+        }
+      } else {
+        // the variable is either a reference to an input/output image or undefined
+        // in any event, we don't need to deal with it here
+      }
+    }
+    if (count > 0) {
+      this.add(``);
+    }
+  }
+
   addDefinedFunctions() {
     const defs = this.find(N.FunctionDefinition);
     // set the function prototype first
-    for (const { name, type, args } of defs) {
-      const types = [ type ];
-      for (const arg of args) {
-        types.push(arg.type);
-      }
-      this.functionArgTypes[name] = types;
-    }
-    // add the actual code
-    for (const [ index, def ] of defs.entries()) {
-      const { type, args } = def;
+    for (const { name, type, args, statements } of defs) {
       if (isUnsupported(type) || args.some(a => isUnsupported(a.type))) {
         continue;
       }
-      if (index === 0) {
+      const external = this.findExternalReferences(args, statements);
+      this.functions[name] = {
+        type: 'user',
+        returnType: type,
+        argTypes: args.map(a => a.type),
+        overloaded: false,
+        receiver: (external.length > 0) ? 'self' : null,
+        external,
+      };
+    }
+    // add the actual code
+    let count = 0;
+    for (const { name, type, args, statements } of defs) {
+      const f = this.functions[name];
+      if (!f) {
+        continue;
+      }
+      if (count++ === 0) {
         this.add(`// functions defined in kernel`);
       } else {
         this.add(``);
       }
-      this.addDefinedFunction(def);
+      this.startScope();
+      // add arguments to scope
+      for (const arg of args) {
+        this.variables[arg.name] = arg.type;
+      }
+      const argList = args.map(a => `${a.name}: ${getZigType(a.type)}`);
+      if (f.receiver === 'self') {
+        // need self if the function access external variables
+        argList.unshift(`self: *@This()`);
+      }
+      const publicMethods = [
+        'evaluateDependents',
+        'evaluatePixel',
+      ];
+      const prefix = publicMethods.includes(name) ? 'pub ' : '';
+      this.add(`${prefix}fn ${name}(${argList.join(', ')}) ${getZigType(type)} {`);
+      if (name === 'evaluatePixel') {
+        this.add(`self.clearOutputPixel();`);
+      }
+      this.addExternalReferences(f.external);
+      this.addStatements(statements);
+      if (name === 'evaluatePixel') {
+        this.add(``);
+        this.add(`self.setOutputPixel();`);
+      }
+      this.endScope();
+      this.add('}');
     }
   }
 
@@ -541,7 +620,7 @@ export class PixelBenderToZigTranslator {
         try {
           this.startScope();
           for (const name of args) {
-            this.variableTypes[name] = 'typeof(name)';
+            this.variables[name] = 'typeof(name)';
           }
           const expr = this.translateExpression(expression);
           // TODO: detect argument type instead using anytype
@@ -552,8 +631,14 @@ export class PixelBenderToZigTranslator {
           } else {
             returnType = getZigType(expr.type);
           }
-          const argTypes = [ returnType, ...args.map(n => 'anytype') ];
-          this.functionArgTypes[name] = argTypes;
+          const argTypes = args.map(n => 'anytype');
+          this.functions[name] = {
+            type: 'macro',
+            returnType,
+            argTypes,
+            overloaded: false,
+            receiver: null,
+          };
           if (count === 0) {
             this.add(`// macro functions`);
           } else {
@@ -574,104 +659,6 @@ export class PixelBenderToZigTranslator {
     if (count > 0) {
       this.add(``);
     }
-  }
-
-  findExternalReferences(statements) {
-    const referenced = {};
-    let variableTypes = { ...this.variableTypes };
-    const scopeStack = [];
-    const cb = (node) => {
-      if (node instanceof N.VariableAccess) {
-        const expanded = this.expandMacro(node.name);
-        if (expanded) {
-          this.walk(expanded, cb);
-        } else {
-          if (!variableTypes[node.name]) {
-            referenced[node.name] = true;
-          }
-        }
-      } else if (node.statements) {
-        scopeStack.push(variableTypes);
-        variableTypes = { ...variableTypes };
-      } else if (node instanceof N.VariableDeclaration) {
-        variableTypes[node.name] = node.type;
-      } else if (node instanceof N.FunctionCall) {
-        const expanded = this.expandMacro(node.name, node.args);
-        if (expanded) {
-          this.walk(expanded, cb);
-        }
-      }
-    };
-    const cbExit = (node) => {
-      if (node.statements) {
-        variableTypes = scopeStack.pop();
-      }
-    };
-    this.walk(statements, cb, cbExit);
-    return Object.keys(referenced);
-  }
-
-  addExternalReferences(names) {
-    let count = 0;
-    for (const name of names) {
-      // variables outside a function's scope are either parameters,
-      // global constants, or dependent variables
-      let type;
-      if (type = this.parameterVariables[name]) {
-        this.add(`const ${name} = self.input.${name};`);
-        this.variableTypes[name] = type;
-        count++;
-      } else if (type = this.dependentVariables[name]) {
-        if (!this.evaluatingDependents) {
-          // place value in a const or it cannot be unintentionally changed
-          this.add(`const ${name} = self.${name};`);
-          this.variableTypes[name] = type;
-          count++;
-        } else {
-          // resolveVariable() should return self.[name] so the variable can be modified
-        }
-      } else {
-        // the variable is either a reference to an input/output image or undefined
-        // in any event, we don't need to deal with it here
-      }
-    }
-    if (count > 0) {
-      this.add(``);
-    }
-  }
-
-  addDefinedFunction(def) {
-    const { name, type, args, statements } = def;
-    this.startScope();
-    for (const arg of args) {
-      this.variableTypes[arg.name] = arg.type;
-    }
-    const argList = args.map(a => `${a.name}: ${getZigType(a.type)}`);
-    const external = this.findExternalReferences(statements);
-    if (external.length > 0) {
-      // need self variable if the function access external variables
-      argList.unshift(`self: *@This()`);
-      this.functionReceivers[name] = 'self';
-    }
-    let prefix = '';
-    switch (name) {
-      case 'evaluateDependents':
-      case 'evaluatePixel':
-        prefix = 'pub ';
-        break;
-    }
-    this.add(`${prefix}fn ${name}(${argList.join(', ')}) ${getZigType(type)} {`);
-    if (name === 'evaluatePixel') {
-      this.add(`self.clearOutputPixel();`);
-    }
-    this.addExternalReferences(external);
-    this.addStatements(statements);
-    if (name === 'evaluatePixel') {
-      this.add(``);
-      this.add(`self.setOutputPixel();`);
-    }
-    this.endScope();
-    this.add('}');
   }
 
   addStatements(statements) {
@@ -695,13 +682,13 @@ export class PixelBenderToZigTranslator {
   addVariableDeclaration({ type, name, initializer }) {
     const valueR = (initializer) ? this.translateExpression(initializer, type) : 'undefined';
     this.add(`var ${name}: ${getZigType(type)} = ${valueR};`);
-    this.variableTypes[name] = type;
+    this.variables[name] = type;
   }
 
   addConstantDeclaration({ type, name, initializer }) {
     const valueR = this.translateExpression(initializer, type);
     this.add(`const ${name}: ${getZigType(type)} = ${valueR};`);
-    this.variableTypes[name] = type;
+    this.variables[name] = type;
   }
 
   addExpressionStatement({ expression }) {
@@ -814,7 +801,7 @@ export class PixelBenderToZigTranslator {
 
   resolveVariable(name) {
     let value, type;
-    if (type = this.variableTypes[name]) {
+    if (type = this.variables[name]) {
       value = new ZigExpr(name, type);
     } else {
       if (type = this.inputVariables[name]) {
@@ -903,7 +890,7 @@ export class PixelBenderToZigTranslator {
   }
 
   translateFunctionCall({ name, args }) {
-    if (!this.hasFunction(name)) {
+    if (!this.functions[name]) {
       const expanded = this.expandMacro(name, args);
       if (expanded) {
         return this.translateExpression(expanded);
@@ -918,9 +905,10 @@ export class PixelBenderToZigTranslator {
         name = 'atan2';
       }
     }
-    let recv = this.functionReceivers[name];
+    const f = this.functions[name];
+    let recv = f.receiver;
     let argList = args.map(a => this.translateExpression(a));
-    const type = this.getReturnValueType(name, argList);
+    const type = this.getReturnType(name, argList);
     switch (name) {
       case 'sampleNearest':
       case 'sampleLinear':
@@ -1149,9 +1137,9 @@ export class PixelBenderToZigTranslator {
   }
 }
 
-const translater = new PixelBenderToZigTranslator();
 
 export function translate(ast, macroASTs, options) {
+  const translater = new PixelBenderToZigTranslator();
   return translater.translate(ast, macroASTs, options);
 }
 
@@ -1333,183 +1321,198 @@ function getZigLiteral(value, type) {
   }
 }
 
-const bool = 'bool';
-const bool2 = 'bool2';
-const bool3 = 'bool3';
-const bool4 = 'bool4';
-const int = 'int';
-const int2 = 'int2';
-const int3 = 'int3';
-const int4 = 'int4';
-const float = 'float';
-const float2 = 'float2';
-const float3 = 'float3';
-const float4 = 'float4';
-const float2x2 = 'float2x2';
-const float3x3 = 'float3x3';
-const float4x4 = 'float4x4';
-const image1 = 'image1';
-const image2 = 'image2';
-const image3 = 'image3';
-const image4 = 'image4';
+const builtInFunctions = (() => {
+  const bool = 'bool';
+  const bool2 = 'bool2';
+  const bool3 = 'bool3';
+  const bool4 = 'bool4';
+  const int = 'int';
+  const int2 = 'int2';
+  const int3 = 'int3';
+  const int4 = 'int4';
+  const float = 'float';
+  const float2 = 'float2';
+  const float3 = 'float3';
+  const float4 = 'float4';
+  const float2x2 = 'float2x2';
+  const float3x3 = 'float3x3';
+  const float4x4 = 'float4x4';
+  const image1 = 'image1';
+  const image2 = 'image2';
+  const image3 = 'image3';
+  const image4 = 'image4';
 
-const fx__fx = [
-  [ float, float ],
-  [ float2, float2 ],
-  [ float3, float3 ],
-  [ float4, float4 ],
-];
-const fx__fx_fx = [
-  [ float, float, float ],
-  [ float2, float2, float2 ],
-  [ float3, float3, float3 ],
-  [ float4, float4, float4 ],
-];
-const fx__fx_fx1 = [
-  ...fx__fx_fx,
-  [ float2, float2, float ],
-  [ float3, float3, float ],
-  [ float4, float4, float ],
-];
-const fx__fx1_fx = [
-  ...fx__fx_fx,
-  [ float2, float, float2 ],
-  [ float3, float, float3 ],
-  [ float4, float, float4 ],
-];
-const fx__fx_fx_fx = [
-  [ float, float, float, float ],
-  [ float2, float2, float2, float2 ],
-  [ float3, float3, float3, float3 ],
-  [ float4, float4, float4, float4 ],
-];
-const f__fx_fx = [
-  [ float, float, float ],
-  [ float, float2, float2 ],
-  [ float, float3, float3 ],
-  [ float, float4, float4 ],
-];
-const bv__ifv_ifv = [
-  [ bool2, int2, int2 ],
-  [ bool3, int3, int3 ],
-  [ bool4, int4, int4 ],
-  [ bool2, float2, float2 ],
-  [ bool3, float3, float3 ],
-  [ bool4, float4, float4 ],
-];
-const bv__bifv_bifv = [
-  [ bool2, bool2, bool2 ],
-  [ bool3, bool3, bool3 ],
-  [ bool4, bool4, bool4 ],
-  ...bv__ifv_ifv,
-];
-const b__bv = [
-  [ bool, bool2 ],
-  [ bool, bool3 ],
-  [ bool, bool4 ],
-];
-const px__im_f2 = [
-  [ float, image1, float2 ],
-  [ float2, image2, float2 ],
-  [ float3, image3, float2 ],
-  [ float4, image4, float2 ],
-];
-
-const builtInfunctionArgTypes = {
-  outCoord: [ float2 ],
-  radians: fx__fx,
-  degrees: fx__fx,
-  sin: fx__fx,
-  cos: fx__fx,
-  tan: fx__fx,
-  asin: fx__fx,
-  acos: fx__fx,
-  atan: fx__fx,
-  atan2: fx__fx_fx,
-  pow: fx__fx_fx,
-  exp: fx__fx,
-  exp2: fx__fx,
-  log: fx__fx,
-  log2: fx__fx,
-  sqrt: fx__fx,
-  inverseSqrt: fx__fx,
-  abs: fx__fx,
-  sign: fx__fx,
-  floor: fx__fx,
-  ceil: fx__fx,
-  fract: fx__fx,
-  mod: fx__fx_fx1,
-  min: fx__fx_fx1,
-  max: fx__fx_fx1,
-  mod: fx__fx_fx1,
-  step: fx__fx1_fx,
-  clamp: [
-    ...fx__fx_fx_fx,
-    [ float2, float2, float, float ],
-    [ float3, float3, float, float ],
-    [ float4, float4, float, float ],
-  ],
-  mix: [
-    ...fx__fx_fx_fx,
-    [ float2, float2, float2, float ],
-    [ float3, float3, float3, float ],
-    [ float4, float4, float4, float ],
-  ],
-  smoothStep: [
-    ...fx__fx_fx_fx,
-    [ float2, float, float, float2 ],
-    [ float3, float, float, float3 ],
-    [ float4, float, float, float4 ],
-  ],
-  length: [
+  const fx__fx = [
     [ float, float ],
-    [ float, float2 ],
-    [ float, float3 ],
-    [ float, float4 ],
-  ],
-  distance: f__fx_fx,
-  dot: f__fx_fx,
-  cross: fx__fx_fx,
-  normalize: fx__fx,
-  matrixCompMult: [
-    [ float2x2, float2x2, float2x2 ],
-    [ float3x3, float3x3, float3x3 ],
-    [ float4x4, float4x4, float4x4 ],
-  ],
-  lessThan: bv__ifv_ifv,
-  lessThanEqual: bv__ifv_ifv,
-  greaterThan: bv__ifv_ifv,
-  greaterThanEqual: bv__ifv_ifv,
-  equal: bv__bifv_bifv,
-  notEqual: bv__bifv_bifv,
-  any: b__bv,
-  all: b__bv,
-  not: [
-    [ bool2, bool2 ],
-    [ bool3, bool3 ],
-    [ bool4, bool4 ],
-  ],
-  sampleLinear: px__im_f2,
-  sampleNearest: px__im_f2,
-  pixelSize: [
-    [ float2, image1 ],
-    [ float2, image2 ],
-    [ float2, image3 ],
-    [ float2, image4 ],
-    [ float2, float ],
     [ float2, float2 ],
-    [ float2, float3 ],
-    [ float2, float4 ],
-  ],
-  pixelAspectRatio: [
-    [ float, image1 ],
-    [ float, image2 ],
-    [ float, image3 ],
-    [ float, image4 ],
-    [ float, float ],
-    [ float, float2 ],
-    [ float, float3 ],
-    [ float, float4 ],
-  ],
-};
+    [ float3, float3 ],
+    [ float4, float4 ],
+  ];
+  const fx__fx_fx = [
+    [ float, float, float ],
+    [ float2, float2, float2 ],
+    [ float3, float3, float3 ],
+    [ float4, float4, float4 ],
+  ];
+  const fx__fx_fx1 = [
+    ...fx__fx_fx,
+    [ float2, float2, float ],
+    [ float3, float3, float ],
+    [ float4, float4, float ],
+  ];
+  const fx__fx1_fx = [
+    ...fx__fx_fx,
+    [ float2, float, float2 ],
+    [ float3, float, float3 ],
+    [ float4, float, float4 ],
+  ];
+  const fx__fx_fx_fx = [
+    [ float, float, float, float ],
+    [ float2, float2, float2, float2 ],
+    [ float3, float3, float3, float3 ],
+    [ float4, float4, float4, float4 ],
+  ];
+  const f__fx_fx = [
+    [ float, float, float ],
+    [ float, float2, float2 ],
+    [ float, float3, float3 ],
+    [ float, float4, float4 ],
+  ];
+  const bv__ifv_ifv = [
+    [ bool2, int2, int2 ],
+    [ bool3, int3, int3 ],
+    [ bool4, int4, int4 ],
+    [ bool2, float2, float2 ],
+    [ bool3, float3, float3 ],
+    [ bool4, float4, float4 ],
+  ];
+  const bv__bifv_bifv = [
+    [ bool2, bool2, bool2 ],
+    [ bool3, bool3, bool3 ],
+    [ bool4, bool4, bool4 ],
+    ...bv__ifv_ifv,
+  ];
+  const b__bv = [
+    [ bool, bool2 ],
+    [ bool, bool3 ],
+    [ bool, bool4 ],
+  ];
+  const px__im_f2 = [
+    [ float, image1, float2 ],
+    [ float2, image2, float2 ],
+    [ float3, image3, float2 ],
+    [ float4, image4, float2 ],
+  ];
 
+  const signatures = {
+    outCoord: [ float2 ],
+    radians: fx__fx,
+    degrees: fx__fx,
+    sin: fx__fx,
+    cos: fx__fx,
+    tan: fx__fx,
+    asin: fx__fx,
+    acos: fx__fx,
+    atan: fx__fx,
+    atan2: fx__fx_fx,
+    pow: fx__fx_fx,
+    exp: fx__fx,
+    exp2: fx__fx,
+    log: fx__fx,
+    log2: fx__fx,
+    sqrt: fx__fx,
+    inverseSqrt: fx__fx,
+    abs: fx__fx,
+    sign: fx__fx,
+    floor: fx__fx,
+    ceil: fx__fx,
+    fract: fx__fx,
+    mod: fx__fx_fx1,
+    min: fx__fx_fx1,
+    max: fx__fx_fx1,
+    mod: fx__fx_fx1,
+    step: fx__fx1_fx,
+    clamp: [
+      ...fx__fx_fx_fx,
+      [ float2, float2, float, float ],
+      [ float3, float3, float, float ],
+      [ float4, float4, float, float ],
+    ],
+    mix: [
+      ...fx__fx_fx_fx,
+      [ float2, float2, float2, float ],
+      [ float3, float3, float3, float ],
+      [ float4, float4, float4, float ],
+    ],
+    smoothStep: [
+      ...fx__fx_fx_fx,
+      [ float2, float, float, float2 ],
+      [ float3, float, float, float3 ],
+      [ float4, float, float, float4 ],
+    ],
+    length: [
+      [ float, float ],
+      [ float, float2 ],
+      [ float, float3 ],
+      [ float, float4 ],
+    ],
+    distance: f__fx_fx,
+    dot: f__fx_fx,
+    cross: fx__fx_fx,
+    normalize: fx__fx,
+    matrixCompMult: [
+      [ float2x2, float2x2, float2x2 ],
+      [ float3x3, float3x3, float3x3 ],
+      [ float4x4, float4x4, float4x4 ],
+    ],
+    lessThan: bv__ifv_ifv,
+    lessThanEqual: bv__ifv_ifv,
+    greaterThan: bv__ifv_ifv,
+    greaterThanEqual: bv__ifv_ifv,
+    equal: bv__bifv_bifv,
+    notEqual: bv__bifv_bifv,
+    any: b__bv,
+    all: b__bv,
+    not: [
+      [ bool2, bool2 ],
+      [ bool3, bool3 ],
+      [ bool4, bool4 ],
+    ],
+    sampleLinear: px__im_f2,
+    sampleNearest: px__im_f2,
+    pixelSize: [
+      [ float2, image1 ],
+      [ float2, image2 ],
+      [ float2, image3 ],
+      [ float2, image4 ],
+      [ float2, float ],
+      [ float2, float2 ],
+      [ float2, float3 ],
+      [ float2, float4 ],
+    ],
+    pixelAspectRatio: [
+      [ float, image1 ],
+      [ float, image2 ],
+      [ float, image3 ],
+      [ float, image4 ],
+      [ float, float ],
+      [ float, float2 ],
+      [ float, float3 ],
+      [ float, float4 ],
+    ],
+  };
+  const functions = {};
+  for (const [ name, signature ] of Object.entries(signatures)) {
+    const overloaded = Array.isArray(signature[0]);
+    const returnType = (overloaded) ? signature.map(s => s[0]) : signature[0];
+    const argTypes = (overloaded) ? signature.map(s => s.slice(1)) : signature.slice(1);
+    functions[name] = {
+      type: 'builtin',
+      returnType,
+      argTypes,
+      overloaded,
+      receiver: null,
+    };
+  }
+  return functions;
+})();
