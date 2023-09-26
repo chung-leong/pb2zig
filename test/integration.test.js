@@ -496,7 +496,7 @@ async function apply(name, sources, options = {}) {
     const filename = (outputImages.length > 1) ? name + index : name;
     const dstPixels = image.pixels.typedArray;
     sharp(dstPixels, {
-      raw: { width, height, channels, depth },
+      raw: { width, height, channels, depth, premultiplied: true },
     }).png().toFile(`${imgOutDir}/${filename}.png`);
   }
 }
