@@ -20,7 +20,7 @@ const T = {
   Preprocessor: createToken({
     name: 'Preprocessor',
     group: 'preprocessor',
-    pattern: /#\s*(if|ifdef|define|elif|endif)\b.*/,
+    pattern: /#\s*(if|ifdef|define|elif|endif)\b(\\\n|.)*/,
   }),
   Number: createToken({   // this needs to be ahead of T.Dot
     name: 'Number',

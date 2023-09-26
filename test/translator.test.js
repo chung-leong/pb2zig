@@ -67,6 +67,18 @@ describe('Translator tests', function() {
     const result = convertPixelBender(pbkCode, { kernelOnly: true });
     expect(result).to.contain('var value: f32 = (a * b + c)');
   })
+  it('should correctly translate a multi-line macro', function() {
+    const pbkCode = addPBKWrapper(`
+      #define addMul(a, b, c) (a \
+        *\
+         b + c)
+
+      float value = addMul(1.4, 2.2, 3.0);
+    `);
+    const result = convertPixelBender(pbkCode, { kernelOnly: true });
+    expect(result).to.contain('fn addMul(a: f32, b: f32, c: f32) f32 {');
+  })
+
 })
 
 function addPBKWrapper(statements) {
