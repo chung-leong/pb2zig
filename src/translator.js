@@ -134,9 +134,9 @@ export class PixelBenderToZigTranslator {
     return entry?.tmp;
   }
 
-  convertMacro(name, argsGiven = null) {
+  convertMacro(name, argsGiven) {
     const macro = this.macroASTs.find(m => m.name === name);
-    if (!macro || !macro.args !== !argsGiven) {
+    if (!macro || !macro.args) {
       return false;
     }
     const { args, expression } = macro;
@@ -157,10 +157,8 @@ export class PixelBenderToZigTranslator {
     try {
       this.startScope();
       // use the types from the arguments given
-      if (args) {
-        for (const [ index, name ] of args.entries()) {
-          this.variables[name] = argsGiven[index].type;
-        }
+      for (const [ index, name ] of args.entries()) {
+        this.variables[name] = argsGiven[index].type;
       }
       expr = this.translateExpression(expression);
     } catch (err) {
@@ -197,9 +195,6 @@ export class PixelBenderToZigTranslator {
       for (const { functions } of savedStack) {
         functions[name] = f;
       }
-    } else {
-      this.add(`const ${name} = ${expr};`);
-      this.variables[name] = expr.type;
     }
     return true;
   }
