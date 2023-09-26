@@ -93,7 +93,7 @@ describe('Integration tests', function() {
       minSolid: 0.001,
       maxSolid: 0.04,
     };
-    await apply(name, { src: 'malgorzata-socha.png' });
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate circle-pixels.pbk', async function() {
     this.timeout(60000);
