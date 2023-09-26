@@ -33,25 +33,9 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.dst = @splat(0);
                 const amount = self.input.amount;
                 
                 var pos: @Vector(2, f32) = self.outCoord();
@@ -60,10 +44,18 @@ pub const kernel = struct {
                 var pnt: @Vector(2, f32) = @Vector(2, f32){ nx * ny, nx * ny };
                 self.dst = self.input.src.sampleNearest(self.outCoord() + pnt * @as(@Vector(2, f32), @splat(amount)));
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn cos(v: anytype) @TypeOf(v) {
                 return @cos(v);
             }

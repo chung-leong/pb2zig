@@ -47,25 +47,9 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.dst = @splat(0);
                 const difference = self.input.difference;
                 const color = self.input.color;
                 const bgcolor = self.input.bgcolor;
@@ -103,10 +87,18 @@ pub const kernel = struct {
                     }
                 }
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @max(v1, v2),

@@ -92,29 +92,13 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // constants
             const sqr3: f32 = 1.7320508;
             const halfPixel: @Vector(2, f32) = @Vector(2, f32){ 0.5, 0.5 };
             
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.dst = @splat(0);
                 const center = self.input.center;
                 const scale = self.input.scale;
                 const a = self.input.a;
@@ -139,11 +123,11 @@ pub const kernel = struct {
                 po = (distort * po);
                 var z: @Vector(2, f32) = fract(po);
                 po = floor(po);
-                z[1] *= sqr3;
+                z[1] = z[1] * sqr3;
                 tmp = z[0] * z[0] + z[1] * z[1];
                 if (tmp < fill) {
                     alf = 1.0;
-                    po -= halfPixel;
+                    po = po - halfPixel;
                 } else {
                     tmp = z[0] - 0.5;
                     const tmp1 = tmp;
@@ -158,8 +142,8 @@ pub const kernel = struct {
                         const tmp4 = tmp;
                         if (z[0] * z[0] + tmp4 * tmp4 < fill) {
                             alf = 1.0;
-                            po[0] -= 0.5;
-                            po[1] += 0.5;
+                            po[0] = po[0] - 0.5;
+                            po[1] = po[1] + 0.5;
                         } else {
                             tmp = z[0] - 1.0;
                             const tmp5 = tmp;
@@ -167,14 +151,14 @@ pub const kernel = struct {
                             const tmp6 = tmp;
                             if (tmp5 * tmp5 + tmp6 * tmp6 < fill) {
                                 alf = 1.0;
-                                po += halfPixel;
+                                po = po + halfPixel;
                             } else {
                                 tmp = z[0] - 1.0;
                                 const tmp7 = tmp;
                                 if (tmp7 * tmp7 + z[1] * z[1] < fill) {
                                     alf = 1.0;
-                                    po[0] += 0.5;
-                                    po[1] += -0.5;
+                                    po[0] = po[0] + 0.5;
+                                    po[1] = po[1] + -0.5;
                                 }
                             }
                         }
@@ -184,7 +168,9 @@ pub const kernel = struct {
                 self.dst = self.input.src.sampleNearest(po);
                 self.dst = mix(bgcolor, self.dst, alf);
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
             }
             
             // macros
@@ -193,6 +179,12 @@ pub const kernel = struct {
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn floor(v: anytype) @TypeOf(v) {
                 return @floor(v);
             }

@@ -40,29 +40,13 @@ pub const kernel = struct {
             // output pixel
             pxl: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.pxl = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.pxl.setPixel(x, y, self.pxl);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // constants
             const sqrt3: f32 = 1.7320508076;
             const halfSqrt3: f32 = 0.866025404;
             
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.pxl = @splat(0);
                 const size = self.input.size;
                 const base = self.input.base;
                 
@@ -77,10 +61,18 @@ pub const kernel = struct {
                 po1 = @as(@Vector(2, f32), if ((dst1 < dst2)) po1 else po2);
                 self.pxl = self.input.img.sampleNearest(po1 + self.outCoord());
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.pxl.setPixel(x, y, self.pxl);
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn floor(v: anytype) @TypeOf(v) {
                 return @floor(v);
             }

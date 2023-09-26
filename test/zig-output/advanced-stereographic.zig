@@ -79,25 +79,9 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.dst = @splat(0);
                 const center = self.input.center;
                 const scale = self.input.scale;
                 const warp = self.input.warp;
@@ -121,10 +105,18 @@ pub const kernel = struct {
                 var vy: f32 = radius * sin(ny);
                 self.dst = self.input.src.sampleLinear(center + @Vector(2, f32){ vx, vy * damp });
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn sin(v: anytype) @TypeOf(v) {
                 return @sin(v);
             }

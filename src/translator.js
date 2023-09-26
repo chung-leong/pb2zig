@@ -1125,9 +1125,9 @@ export class PixelBenderToZigTranslator {
   translateAssignmentOperation({ lvalue, operator, rvalue }, typeExpected) {
     const { name: nameL, property: propL, element: elemL } = lvalue;
     const variableL = this.resolveVariable(nameL);
-    if (variableL.isMatrix() && operator.length === 2) {
+    if (operator.length === 2) {
       const assignment = this.expandAssignmentOp({ lvalue, operator, rvalue });
-      return this.translateBinaryOperation(assignment, typeExpected);
+      return this.translateExpression(assignment, typeExpected);
     }
     let value;
     if (propL) {
@@ -1187,6 +1187,9 @@ export class PixelBenderToZigTranslator {
       value = new ZigExpr(`${variableL}[${index}]`, typeLC);
     } else {
       const valueR = this.translateExpression(rvalue, variableL.type);
+      if (valueR.isMatrix()) {
+
+      }
       valueR.promote(variableL.type);
       this.add(`${variableL} ${operator} ${valueR};`);
       value = variableL;

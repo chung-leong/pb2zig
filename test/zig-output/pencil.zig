@@ -50,25 +50,9 @@ pub const kernel = struct {
             // output pixel
             result: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.result = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.result.setPixel(x, y, self.result);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.result = @splat(0);
                 const n3 = self.input.n3;
                 const n2 = self.input.n2;
                 const n0 = self.input.n0;
@@ -152,10 +136,18 @@ pub const kernel = struct {
                 c[3] = 1.0;
                 self.result = c;
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.result.setPixel(x, y, self.result);
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn min(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @min(v1, v2),

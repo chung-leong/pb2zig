@@ -68,25 +68,9 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.dst = @splat(0);
                 const relief = self.input.relief;
                 const lightsource = self.input.lightsource;
                 const shadow = self.input.shadow;
@@ -125,27 +109,29 @@ pub const kernel = struct {
                     const tmp13 = tmp4;
                     var normal: @Vector(3, f32) = @Vector(3, f32){ (0.7 * tmp1[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp2[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp3[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp5[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp6[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp7[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]), (0.7 * tmp8[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp9[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp10[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp11[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp12[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp13[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]), 12.0 / relief };
                     var len: f32 = 1.0 / sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2] + 0.0);
-                    normal *= @as(@Vector(3, f32), @splat(len));
+                    normal = normal * @as(@Vector(3, f32), @splat(len));
                     var lightbeam: @Vector(3, f32) = lightsource;
                     lightbeam = @shuffle(f32, lightbeam, @shuffle(f32, lightbeam, undefined, @Vector(2, i32){ 0, 1 }) - po, @Vector(3, i32){ -1, -2, 2 });
                     tmp4 = sourcesample;
                     const tmp14 = tmp4;
-                    lightbeam[2] -= 5.0 * relief * ((0.7 * tmp14[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - 1.0);
+                    lightbeam[2] = lightbeam[2] - 5.0 * relief * ((0.7 * tmp14[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - 1.0);
                     len = 1.0 / sqrt(lightbeam[0] * lightbeam[0] + lightbeam[1] * lightbeam[1] + lightbeam[2] * lightbeam[2] + 0.0);
-                    lightbeam *= @as(@Vector(3, f32), @splat(len));
+                    lightbeam = lightbeam * @as(@Vector(3, f32), @splat(len));
                     var refl: f32 = shadow + (1.0 - shadow) * dot(normal, lightbeam);
                     var v: @Vector(3, f32) = reflectVector(viewDirection, normal);
                     var spec: f32 = dot(v, lightbeam);
                     if (spec > 0.0) {
                         spec = pow(spec, @as(f32, @floatFromInt(shininess)));
-                        refl += spec;
+                        refl = refl + spec;
                     }
                     refl = clamp(refl, 0.0, 1.0);
                     self.dst = self.input.stripe.sampleLinear(@Vector(2, f32){ 0.5 + (stripesize[0] - 1.0) * refl, stripesize[1] });
-                    self.dst[3] *= sourcesample[3];
+                    self.dst[3] = self.dst[3] * sourcesample[3];
                 }
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
             }
             
             // macros
@@ -154,6 +140,12 @@ pub const kernel = struct {
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => calc: {

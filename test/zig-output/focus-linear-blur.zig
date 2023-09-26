@@ -44,39 +44,32 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.dst = @splat(0);
                 const lineEquation = self.input.lineEquation;
                 const uScale = self.input.uScale;
                 const vScale = self.input.vScale;
                 
                 var val: f32 = lineEquation[0] * self.outCoord()[0] + lineEquation[1] * self.outCoord()[1] + lineEquation[2];
-                val *= 0.01;
+                val = val * 0.01;
                 var dir: @Vector(2, f32) = @as(@Vector(2, f32), @splat(val)) * @shuffle(f32, lineEquation, undefined, @Vector(2, i32){ 0, 1 });
                 var po: @Vector(2, f32) = @as(@Vector(2, f32), @splat(uScale)) * dir;
                 self.dst = self.input.src.sampleLinear(self.outCoord() + po) + self.input.src.sampleLinear(self.outCoord() - po);
                 po = @as(@Vector(2, f32), @splat(vScale)) * @Vector(2, f32){ dir[1], -dir[0] };
-                self.dst += self.input.src.sampleLinear(self.outCoord() + po) + self.input.src.sampleLinear(self.outCoord() - po);
-                self.dst *= @as(@Vector(4, f32), @splat(0.25));
+                self.dst = self.dst + self.input.src.sampleLinear(self.outCoord() + po) + self.input.src.sampleLinear(self.outCoord() - po);
+                self.dst = self.dst * @as(@Vector(4, f32), @splat(0.25));
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
+            }
+            
+            // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
             }
         };
     }

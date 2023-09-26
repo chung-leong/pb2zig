@@ -62,25 +62,9 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.dst = @splat(0);
                 const center = self.input.center;
                 const focalSize = self.input.focalSize;
                 const invert = self.input.invert;
@@ -106,40 +90,40 @@ pub const kernel = struct {
                     strength = focalSize / cur_radius;
                 }
                 var tmpAmount: f32 = strength * amount;
-                coord -= center;
+                coord = coord - center;
                 var tmpDst: @Vector(4, f32) = @as(@Vector(4, f32), @splat(0.0));
                 var scale: f32 = undefined;
                 scale = 1.0;
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (1.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (2.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (3.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (4.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (5.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (6.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (7.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (8.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (9.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (10.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (11.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (12.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (13.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 scale = 1.0 + tmpAmount * (14.0 / 14.0);
-                tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
-                tmpDst /= @as(@Vector(4, f32), @splat(15.0));
+                tmpDst = tmpDst + self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
+                tmpDst = tmpDst / @as(@Vector(4, f32), @splat(15.0));
                 if (cond1 == 1) {
                     self.dst = @as(@Vector(4, f32), @splat((1.0 - edgeHardness))) * ((color * @as(@Vector(4, f32), @splat(strength))) + (tmpDst * @as(@Vector(4, f32), @splat((1.0 - strength))))) + (tmpDst * @as(@Vector(4, f32), @splat(edgeHardness)));
                     self.dst = @shuffle(f32, self.dst, @as(@Vector(3, f32), @splat(vignette)) * @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(strength)) + (@shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat((1.0 - vignette)))), @Vector(4, i32){ -1, -2, -3, 3 });
@@ -148,10 +132,18 @@ pub const kernel = struct {
                 }
                 self.dst[3] = color[3];
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn length(v: anytype) f32 {
                 const sum = @reduce(.Add, v * v);
                 return @sqrt(sum);

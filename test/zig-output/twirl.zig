@@ -50,28 +50,12 @@ pub const kernel = struct {
             // output pixel
             outputColor: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.outputColor = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.outputColor.setPixel(x, y, self.outputColor);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // constants
             const PI: f32 = 3.14159265;
             
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.outputColor = @splat(0);
                 const twirlAngle = self.input.twirlAngle;
                 const center = self.input.center;
                 const radius = self.input.radius;
@@ -80,7 +64,7 @@ pub const kernel = struct {
                 var twirlAngleRadians: f32 = radians(twirlAngle);
                 var relativePos: @Vector(2, f32) = self.outCoord() - center;
                 var distFromCenter: f32 = length(relativePos);
-                distFromCenter /= radius;
+                distFromCenter = distFromCenter / radius;
                 var adjustedRadians: f32 = undefined;
                 var sincWeight: f32 = sin(distFromCenter) * twirlAngleRadians / distFromCenter;
                 var gaussWeight: f32 = exp(-1.0 * distFromCenter * distFromCenter) * twirlAngleRadians;
@@ -95,10 +79,18 @@ pub const kernel = struct {
                 relativePos = matrixCalc("*", rotationMat, relativePos);
                 self.outputColor = self.input.oImage.sampleLinear(relativePos + center);
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.outputColor.setPixel(x, y, self.outputColor);
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn radians(v: anytype) @TypeOf(v) {
                 const multiplier = std.math.pi / 180.0;
                 return switch (@typeInfo(@TypeOf(v))) {

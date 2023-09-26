@@ -1,96 +1,58 @@
-// Pixel Bender "BezierAligner" (translated using pb2zig)
+// Pixel Bender "sphereSection" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "BezierAligner";
-    pub const vendor = "Petri Leskinen";
-    pub const version = 1;
-    pub const description = "Draws an Image along a Bezier Curve";
+    pub const namespace = "AIF";
+    pub const vendor = "omino.com";
+    pub const version = 2;
+    pub const description = "spheresection";
     pub const parameters = .{
-        .startpoint = .{
-            .type = @Vector(2, f32),
-            .minValue = .{ -300.0, -300.0 },
-            .maxValue = .{ 900.0, 900.0 },
-            .defaultValue = .{ 50.0, 200.0 },
-            .description = "start point for bezier sequence",
+        .xAxisColor = .{
+            .type = @Vector(3, f32),
+            .defaultValue = .{ 1.0, 0.3, 0.4 },
         },
-        .control1 = .{
-            .type = @Vector(2, f32),
-            .minValue = .{ -300.0, -300.0 },
-            .maxValue = .{ 900.0, 900.0 },
-            .defaultValue = .{ 200.0, 100.0 },
-            .description = "first control point for bezier sequence",
+        .yAxisColor = .{
+            .type = @Vector(3, f32),
+            .defaultValue = .{ 0.3, 0.8, 0.4 },
         },
-        .control2 = .{
-            .type = @Vector(2, f32),
-            .minValue = .{ -300.0, -300.0 },
-            .maxValue = .{ 900.0, 900.0 },
-            .defaultValue = .{ 400.0, 300.0 },
-            .description = "first control point for bezier sequence",
+        .zAxisColor = .{
+            .type = @Vector(3, f32),
+            .defaultValue = .{ 0.1, 0.3, 1.0 },
         },
-        .endpoint = .{
+        .center = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -300.0, -300.0 },
-            .maxValue = .{ 900.0, 900.0 },
-            .defaultValue = .{ 550.0, 200.0 },
-            .description = "end point for bezier sequence",
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 800.0, 800.0 },
+            .defaultValue = .{ 300.0, 300.0 },
         },
-        .scale = .{
-            .type = @Vector(2, f32),
-            .minValue = .{ 0.5, 0.5 },
-            .maxValue = .{ 2.5, 2.5 },
-            .defaultValue = .{ 1.0, 1.0 },
-            .description = "Scales the texture image",
+        .spin = .{
+            .type = @Vector(3, f32),
+            .minValue = .{ -10.0, -10.0, -10.0 },
+            .maxValue = .{ 10.0, 10.0, 10.0 },
+            .defaultValue = .{ 0.1, 0.02, 0.3 },
         },
-        .imagewidth = .{
+        .plunge = .{
             .type = f32,
             .minValue = 0.0,
-            .maxValue = 500.0,
-            .defaultValue = 200.0,
-            .description = "imagewidth: how wide the repeating part is",
-        },
-        .offset = .{
-            .type = @Vector(2, f32),
-            .minValue = .{ -300.0, -300.0 },
-            .maxValue = .{ 300.0, 300.0 },
-            .defaultValue = .{ 0.0, 0.0 },
-            .description = "offset.x=Displacement along the curve, offset.y=Displacement perpendicular to the curve",
-        },
-        .tstart = .{
-            .type = f32,
-            .minValue = 0.0,
-            .maxValue = 1.0,
+            .maxValue = 20.0,
             .defaultValue = 0.0,
-            .description = "the default 0 means that the curve starts from the startpoint",
         },
-        .tend = .{
+        .cellDensity = .{
             .type = f32,
-            .minValue = 0.0,
-            .maxValue = 1.0,
-            .defaultValue = 1.0,
-            .description = "the default 1 means that the curve ends at the endpoint",
+            .minValue = 0.005,
+            .maxValue = 0.1,
+            .defaultValue = 0.03,
         },
-        .rotation = .{
-            .type = [2]@Vector(2, f32),
-            .minValue = [2]@Vector(2, f32){
-                .{ -1, -1 },
-                .{ -1, -1 }
-            },
-            .maxValue = [2]@Vector(2, f32){
-                .{ 1, 1 },
-                .{ 1, 1 }
-            },
-            .defaultValue = [2]@Vector(2, f32){
-                .{ 1, 0 },
-                .{ 0, 1 }
-            },
-            .description = "Rotation around the axis",
+        .radius = .{
+            .type = f32,
+            .minValue = 5.0,
+            .maxValue = 200.0,
+            .defaultValue = 100.0,
         },
     };
     pub const inputImages = .{
-        .background = .{ .channels = 4 },
-        .texture = .{ .channels = 4 },
+        .unused = .{ .channels = 3 },
     };
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
@@ -109,91 +71,72 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                const startpoint = self.input.startpoint;
-                const control1 = self.input.control1;
-                const control2 = self.input.control2;
-                const endpoint = self.input.endpoint;
-                const tstart = self.input.tstart;
-                const tend = self.input.tend;
-                const rotation = self.input.rotation;
-                const scale = self.input.scale;
-                const offset = self.input.offset;
-                const imagewidth = self.input.imagewidth;
+                const spin = self.input.spin;
+                const center = self.input.center;
+                const cellDensity = self.input.cellDensity;
+                const radius = self.input.radius;
+                const plunge = self.input.plunge;
+                const xAxisColor = self.input.xAxisColor;
+                const yAxisColor = self.input.yAxisColor;
+                const zAxisColor = self.input.zAxisColor;
                 
-                var p: @Vector(2, f32) = self.outCoord();
-                self.dst = self.input.background.sampleLinear(p);
-                var fx: @Vector(4, f32) = @Vector(4, f32){ startpoint[0], 3.0 * (control1[0] - startpoint[0]), 3.0 * (startpoint[0] - 2.0 * control1[0] + control2[0]), endpoint[0] - startpoint[0] + 3.0 * (control1[0] - control2[0]) };
-                var fy: @Vector(4, f32) = @Vector(4, f32){ startpoint[1], 3.0 * (control1[1] - startpoint[1]), 3.0 * (startpoint[1] - 2.0 * control1[1] + control2[1]), endpoint[1] - startpoint[1] + 3.0 * (control1[1] - control2[1]) };
-                var dfx: @Vector(4, f32) = derivative(fx);
-                var dfy: @Vector(4, f32) = derivative(fy);
-                var ta: f32 = tstart;
-                var tb: f32 = tend;
-                var d: @Vector(2, f32) = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, ta), eval(dfy, ta) });
-                d = d / @as(@Vector(2, f32), @splat(length(d)));
-                var p0: @Vector(2, f32) = matrixCalc("*", [2]@Vector(2, f32){
-                    .{ d[0], -d[1] },
-                    .{ d[1], d[0] }
-                }, (p - @Vector(2, f32){ eval(fx, ta), eval(fy, ta) }));
-                d = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, tb), eval(dfy, tb) });
-                var p1: @Vector(2, f32) = matrixCalc("*", [2]@Vector(2, f32){
-                    .{ d[0], -d[1] },
-                    .{ d[1], d[0] }
-                }, (p - @Vector(2, f32){ eval(fx, tb), eval(fy, tb) }));
-                if ((p0[0] < 0.0 and p1[0] > 0.0) or (p0[0] > 0.0 and p1[0] < 0.0)) {
-                    p1 = p1 / @as(@Vector(2, f32), @splat(length(d)));
-                    var t: f32 = undefined;
-                    var tmp: f32 = undefined;
-                    var p2: @Vector(2, f32) = undefined;
-                    {
-                        var i: i32 = 0;
-                        while (i < 2) {
-                            t = ta + p0[0] / (p0[0] - p1[0]) * (tb - ta);
-                            d = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
-                            d = d / @as(@Vector(2, f32), @splat(length(d)));
-                            p2 = matrixCalc("*", [2]@Vector(2, f32){
-                                .{ d[0], -d[1] },
-                                .{ d[1], d[0] }
-                            }, (p - @Vector(2, f32){ eval(fx, t), eval(fy, t) }));
-                            if (sign(p2[0]) == sign(p0[0])) {
-                                p0 = p2;
-                                ta = t;
-                            } else {
-                                p1 = p2;
-                                tb = t;
-                            }
-                            i = i + 1;
-                        }
-                    }
-                    t = ta + p0[0] / (p0[0] - p1[0]) * (tb - ta);
-                    d = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
-                    d = d / @as(@Vector(2, f32), @splat(length(d)));
-                    p2 = matrixCalc("*", [2]@Vector(2, f32){
-                        .{ d[0], -d[1] },
-                        .{ d[1], d[0] }
-                    }, (p - @Vector(2, f32){ eval(fx, t), eval(fy, t) }));
-                    tmp = length(@Vector(2, f32){ eval(dfx, 0.0), eval(dfy, 0.0) }) + 3.0 * (length(@Vector(2, f32){ eval(dfx, 0.33333333 * t), eval(dfy, 0.33333333 * t) }) + length(@Vector(2, f32){ eval(dfx, 0.66666666 * t), eval(dfy, 0.66666666 * t) })) + length(@Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
-                    p2[0] = 0.125 * t * tmp;
-                    p2 = p2 / scale;
-                    p2 = p2 + offset;
-                    if (imagewidth > 0.1) {
-                        p2[0] = mod(p2[0], imagewidth);
-                    }
-                    var dst2: @Vector(4, f32) = self.input.texture.sampleLinear(p2);
-                    self.dst = self.dst + @as(@Vector(4, f32), @splat(dst2[3])) * (dst2 - self.dst);
+                var axis1: @Vector(3, f32) = @Vector(3, f32){ 1.0, 0.0, 0.0 };
+                var axis2: @Vector(3, f32) = @Vector(3, f32){ 0.0, 1.0, 0.0 };
+                var elevR: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                    .{ 1, 0, 0 },
+                    .{ 0, cos(spin[0]), sin(spin[0]) },
+                    .{ 0, -sin(spin[0]), cos(spin[0]) }
+                };
+                var bearR: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                    .{ cos(spin[1]), sin(spin[1]), 0 },
+                    .{ -sin(spin[1]), cos(spin[1]), 0 },
+                    .{ 0, 0, 1 }
+                };
+                var yamR: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                    .{ cos(spin[2]), 0, sin(spin[2]) },
+                    .{ 0, 1, 0 },
+                    .{ -sin(spin[2]), 0, cos(spin[2]) }
+                };
+                axis1 = matrixCalc("*", axis1, matrixCalc("*", matrixCalc("*", elevR, bearR), yamR));
+                axis2 = matrixCalc("*", axis2, matrixCalc("*", matrixCalc("*", elevR, bearR), yamR));
+                var oc: @Vector(2, f32) = (self.outCoord() - center) * @as(@Vector(2, f32), @splat(cellDensity));
+                var p: @Vector(3, f32) = @as(@Vector(3, f32), @splat(oc[0])) * axis1 + @as(@Vector(3, f32), @splat(oc[1])) * axis2;
+                var perp: @Vector(3, f32) = cross(axis1, axis2);
+                var plungeMore: f32 = radius * radius * cellDensity * cellDensity - oc[0] * oc[0] - oc[1] * oc[1];
+                if (plungeMore < 0.0) {
+                    plungeMore = 0.0;
+                }
+                plungeMore = sqrt(plungeMore);
+                p = p + @as(@Vector(3, f32), @splat((plunge - plungeMore))) * perp;
+                p = mod(p, 1.0);
+                var perpStep: @Vector(3, f32) = @as(@Vector(3, f32), @splat(1.0)) - step(0.0, perp);
+                p = perpStep - p;
+                p = abs(p);
+                perp = abs(perp);
+                var t: @Vector(3, f32) = p / perp;
+                var co: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
+                var z: f32 = undefined;
+                if (t[0] >= 0.0) {
+                    co = xAxisColor;
+                    z = t[0];
+                }
+                if (t[1] >= 0.0 and t[1] < t[0]) {
+                    co = yAxisColor;
+                    z = t[1];
+                }
+                if (t[2] >= 0.0 and t[2] < t[0] and t[2] < t[1]) {
+                    co = zAxisColor;
+                    z = t[2];
+                }
+                self.dst = @shuffle(f32, self.dst, co * @as(@Vector(3, f32), @splat((1.0 - z / 1.2))), @Vector(4, i32){ -1, -2, -3, 3 });
+                self.dst[3] = 1.0;
+                if (plungeMore == 0.0) {
+                    self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(0.0)), @Vector(4, i32){ -1, -2, -3, 3 });
                 }
                 
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            // macros
-            fn derivative(f: @Vector(4, f32)) @Vector(4, f32) {
-                return @Vector(4, f32){ f[1], 2.0 * f[2], 3.0 * f[3], 0.0 };
-            }
-            
-            fn eval(f: @Vector(4, f32), t: f32) f32 {
-                return (f[0] + t * (f[1] + t * (f[2] + t * f[3])));
             }
             
             // built-in Pixel Bender functions
@@ -203,8 +146,20 @@ pub const kernel = struct {
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
-            fn sign(v: anytype) @TypeOf(v) {
-                return std.math.sign(v);
+            fn sin(v: anytype) @TypeOf(v) {
+                return @sin(v);
+            }
+            
+            fn cos(v: anytype) @TypeOf(v) {
+                return @cos(v);
+            }
+            
+            fn sqrt(v: anytype) @TypeOf(v) {
+                return @sqrt(v);
+            }
+            
+            fn abs(v: anytype) @TypeOf(v) {
+                return @fabs(v);
             }
             
             fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
@@ -217,9 +172,22 @@ pub const kernel = struct {
                 };
             }
             
-            fn length(v: anytype) f32 {
-                const sum = @reduce(.Add, v * v);
-                return @sqrt(sum);
+            fn step(v1: anytype, v2: anytype) @TypeOf(v2) {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => calc: {
+                        const ones: @TypeOf(v2) = @splat(1);
+                        const zeros: @TypeOf(v2) = @splat(0);
+                        break :calc @select(@typeInfo(@TypeOf(v2)).Vector.child, v2 < v1, zeros, ones);
+                    },
+                    else => switch (@typeInfo(@TypeOf(v2))) {
+                        .Vector => step(@as(@TypeOf(v2), @splat(v1)), v2),
+                        else => if (v2 < v1) 0 else 1,
+                    },
+                };
+            }
+            
+            fn cross(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return v1 * v2;
             }
             
             fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {

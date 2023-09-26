@@ -38,37 +38,29 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
+            // functions defined in kernel
+            pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
+                const vertical = self.input.vertical;
+                const horizontal = self.input.horizontal;
+                
+                var coord: @Vector(2, f32) = self.outCoord();
+                coord[0] = coord[0] + vertical * @as(f32, if ((cos(coord[1] / vertical) > 0.0)) 1.0 else -1.0);
+                coord[1] = coord[1] + horizontal * @as(f32, if ((cos(coord[0] / horizontal) > 0.0)) 1.0 else -1.0);
+                self.dst = self.input.src.sampleNearest(coord);
+                
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 self.output.dst.setPixel(x, y, self.dst);
             }
             
+            // built-in Pixel Bender functions
             fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
-            // functions defined in kernel
-            pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
-                const vertical = self.input.vertical;
-                const horizontal = self.input.horizontal;
-                
-                var coord: @Vector(2, f32) = self.outCoord();
-                coord[0] += vertical * @as(f32, if ((cos(coord[1] / vertical) > 0.0)) 1.0 else -1.0);
-                coord[1] += horizontal * @as(f32, if ((cos(coord[0] / horizontal) > 0.0)) 1.0 else -1.0);
-                self.dst = self.input.src.sampleNearest(coord);
-                
-                self.setOutputPixel();
-            }
-            
-            // built-in Pixel Bender functions
             fn cos(v: anytype) @TypeOf(v) {
                 return @cos(v);
             }

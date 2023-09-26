@@ -94,25 +94,9 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.dst = @splat(0);
                 const blur = self.input.blur;
                 const color1 = self.input.color1;
                 const color2 = self.input.color2;
@@ -128,12 +112,12 @@ pub const kernel = struct {
                 var minDist: f32 = undefined;
                 var tmp: f32 = undefined;
                 var po: @Vector(4, f32) = self.input.src.sampleLinear(self.outCoord());
-                po += self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ blur, 0.0 }) + self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ -blur, 0.0 });
-                po += self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, blur }) + self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, -blur });
+                po = po + self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ blur, 0.0 }) + self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ -blur, 0.0 });
+                po = po + self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, blur }) + self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, -blur });
                 if (po[3] < 0.01) {
                     self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 } else {
-                    po /= @as(@Vector(4, f32), @splat(po[3]));
+                    po = po / @as(@Vector(4, f32), @splat(po[3]));
                     self.dst = color1;
                     tmp = po[0] - self.dst[0];
                     const tmp1 = tmp;
@@ -227,7 +211,16 @@ pub const kernel = struct {
                     }
                 }
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
+            }
+            
+            // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
             }
         };
     }

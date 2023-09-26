@@ -26,25 +26,9 @@ pub const kernel = struct {
             // output pixel
             o: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.o = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.o.setPixel(x, y, self.o);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.o = @splat(0);
                 var c: @Vector(2, f32) = self.outCoord();
                 var p: @Vector(2, f32) = undefined;
                 var n: @Vector(4, f32) = undefined;
@@ -193,7 +177,16 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.o.setPixel(x, y, self.o);
+            }
+            
+            // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
             }
         };
     }

@@ -62,25 +62,9 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.dst = @splat(0);
                 const randomPoint = self.input.randomPoint;
                 const n4 = self.input.n4;
                 const n3 = self.input.n3;
@@ -89,14 +73,22 @@ pub const kernel = struct {
                 const n2 = self.input.n2;
                 
                 var p: @Vector(2, f32) = self.outCoord() + randomPoint;
-                p += mod(p, n4) - mod(p, n3);
+                p = p + mod(p, n4) - mod(p, n3);
                 var ds: @Vector(2, f32) = mod(p, n0) + mod(p, n1) + mod(p, n2) - @as(@Vector(2, f32), @splat(0.5)) * @as(@Vector(2, f32), @splat((n0 + n1 + n2)));
                 self.dst = self.input.src.sampleLinear(self.outCoord() - @as(@Vector(2, f32), @splat(0.333333)) * ds);
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @mod(v1, v2),

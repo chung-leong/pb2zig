@@ -119,7 +119,7 @@ pub const kernel = struct {
                         self.sphereArray[i + 8] = 0.7;
                         self.sphereArray[i + 9] = 1.0;
                         self.sphereArray[i + 10] = pow(sin(ifloat / 2.1 + 1.243) * 0.5 + 0.5, 5.0);
-                        i += SPHERE_PARAMETER_COUNT;
+                        i = i + SPHERE_PARAMETER_COUNT;
                     }
                 }
             }
@@ -153,7 +153,7 @@ pub const kernel = struct {
                                 hit = 1;
                             }
                         }
-                        i += SPHERE_PARAMETER_COUNT;
+                        i = i + SPHERE_PARAMETER_COUNT;
                     }
                 }
                 pos = origin + dir * @as(@Vector(3, f32), @splat(t));
@@ -222,18 +222,18 @@ pub const kernel = struct {
                         if (sphereNum == 11) {
                             phi = acos(-dot(@Vector(3, f32){ 1.0, 0.0, 0.0 }, n));
                             uv = @Vector(2, f32){ acos(dot(@Vector(3, f32){ 0.0, 0.0, 1.0 }, n) / sin(phi)) / (2.0 * PI), phi / PI };
-                            sphereColor *= @as(@Vector(3, f32), @splat(@as(f32, if ((mod(floor(uv[0] * 2000.0) + floor(uv[1] * 2000.0), 2.0) == 0.0)) 0.5 else 1.0)));
+                            sphereColor = sphereColor * @as(@Vector(3, f32), @splat(@as(f32, if ((mod(floor(uv[0] * 2000.0) + floor(uv[1] * 2000.0), 2.0) == 0.0)) 0.5 else 1.0)));
                         }
                         lightVal = (sphereMaterial[0] + @as(f32, @floatFromInt(shadowTest)) * (diffuse * sphereMaterial[1] + specular * sphereMaterial[2]));
                         var res: @Vector(3, f32) = colorScale * @as(@Vector(3, f32), @splat(lightVal)) * sphereColor;
-                        self.dst += @Vector(4, f32){ res[0], res[1], res[2], 0.0 };
+                        self.dst = self.dst + @Vector(4, f32){ res[0], res[1], res[2], 0.0 };
                         if (sphereMaterial[3] > 0.0) {
                             dirReflect = dir - @as(@Vector(3, f32), @splat(2.0 * dot(dir, n))) * n;
                             dirReflect = normalize(dirReflect);
                             origin = hitPoint;
                             dir = dirReflect;
-                            rayShots -= 1;
-                            colorScale *= @as(@Vector(3, f32), @splat(sphereMaterial[3])) * sphereColor;
+                            rayShots = rayShots - 1;
+                            colorScale = colorScale * @as(@Vector(3, f32), @splat(sphereMaterial[3])) * sphereColor;
                         } else {
                             rayShots = 0;
                         }

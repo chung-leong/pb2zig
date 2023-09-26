@@ -32,36 +32,28 @@ pub const kernel = struct {
             // output pixel
             outputPixel: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
+            // functions defined in kernel
+            pub fn evaluatePixel(self: *@This()) void {
                 self.outputPixel = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
+                const dimension = self.input.dimension;
+                
+                var dimAsFloat: f32 = @as(f32, @floatFromInt(dimension));
+                var sc: @Vector(2, f32) = floor(self.outCoord() / @Vector(2, f32){ dimAsFloat, dimAsFloat });
+                sc = sc * @as(@Vector(2, f32), @splat(dimAsFloat));
+                self.outputPixel = self.input.inputImage.sampleNearest(sc);
+                
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 self.output.outputPixel.setPixel(x, y, self.outputPixel);
             }
             
+            // built-in Pixel Bender functions
             fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
-            // functions defined in kernel
-            pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
-                const dimension = self.input.dimension;
-                
-                var dimAsFloat: f32 = @as(f32, @floatFromInt(dimension));
-                var sc: @Vector(2, f32) = floor(self.outCoord() / @Vector(2, f32){ dimAsFloat, dimAsFloat });
-                sc *= @as(@Vector(2, f32), @splat(dimAsFloat));
-                self.outputPixel = self.input.inputImage.sampleNearest(sc);
-                
-                self.setOutputPixel();
-            }
-            
-            // built-in Pixel Bender functions
             fn floor(v: anytype) @TypeOf(v) {
                 return @floor(v);
             }

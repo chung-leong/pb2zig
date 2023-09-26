@@ -33,49 +33,41 @@ pub const kernel = struct {
             // output pixel
             outputPx: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.outputPx = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.outputPx.setPixel(x, y, self.outputPx);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.outputPx = @splat(0);
                 const size = self.input.size;
                 
                 var cPos: @Vector(2, f32) = self.outCoord();
                 var tlPos: @Vector(2, f32) = undefined;
                 tlPos[0] = floor(cPos[0] / @as(f32, @floatFromInt(size)));
                 tlPos[1] = floor(cPos[1] / @as(f32, @floatFromInt(size)));
-                tlPos *= @as(@Vector(2, f32), @splat(@as(f32, @floatFromInt(size))));
+                tlPos = tlPos * @as(@Vector(2, f32), @splat(@as(f32, @floatFromInt(size))));
                 var remX: i32 = @as(i32, @intFromFloat(mod(cPos[0], @as(f32, @floatFromInt(size)))));
                 var remY: i32 = @as(i32, @intFromFloat(mod(cPos[1], @as(f32, @floatFromInt(size)))));
                 if (remX == 0 and remY == 0) {
                     tlPos = cPos;
                 }
                 var blPos: @Vector(2, f32) = tlPos;
-                blPos[1] += @as(f32, @floatFromInt(size - 1));
+                blPos[1] = blPos[1] + @as(f32, @floatFromInt(size - 1));
                 if ((remX == remY) or @as(i32, @intFromFloat(cPos[0])) - @as(i32, @intFromFloat(blPos[0])) == @as(i32, @intFromFloat(blPos[1])) - @as(i32, @intFromFloat(cPos[1]))) {
                     self.outputPx = self.input.src.sampleNearest(tlPos);
                 } else {
                     self.outputPx = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 }
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.outputPx.setPixel(x, y, self.outputPx);
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn floor(v: anytype) @TypeOf(v) {
                 return @floor(v);
             }

@@ -12,7 +12,7 @@ pub const kernel = struct {
             .type = f32,
             .minValue = 0,
             .maxValue = 100,
-            .defaultValue = 2,
+            .defaultValue = 4,
         },
     };
     pub const inputImages = .{
@@ -31,22 +31,6 @@ pub const kernel = struct {
             
             // output pixel
             dst: @Vector(4, f32) = undefined,
-            
-            fn clearOutputPixel(self: *@This()) void {
-                self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
             
             // constants
             const YIQMatrix: [4]@Vector(4, f32) = [4]@Vector(4, f32){
@@ -68,22 +52,32 @@ pub const kernel = struct {
             }
             
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.dst = @splat(0);
                 const strength = self.input.strength;
                 
                 var pRGBA: @Vector(4, f32) = self.input.src.sampleNearest(self.outCoord());
                 var pYIQA: @Vector(4, f32) = matrixCalc("*", YIQMatrix, pRGBA);
                 if (pYIQA[1] < 0 and pYIQA[2] < 0 and pYIQA[0] > 0.01) {
-                    pYIQA[3] = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
+                    var alpha: f32 = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
                     pYIQA[1] = 0.0;
                     pYIQA[2] = 0.0;
+                    self.dst = matrixCalc("*", inverseYIQ, pYIQA) * @as(@Vector(4, f32), @splat(alpha));
+                } else {
+                    self.dst = pRGBA;
                 }
-                self.dst = matrixCalc("*", inverseYIQ, pYIQA);
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn sqrt(v: anytype) @TypeOf(v) {
                 return @sqrt(v);
             }

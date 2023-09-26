@@ -11,7 +11,7 @@ kernel simple
     <
         minValue: 0;
         maxValue: 100;
-        defaultValue: 2;
+        defaultValue: 4;
     >;
 
     input image4 src;
@@ -40,17 +40,20 @@ kernel simple
         // convert to YIQA color space
         float4 pYIQA = YIQMatrix * pRGBA;
 
+
         // the south-west quadrance is greenish
         // see https://en.wikipedia.org/wiki/YIQ
 		if(pYIQA[1] < 0 && pYIQA[2] < 0 && pYIQA[0] > 0.01) {
             // reduces alpha based on how green and bright it is
- 			pYIQA[3] = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
+ 			float alpha = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
             // discard chroma component
 			pYIQA[1] = 0;
             pYIQA[2] = 0;
-    	}
 
-        // convert back from YIQA
-        dst = inverseYIQ * pYIQA;
+            // convert back from YIQA and apply alpha
+            dst = inverseYIQ * pYIQA * alpha;
+    	} else {
+            dst = pRGBA;
+        }
     }
 }

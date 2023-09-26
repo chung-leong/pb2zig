@@ -44,25 +44,9 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
-                self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
-            }
-            
-            fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
+                self.dst = @splat(0);
                 const center = self.input.center;
                 const frequency = self.input.frequency;
                 const amplitude = self.input.amplitude;
@@ -72,16 +56,24 @@ pub const kernel = struct {
                 var dy: f32 = coord[1] - center[1];
                 var a: f32 = atan2(dy, dx);
                 var r: f32 = sqrt(dx * dx + dy * dy);
-                r += cos(r / frequency) * amplitude;
+                r = r + cos(r / frequency) * amplitude;
                 var dest: @Vector(2, f32) = @Vector(2, f32){ 0.0, 0.0 };
                 dest[0] = center[0] + cos(a) * r;
                 dest[1] = center[1] + sin(a) * r;
                 self.dst = self.input.src.sampleNearest(dest);
                 
-                self.setOutputPixel();
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                self.output.dst.setPixel(x, y, self.dst);
             }
             
             // built-in Pixel Bender functions
+            fn outCoord(self: *@This()) @Vector(2, f32) {
+                const x = self.outputCoord[0];
+                const y = self.outputCoord[1];
+                return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
             fn sin(v: anytype) @TypeOf(v) {
                 return @sin(v);
             }

@@ -165,7 +165,14 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'cubes-03';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = {
+      center: [ 240, 190 ],
+      spin: [ 0.6, 1, 0.2 ],
+      plunge: 1,
+      cellDensity: 0.03,
+      radius: 180,
+    };
+    await apply(name, { unused: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate cubic-space.pbk', async function() {
     this.timeout(60000);

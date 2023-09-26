@@ -43,34 +43,26 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(3, f32) = undefined,
             
-            fn clearOutputPixel(self: *@This()) void {
+            // functions defined in kernel
+            pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-            }
-            
-            fn setOutputPixel(self: *@This()) void {
+                const transform = self.input.transform;
+                
+                self.dst = self.input.src.sampleNearest(self.outCoord());
+                self.dst = matrixCalc("*", transform, self.dst);
+                
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 self.output.dst.setPixel(x, y, self.dst);
             }
             
+            // built-in Pixel Bender functions
             fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
-            // functions defined in kernel
-            pub fn evaluatePixel(self: *@This()) void {
-                self.clearOutputPixel();
-                const transform = self.input.transform;
-                
-                self.dst = self.input.src.sampleNearest(self.outCoord());
-                self.dst = matrixCalc("*", transform, self.dst);
-                
-                self.setOutputPixel();
-            }
-            
-            // built-in Pixel Bender functions
             fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
                 return switch (operator[0]) {
                     '=', '!' => bool,
