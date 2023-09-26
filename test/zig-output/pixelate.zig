@@ -48,7 +48,7 @@ pub const kernel = struct {
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
-            
+            // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.clearOutputPixel();
                 const dimension = self.input.dimension;

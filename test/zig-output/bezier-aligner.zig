@@ -122,19 +122,6 @@ pub const kernel = struct {
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
-            // macro functions
-            fn distanceSquared(a: anytype) @TypeOf(a) {
-                return ((a[0] * a[0]) + (a[1] * a[1]));
-            }
-            
-            fn derivative(f: anytype) @Vector(4, f32) {
-                return @Vector(4, f32){ @as(f32, @floatFromInt(f[1])), 2.0 * f[2], 3.0 * f[3], 0.0 };
-            }
-            
-            fn eval(f: anytype, t: anytype) @TypeOf(f) {
-                return (f[0] + t * (f[1] + t * (f[2] + t * f[3])));
-            }
-            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.clearOutputPixel();
@@ -157,17 +144,17 @@ pub const kernel = struct {
                 var dfy: @Vector(4, f32) = derivative(fy);
                 var ta: f32 = tstart;
                 var tb: f32 = tend;
-                var d: @Vector(2, f32) = matrixCalc("*", rotation, @Vector(2, f32){ @as(f32, @floatFromInt(eval(dfx, ta))), @as(f32, @floatFromInt(eval(dfy, ta))) });
+                var d: @Vector(2, f32) = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, ta), eval(dfy, ta) });
                 d /= @as(@Vector(2, f32), @splat(length(d)));
                 var p0: @Vector(2, f32) = matrixCalc("*", [2]@Vector(2, f32){
                     .{ d[0], -d[1] },
                     .{ d[1], d[0] }
-                }, (p - @Vector(2, f32){ @as(f32, @floatFromInt(eval(fx, ta))), @as(f32, @floatFromInt(eval(fy, ta))) }));
-                d = matrixCalc("*", rotation, @Vector(2, f32){ @as(f32, @floatFromInt(eval(dfx, tb))), @as(f32, @floatFromInt(eval(dfy, tb))) });
+                }, (p - @Vector(2, f32){ eval(fx, ta), eval(fy, ta) }));
+                d = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, tb), eval(dfy, tb) });
                 var p1: @Vector(2, f32) = matrixCalc("*", [2]@Vector(2, f32){
                     .{ d[0], -d[1] },
                     .{ d[1], d[0] }
-                }, (p - @Vector(2, f32){ @as(f32, @floatFromInt(eval(fx, tb))), @as(f32, @floatFromInt(eval(fy, tb))) }));
+                }, (p - @Vector(2, f32){ eval(fx, tb), eval(fy, tb) }));
                 if ((p0[0] < 0.0 and p1[0] > 0.0) or (p0[0] > 0.0 and p1[0] < 0.0)) {
                     p1 /= @as(@Vector(2, f32), @splat(length(d)));
                     var t: f32 = undefined;
@@ -177,12 +164,12 @@ pub const kernel = struct {
                         var i: i32 = 0;
                         while (i < 2) {
                             t = ta + p0[0] / (p0[0] - p1[0]) * (tb - ta);
-                            d = matrixCalc("*", rotation, @Vector(2, f32){ @as(f32, @floatFromInt(eval(dfx, t))), @as(f32, @floatFromInt(eval(dfy, t))) });
+                            d = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
                             d /= @as(@Vector(2, f32), @splat(length(d)));
                             p2 = matrixCalc("*", [2]@Vector(2, f32){
                                 .{ d[0], -d[1] },
                                 .{ d[1], d[0] }
-                            }, (p - @Vector(2, f32){ @as(f32, @floatFromInt(eval(fx, t))), @as(f32, @floatFromInt(eval(fy, t))) }));
+                            }, (p - @Vector(2, f32){ eval(fx, t), eval(fy, t) }));
                             if (sign(p2[0]) == sign(p0[0])) {
                                 p0 = p2;
                                 ta = t;
@@ -194,13 +181,13 @@ pub const kernel = struct {
                         }
                     }
                     t = ta + p0[0] / (p0[0] - p1[0]) * (tb - ta);
-                    d = matrixCalc("*", rotation, @Vector(2, f32){ @as(f32, @floatFromInt(eval(dfx, t))), @as(f32, @floatFromInt(eval(dfy, t))) });
+                    d = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
                     d /= @as(@Vector(2, f32), @splat(length(d)));
                     p2 = matrixCalc("*", [2]@Vector(2, f32){
                         .{ d[0], -d[1] },
                         .{ d[1], d[0] }
-                    }, (p - @Vector(2, f32){ @as(f32, @floatFromInt(eval(fx, t))), @as(f32, @floatFromInt(eval(fy, t))) }));
-                    tmp = length(@Vector(2, f32){ @as(f32, @floatFromInt(eval(dfx, 0.0))), @as(f32, @floatFromInt(eval(dfy, 0.0))) }) + 3.0 * (length(@Vector(2, f32){ @as(f32, @floatFromInt(eval(dfx, 0.33333333 * t))), @as(f32, @floatFromInt(eval(dfy, 0.33333333 * t))) }) + length(@Vector(2, f32){ @as(f32, @floatFromInt(eval(dfx, 0.66666666 * t))), @as(f32, @floatFromInt(eval(dfy, 0.66666666 * t))) })) + length(@Vector(2, f32){ @as(f32, @floatFromInt(eval(dfx, t))), @as(f32, @floatFromInt(eval(dfy, t))) });
+                    }, (p - @Vector(2, f32){ eval(fx, t), eval(fy, t) }));
+                    tmp = length(@Vector(2, f32){ eval(dfx, 0.0), eval(dfy, 0.0) }) + 3.0 * (length(@Vector(2, f32){ eval(dfx, 0.33333333 * t), eval(dfy, 0.33333333 * t) }) + length(@Vector(2, f32){ eval(dfx, 0.66666666 * t), eval(dfy, 0.66666666 * t) })) + length(@Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
                     p2[0] = 0.125 * t * tmp;
                     p2 /= scale;
                     p2 += offset;
@@ -212,6 +199,15 @@ pub const kernel = struct {
                 }
                 
                 self.setOutputPixel();
+            }
+            
+            // macros
+            fn derivative(f: @Vector(4, f32)) @Vector(4, f32) {
+                return @Vector(4, f32){ f[1], 2.0 * f[2], 3.0 * f[3], 0.0 };
+            }
+            
+            fn eval(f: @Vector(4, f32), t: f32) f32 {
+                return (f[0] + t * (f[1] + t * (f[2] + t * f[3])));
             }
             
             // built-in Pixel Bender functions
@@ -230,7 +226,8 @@ pub const kernel = struct {
             }
             
             fn length(v: anytype) f32 {
-                return @typeInfo(@TypeOf(v)).Vector.len;
+                const sum = @reduce(.Add, v * v);
+                return @sqrt(sum);
             }
             
             fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
@@ -573,7 +570,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
         
         pub fn pixelSize(self: @This()) @Vector(2, f32) {
-            return .{ @floatFromInt(self.width), @floatFromInt(self.height) };
+            _ = self;
+            return .{ 1, 1 };
         }
         
         pub fn pixelAspectRatio(self: @This()) f32 {

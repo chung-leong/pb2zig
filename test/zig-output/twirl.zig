@@ -69,7 +69,7 @@ pub const kernel = struct {
             // constants
             const PI: f32 = 3.14159265;
             
-            
+            // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.clearOutputPixel();
                 const twirlAngle = self.input.twirlAngle;

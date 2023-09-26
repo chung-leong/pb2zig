@@ -134,7 +134,7 @@ pub const kernel = struct {
                     len = 1.0 / sqrt(lightbeam[0] * lightbeam[0] + lightbeam[1] * lightbeam[1] + lightbeam[2] * lightbeam[2] + 0.0);
                     lightbeam *= @as(@Vector(3, f32), @splat(len));
                     var refl: f32 = shadow + (1.0 - shadow) * dot(normal, lightbeam);
-                    var v: @Vector(3, f32) = (@as(@Vector(3, f32), @splat(2.0)) * normal * @as(@Vector(3, f32), @splat(dot(viewDirection, normal))) / @as(@Vector(3, f32), @splat((normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]))) - viewDirection);
+                    var v: @Vector(3, f32) = reflectVector(viewDirection, normal);
                     var spec: f32 = dot(v, lightbeam);
                     if (spec > 0.0) {
                         spec = pow(spec, @as(f32, @floatFromInt(shininess)));
@@ -146,6 +146,11 @@ pub const kernel = struct {
                 }
                 
                 self.setOutputPixel();
+            }
+            
+            // macros
+            fn reflectVector(v: @Vector(3, f32), n: @Vector(3, f32)) @Vector(3, f32) {
+                return (@as(@Vector(3, f32), @splat(2.0)) * n * @as(@Vector(3, f32), @splat(dot(v, n))) / @as(@Vector(3, f32), @splat((n[0] * n[0] + n[1] * n[1] + n[2] * n[2]))) - v);
             }
             
             // built-in Pixel Bender functions

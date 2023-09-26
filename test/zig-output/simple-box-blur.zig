@@ -42,7 +42,7 @@ pub const kernel = struct {
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
-            
+            // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.clearOutputPixel();
                 var denominator: f32 = 0.0;

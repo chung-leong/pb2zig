@@ -112,18 +112,7 @@ pub const kernel = struct {
             const sqr3: f32 = 1.7320508;
             const halfPixel: @Vector(2, f32) = @Vector(2, f32){ 0.5, 0.5 };
             
-            // macro functions
-            fn complexMult(a: anytype, b: anytype) @Vector(2, f32) {
-                return @Vector(2, f32){ @as(f32, @floatFromInt(a[0] * b[0] - a[1] * b[1])), @as(f32, @floatFromInt(a[0] * b[1] + a[1] * b[0])) };
-            }
-            fn complexSquared(a: anytype) @Vector(2, f32) {
-                return @Vector(2, f32){ @as(f32, @floatFromInt(a[0] * a[0] - a[1] * a[1])), 2.0 * a[0] * a[1] };
-            }
-            fn complexInverse(b: anytype) @Vector(2, f32) {
-                return @Vector(2, f32){ @as(f32, @floatFromInt(b[0])), @as(f32, @floatFromInt(-b[1])) } / @as(@Vector(2, f32), @splat(@as(f32, @floatFromInt((b[0] * b[0] + b[1] * b[1])))));
-            }
-            
-            
+            // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.clearOutputPixel();
                 const center = self.input.center;
@@ -141,9 +130,9 @@ pub const kernel = struct {
                 var po: @Vector(2, f32) = (self.outCoord() - center) / @as(@Vector(2, f32), @splat(scale));
                 var po2: @Vector(2, f32) = po - a;
                 var po3: @Vector(2, f32) = po - b;
-                po2 = @Vector(2, f32){ po2[0] * po3[0] - po2[1] * po3[1], po2[0] * po3[1] + po2[1] * po3[0] };
+                po2 = complexMult(po2, po3);
                 po3 = po - c;
-                po2 = @Vector(2, f32){ po2[0] * po3[0] - po2[1] * po3[1], po2[0] * po3[1] + po2[1] * po3[0] };
+                po2 = complexMult(po2, po3);
                 po = @Vector(2, f32){ d[0] * po2[0] + d[1] * po2[1], -d[0] * po2[1] + d[1] * po2[0] } / @as(@Vector(2, f32), @splat((po2[0] * po2[0] + po2[1] * po2[1] + focus)));
                 var tmp: f32 = undefined;
                 var alf: f32 = 0.0;
@@ -196,6 +185,11 @@ pub const kernel = struct {
                 self.dst = mix(bgcolor, self.dst, alf);
                 
                 self.setOutputPixel();
+            }
+            
+            // macros
+            fn complexMult(a: @Vector(2, f32), b: @Vector(2, f32)) @Vector(2, f32) {
+                return @Vector(2, f32){ a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0] };
             }
             
             // built-in Pixel Bender functions
@@ -398,7 +392,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
         
         pub fn pixelSize(self: @This()) @Vector(2, f32) {
-            return .{ @floatFromInt(self.width), @floatFromInt(self.height) };
+            _ = self;
+            return .{ 1, 1 };
         }
         
         pub fn pixelAspectRatio(self: @This()) f32 {

@@ -134,19 +134,92 @@ export class PixelBenderToZigTranslator {
     return entry?.tmp;
   }
 
-  expandMacro(name, args = null) {
+  convertMacro(name, argsGiven = null) {
     const macro = this.macroASTs.find(m => m.name === name);
-    if (!macro || !macro.args !== !args) {
+    if (!macro || !macro.args !== !argsGiven) {
+      return false;
+    }
+    const { args, expression } = macro;
+    if (args?.length !== argsGiven?.length) {
+      const s = (args.length > 1) ? 's' : '';
+      throw new Error(`Macro ${name}() expects ${args.length} argument${s}, received ${argsGiven?.length}`);
+    }
+    // save the current scope stack and go back to the top-level
+    this.startScope();
+    const savedLines = this.lines;
+    const savedStack = this.scopeStack;
+    this.scopeStack = [];
+    this.variables = savedStack[0].variables;
+    this.functions = savedStack[0].functions;
+    // capture lines being added
+    const lines = this.lines = [];
+    let expr;
+    try {
+      this.startScope();
+      // use the types from the arguments given
+      if (args) {
+        for (const [ index, name ] of args.entries()) {
+          this.variables[name] = argsGiven[index].type;
+        }
+      }
+      expr = this.translateExpression(expression);
+    } catch (err) {
+      return false;
+    } finally {
+      this.endScope();
+      this.scopeStack = savedStack;
+      this.lines = savedLines;
+      this.endScope();
+    }
+    if (args) {
+      const argTypes = argsGiven.map(a => a.type);
+      const argList = args.map((name, index) => {
+        const typeZ = getZigType(argTypes[index]);
+        return `${name}: ${typeZ}`;
+      });
+      const returnType = expr.type;
+      const f = this.functions[name] = {
+        type: 'macro',
+        returnType,
+        argTypes,
+        overloaded: false,
+        receiver: null,
+      };
+      const typeZ = getZigType(returnType);
+      // save it and add it later
+      f.lines = [
+        `fn ${name}(${argList.join(', ')}) ${typeZ} {`,
+        ...lines,
+        `return ${expr};`,
+        `}`,
+      ];
+      // make function appear in all the other scopes too
+      for (const { functions } of savedStack) {
+        functions[name] = f;
+      }
+    } else {
+      this.add(`const ${name} = ${expr};`);
+      this.variables[name] = expr.type;
+    }
+    return true;
+  }
+
+  expandMacro(name, argsGiven = null) {
+    const macro = this.macroASTs.find(m => m.name === name);
+    if (!macro || !macro.args !== !argsGiven) {
       return null;
     }
+    const { args, expression } = macro;
     const argsByName = {};
-    if (macro.args) {
-      if (macro.args.length !== args.length) {
-        const s = (macro.args.length > 1) ? 's' : '';
-        throw new Error(`Macro ${name}() expects ${macro.args.length} argument${s}, received ${args?.length}`);
+    if (args) {
+      if (args?.length !== argsGiven?.length) {
+        const s = (args.length > 1) ? 's' : '';
+        throw new Error(`Macro ${name}() expects ${args.length} argument${s}, received ${argsGiven?.length}`);
       }
-      for (const [ index, argName ] of macro.args.entries()) {
-        argsByName[argName] = args[index];
+      if (args) {
+        for (const [ index, argName ] of args.entries()) {
+          argsByName[argName] = argsGiven[index];
+        }
       }
     }
     const clone = (object) => {
@@ -174,8 +247,7 @@ export class PixelBenderToZigTranslator {
         return object;
       }
     };
-    const expanded = clone(macro.expression);
-    return expanded;
+    return clone(expression);
   }
 
   expandAssignmentOp({ lvalue, operator, rvalue }) {
@@ -206,7 +278,7 @@ export class PixelBenderToZigTranslator {
           return returnType[n];
         }
       }
-      throw new Error(`${name}(${types.join(', ')}) does not exist"`);
+      throw new Error(`${name}() does not accept these arguments: ${types.join(', ')}`);
     } else {
       const index = findMismatch(argTypes);
       if (index !== -1) {
@@ -346,8 +418,8 @@ export class PixelBenderToZigTranslator {
     this.addInputOutput();
     this.addDependents();
     this.addConstants();
-    this.addMacroFunctions();
     this.addDefinedFunctions();
+    this.addMacroFunctions();
     this.addCalledFunctions();
     this.add(`};`);
     this.add(`}`);
@@ -435,22 +507,11 @@ export class PixelBenderToZigTranslator {
     // find function calls
     const inUse = {};
     const calls = this.find(N.FunctionCall, true);
+    const [ ] = imageFunctions
     for (const { name, args } of calls) {
-      switch (name) {
-        case 'outCoord':
-          // this get turned into a method call on the kernel
-          break;
-        case 'sample':
-        case 'sampleNearest':
-        case 'sampleLinear':
-          // these get turned into method calls on the source image
-          break;
-        case 'atan':
-          inUse[(args.length === 2) ? 'atan2' : 'atan'] = true;
-          break;
-        default:
-          inUse[name] = true;
-      }
+      // atan with two arguments is atan2
+      const actualName = (name === 'atan' && args.length === 2) ? 'atan2' : name;
+      inUse[actualName] = true;
     }
 
     // find matrix variables
@@ -552,15 +613,24 @@ export class PixelBenderToZigTranslator {
     }
   }
 
+  findFunctionCalls(statements) {
+    const called = {};
+    for (const { name } of this.find(N.FunctionCall)) {
+      called[name] = true;
+    }
+    return Object.keys(called);
+  }
+
   addDefinedFunctions() {
     const defs = this.find(N.FunctionDefinition);
     // set the function prototype first
+    const calledBy = {};
     for (const { name, type, args, statements } of defs) {
       if (isUnsupported(type) || args.some(a => isUnsupported(a.type))) {
         continue;
       }
       const external = this.findExternalReferences(args, statements);
-      this.functions[name] = {
+      const f = this.functions[name] = {
         type: 'user',
         returnType: type,
         argTypes: args.map(a => a.type),
@@ -568,6 +638,35 @@ export class PixelBenderToZigTranslator {
         receiver: (external.length > 0) ? 'self' : null,
         external,
       };
+      // note that this function is calling the other function
+      for (const fname of this.findFunctionCalls(statements)) {
+        const f = this.functions[fname];
+        if (f?.type === 'user') {
+          let list = calledBy[fname];
+          if (!list) {
+            list = calledBy[fname] = [];
+          }
+          list.push(name);
+        } else if (f?.type === 'builtin') {
+          // image functions requires self
+          if (imageFunctions.includes(fname)) {
+            f.receiver = 'self';
+          }
+        }
+      }
+    }
+    // make sure calling functions have the self variable as well
+    for (const { name } of defs) {
+      const f = this.functions[name];
+      if (f?.receiver === 'self') {
+        const list = calledBy[name];
+        if (list) {
+          for (const fname of list) {
+            const f2 = this.functions[name];
+            f2.receiver = 'self';
+          }
+        }
+      }
     }
     // add the actual code
     let count = 0;
@@ -613,51 +712,19 @@ export class PixelBenderToZigTranslator {
 
   addMacroFunctions() {
     let count = 0;
-    for (const macro of this.macroASTs) {
-      const { name, args, expression } = macro;
-      if (args) {
-        // see if we can handle it as a generic function
-        try {
-          this.startScope();
-          for (const name of args) {
-            this.variables[name] = 'typeof(name)';
-          }
-          const expr = this.translateExpression(expression);
-          // TODO: detect argument type instead using anytype
-          const argList = args.map(name => `${name}: anytype`);
-          let returnType;
-          if (expr.type === 'anytype') {
-            returnType = `@TypeOf(${args[0]})`;
-          } else {
-            returnType = getZigType(expr.type);
-          }
-          const argTypes = args.map(n => 'anytype');
-          this.functions[name] = {
-            type: 'macro',
-            returnType,
-            argTypes,
-            overloaded: false,
-            receiver: null,
-          };
-          if (count === 0) {
-            this.add(`// macro functions`);
-          } else {
-            this.add(``);
-          }
-          this.add(`fn ${name}(${argList.join(', ')}) ${returnType} {`);
-          this.add(`return ${expr};`);
-          this.add(`}`)
-          count++;
-        } catch (err) {
-          // console.log(name, err.message);
-          // must be expanded
-        } finally {
-          this.endScope();
-        }
+    for (const [ name, f ] of Object.entries(this.functions)) {
+      if (f.type !== 'macro') {
+        continue;
       }
-    }
-    if (count > 0) {
+      const { lines } = f;
       this.add(``);
+      if (count === 0) {
+        this.add(`// macros`);
+      }
+      for (const line of lines) {
+        this.add(line);
+      }
+      count++;
     }
   }
 
@@ -890,10 +957,15 @@ export class PixelBenderToZigTranslator {
   }
 
   translateFunctionCall({ name, args }) {
+    let argList = args.map(a => this.translateExpression(a));
     if (!this.functions[name]) {
-      const expanded = this.expandMacro(name, args);
-      if (expanded) {
-        return this.translateExpression(expanded);
+      // try converting macro to a global function
+      if (!this.convertMacro(name, argList)) {
+        // probably 'cause it has local dependents--expand and evaluate instead
+        const expanded = this.expandMacro(name, args);
+        if (expanded) {
+          return this.translateExpression(expanded);
+        }
       }
     }
     if (name === 'outCoord') {
@@ -905,10 +977,9 @@ export class PixelBenderToZigTranslator {
         name = 'atan2';
       }
     }
+    const type = this.getReturnType(name, argList);
     const f = this.functions[name];
     let recv = f.receiver;
-    let argList = args.map(a => this.translateExpression(a));
-    const type = this.getReturnType(name, argList);
     switch (name) {
       case 'sampleNearest':
       case 'sampleLinear':
@@ -1321,6 +1392,13 @@ function getZigLiteral(value, type) {
   }
 }
 
+const imageFunctions = [
+  'sample',
+  'sampleNearest',
+  'sampleLinear',
+  'pixelSize',
+  'pixelAspectRatio',
+];
 const builtInFunctions = (() => {
   const bool = 'bool';
   const bool2 = 'bool2';
