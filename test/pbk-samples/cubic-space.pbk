@@ -6,19 +6,6 @@ kernel CubicSpace
     version : 1;
     description : "cubicspace";
 >
-
-//  no loops when inside flash player, therefore these definitions:
-#define repeat1(a) a;
-#define repeat2(a) a;a;
-#define repeat3(a) a;a;a;
-#define repeat4(a) a;a;a;a;
-#define repeat5(a) a;a;a;a;a;
-#define repeat6(a) repeat4(a);repeat2(a);
-
-#define repeat8(a)  a;a;a;a;a;a;a;a;
-#define repeat10(a) a;a;a;a;a;a;a;a;a;a;
-
-
 {
     parameter float2 center
         <
@@ -160,10 +147,8 @@ kernel CubicSpace
 
         float3 t;
 
-        // int n=10;
-        // for (int i=0; i<n; i++) {
-        repeat5(
-
+        int n = 5;
+        for (int i=0; i<n; i++) {
             //  following line v + t*viewdir,
             //  to see where next hit to a cell wall, e.g. which coordinate is nearest to a integer value:
             t.x = (viewdir.x<0.0 ? -eps : 1.0+eps);
@@ -198,10 +183,7 @@ kernel CubicSpace
 
             //  add new sample to result so far
             dst += dst2*dst2.a*(1.0-dst.a);
-
-        //
-        );
-        // }
+        }
 
         //  add the background by 'remaining' alpha
         dst += (1.0-dst.a)*bgcolor;
