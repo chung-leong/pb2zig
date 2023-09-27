@@ -6,10 +6,10 @@
 #define distanceSquared(a) ((a.x*a.x)+(a.y*a.y))/size/size
 
 //  mysterious clamp(...) takes care of antialiasing the edges
-#define addPixel pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;
+//#define addPixel pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;
 
 //  adds a sample from a nearby circle:
-#define addSample(s) p1=(p+s)*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=distanceSquared(p1);addPixel
+//#define addSample(s) p1=(p+s)*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=distanceSquared(p1);addPixel
 
 //  Inverse of a 2x2 matrix, numbers reorganized and divided by determinant:
 #define inverse2x2(rot) float2x2(rot[1][1],-rot[0][1],-rot[1][0],rot[0][0])/(rot[0][0]*rot[1][1]-rot[1][0]*rot[0][1])
@@ -108,45 +108,42 @@ kernel Tiling
 
         //  if new point inside the disk, add sampled value to the output
         float dist = distanceSquared(p1);
-        addPixel;
+        pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
 
-        //  repeat same for neighbour cells, float2(+-1,+-1)
-        addSample(float2(-1,-1));
-        addSample(float2(-1,0));
+        p1=(p+float2(-1,-1))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
+        p1=(p+float2(-1,0))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
 
-        addSample(float2(0,-1));
-        addSample(float2(0,1));
+        p1=(p+float2(0,-1))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
+        p1=(p+float2(0,1))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
 
-        addSample(float2(1,-1));
-        addSample(float2(1,0));
-        addSample(float2(1,1));
-        addSample(float2(-1,1)); // 1.0
+        p1=(p+float2(1,-1))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
+        p1=(p+float2(1,0))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
+        p1=(p+float2(1,1))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
+        p1=(p+float2(-1,1))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
 
-        //  for larger radii more sampled points are needed:
         if (radius>2.25) {
 
-            addSample(float2(-2,0));    // 2.4
-            addSample(float2(-2,-1));   // 2.4
+            p1=(p+float2(-2,0))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
+            p1=(p+float2(-2,-1))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
 
-            addSample(float2(-1,-2));   // 2.25
+            p1=(p+float2(-1,-2))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
 
-            addSample(float2(0,-2));    // 2.4
-            addSample(float2(0,2));     // 2.4
+            p1=(p+float2(0,-2))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
+            p1=(p+float2(0,2))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
 
-            addSample(float2(1,2));     // 2.25
+            p1=(p+float2(1,2))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
 
-            addSample(float2(2,0));     // 2.25
-            addSample(float2(2,1));     // 2.25
+            p1=(p+float2(2,0))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
+            p1=(p+float2(2,1))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
 
             if (radius>3.0) {
-                addSample(float2(-2,-2));
-                addSample(float2(2,2));
+                p1=(p+float2(-2,-2))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
+                p1=(p+float2(2,2))*rotR+base-outCoord();pxl=sampleNearest(src,p1+outCoord());dist=((p1.x*p1.x)+(p1.y*p1.y))/size/size;pxlOut += (clamp(0.75*size*(1.0-dist/radius), 0.0, 1.0))*pxl;;
             }
 
         }
-        //  adjust because in most cases there are several overlapping disks:
-        //
-        pxlOut *= 0.5/radius; // luminocity;
-        // if (samplesTaken>0) pxlOut /= float(samplesTaken);
+
+        pxlOut *= 0.5/radius;
+
     }
 }

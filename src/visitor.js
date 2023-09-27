@@ -525,7 +525,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   emptyStatement(ctx) {
-    return this.create(N.EmptyStatement, { expression });
+    return this.create(N.EmptyStatement, {});
   }
 }
 

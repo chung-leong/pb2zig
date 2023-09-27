@@ -706,10 +706,8 @@ export class PixelBenderToZigTranslator {
       this.addStatements(statements);
       if (name === 'evaluatePixel') {
         this.add(``);
-        this.add(`const x = self.outputCoord[0];`);
-        this.add(`const y = self.outputCoord[1];`);
         for (const [ name, type ] of Object.entries(this.outputVariables)) {
-          this.add(`self.output.${name}.setPixel(x, y, self.${name});`);
+          this.add(`self.output.${name}.setPixel(self.outputCoord[0], self.outputCoord[1], self.${name});`);
         }
       }
       this.endScope();
@@ -854,6 +852,9 @@ export class PixelBenderToZigTranslator {
   addReturnStatement({ expression }) {
     const expr = this.translateExpression(expression);
     this.add(`return ${expr};`);
+  }
+
+  addEmptyStatement() {
   }
 
   createExpression(c, props) {
