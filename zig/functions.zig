@@ -667,7 +667,7 @@ test "normalize" {
     assert(all(normalize(vector3) == @Vector(3, f32){ 0.26726123690605164, 0.5345224738121033, 0.8017836809158325 }));
 }
 
-pub fn matrixCompMult(m1: anytype, m2: anytype) @TypeOf(m2) {
+pub fn matrixCompMult(m1: anytype, m2: anytype) @TypeOf(m1) {
     var result: @TypeOf(m2) = undefined;
     inline for (m1, 0..) |column, c| {
         result[c] = column * m2[c];

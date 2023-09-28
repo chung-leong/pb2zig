@@ -3499,7 +3499,7 @@ pub const kernel = struct {
                 var color: @Vector(3, f32) = @Vector(3, f32){ 0.4, 0.2, 1.0 };
                 tpos[2] = pos[2] * cr + pos[0] * sr;
                 self.dst = @shuffle(f32, self.dst, (color * @as(@Vector(3, f32), @splat(diffuse)) + @Vector(3, f32){ 1.0, 1.0, 0.5 } * @as(@Vector(3, f32), @splat(specular)) + @Vector(3, f32){ 0.05, 0.025, 0.025 }), @Vector(4, i32){ -1, -2, -3, 3 });
-                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(clamp(0.0, 1.5, -tpos[2] * 0.5 + 0.3))), @Vector(4, i32){ -1, -2, -3, 3 });
+                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(clamp(@as(f32, 0.0), 1.5, -tpos[2] * 0.5 + 0.3))), @Vector(4, i32){ -1, -2, -3, 3 });
                 if (dc > 0.2) {
                     self.dst[3] = 0.0;
                 } else {

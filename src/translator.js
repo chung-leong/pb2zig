@@ -1020,6 +1020,13 @@ export class PixelBenderToZigTranslator {
     }
     const type = this.getReturnType(name, argList);
     const f = this.functions[name];
+    if (f.overloaded) {
+      // ensure that we don't pass a comptime_int or comptime_float as the
+      // argument from which the return type is obtained
+      if (f.returnTypeSource !== undefined) {
+        argList[f.returnTypeSource].decomptime();
+      }
+    }
     let recv = f.receiver;
     switch (name) {
       case 'sampleNearest':
@@ -1298,6 +1305,22 @@ class ZigExpr {
       }
     }
     this.type = type;
+  }
+
+  decomptime() {
+    if (this.type === 'float') {
+      const value = parseFloat(this.text);
+      if (!isNaN(value)) {
+        const typeZ = getZigType(this.type);
+        this.text = `@as(${typeZ}, ${this.text})`;
+      }
+    } else if (this.type === 'int') {
+      const value = parseInt(this.text);
+      if (!isNaN(value)) {
+        const typeZ = getZigType(this.type);
+        this.text = `@as(${typeZ}, ${this.text})`;
+      }
+    }
   }
 
   toString() {
@@ -1602,6 +1625,10 @@ const builtInFunctions = (() => {
       [ float, float4 ],
     ],
   };
+  const returnTypeSources = {
+    // nothing here since all built-in overloaded functions get the return type
+    // from the first argument
+  };
   const functions = {};
   for (const [ name, signature ] of Object.entries(signatures)) {
     const overloaded = Array.isArray(signature[0]);
@@ -1610,6 +1637,7 @@ const builtInFunctions = (() => {
     functions[name] = {
       type: 'builtin',
       returnType,
+      returnTypeSource: (overloaded) ? returnTypeSources[name] ?? 0 : undefined,
       argTypes,
       overloaded,
       receiver: null,
