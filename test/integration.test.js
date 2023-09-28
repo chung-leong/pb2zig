@@ -457,7 +457,7 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
-  it('should correctly translate rays.pbk', async function() {
+  it('should correctly translate rays2.pbk', async function() {
     this.timeout(60000);
     const name = 'rays2';
     await translate(name);

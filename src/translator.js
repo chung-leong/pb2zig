@@ -112,7 +112,8 @@ export class PixelBenderToZigTranslator {
     do {
       name = `tmp${count++}`;
     } while(this.variables[name]);
-    this.variables[name] = value.type;
+    const { type } = value;
+    this.variables[name] = { type };
     this.add(`const ${name} = ${value};`);
     const tmp = new ZigExpr(name, value.type);
     if (aliasing) {
@@ -160,7 +161,8 @@ export class PixelBenderToZigTranslator {
       this.startScope();
       // use the types from the arguments given
       for (const [ index, name ] of args.entries()) {
-        this.variables[name] = argsGiven[index].type;
+        const { type } = argsGiven[index];
+        this.variables[name] = { type };
       }
       expr = this.translateExpression(expression);
     } catch (err) {
@@ -321,7 +323,8 @@ export class PixelBenderToZigTranslator {
             this.add(`// constants`);
           }
           this.add(`const ${name} = ${expr};`);
-          this.variables[name] = expr.type;
+          const { type } = expr;
+          this.variables[name] = { type };
           count++;
         } catch (err) {
           // if the expression uses variables not defined in the global
@@ -357,7 +360,7 @@ export class PixelBenderToZigTranslator {
         previewValue,
         ...others
       } = param;
-      this.parameterVariables[name] = type;
+      this.parameterVariables[name] = { type };
       const typeZ = getZigType(type);
       this.add(`.${param.name} = .{`);
       this.add(`.type = ${typeZ},`);
@@ -392,7 +395,7 @@ export class PixelBenderToZigTranslator {
     for (const { name, type } of inputs) {
       const channels = getVectorWidth(type);
       this.add(`.${name} = .{ .channels = ${channels} },`);
-      this.inputVariables[name] = type;
+      this.inputVariables[name] = { type };
     }
     this.add('};');
   }
@@ -403,7 +406,7 @@ export class PixelBenderToZigTranslator {
     for (const { name, type } of outputs) {
       const channels = getVectorWidth(type);
       this.add(`.${name} = .{ .channels = ${channels} },`);
-      this.outputVariables[name] = type;
+      this.outputVariables[name] = { type };
     }
     this.add('};');
   }
@@ -428,7 +431,7 @@ export class PixelBenderToZigTranslator {
     this.add(`outputCoord: @Vector(2, u32) = @splat(0),`);
     this.add(``);
     let count = 0;
-    for (const [ name, type ] of Object.entries(this.outputVariables)) {
+    for (const [ name, { type } ] of Object.entries(this.outputVariables)) {
       const typeZ = getZigType(type);
       if (count++ === 0) {
         this.add(`// output pixel`);
@@ -456,7 +459,7 @@ export class PixelBenderToZigTranslator {
     // set the types of constants now in case array-dimensions involve constants
     const constDecls = this.find([ N.ConstantDeclaration, N.FunctionDefinition ]).filter(d => d instanceof N.ConstantDeclaration);
     for (const { name, type } of constDecls) {
-      this.variables[name] = type;
+      this.variables[name] = { type };
     }
     const decls = this.find(N.DependentDeclaration);
     if (decls.length > 0) {
@@ -591,16 +594,18 @@ export class PixelBenderToZigTranslator {
     for (const name of names) {
       // variables outside a function's scope are either parameters,
       // global constants, or dependent variables
-      let type;
-      if (type = this.parameterVariables[name]) {
+      let variable;
+      if (variable = this.parameterVariables[name]) {
+        const { type } = variable;
         this.add(`const ${name} = self.input.${name};`);
-        this.variables[name] = type;
+        this.variables[name] = { type };
         count++;
-      } else if (type = this.dependentVariables[name]) {
+      } else if (variable = this.dependentVariables[name]) {
         if (!this.evaluatingDependents) {
+          const { type } = variable;
           // place value in a const or it cannot be unintentionally changed
           this.add(`const ${name} = self.${name};`);
-          this.variables[name] = type;
+          this.variables[name] = { type };
           count++;
         } else {
           // resolveVariable() should return self.[name] so the variable can be modified
@@ -756,13 +761,13 @@ export class PixelBenderToZigTranslator {
   addVariableDeclaration({ type, name, initializer }) {
     const valueR = (initializer) ? this.translateExpression(initializer, type) : 'undefined';
     this.add(`var ${name}: ${getZigType(type)} = ${valueR};`);
-    this.variables[name] = type;
+    this.variables[name] = { type };
   }
 
   addConstantDeclaration({ type, name, initializer }) {
     const valueR = this.translateExpression(initializer, type);
     this.add(`const ${name}: ${getZigType(type)} = ${valueR};`);
-    this.variables[name] = type;
+    this.variables[name] = { type };
   }
 
   addDependentDeclaration({ type, name, width }) {
@@ -770,10 +775,10 @@ export class PixelBenderToZigTranslator {
     if (width) {
       const widthExpr = this.translateExpression(width, 'int');
       this.add(`${name}: [${widthExpr}]${typeZ} = undefined,`)
-      this.dependentVariables[name] = type + '[]';
+      this.dependentVariables[name] = { type: type + '[]' };
     } else {
       this.add(`${name}: ${typeZ} = undefined,`)
-      this.dependentVariables[name] = type;
+      this.dependentVariables[name] = { type };
     }
   }
 
@@ -889,16 +894,16 @@ export class PixelBenderToZigTranslator {
   }
 
   resolveVariable(name) {
-    let value, type;
-    if (type = this.variables[name]) {
-      value = new ZigExpr(name, type);
+    let variable, value, type;
+    if (variable = this.variables[name]) {
+      value = new ZigExpr(name, variable.type);
     } else {
-      if (type = this.inputVariables[name]) {
-        value = new ZigExpr(`self.input.${name}`, type);
-      } else if (type = this.outputVariables[name]) {
-        value = new ZigExpr(`self.${name}`, type);
-      } else if (type = this.dependentVariables[name]) {
-        value = new ZigExpr(`self.${name}`, type);
+      if (variable = this.inputVariables[name]) {
+        value = new ZigExpr(`self.input.${name}`, variable.type);
+      } else if (variable = this.outputVariables[name]) {
+        value = new ZigExpr(`self.${name}`, variable.type);
+      } else if (variable = this.dependentVariables[name]) {
+        value = new ZigExpr(`self.${name}`, variable.type);
       } else {
         // expand the macro, since it wasn't possible to convert it to a variable
         const macro = this.expandMacro(name);
