@@ -1,0 +1,35 @@
+<languageVersion: 1.0;>
+kernel brightnessThreshold
+<
+	namespace: "net.onthewings.filters";
+	vendor: "Andy Li";
+	version: 1;
+	description: "Thresholding bases on brightness.";
+>
+{
+	parameter float2 threshold <
+        defaultValue: float2(0.0,1.0);
+        description:"Min and max limits.";
+    >;
+    parameter float4 outputColor1 <
+        defaultValue: float4(0.0,0.0,0.0,1.0);
+        description:"Color for thresholded area.colorForAllPassedArea";
+    >;
+    parameter float4 outputColor2 <
+        defaultValue: float4(1.0,1.0,1.0,1.0);
+        description:"Color for all passed area";
+    >;
+	
+	input image4 source;
+	output pixel4 target;
+
+	void evaluatePixel()
+	{
+		pixel4 ori = sampleNearest(source, outCoord());
+		float brightness = 0.2126*ori.r + 0.7152*ori.g + 0.0722*ori.b;
+		if (brightness < threshold[0] || brightness > threshold[1])
+			target = outputColor1;
+		else
+			target = outputColor2;
+	}
+}

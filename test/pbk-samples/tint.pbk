@@ -1,0 +1,54 @@
+<languageVersion: 1.0;>
+
+kernel Tint
+<
+    namespace: "Allen Chou";
+    vendor: "";
+    version: 1;
+    description: "tint effect";
+>
+{
+    parameter float amount
+    <
+    minValue:    -1.0;
+    maxValue:     1.0;
+    defaultValue: 0.0;
+    >;
+
+    parameter float3 color
+    <
+    minValue:     float3(0, 0, 0);
+    maxValue:     float3(1, 1, 1);
+    defaultValue: float3(0, 0, 0);
+    >;
+   
+    input image4 src;
+    output pixel4 dst;
+    
+    void evaluatePixel()
+    {
+        float4 rgba;
+        float r, g, b, a;
+        
+        // sample pixel value
+        rgba = sampleNearest(src, outCoord());
+        
+        //calculate luminance
+        float luminance = rgba.r * 0.3086 + 
+                          rgba.g * 0.6094 +
+                          rgba.b * 0.0820;
+        
+        //interpolation
+        r = (color.r + luminance) * amount + rgba.r * (1.0 - amount);
+        g = (color.g + luminance) * amount + rgba.g * (1.0 - amount);
+        b = (color.b + luminance) * amount + rgba.b * (1.0 - amount);
+        
+        //range assurance
+        clamp(r, 0.0, 1.0);
+        clamp(g, 0.0, 1.0);
+        clamp(b, 0.0, 1.0);
+        
+        // set output pixel
+        dst = float4(r, g, b, rgba.a);
+    }
+}

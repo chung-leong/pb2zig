@@ -1,0 +1,555 @@
+/**
+ * QuaternionJulia.pbk
+ *
+ * This Pixel Bender port is based on the Quaternion Julia Set raytracer 
+ * Cg fragment shader by Keenan Crane (kcrane@uiuc.edu).
+ * 
+ * Please visit his website for many more interesting articles:
+ * http://graphics.cs.uiuc.edu/~kcrane
+ * 
+ * There is also a good write-up explaining the process at:
+ * http://www.devmaster.net/forums/showthread.php?t=4448
+ *
+ * This version was created by Tom Beddard. 
+ * See my site for more generative graphics experiments:
+ * http://www.subblue.com
+ *
+ *
+ * Overview
+ * ===================
+ * For each pixel a ray is fired into the scene starting from a bounding sphere. As the
+ * ray steps forward a distance estimate is dertermined to the nearest part of the fractal
+ * and this is used as the next step size. If a ray gets within a minimum distance of the
+ * isosurface it is considered a 'hit'. Shading is performed by aproximating the gradient 
+ * of the distance function to create a surface normal.
+ * 
+ * A more complete description of the sphere tracing method can be found in John Hart's paper,
+ * "Ray Tracing Deterministic 3-D Fractals":
+ * http://graphics.cs.uiuc.edu/~jch/papers/rtqjs.pdf
+ * 
+ * 
+ * Additions this Pixel Bender version:
+ *  - Added an antialiasing option to do 4x super sampling per pixel
+ *  - Added a crude ambient occlusion shading factor which is based on the fact that the
+ *    step size is proportional to the nearest part of the isosurface, so for some cases
+ *    the greater the number of steps required for a hit (due to smaller step sizes) then 
+ *    the more occluded the final point. Darkening the shading of this point helps define
+ *    smaller details.
+ *    To get the classic 'white clay' ambient occlusion look:
+ *      - increase the ambient light to 1.0
+ *      - reduce the specularity and colorSpread to 0
+ * 
+ * 
+ * License
+ * ===================
+ * This filter is based upon Keenan Crane's original Cg shader which was released under the 
+ * BSD license listed below. This version is released under the same license.
+ *
+ * Copyright (c) 1984-2006 Keenan Crane.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *      This product includes software developed by Keenan Crane.
+ * 4. The name of the author may not be used to endorse or promote
+ *    products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+       * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+
+<languageVersion : 1.0;>
+
+kernel QuaternionJulia
+<   namespace : "com.subblue.filters";
+	vendor : "Tom Beddard";
+	version : 1;
+	description : "Quaternion Julia Ray Tracer";
+>
+
+
+// Some constants used in the ray tracing process.  (These constants
+// were determined through trial and error and are not by any means
+// optimal.)
+
+// Radius of a bounding sphere for the set used to accelerate intersection
+#define BOUNDING_RADIUS_2 3.0
+
+// Any series whose points' magnitude exceed this threshold are considered divergent
+#define ESCAPE_THRESHOLD 1e1
+
+// Delta is used in the finite difference approximation of the gradient (to determine normals)
+#define DEL 1e-4
+
+// The distance at which the ray has to be within the isosurface for a 'hit'
+#define EPSILON 1e-3
+
+
+{
+	parameter bool antialiasing
+	<
+		defaultValue:false;
+		description:"Average 4 sample rays per pixel.";
+	>;
+	
+    parameter float ambientLight
+	<
+		minValue:0.0;
+		maxValue:1.0;
+		defaultValue:0.64;
+	>;
+    
+    parameter float ambientOcclusion
+	<
+		minValue:0.0;
+		maxValue:3.0;
+		defaultValue:1.3;
+	>;
+    
+    parameter float shadows
+	<
+		minValue:0.0;
+		maxValue:1.0;
+		defaultValue:0.0;
+	>;
+    
+	parameter float4 mu
+	<
+		minValue:float4(-2.1, -3, -3, -1.5);
+		maxValue:float4(2.1, 3, 3, 1.5);
+		defaultValue:float4(-0.04, 0, 0.72, 0);
+	>;
+	
+	
+	parameter float4 camera
+	<
+		minValue:float4(-180, -180, -180, 0);
+		maxValue:float4(180, 180, 180, 20);
+		defaultValue:float4(-30, 0, -20, 3);
+	>;
+	
+	parameter float3 light
+	<
+		minValue:float3(-10, -10, -10);
+		maxValue:float3(10, 10, 10);
+		defaultValue:float3(2, 2, 2);
+	>;
+	
+	parameter float3 background
+	<
+		minValue:float3(0, 0, 0);
+		maxValue:float3(1, 1, 1);
+		defaultValue:float3(0.3, 0.33, 0.35);
+        aeUIControl: "aeColor";
+	>;
+	
+    parameter float backgroundTransparency
+	<
+		minValue:float(0.0);
+		maxValue:float(1.0);
+		defaultValue:float(1.0);
+		description: "Background transparency.";
+	>;
+	
+	parameter float3 color
+	<
+		minValue:float3(0, 0, 0);
+		maxValue:float3(1, 1, 1);
+		defaultValue:float3(0.63, 0.08, 0.0);
+        aeUIControl: "aeColor";
+	>;
+    
+	parameter float colorSpread
+	<
+		minValue:0.0;
+		maxValue:1.0;
+		defaultValue:0.13;
+	>;
+    
+	parameter float specularity
+	<
+		minValue:0.0;
+		maxValue:1.0;
+		defaultValue:0.5;
+		description: "specularity";
+	>;
+	
+	parameter float specularExponent
+	<
+		minValue:0.1;
+		maxValue:50.0;
+		defaultValue:7.0;
+		description: "shininess";
+	>;
+	
+	parameter int maxIterations
+	<
+		minValue:2;
+		maxValue:14;
+		defaultValue:8;
+	>;
+	
+	parameter int2 size
+	<
+		minValue:int2(100, 100);
+		maxValue:int2(2048, 2048);
+		defaultValue:int2(600, 400);
+	>;
+	
+	
+	region generated()
+	{
+		return region(float4(0, 0, size.x, size.y));
+	}
+	
+	dependent float aspectRatio, sampleStep, sampleContribution;
+	dependent float3 eye, lightSource;
+	dependent float3x3 viewRotation, viewRotationX, viewRotationY, viewRotationZ;
+	output pixel4 dst;
+	
+	
+	// --------- quaternion representation -----------------------------------------
+	//
+	// Each quaternion can be specified by four scalars q = A + Bi + Cj + Dk, so are
+	// stored as a float4.  I've tried a struct containing a separate scalar and
+	// 3-vector to avoid a lot of swizzling, but the float4 representation ends up
+	// using fewer instructions.  A matrix representation is also possible.
+	
+	
+	// Returns the product of quaternions q1 and q2.
+	// Note that quaternion multiplication is NOT commutative (i.e., q1 ** q2 != q2 ** q1 ).
+	float4 quatMult(float4 q1, float4 q2)
+	{
+		float4 r;
+		
+		r.x = q1.x*q2.x - q1.y*q2.y - q1.z*q2.z - q1.w*q2.w;
+		r.y = q1.x*q2.y + q1.y*q2.x + q1.z*q2.w - q1.w*q2.z;
+		r.z = q1.x*q2.z - q1.y*q2.w + q1.z*q2.x - q1.w*q2.y;
+		r.w = q1.x*q2.w + q1.y*q2.z - q1.z*q2.y - q1.w*q2.x;
+		
+		// r.x   = q1.x * q2.x - dot(q1.yzw, q2.yzw);
+		// r.yzw = q1.x * q2.yzw + q2.x * q1.yzw + cross(q1.yzw, q2.yzw);
+
+		return r;
+	}
+	
+	
+	// Returns the square of quaternion q.  This function is a special (optimized)
+	// case of quatMult().
+	float4 quatSq(float4 q)
+	{
+		float4 r;
+		
+		r.x = q.x*q.x - q.y*q.y - q.z*q.z - q.w*q.w;
+		r.y = 2.0*q.x*q.y;
+		r.z = 2.0*q.x*q.z;
+		r.w = 2.0*q.x*q.w;
+		
+		// r.x   = q.x * q.x - dot(q.yzw, q.yzw);
+		// r.yzw = 2.0 * q.x * q.yzw;
+
+		return r;
+	}
+    
+	
+	// Iterates the quaternion q for the purposes of intersection.  This function also
+	// produces an estimate of the derivative at q, which is required for the distance
+	// estimate.  The quaternion c is the parameter specifying the Julia set, and the
+	// integer maxIterations is the maximum number of iterations used to determine
+	// whether a point is in the set or not.
+	//
+	// To estimate membership in the set, we recursively evaluate
+	//
+	// q = q*q + c
+	//
+	// until q has a magnitude greater than the threshold value (i.e., it probably
+	// diverges) or we've reached the maximum number of allowable iterations (i.e.,
+	// it probably converges).  More iterations reveal greater detail in the set.
+	// 
+	// To estimate the derivative at q, we recursively evaluate
+	//
+	// q' = 2*q*q'
+	//
+	// concurrently with the evaluation of q.
+	void iterateIntersect(inout float4 q, inout float4 qp, float4 c, int maxIterations)
+	{
+		for (int i = 0; i < maxIterations; i++) {
+			qp = 2.0 * quatMult(q, qp);
+			q = quatSq(q) + c;
+
+			if (dot(q, q) > ESCAPE_THRESHOLD) break;
+		}
+	}
+	
+	
+	// Create a shading normal for the current point.  We use an approximate normal of
+	// the isosurface of the potential function, though there are other ways to
+	// generate a normal (e.g., from an isosurface of the potential function).
+	float3 normEstimate(float3 p, float4 c)
+	{
+		float3 N;
+		float4 qP = float4(p.x, p.y, p.z, 0.0);
+		float gradX, gradY, gradZ;
+
+		float4 gx1 = qP - float4(DEL, 0.0, 0.0, 0.0);
+		float4 gx2 = qP + float4(DEL, 0.0, 0.0, 0.0);
+		float4 gy1 = qP - float4(0.0, DEL, 0.0, 0.0);
+		float4 gy2 = qP + float4(0.0, DEL, 0.0, 0.0);
+		float4 gz1 = qP - float4(0.0, 0.0, DEL, 0.0);
+		float4 gz2 = qP + float4(0.0, 0.0, DEL, 0.0);
+
+		for (int i = 0; i < maxIterations; i++) {
+			gx1 = quatSq(gx1) + c;
+			gx2 = quatSq(gx2) + c;
+			gy1 = quatSq(gy1) + c;
+			gy2 = quatSq(gy2) + c;
+			gz1 = quatSq(gz1) + c;
+			gz2 = quatSq(gz2) + c;
+		}
+
+		gradX = length(gx2) - length(gx1);
+		gradY = length(gy2) - length(gy1);
+		gradZ = length(gz2) - length(gz1);
+
+		N = normalize(float3(gradX, gradY, gradZ));
+
+		return N;
+	}
+	
+	
+	// Finds the intersection of a ray with origin rO and direction rD with the
+	// quaternion Julia set specified by quaternion constant c.  The intersection
+	// is found using iterative sphere tracing, which takes a conservative step
+	// along the ray at each iteration by estimating the minimum distance between
+	// the current ray origin and the closest point in the Julia set.  The
+	// parameter maxIterations is passed on to iterateIntersect() which determines
+	// whether the current ray origin is in (or near) the set.
+	float2 intersectQJulia(inout float3 rO, inout float3 rD, float4 c)
+	{
+		// The (approximate) distance between the first point along the ray within
+		// epsilon of some point in the Julia set, or the last point to be tested if
+		// there was no intersection.
+		float2 dist;
+		int n = 0;
+        
+		while (n < 150) {
+			// Iterate on the point at the current ray origin. We want to know if this 
+			// point belongs to the set.
+			float4 z = float4(rO.x, rO.y, rO.z, 0.0);
+			
+			// Start the derivative at real 1. The derivative is needed to get a lower 
+			// bound on the distance to the set.
+			float4 zp = float4(1.0, 0.0, 0.0, 0.0);   
+			
+			// Iterate this point until we can guess if the sequence diverges or converges.
+			iterateIntersect(z, zp, c, maxIterations);
+			
+			// Find a lower bound on the distance to the Julia set and step this far along the ray.
+			float normZ = length(z);
+			dist.s = 0.5 * normZ * log(normZ) / length(zp);  // lower bound on distance to surface
+			
+			rO += rD * dist.s; // (step)
+			
+			// Intersection testing finishes if we're close enough to the surface
+			// (i.e., we're inside the epsilon isosurface of the distance estimator function) 
+			// or have left the bounding sphere.
+			if (dist.s < EPSILON || dot(rO, rO) > BOUNDING_RADIUS_2) break;
+            
+			n += 1;
+		}
+        
+        // Store a crude ambient occlusion factor to emphasise the shading.
+        // The number of steps (n) taken to gain a hit is related to the step size, 
+        // which is the distance from the the current point to the nearest part of the iso-surface,
+        // so there is a casual relationship with the number of steps and how occluded the point is.
+        dist.t = 1.0 - clamp((float(n) / 150.0) * ambientOcclusion, 0.0, 1.0);
+		return dist;
+	}
+	
+	
+	// Computes the direct illumination for point pt with normal N due to
+	// a point light at light and a viewer at eye.
+	float3 Phong(float3 light, float3 eye, float3 pt, float3 N, float ao)
+	{
+		float3 diffuse = color;				// Base colour
+		float3 L = normalize(light - pt);  	// find the vector to the light
+		float3 E = normalize(eye - pt);  	// find the vector to the eye
+		float  NdotL = dot(N, L);			// find the cosine of the angle between light and normal
+		float3 R = L - 2.0 * NdotL * N;	  	// find the reflected vector
+		
+		// Add some of the normal to the color to make it more interesting
+		diffuse += abs(N) * colorSpread;
+        
+		// compute the illumination using the Phong equation
+		diffuse = (diffuse * max(NdotL, ambientLight) + specularity * pow(max(dot(E,R), 0.0), specularExponent)) * ao;
+        
+        return diffuse;
+	}
+	
+	
+	// Finds the intersection of a ray with a sphere with statically
+	// defined radius BOUNDING_RADIUS centered around the origin.  This
+	// sphere serves as a bounding volume for the Julia set.
+	float3 intersectSphere(float3 rO, float3 rD)
+	{
+		float B, C, d, t0, t1, t;
+		
+		B = 2.0 * dot(rO, rD);
+		C = dot(rO, rO) - BOUNDING_RADIUS_2;
+		d = sqrt(B*B - 4.0 * C) ;
+		t0 = (-B + d) * 0.5;
+		t1 = (-B - d) * 0.5;
+		t = min(t0, t1);
+		rO += t * rD;
+		
+		return rO;
+	}
+	
+	
+	// Define the ray direction from the pixel coordinates
+	float3 rayDirection(float2 p)
+	{
+		float3 direction = float3( 2.0 * aspectRatio * p.x / float(size.x) - aspectRatio, 
+								  -2.0 * p.y / float(size.y) + 1.0, 
+								  -2.0);
+		return direction * viewRotation;
+	}
+	
+	
+	// Render the current pixel point
+	//
+	// -move the ray origin forward onto a bounding sphere surrounding the Julia set
+	// -test the new ray for the nearest intersection with the Julia set
+	// -if the ray does include a point in the set:
+	//		-estimate the gradient of the potential function to get a "normal"
+	//		-use the normal and other information to perform Phong shading
+	//		-cast a shadow ray from the point of intersection to the light
+	//		-if the shadow ray hits something, modify the Phong shaded color to represent shadow
+	// -return the shaded color if there was a hit and the background color otherwise
+	float4 renderPoint(float2 p)
+	{
+		float4 color;
+        color.rgb = background;
+		color.a = backgroundTransparency;
+		float3 rO = eye;
+		float3 rD = rayDirection(p);
+		
+		// First, intersect the original ray with a sphere bounding the set, and
+		// move the origin to the point of intersection.  This prevents an
+		// unnecessarily large number of steps from being taken when looking for
+		// intersection with the Julia set.
+		rD = normalize(rD);  //the ray direction is interpolated and may need to be normalized
+		rO = intersectSphere(rO, rD);
+		
+		// Next, try to find a point along the ray which intersects the Julia set.
+		// (More details are given in the routine itself.)
+		if (dot(rO, rO) < BOUNDING_RADIUS_2 + 0.01) {
+			float2 dist = intersectQJulia(rO, rD, mu);
+			// We say that we found an intersection if our estimate of the distance to
+			// the set is smaller than some small value epsilon.  In this case we want
+			// to do some shading / coloring.
+			
+			if (dist.s < EPSILON) {
+				// Determine a "surface normal" which we'll use for lighting calculations.
+				float3 N = normEstimate(rO, mu);
+				
+				// Compute the Phong illumination at the point of intersection.
+				color.rgb = Phong(lightSource, rD, rO, N, dist.t);
+				color.a = 1.0;  // (make this fragment opaque)
+				
+				// If the shadow flag is on, determine if this point is in shadow
+				if (shadows > 0.0) {
+					// The shadow ray will start at the intersection point and go
+					// towards the point light.  We initially move the ray origin
+					// a little bit along this direction so that we don't mistakenly
+					// find an intersection with the same point again.
+					
+					float3 L = normalize(lightSource - rO);
+					rO += N * EPSILON * 2.0;
+					dist = intersectQJulia(rO, L, mu);
+					
+					// Again, if our estimate of the distance to the set is small, we say
+					// that there was a hit.  In this case it means that the point is in
+					// shadow and should be given darker shading.
+					if (dist.s < EPSILON) {
+						// (darkening the shaded value is not really correct, but looks good)
+						color.rgb *= 1.0 - shadows;
+					}
+				}
+			}
+		}
+		
+		return color;
+	}
+	
+	
+	// Common values used by all pixels
+	void evaluateDependents()
+	{
+		aspectRatio = float(size.x) / float(size.y);
+		
+		// Camera orientation
+		float c1 = cos(radians(-camera.x));
+		float s1 = sin(radians(-camera.x));
+		viewRotationY = float3x3( c1, 0, s1, 
+								   0, 1, 0, 
+								 -s1, 0, c1);
+		
+        float c2 = cos(radians(-camera.y));
+		float s2 = sin(radians(-camera.y));
+        
+        viewRotationZ = float3x3( c2, -s2, 0,
+                                  s2, c2, 0, 
+                                  0, 0, 1);
+        
+        float c3 = cos(radians(-camera.z));
+		float s3 = sin(radians(-camera.z));
+        
+        viewRotationX = float3x3( 1, 0, 0,
+                                  0, c3, -s3, 
+                                  0, s3, c3);
+        
+        
+        viewRotation = viewRotationX * viewRotationY * viewRotationZ;
+        
+		eye = float3(0, 0, camera.w) * viewRotation;
+        lightSource = light * viewRotation;
+	}
+	
+	
+	// The main loop
+	void evaluatePixel()
+	{
+		pixel4 c = float4(0, 0, 0, 0);
+		
+		if (antialiasing) {
+			// Average detailSuperSample^2 points per pixel
+			for (float i = 0.0; i < 1.0; i += 0.5)
+				for (float j = 0.0; j < 1.0; j += 0.5)
+					c += 0.25 * renderPoint(float2(outCoord().x + i, outCoord().y + j));
+		} else {
+			c = renderPoint(outCoord());
+		}
+		
+		// Return the final color which is still the background color if we didn't hit anything.
+		dst = c;
+	}
+}

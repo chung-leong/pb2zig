@@ -1,0 +1,31 @@
+<languageVersion : 1.0;>
+
+kernel ColorBlend
+<   namespace : "com.quasimondo";
+    vendor : "Quasimondo";
+    version : 1;
+    description : "Color Blendmode";
+>
+{
+    input image4 src1;
+    input image4 src2;
+    
+    output pixel4 dst;
+
+    void
+    evaluatePixel()
+    {
+        float4 rgb1 = sampleNearest(src1,outCoord());
+        float4 rgb2 = sampleNearest(src2,outCoord());
+        
+        float y =   rgb1.r * 0.29900 + rgb1.g * 0.58700 + rgb1.b * 0.14400;
+        float u = - rgb2.r * 0.14714 - rgb2.g * 0.28886 + rgb2.b * 0.43600;
+        float v =   rgb2.r * 0.61500 - rgb2.g * 0.51499 - rgb2.b * 0.10001;
+        
+        
+        dst.r = 0.970874 * y - 0.0591995 * u + 1.13983 * v;
+        dst.g = 0.970874 * y - 0.453834 * u - 0.580599 * v;
+        dst.b = 0.970874 * y + 1.97292 * u + 0.00000781528 * v;
+        dst.a = rgb1.a;
+    }
+}

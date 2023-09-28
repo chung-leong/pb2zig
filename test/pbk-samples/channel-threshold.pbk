@@ -1,0 +1,50 @@
+<languageVersion: 1.0;>
+kernel channelThreshold
+<
+	namespace: "net.onthewings.filters";
+	vendor: "Andy Li";
+	version: 1;
+	description: "Thresholding bases on the channels. Only the pixels passed ALL thresholds will be white (or color you configed).";
+>
+{
+	parameter float2 threshold0 <
+        defaultValue: float2(0.0,1.0);
+        description:"For red channel.";
+    >;
+	parameter float2 threshold1 <
+        defaultValue: float2(0.0,1.0);
+        description:"For green channel.";
+    >;
+    parameter float2 threshold2 <
+        defaultValue: float2(0.0,1.0);
+        description:"For blue channel.";
+    >;
+    parameter float2 threshold3 <
+        defaultValue: float2(0.0,1.0);
+        description:"For alpha channel.";
+    >;
+    parameter float4 outputColor1 <
+        defaultValue: float4(0.0,0.0,0.0,1.0);
+        description:"Color for thresholded area.colorForAllPassedArea";
+    >;
+    parameter float4 outputColor2 <
+        defaultValue: float4(1.0,1.0,1.0,1.0);
+        description:"Color for all passed area";
+    >;
+	
+	input image4 source;
+	output pixel4 target;
+
+	void evaluatePixel()
+	{
+		pixel4 ori = sampleNearest(source, outCoord());
+		
+		if (ori[0]<threshold0[0] || ori[0]>threshold0[1] || 
+			ori[1]<threshold1[0] || ori[1]>threshold1[1] || 
+			ori[2]<threshold2[0] || ori[2]>threshold2[1] || 
+			ori[3]<threshold3[0] || ori[3]>threshold3[1])
+			target = outputColor1;
+		else
+			target = outputColor2;
+	}
+}

@@ -1,0 +1,55 @@
+<languageVersion : 1.0;>
+
+kernel NewFilter
+<   namespace : "me.cosmodro.filters";
+    vendor : "Steve Shipman";
+    version : 1;
+    description : "Skin Color filter";
+>
+{
+    input image4 src;
+    output pixel4 dst;
+    
+    parameter float CbMin 
+    <       
+        minValue:0.0;
+        maxValue:1.0; 
+        defaultValue:105.0/255.0;
+    >;
+    
+    parameter float CbMax 
+    <       
+        minValue:0.0;
+        maxValue:1.0; 
+        defaultValue:135.0/255.0;
+    >;
+    
+    parameter float CrMin 
+    <       
+        minValue:0.0;
+        maxValue:1.0; 
+        defaultValue:140.0/255.0;
+    >;
+    
+    parameter float CrMax 
+    <       
+        minValue:0.0;
+        maxValue:1.0; 
+        defaultValue:165.0/255.0;
+    >;
+    
+
+    void
+    evaluatePixel()
+    {
+        dst = sampleNearest(src,outCoord());
+        pixel3 ycbcr = dst.rgb * float3x3(0.0, 0.0, 0.0, -0.168736, -0.331264, 0.5, 0.5, -0.418688, -0.081312) + float3(0.0, 0.5, 0.5);
+
+        if ((ycbcr.g >= CbMin) && (ycbcr.g <= CbMax) && (ycbcr.b >= CrMin) && (ycbcr.b <= CrMax)){
+            dst.rgb = float3(1);
+        }else{
+            dst.rgb = float3(0);
+        }
+        
+    }
+}

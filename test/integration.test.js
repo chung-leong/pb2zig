@@ -203,9 +203,9 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
-  it('should correctly translate Droste.pbk', async function() {
+  it('should correctly translate droste.pbk', async function() {
     this.timeout(60000);
-    const name = 'Droste';
+    const name = 'droste';
     await translate(name);
     await apply(name, { oImage: 'malgorzata-socha.png' });
   })
@@ -252,9 +252,9 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
-  it('should correctly translate Mandelbulb.pbk', async function() {
+  it('should correctly translate mandelbulb.pbk', async function() {
     this.timeout(60000);
-    const name = 'Mandelbulb';
+    const name = 'mandelbulb';
     await translate(name);
     await apply(name, { oImage: 'malgorzata-socha.png' });
   })
@@ -344,6 +344,16 @@ describe('Integration tests', function() {
     const name = 'raytracer';
     await translate(name);
     await apply(name, { oImage: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate rt-julia.pbk', async function() {
+    this.timeout(60000);
+    const name = 'rt-Julia';
+    //await translate(name);
+    const params = {
+      width: 400,
+      height: 300,
+    };
+    await apply(name, { inputUsedToTest: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate ripple-blocks.pbk', async function() {
     this.timeout(60000);
