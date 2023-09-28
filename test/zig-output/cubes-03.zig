@@ -185,7 +185,10 @@ pub const kernel = struct {
             }
             
             fn cross(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return v1 * v2;
+                const CT = @typeInfo(@TypeOf(v1)).Vector.child;
+                const p1 = @shuffle(CT, v1, undefined, @Vector(3, i32){ 1, 2, 0 }) * @shuffle(CT, v2, undefined, @Vector(3, i32){ 2, 0, 1 });
+                const p2 = @shuffle(CT, v1, undefined, @Vector(3, i32){ 2, 0, 1 }) * @shuffle(CT, v2, undefined, @Vector(3, i32){ 1, 2, 0 });
+                return p1 - p2;
             }
             
             fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {

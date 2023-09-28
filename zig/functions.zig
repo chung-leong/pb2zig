@@ -640,16 +640,15 @@ test "dot" {
 }
 
 pub fn cross(v1: anytype, v2: anytype) @TypeOf(v1) {
-    return v1 * v2;
+    const CT = @typeInfo(@TypeOf(v1)).Vector.child;
+    const p1 = @shuffle(CT, v1, undefined, @Vector(3, i32){ 1, 2, 0 }) * @shuffle(CT, v2, undefined, @Vector(3, i32){ 2, 0, 1 });
+    const p2 = @shuffle(CT, v1, undefined, @Vector(3, i32){ 2, 0, 1 }) * @shuffle(CT, v2, undefined, @Vector(3, i32){ 1, 2, 0 });
+    return p1 - p2;
 }
 
 test "cross" {
-    const pair1: [2]f32 = .{ 1, 4 };
-    const pair2: [2]@Vector(2, f32) = .{ .{ 1, 2 }, .{ 4, 5 } };
-    const pair3: [2]@Vector(3, f32) = .{ .{ 1, 2, 3 }, .{ 4, 5, 6 } };
-    assert(cross(pair1[0], pair1[1]) == 4);
-    assert(all(cross(pair2[0], pair2[1]) == @Vector(2, f32){ 4, 10 }));
-    assert(all(cross(pair3[0], pair3[1]) == @Vector(3, f32){ 4, 10, 18 }));
+    const pair: [2]@Vector(3, f32) = .{ .{ 1, 2, 3 }, .{ 4, 5, 6 } };
+    assert(all(cross(pair[0], pair[1]) == @Vector(3, f32){ -3, 6, -3 }));
 }
 
 pub fn normalize(v: anytype) @TypeOf(v) {

@@ -99,6 +99,15 @@ describe('Translator tests', function() {
       expect(result).to.contain('@shuffle(f32, v, @as(@Vector(2, f32), @splat(4.0)), @Vector(4, i32){ 0, -2, -1, 3 })');
       expect(result).to.contain('@shuffle(f32, v, @as(@Vector(3, f32), @splat(3.0)), @Vector(4, i32){ -1, -2, -3, 3 })');
     })
+    it('should correctly translate V = V.[property] * V', function() {
+      const pbkCode = addPBKWrapper(`
+        float3 v1 = float3(1, 2, 3);
+        float3 v2 = float3(1, 2, 3);
+        float3 v3 = v1.x * v2;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('@as(@Vector(3, f32), @splat(v1[0])) * v2');
+    })
   })
   describe('Matrix operations', function() {
     it('should correctly translate M * V', function() {
