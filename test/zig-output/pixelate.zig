@@ -39,12 +39,10 @@ pub const kernel = struct {
                 
                 var dimAsFloat: f32 = @as(f32, @floatFromInt(dimension));
                 var sc: @Vector(2, f32) = floor(self.outCoord() / @Vector(2, f32){ dimAsFloat, dimAsFloat });
-                sc = sc * @as(@Vector(2, f32), @splat(dimAsFloat));
+                sc *= @as(@Vector(2, f32), @splat(dimAsFloat));
                 self.outputPixel = self.input.inputImage.sampleNearest(sc);
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.outputPixel.setPixel(x, y, self.outputPixel);
+                self.output.outputPixel.setPixel(self.outputCoord[0], self.outputCoord[1], self.outputPixel);
             }
             
             // built-in Pixel Bender functions

@@ -136,9 +136,7 @@ pub const kernel = struct {
                 c[3] = 1.0;
                 self.result = c;
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.result.setPixel(x, y, self.result);
+                self.output.result.setPixel(self.outputCoord[0], self.outputCoord[1], self.result);
             }
             
             // built-in Pixel Bender functions

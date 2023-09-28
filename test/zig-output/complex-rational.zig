@@ -79,9 +79,7 @@ pub const kernel = struct {
                 po = complexDiv(po, po2);
                 self.dst = self.input.src.sampleLinear(size * fract(po / size));
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // macros

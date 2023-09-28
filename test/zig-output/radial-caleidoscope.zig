@@ -63,13 +63,11 @@ pub const kernel = struct {
                 if (mod(section, 2.0) > 0.5) {
                     newAngle = angle - newAngle;
                 }
-                newAngle = newAngle + direction;
+                newAngle += direction;
                 const tmp1 = newAngle;
                 self.dst = self.input.src.sampleLinear(basepoint + @Vector(2, f32){ radius * cos(tmp1), radius * sin(tmp1) });
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

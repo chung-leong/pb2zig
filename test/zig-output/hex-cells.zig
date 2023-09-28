@@ -61,9 +61,7 @@ pub const kernel = struct {
                 po1 = @as(@Vector(2, f32), if ((dst1 < dst2)) po1 else po2);
                 self.pxl = self.input.img.sampleNearest(po1 + self.outCoord());
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.pxl.setPixel(x, y, self.pxl);
+                self.output.pxl.setPixel(self.outputCoord[0], self.outputCoord[1], self.pxl);
             }
             
             // built-in Pixel Bender functions

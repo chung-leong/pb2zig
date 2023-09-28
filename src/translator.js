@@ -106,7 +106,7 @@ export class PixelBenderToZigTranslator {
     this.functions = functions;
   }
 
-  addTempVariable(lvalue, value) {
+  addTempVariable(lvalue, value, aliasing = false) {
     let count = 1;
     let name;
     do {
@@ -115,7 +115,9 @@ export class PixelBenderToZigTranslator {
     this.variables[name] = value.type;
     this.add(`const ${name} = ${value};`);
     const tmp = new ZigExpr(name, value.type);
-    this.variableAliases.unshift({ lvalue, tmp });
+    if (aliasing) {
+      this.variableAliases.unshift({ lvalue, tmp });
+    }
     return tmp;
   }
 
@@ -959,21 +961,22 @@ export class PixelBenderToZigTranslator {
 
   translateIncrementOperation({ operator, lvalue, post }, typeExpected) {
     let tmp;
+    const value = this.translateExpression(lvalue, typeExpected);
     if (typeExpected !== 'void' && post) {
       // save copy of variable when it's postfix
-      const prevValue = this.translateExpression(lvalue, typeExpected);
-      tmp = this.addTempVariable(lvalue, prevValue);
+      tmp = this.addTempVariable(lvalue, value);
     }
     const assignment = this.createExpression(N.AssignmentOperation, {
       lvalue,
       operator: operator.charAt(0) + '=',
       rvalue: this.createExpression(N.Literal, { value: 1, type: 'int' })
     });
-    const value = this.translateExpression(assignment, typeExpected);
+    // don't use value from assignment operation
+    this.translateExpression(assignment, 'void');
     if (typeExpected === 'void') {
       return null;
     }
-    return temp ?? value;
+    return tmp ?? value;
   }
 
   translateFunctionCall({ name, args }) {
@@ -1124,83 +1127,64 @@ export class PixelBenderToZigTranslator {
   }
 
   translateAssignmentOperation({ lvalue, operator, rvalue }, typeExpected) {
-    const { name: nameL, property: propL, element: elemL } = lvalue;
-    const variableL = this.resolveVariable(nameL);
-    if (operator.length === 2) {
+    const valueL = this.translateExpression(lvalue, typeExpected);
+    const valueR = this.translateExpression(rvalue, valueL.type);
+    if (operator.length === 2 && (valueL.isMatrix() || valueR.isMatrix())) {
+      // matrix operation need to be expanded
       const assignment = this.expandAssignmentOp({ lvalue, operator, rvalue });
       return this.translateExpression(assignment, typeExpected);
     }
-    let value;
-    if (propL) {
-      // using vector write mask
-      const indicesL = getSwizzleIndices(propL);
-      if (indicesL.length > 1) {
-        if (operator.length === 2) {
-          // += and friends--handle it a lvalue = lvalue + rvalue
-          const assignment = this.expandAssignmentOp({ lvalue, operator, rvalue });
-          return this.translateAssignmentOperation(assignment, typeExpected);
-        }
-        const typeS = getSwizzleType(variableL.type, indicesL);
-        let valueR, indicesR;
-        if (rvalue instanceof N.VariableAccess && rvalue.property) {
-          // the right size has a mask too, get its indices
-          const { name: nameR, property: propR } = rvalue;
-          const variableR = this.resolveVariable(nameR);
-          valueR = new ZigExpr(nameR, variableR.type);
-          indicesR = getSwizzleIndices(propR);
-        } else {
-          // get the full vector and a list of sequential indices
-          valueR = this.translateExpression(rvalue, typeS) ;
-          indicesR = getVectorIndices(typeS);
-        }
-        // build the shuffle mask
-        const indicesM = [];
-        const widthL = getVectorWidth(variableL.type);
-        for (let i = 0; i < widthL; i++) {
-          if (indicesL.includes(i)) {
-            // use rvalue--index is negative
-            indicesM.push(~indicesR[i]);
-          } else {
-            // keep lvalue
-            indicesM.push(`${i}`);
-          }
-        }
-        const mask1 = `@Vector(${indicesM.length}, i32){ ${indicesM.join(', ') } }`;
-        const typeCZ = getChildZigType(variableL.type);
-        // make the change (to the whole vector)
-        this.add(`${variableL} = @shuffle(${typeCZ}, ${variableL}, ${valueR}, ${mask1});`);
-        // get the value afterward (only part of the vector)
-        const mask2 = `@Vector(${indicesL.length}, i32){ ${indicesL.join(', ') } }`;
-        value = new ZigExpr(`@shuffle(${typeCZ}, ${variableL}, undefined, ${mask2})`, typeS);
+    valueR.promote(valueL.type);
+    if (/@shuffle/.test(valueL)) {
+      // valueL is not a valid lvalue, need to handle this separately
+      if (operator.length === 2) {
+        // += and friends--handle it as lvalue = lvalue + rvalue
+        const assignment = this.expandAssignmentOp({ lvalue, operator, rvalue });
+        return this.translateAssignmentOperation(assignment, typeExpected);
+      }
+      // need to assign to the full vector with a write mask, to keep the
+      // unselected elements unchanged
+      const variableL = this.resolveVariable(lvalue.name);
+      // get the indices of the selected elements
+      const indicesL = getSwizzleIndices(lvalue.property);
+      let sourceR, indicesR;
+      if (rvalue instanceof N.VariableAccess && rvalue.property) {
+        // the right size is a property too, get the indices of its elements
+        sourceR = this.resolveVariable(rvalue.name);
+        indicesR = getSwizzleIndices(rvalue.property);
       } else {
-        const [ index ] = indicesL;
-        const valueR = this.translateExpression(rvalue, variableL.type);
-        const typeC = getChildType(variableL.type);
-        this.add(`${variableL}[${index}] ${operator} ${valueR};`);
-        value = new ZigExpr(`${variableL}[${index}]`, typeC);
+        // use a list of sequential indices
+        sourceR = valueR;
+        indicesR = getVectorIndices(valueR.type);
       }
-    } else if (elemL) {
-      const index = this.translateExpression(elemL);
-      const typeLC = getChildType(variableL.type);
-      const valueR = this.translateExpression(rvalue, typeLC);
-      valueR.promote(typeLC);
-      this.add(`${variableL}[${index}] ${operator} ${valueR};`);
-      value = new ZigExpr(`${variableL}[${index}]`, typeLC);
+      // build the mask for @shuffle()
+      const indicesM = [];
+      const widthL = getVectorWidth(variableL.type);
+      for (let i = 0; i < widthL; i++) {
+        const j = indicesL.indexOf(i);
+        if (j !== -1) {
+          // use element from rvalue--index is negative
+          indicesM.push(~indicesR[j]);
+        } else {
+          // keep element from lvalue
+          indicesM.push(i);
+        }
+      }
+      const mask = `@Vector(${indicesM.length}, i32){ ${indicesM.join(', ') } }`;
+      const typeCZ = getChildZigType(variableL.type);
+      // make the change (to the whole vector)
+      this.add(`${variableL} = @shuffle(${typeCZ}, ${variableL}, ${sourceR}, ${mask});`);
     } else {
-      const valueR = this.translateExpression(rvalue, variableL.type);
-      if (valueR.isMatrix()) {
-
-      }
-      valueR.promote(variableL.type);
-      this.add(`${variableL} ${operator} ${valueR};`);
-      value = variableL;
+      // perform normally
+      this.add(`${valueL} ${operator} ${valueR};`);
     }
     if (typeExpected === 'void') {
+      // the expression's value is not being used
       return null;
     }
     // need to save the value to a temporary variable, since the lvalue
     // can get modified again
-    return this.addTempVariable(lvalue, value);
+    return this.addTempVariable(lvalue, valueL, true);
   }
 
   translateSignOperation({ sign, operand }) {
@@ -1256,17 +1240,17 @@ class ZigExpr {
   }
 
   promote(type) {
-    if (this.type !== type && !this.isVector()) {
-      if (!isVector(type)) {
-        throw new Error('Can only promote from scalar to vector');
-      }
-      if (this.isMatrix()) {
-        throw new Error('Cannot promote from matrix to vector');
-      }
+    if (this.type === type) {
+      return;
+    }
+    if (isVector(type) && this.isScalar()) {
       this.convert(getChildType(type));
       const typeZ = getZigType(type);
       this.text = `@as(${typeZ}, @splat(${this.text}))`;
       this.type = type;
+      return;
+    } else {
+      throw new Error(`Cannot convert ${this.type} to ${type}`);
     }
   }
 

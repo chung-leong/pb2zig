@@ -123,16 +123,16 @@ pub const kernel = struct {
                 po = (distort * po);
                 var z: @Vector(2, f32) = fract(po);
                 po = floor(po);
-                z[1] = z[1] * sqr3;
+                z[1] *= sqr3;
                 tmp = z[0] * z[0] + z[1] * z[1];
                 if (tmp < fill) {
                     alf = 1.0;
-                    po = po - halfPixel;
+                    po -= halfPixel;
                 } else {
                     tmp = z[0] - 0.5;
                     const tmp1 = tmp;
-                    tmp = z[1] - 0.5 * sqr3;
-                    const tmp2 = tmp;
+                    tmp1 = z[1] - 0.5 * sqr3;
+                    const tmp2 = tmp1;
                     tmp = tmp1 * tmp1 + 1.0 * tmp2 * tmp2;
                     const tmp3 = tmp;
                     if (tmp3 < fill) {
@@ -142,23 +142,23 @@ pub const kernel = struct {
                         const tmp4 = tmp;
                         if (z[0] * z[0] + tmp4 * tmp4 < fill) {
                             alf = 1.0;
-                            po[0] = po[0] - 0.5;
-                            po[1] = po[1] + 0.5;
+                            po[0] -= 0.5;
+                            po[1] += 0.5;
                         } else {
                             tmp = z[0] - 1.0;
                             const tmp5 = tmp;
-                            tmp = z[1] - sqr3;
-                            const tmp6 = tmp;
+                            tmp5 = z[1] - sqr3;
+                            const tmp6 = tmp5;
                             if (tmp5 * tmp5 + tmp6 * tmp6 < fill) {
                                 alf = 1.0;
-                                po = po + halfPixel;
+                                po += halfPixel;
                             } else {
                                 tmp = z[0] - 1.0;
                                 const tmp7 = tmp;
                                 if (tmp7 * tmp7 + z[1] * z[1] < fill) {
                                     alf = 1.0;
-                                    po[0] = po[0] + 0.5;
-                                    po[1] = po[1] + -0.5;
+                                    po[0] += 0.5;
+                                    po[1] += -0.5;
                                 }
                             }
                         }
@@ -168,9 +168,7 @@ pub const kernel = struct {
                 self.dst = self.input.src.sampleNearest(po);
                 self.dst = mix(bgcolor, self.dst, alf);
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // macros

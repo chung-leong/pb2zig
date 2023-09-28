@@ -62,9 +62,7 @@ pub const kernel = struct {
                 var attenuation: f32 = pow(attenuationDelta / pow(distance(out_pixel_coord, center), attenuationDecay), attenuationSpeed);
                 self.dst = @as(@Vector(4, f32), @splat(attenuation)) * self.input.src.sampleNearest(out_pixel_coord);
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

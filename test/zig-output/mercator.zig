@@ -49,9 +49,7 @@ pub const kernel = struct {
                 var dest: @Vector(2, f32) = @Vector(2, f32){ center - (center - pos[0]) * sin((pi / width) * pos[1]), pos[1] };
                 self.dst = self.input.src.sampleNearest(dest);
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

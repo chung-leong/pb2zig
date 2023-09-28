@@ -266,8 +266,8 @@ pub const kernel = struct {
                 sign = 0;
                 if (tileBasedOnTransparency or iteration == 0) {
                     var color: @Vector(4, f32) = self.input.src.sampleLinear(d);
-                    colorSoFar = colorSoFar + color * @as(@Vector(4, f32), @splat((color[3] * alphaRemaining)));
-                    alphaRemaining = alphaRemaining * (1.0 - colorSoFar[3]);
+                    colorSoFar += color * @as(@Vector(4, f32), @splat((color[3] * alphaRemaining)));
+                    alphaRemaining *= (1.0 - colorSoFar[3]);
                 }
                 if (tileBasedOnTransparency) {
                     if (!transparentOutside and alphaRemaining > 0.0) {
@@ -283,7 +283,7 @@ pub const kernel = struct {
                     var radius: f32 = length(z);
                     sign = @as(i32, if ((radius < r1)) -1 else @as(i32, if (radius > r2) 1 else 0));
                 }
-                iteration = iteration + 1;
+                iteration += 1;
             }
             
             fn renderPoint(self: *@This(), s: @Vector(2, f32)) @Vector(4, f32) {
@@ -350,7 +350,7 @@ pub const kernel = struct {
                     angle = -angle;
                 }
                 if (strandMirror) {
-                    angle = angle / @as(@Vector(2, f32), @splat(p2));
+                    angle /= @as(@Vector(2, f32), @splat(p2));
                 }
                 z = complexDivision(complexMult(@Vector(2, f32){ p1, 0.0 }, z), beta);
                 z = complexMult(@Vector(2, f32){ r1, 0.0 }, complexExp(z));
@@ -394,11 +394,11 @@ pub const kernel = struct {
                             {
                                 var j: f32 = 0.0;
                                 while (j < 1.0) {
-                                    c = c + @as(@Vector(4, f32), @splat(sampleContribution)) * self.renderPoint(@Vector(2, f32){ self.outCoord()[0] + i, self.outCoord()[1] + j });
-                                    j = j + sampleStep;
+                                    c += @as(@Vector(4, f32), @splat(sampleContribution)) * self.renderPoint(@Vector(2, f32){ self.outCoord()[0] + i, self.outCoord()[1] + j });
+                                    j += sampleStep;
                                 }
                             }
-                            i = i + sampleStep;
+                            i += sampleStep;
                         }
                     }
                 } else {
@@ -409,9 +409,7 @@ pub const kernel = struct {
                 }
                 self.dst = c;
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // macros

@@ -311,7 +311,7 @@ pub const kernel = struct {
                         z[0] = powR * powRsin * cos(power * th);
                         z[1] = powR * powRsin * sin(power * th);
                         z[2] = powR * cos(power * ph);
-                        z = z + c;
+                        z += c;
                         if (radiolaria and z[1] > radiolariaFactor) {
                             z[1] = radiolariaFactor;
                         }
@@ -324,7 +324,7 @@ pub const kernel = struct {
                         }
                         th = atan2(z[1], z[0]) + phase[0];
                         ph = acos(z[2] / r) + phase[1];
-                        n = n + 1;
+                        n += 1;
                     }
                 }
                 return 0.5 * r * log(r) / r_dz;
@@ -396,7 +396,7 @@ pub const kernel = struct {
                 var NdotL: f32 = dot(N, L);
                 if (NdotL > 0.0) {
                     diffuse = colorDiffuse + abs(N) * @as(@Vector(3, f32), @splat(colorSpread));
-                    diffuse = diffuse * colorLight * @as(@Vector(3, f32), @splat(NdotL));
+                    diffuse *= colorLight * @as(@Vector(3, f32), @splat(NdotL));
                     var E: @Vector(3, f32) = normalize(eye - pt);
                     var R: @Vector(3, f32) = L - @as(@Vector(3, f32), @splat(2.0 * NdotL)) * N;
                     var RdE: f32 = dot(R, E);
@@ -456,13 +456,13 @@ pub const kernel = struct {
                     while (i < max_steps) {
                         dist = self.DE(ray, min_dist);
                         f = epsilonScale * dist;
-                        ray = ray + @as(@Vector(3, f32), @splat(f)) * ray_direction;
-                        ray_length = ray_length + f * dist;
+                        ray += @as(@Vector(3, f32), @splat(f)) * ray_direction;
+                        ray_length += f * dist;
                         if (dist < eps or ray_length > tmax) {
                             break;
                         }
                         eps = max(MIN_EPSILON, pixel_scale * ray_length);
-                        i = i + 1;
+                        i += 1;
                     }
                     if (dist < eps) {
                         ao = 1.0 - clamp(1.0 - min_dist * min_dist, 0.0, 1.0) * ambientOcclusion;
@@ -472,7 +472,7 @@ pub const kernel = struct {
                             color = @shuffle(f32, color, self.Phong(ray, normal, specular), @Vector(4, i32){ -1, -2, -3, 3 });
                             if (shadows > 0.0) {
                                 var light_direction: @Vector(3, f32) = normalize(matrixCalc("*", (light - ray), objRotation));
-                                ray = ray + normal * @as(@Vector(3, f32), @splat(eps)) * @as(@Vector(3, f32), @splat(2.0));
+                                ray += normal * @as(@Vector(3, f32), @splat(eps)) * @as(@Vector(3, f32), @splat(2.0));
                                 var min_dist2: f32 = undefined;
                                 dist = 4.0;
                                 {
@@ -480,11 +480,11 @@ pub const kernel = struct {
                                     while (j < max_steps) {
                                         dist = self.DE(ray, min_dist2);
                                         f = epsilonScale * dist;
-                                        ray = ray + @as(@Vector(3, f32), @splat(f)) * light_direction;
+                                        ray += @as(@Vector(3, f32), @splat(f)) * light_direction;
                                         if (dist < eps or dot(ray, ray) > bounding * bounding) {
                                             break;
                                         }
-                                        j = j + 1;
+                                        j += 1;
                                     }
                                 }
                                 if (dist < eps) {
@@ -498,7 +498,7 @@ pub const kernel = struct {
                         } else {
                             color = @shuffle(f32, color, colorDiffuse, @Vector(4, i32){ -1, -2, -3, 3 });
                         }
-                        ao = ao * 1.0 - @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(max_steps)) * ambientOcclusionEmphasis * 2.0;
+                        ao *= 1.0 - @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(max_steps)) * ambientOcclusionEmphasis * 2.0;
                         color = @shuffle(f32, color, @shuffle(f32, color, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(ao)), @Vector(4, i32){ -1, -2, -3, 3 });
                         color[3] = 1.0;
                     }
@@ -583,11 +583,11 @@ pub const kernel = struct {
                             {
                                 var j: f32 = 0.0;
                                 while (j < 1.0) {
-                                    color = color + @as(@Vector(4, f32), @splat(sampleContribution)) * self.renderPixel(@Vector(2, f32){ self.outCoord()[0] + i, self.outCoord()[1] + j });
-                                    j = j + sampleStep;
+                                    color += @as(@Vector(4, f32), @splat(sampleContribution)) * self.renderPixel(@Vector(2, f32){ self.outCoord()[0] + i, self.outCoord()[1] + j });
+                                    j += sampleStep;
                                 }
                             }
-                            i = i + sampleStep;
+                            i += sampleStep;
                         }
                     }
                 } else {
@@ -595,9 +595,7 @@ pub const kernel = struct {
                 }
                 self.dst = color;
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

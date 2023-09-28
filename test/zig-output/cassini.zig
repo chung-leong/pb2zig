@@ -78,9 +78,7 @@ pub const kernel = struct {
                 var ny: f32 = phi * ((poi[1] / 2.0)) / (PI / 2.0);
                 self.dst = self.input.src.sampleLinear(center + @Vector(2, f32){ nx, ny });
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

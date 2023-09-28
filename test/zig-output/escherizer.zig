@@ -133,9 +133,7 @@ pub const kernel = struct {
                 }
                 self.dst = self.input.src.sampleNearest(@Vector(2, f32){ r1, r2 });
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

@@ -105,9 +105,7 @@ pub const kernel = struct {
                 var vy: f32 = radius * sin(ny);
                 self.dst = self.input.src.sampleLinear(center + @Vector(2, f32){ vx, vy * damp });
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

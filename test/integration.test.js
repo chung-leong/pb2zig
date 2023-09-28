@@ -5,6 +5,7 @@ import 'mocha-skip-if';
 
 import { convertPixelBender } from '../src/index.js';
 
+skip.if(process.env.npm_lifecycle_event === 'coverage').
 describe('Integration tests', function() {
   before(function() {
     process.env.NODE_ENV = 'production';

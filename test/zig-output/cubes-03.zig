@@ -107,7 +107,7 @@ pub const kernel = struct {
                     plungeMore = 0.0;
                 }
                 plungeMore = sqrt(plungeMore);
-                p = p + @as(@Vector(3, f32), @splat((plunge - plungeMore))) * perp;
+                p += @as(@Vector(3, f32), @splat((plunge - plungeMore))) * perp;
                 p = mod(p, 1.0);
                 var perpStep: @Vector(3, f32) = @as(@Vector(3, f32), @splat(1.0)) - step(0.0, perp);
                 p = perpStep - p;
@@ -134,9 +134,7 @@ pub const kernel = struct {
                     self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(0.0)), @Vector(4, i32){ -1, -2, -3, 3 });
                 }
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

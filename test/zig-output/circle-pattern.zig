@@ -78,21 +78,21 @@ pub const kernel = struct {
                 
                 var z: @Vector(2, f32) = @as(@Vector(2, f32), @splat(scale * 0.001)) * (self.outCoord() - center);
                 var pixelCheck: f32 = z[0] * z[0] + z[1] * z[1];
-                z = z / @as(@Vector(2, f32), @splat(pixelCheck));
+                z /= @as(@Vector(2, f32), @splat(pixelCheck));
                 var znew: @Vector(2, f32) = distort * z;
                 z = fract(znew);
-                z[1] = z[1] * sqr3;
+                z[1] *= sqr3;
                 znew = floor(znew);
                 var tmp: f32 = z[0] * z[0] + z[1] * z[1];
                 var alf: f32 = 0.0;
                 if (tmp < fill) {
                     alf = 1.0;
-                    znew = znew - halfPixel;
+                    znew -= halfPixel;
                 } else {
                     tmp = z[0] - 0.5;
                     const tmp1 = tmp;
-                    tmp = z[1] - 0.5 * sqr3;
-                    const tmp2 = tmp;
+                    tmp1 = z[1] - 0.5 * sqr3;
+                    const tmp2 = tmp1;
                     if (tmp1 * tmp1 + tmp2 * tmp2 < fill) {
                         alf = 1.0;
                     } else {
@@ -100,38 +100,36 @@ pub const kernel = struct {
                         const tmp3 = tmp;
                         if (z[0] * z[0] + tmp3 * tmp3 < fill) {
                             alf = 1.0;
-                            znew[0] = znew[0] - 0.5;
-                            znew[1] = znew[1] + 0.5;
+                            znew[0] -= 0.5;
+                            znew[1] += 0.5;
                         } else {
                             tmp = z[0] - 1.0;
                             const tmp4 = tmp;
-                            tmp = z[1] - sqr3;
-                            const tmp5 = tmp;
+                            tmp4 = z[1] - sqr3;
+                            const tmp5 = tmp4;
                             if (tmp4 * tmp4 + tmp5 * tmp5 < fill) {
                                 alf = 1.0;
-                                znew = znew + halfPixel;
+                                znew += halfPixel;
                             } else {
                                 tmp = z[0] - 1.0;
                                 const tmp6 = tmp;
                                 if (tmp6 * tmp6 + z[1] * z[1] < fill) {
                                     alf = 1.0;
-                                    znew[0] = znew[0] + 0.5;
-                                    znew[1] = znew[1] + -0.5;
+                                    znew[0] += 0.5;
+                                    znew[1] += -0.5;
                                 }
                             }
                         }
                     }
                 }
                 z = znew / distort * @as(@Vector(2, f32), @splat(scale)) * @as(@Vector(2, f32), @splat(0.001));
-                z = z / @as(@Vector(2, f32), @splat(z[0] * z[0] + z[1] * z[1]));
+                z /= @as(@Vector(2, f32), @splat(z[0] * z[0] + z[1] * z[1]));
                 tmp = 1.0 - smoothStep(minSolid, maxSolid, pixelCheck / scale);
                 alf = max(tmp, alf);
                 self.dst = self.input.src.sampleNearest(z + center);
-                self.dst[3] = self.dst[3] * alf;
+                self.dst[3] *= alf;
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

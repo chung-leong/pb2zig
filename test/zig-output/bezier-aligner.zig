@@ -129,7 +129,7 @@ pub const kernel = struct {
                 var ta: f32 = tstart;
                 var tb: f32 = tend;
                 var d: @Vector(2, f32) = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, ta), eval(dfy, ta) });
-                d = d / @as(@Vector(2, f32), @splat(length(d)));
+                d /= @as(@Vector(2, f32), @splat(length(d)));
                 var p0: @Vector(2, f32) = matrixCalc("*", [2]@Vector(2, f32){
                     .{ d[0], -d[1] },
                     .{ d[1], d[0] }
@@ -140,7 +140,7 @@ pub const kernel = struct {
                     .{ d[1], d[0] }
                 }, (p - @Vector(2, f32){ eval(fx, tb), eval(fy, tb) }));
                 if ((p0[0] < 0.0 and p1[0] > 0.0) or (p0[0] > 0.0 and p1[0] < 0.0)) {
-                    p1 = p1 / @as(@Vector(2, f32), @splat(length(d)));
+                    p1 /= @as(@Vector(2, f32), @splat(length(d)));
                     var t: f32 = undefined;
                     var tmp: f32 = undefined;
                     var p2: @Vector(2, f32) = undefined;
@@ -149,7 +149,7 @@ pub const kernel = struct {
                         while (i < 2) {
                             t = ta + p0[0] / (p0[0] - p1[0]) * (tb - ta);
                             d = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
-                            d = d / @as(@Vector(2, f32), @splat(length(d)));
+                            d /= @as(@Vector(2, f32), @splat(length(d)));
                             p2 = matrixCalc("*", [2]@Vector(2, f32){
                                 .{ d[0], -d[1] },
                                 .{ d[1], d[0] }
@@ -161,30 +161,28 @@ pub const kernel = struct {
                                 p1 = p2;
                                 tb = t;
                             }
-                            i = i + 1;
+                            i += 1;
                         }
                     }
                     t = ta + p0[0] / (p0[0] - p1[0]) * (tb - ta);
                     d = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
-                    d = d / @as(@Vector(2, f32), @splat(length(d)));
+                    d /= @as(@Vector(2, f32), @splat(length(d)));
                     p2 = matrixCalc("*", [2]@Vector(2, f32){
                         .{ d[0], -d[1] },
                         .{ d[1], d[0] }
                     }, (p - @Vector(2, f32){ eval(fx, t), eval(fy, t) }));
                     tmp = length(@Vector(2, f32){ eval(dfx, 0.0), eval(dfy, 0.0) }) + 3.0 * (length(@Vector(2, f32){ eval(dfx, 0.33333333 * t), eval(dfy, 0.33333333 * t) }) + length(@Vector(2, f32){ eval(dfx, 0.66666666 * t), eval(dfy, 0.66666666 * t) })) + length(@Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
                     p2[0] = 0.125 * t * tmp;
-                    p2 = p2 / scale;
-                    p2 = p2 + offset;
+                    p2 /= scale;
+                    p2 += offset;
                     if (imagewidth > 0.1) {
                         p2[0] = mod(p2[0], imagewidth);
                     }
                     var dst2: @Vector(4, f32) = self.input.texture.sampleLinear(p2);
-                    self.dst = self.dst + @as(@Vector(4, f32), @splat(dst2[3])) * (dst2 - self.dst);
+                    self.dst += @as(@Vector(4, f32), @splat(dst2[3])) * (dst2 - self.dst);
                 }
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // macros

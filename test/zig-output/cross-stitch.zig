@@ -42,23 +42,21 @@ pub const kernel = struct {
                 var tlPos: @Vector(2, f32) = undefined;
                 tlPos[0] = floor(cPos[0] / @as(f32, @floatFromInt(size)));
                 tlPos[1] = floor(cPos[1] / @as(f32, @floatFromInt(size)));
-                tlPos = tlPos * @as(@Vector(2, f32), @splat(@as(f32, @floatFromInt(size))));
+                tlPos *= @as(@Vector(2, f32), @splat(@as(f32, @floatFromInt(size))));
                 var remX: i32 = @as(i32, @intFromFloat(mod(cPos[0], @as(f32, @floatFromInt(size)))));
                 var remY: i32 = @as(i32, @intFromFloat(mod(cPos[1], @as(f32, @floatFromInt(size)))));
                 if (remX == 0 and remY == 0) {
                     tlPos = cPos;
                 }
                 var blPos: @Vector(2, f32) = tlPos;
-                blPos[1] = blPos[1] + @as(f32, @floatFromInt(size - 1));
+                blPos[1] += @as(f32, @floatFromInt(size - 1));
                 if ((remX == remY) or @as(i32, @intFromFloat(cPos[0])) - @as(i32, @intFromFloat(blPos[0])) == @as(i32, @intFromFloat(blPos[1])) - @as(i32, @intFromFloat(cPos[1]))) {
                     self.outputPx = self.input.src.sampleNearest(tlPos);
                 } else {
                     self.outputPx = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 }
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.outputPx.setPixel(x, y, self.outputPx);
+                self.output.outputPx.setPixel(self.outputCoord[0], self.outputCoord[1], self.outputPx);
             }
             
             // built-in Pixel Bender functions

@@ -51,9 +51,7 @@ pub const kernel = struct {
                 var horizontal: f32 = mod(position[1], checkerSize * 2.0);
                 self.dst = @as(@Vector(4, f32), if (((vertical < checkerSize) != (horizontal < checkerSize))) colorA else colorB);
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

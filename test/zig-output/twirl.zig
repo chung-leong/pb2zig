@@ -64,7 +64,7 @@ pub const kernel = struct {
                 var twirlAngleRadians: f32 = radians(twirlAngle);
                 var relativePos: @Vector(2, f32) = self.outCoord() - center;
                 var distFromCenter: f32 = length(relativePos);
-                distFromCenter = distFromCenter / radius;
+                distFromCenter /= radius;
                 var adjustedRadians: f32 = undefined;
                 var sincWeight: f32 = sin(distFromCenter) * twirlAngleRadians / distFromCenter;
                 var gaussWeight: f32 = exp(-1.0 * distFromCenter * distFromCenter) * twirlAngleRadians;
@@ -79,9 +79,7 @@ pub const kernel = struct {
                 relativePos = matrixCalc("*", rotationMat, relativePos);
                 self.outputColor = self.input.oImage.sampleLinear(relativePos + center);
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.outputColor.setPixel(x, y, self.outputColor);
+                self.output.outputColor.setPixel(self.outputCoord[0], self.outputCoord[1], self.outputColor);
             }
             
             // built-in Pixel Bender functions

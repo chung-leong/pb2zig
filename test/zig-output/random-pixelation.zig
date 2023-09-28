@@ -73,13 +73,11 @@ pub const kernel = struct {
                 const n2 = self.input.n2;
                 
                 var p: @Vector(2, f32) = self.outCoord() + randomPoint;
-                p = p + mod(p, n4) - mod(p, n3);
+                p += mod(p, n4) - mod(p, n3);
                 var ds: @Vector(2, f32) = mod(p, n0) + mod(p, n1) + mod(p, n2) - @as(@Vector(2, f32), @splat(0.5)) * @as(@Vector(2, f32), @splat((n0 + n1 + n2)));
                 self.dst = self.input.src.sampleLinear(self.outCoord() - @as(@Vector(2, f32), @splat(0.333333)) * ds);
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

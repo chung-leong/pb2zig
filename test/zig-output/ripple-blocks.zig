@@ -52,13 +52,11 @@ pub const kernel = struct {
                 const phase = self.input.phase;
                 
                 var coord: @Vector(2, f32) = self.outCoord();
-                coord[0] = coord[0] + amplitude[0] * sin((coord[0] / wavelength[0]) + phase[0]);
-                coord[1] = coord[1] + amplitude[1] * cos((coord[1] / wavelength[1]) + phase[1]);
+                coord[0] += amplitude[0] * sin((coord[0] / wavelength[0]) + phase[0]);
+                coord[1] += amplitude[1] * cos((coord[1] / wavelength[1]) + phase[1]);
                 self.dst = self.input.src.sampleLinear(@Vector(2, f32){ coord[0], coord[1] });
                 
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                self.output.dst.setPixel(x, y, self.dst);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions

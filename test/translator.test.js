@@ -3,115 +3,332 @@ import { expect } from 'chai';
 import { convertPixelBender } from '../src/index.js';
 
 describe('Translator tests', function() {
-  it('should correctly translate a for loop', function() {
-    const pbkCode = addPBKWrapper(`
-      for (int hello = 0; hello < 10; hello++) {
-        float2 coord = float2(0, hello);
-        dst = sample(src, coord);
-      }
-    `);
-    const result = convertPixelBender(pbkCode);
-    expect(result).to.contain('var hello: i32 = 0;');
-    expect(result).to.contain('hello < 10');
-    expect(result).to.contain('hello += 1;');
-  })
-  it('should correctly translate a while loop', function() {
-    const pbkCode = addPBKWrapper(`
-      int hello = 5;
-      while (hello < 10) {
-        hello++;
-      }
-    `);
-    const result = convertPixelBender(pbkCode, { kernelOnly: true });
-    expect(result).to.contain('while (hello < 10)');
-    expect(result).to.contain('hello += 1;');
-  })
-  it('should correctly translate a do-while loop', function() {
-    const pbkCode = addPBKWrapper(`
-      int hello = 5;
-      do {
-        hello++;
-      } while (hello < 10);
-    `);
-    const result = convertPixelBender(pbkCode, { kernelOnly: true });
-    expect(result).to.contain('while (true)');
-    expect(result).to.contain('hello += 1;');
-    expect(result).to.contain('if (hello < 10) continue else break;');
-  })
-  it('should correctly translate a macro', function() {
-    const pbkCode = addPBKWrapper(`
-      #define addMul(a, b, c) (a * b + c)
-
-      float value = addMul(1.4, 2.2, 3.0);
-    `);
-    const result = convertPixelBender(pbkCode, { kernelOnly: true });
-    expect(result).to.contain('fn addMul(a: f32, b: f32, c: f32) f32 {');
-  })
-  it('should expand a macro with local dependents', function() {
-    const pbkCode = addPBKWrapper(`
-      #define addMul(a, c) (a * b + c)
-
-      float b = 2.2;
-      float value = addMul(1.4, 3.0);
-    `);
-    const result = convertPixelBender(pbkCode, { kernelOnly: true });
-    expect(result).to.contain('var value: f32 = (1.4 * b + 3.0)');
-  })
-  it('should expand an argument-less macro with local dependents', function() {
-    const pbkCode = addPBKWrapper(`
-      #define addMul (a * b + c)
-
-      float a = 1.4, b = 2.2, c = 3.0;
-      float value = addMul;
-    `);
-    const result = convertPixelBender(pbkCode, { kernelOnly: true });
-    expect(result).to.contain('var value: f32 = (a * b + c)');
-  })
-  it('should correctly translate a multi-line macro', function() {
-    const pbkCode = addPBKWrapper(`
-      #define addMul(a, b, c) (a \
-        *\
-         b + c)
-
-      float value = addMul(1.4, 2.2, 3.0);
-    `);
-    const result = convertPixelBender(pbkCode, { kernelOnly: true });
-    expect(result).to.contain('fn addMul(a: f32, b: f32, c: f32) f32 {');
-  })
-  it('should correctly translate dependent declaration', function() {
-    const pbkCode = `
-    <languageVersion : 1.0;>
-    kernel test
-    <namespace : "Test"; vendor : "Vendor"; version : 1;>
-    {
-      input image4 src;
-      output pixel4 dst;
-
-      const int COUNT1 = 5;
-      const int COUNT2 = 4;
-      dependent float number;
-      dependent float array[COUNT1*COUNT2];
-
-
-      void
-      evaluateDependents()
+  describe('Kernel info', function() {
+    it('should insert kernel info', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
       {
-        array[1] = 1;
-      }
+        input image4 src;
+        output pixel4 dst;
 
-      void
-      evaluatePixel()
-      {
-        float value = array[1];
+        void
+        evaluatePixel()
+        {
+        }
       }
-    }
-    `;
-    const result = convertPixelBender(pbkCode, { kernelOnly: true });
-    expect(result).to.contain('array: [COUNT1 * COUNT2]f32,');
-    expect(result).to.contain('number: f32,');
-    expect(result).to.contain('const array = self.array;');
-    expect(result).to.contain('var value: f32 = array[1];');
-    expect(result).to.contain('self.array[1] = 1.0;');
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('pub const namespace = "Test";');
+      expect(result).to.contain('pub const vendor = "Vendor";');
+      expect(result).to.contain('pub const version = 1;');
+    })
+    it('should correctly translate parameters', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        parameter float3x3 transform
+        <
+            minValue:float3x3(
+                -1.0, -1.0, -1.0,
+                -1.0, -1.0, -1.0,
+                -1.0, -1.0, -1.0
+            );
+
+            maxValue:float3x3(
+                1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0
+            );
+            defaultValue:float3x3(
+                0.5, 0.0, 0.0,
+                0.3, 1.0, 0.7,
+                0.1, 0.3, 0.8
+            );
+        >;
+
+        input image4 src;
+        output pixel4 dst;
+
+        void
+        evaluatePixel()
+        {
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('.transform = .{');
+      expect(result).to.contain('.type = [3]@Vector(3, f32),');
+      expect(result).to.contain('.minValue = [3]@Vector(3, f32){');
+      expect(result).to.contain('.{ -1.0, -1.0, -1.0 },');
+    })
+  })
+  describe('Swizzling operations', function() {
+    it('should correctly translate V.[property]', function() {
+      const pbkCode = addPBKWrapper(`
+        float4 v1 = float4(1, 1, 1, 1);
+        float2 v2 = v1.ra;
+        float4 v3 = v1.abgr;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('@shuffle(f32, v1, undefined, @Vector(2, i32){ 0, 3 })');
+      expect(result).to.contain('@shuffle(f32, v1, undefined, @Vector(4, i32){ 3, 2, 1, 0 })');
+    })
+    it('should correctly translate V.[property] = V', function() {
+      const pbkCode = addPBKWrapper(`
+        float4 v1 = float4(1, 1, 1, 1);
+        float2 v2 = float2(2, 2);
+        float3 v3 = float3(4, 5, 6);
+        v1.bg = v2;
+        v1.rgb = v3;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('@shuffle(f32, v1, v2, @Vector(4, i32){ 0, -2, -1, 3 })');
+      expect(result).to.contain('@shuffle(f32, v1, v3, @Vector(4, i32){ -1, -2, -3, 3 })');
+    })
+    it('should correctly translate V.[property] = S', function() {
+      const pbkCode = addPBKWrapper(`
+        float4 v = float4(1, 1, 1, 1);
+        v.bg = 4.0;
+        v.rgb = 3.0;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('@shuffle(f32, v, @as(@Vector(2, f32), @splat(4.0)), @Vector(4, i32){ 0, -2, -1, 3 })');
+      expect(result).to.contain('@shuffle(f32, v, @as(@Vector(3, f32), @splat(3.0)), @Vector(4, i32){ -1, -2, -3, 3 })');
+    })
+  })
+  describe('Matrix operations', function() {
+    it('should correctly translate M * V', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m = float2x2(1, 2, 3, 4);
+        float2 v1 = float2(10, 20);
+        float2 v2 = m * v1;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('matrixCalc("*", m, v1)');
+    })
+    it('should correctly translate V * M', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m = float2x2(1, 2, 3, 4);
+        float2 v1 = float2(10, 20);
+        float2 v2 = v1 * m;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('matrixCalc("*", v1, m)');
+    })
+    it('should correctly translate M * M', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m1 = float2x2(1, 2, 3, 4);
+        float2x2 m2 = float2x2(1, 2, 3, 4);
+        float2x2 m3 = m1 * m2;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('matrixCalc("*", m1, m2)');
+    })
+    it('should correctly translate V *= M', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m = float2x2(1, 2, 3, 4);
+        float2 v = float2(10, 20);
+        v *= m;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('v = matrixCalc("*", v, m)');
+    })
+    it('should correctly translate M == M', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m1 = float2x2(1, 2, 3, 4);
+        float2x2 m2 = float2x2(1, 2, 3, 4);
+        if (m1 == m2) {
+          float2x2 m3 = m1 * m2;
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('matrixCalc("==", m1, m2)');
+    })
+    it('should correctly translate V == V', function() {
+      const pbkCode = addPBKWrapper(`
+        float2 v1 = float2(10, 20);
+        float2 v2 = float2(10, 20);
+        if (v1 == v2) {
+          v1 *= v2;
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('@reduce(.And, v1 == v2)');
+    })
+    it('should correctly translate M * S', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m1 = float2x2(1, 2, 3, 4);
+        float2x2 m2 = m1 * 2;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('matrixCalc("*", m1, 2)');
+    })
+    it('should correctly translate ++M', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m1 = float2x2(1, 2, 3, 4);
+        float2x2 m2 = ++m1;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.not.contain('const tmp1 = m1;')
+      expect(result).to.contain('matrixCalc("+", m1, 1)');
+      expect(result).to.contain('var m2: [2]@Vector(2, f32) = m1;')
+    })
+    it('should correctly translate M++', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m1 = float2x2(1, 2, 3, 4);
+        float2x2 m2 = m1++;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('const tmp1 = m1;')
+      expect(result).to.contain('matrixCalc("+", m1, 1)');
+      expect(result).to.contain('var m2: [2]@Vector(2, f32) = tmp1;')
+    })
+    it('should correctly translate M[#] = V', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m = float2x2(1, 2, 3, 4);
+        float2 v = float2(3, 4);
+        m[0] = v;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('m[0] = v;')
+    })
+  })
+  describe('Loops', function() {
+    it('should correctly translate a for loop', function() {
+      const pbkCode = addPBKWrapper(`
+        for (int hello = 0; hello < 10; hello++) {
+          float2 coord = float2(0, hello);
+          dst = sample(src, coord);
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var hello: i32 = 0;');
+      expect(result).to.contain('hello < 10');
+      expect(result).to.contain('hello += 1;');
+    })
+    it('should correctly translate a while loop', function() {
+      const pbkCode = addPBKWrapper(`
+        int hello = 5;
+        while (hello < 10) {
+          hello++;
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('while (hello < 10)');
+      expect(result).to.contain('hello += 1;');
+    })
+    it('should correctly translate a do-while loop', function() {
+      const pbkCode = addPBKWrapper(`
+        int hello = 5;
+        do {
+          hello++;
+        } while (hello < 10);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('while (true)');
+      expect(result).to.contain('hello += 1;');
+      expect(result).to.contain('if (hello < 10) continue else break;');
+    })
+  })
+  describe('Macros', function() {
+    it('should correctly translate a macro', function() {
+      const pbkCode = addPBKWrapper(`
+        #define addMul(a, b, c) (a * b + c)
+
+        float value = addMul(1.4, 2.2, 3.0);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('fn addMul(a: f32, b: f32, c: f32) f32 {');
+    })
+    it('should expand a macro with local dependents', function() {
+      const pbkCode = addPBKWrapper(`
+        #define addMul(a, c) (a * b + c)
+
+        float b = 2.2;
+        float value = addMul(1.4, 3.0);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var value: f32 = (1.4 * b + 3.0)');
+    })
+    it('should expand an argument-less macro with local dependents', function() {
+      const pbkCode = addPBKWrapper(`
+        #define addMul (a * b + c)
+
+        float a = 1.4, b = 2.2, c = 3.0;
+        float value = addMul;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var value: f32 = (a * b + c)');
+    })
+    it('should correctly translate a multi-line macro', function() {
+      const pbkCode = addPBKWrapper(`
+        #define addMul(a, b, c) (a \
+          *\
+           b + c)
+
+        float value = addMul(1.4, 2.2, 3.0);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('fn addMul(a: f32, b: f32, c: f32) f32 {');
+    })
+    it('should correctly translate dependent declaration', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        input image4 src;
+        output pixel4 dst;
+
+        const int COUNT1 = 5;
+        const int COUNT2 = 4;
+        dependent float number;
+        dependent float array[COUNT1*COUNT2];
+
+
+        void
+        evaluateDependents()
+        {
+          array[1] = 1;
+        }
+
+        void
+        evaluatePixel()
+        {
+          float value = array[1];
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('array: [COUNT1 * COUNT2]f32 = undefined,');
+      expect(result).to.contain('number: f32 = undefined,');
+      expect(result).to.contain('const array = self.array;');
+      expect(result).to.contain('var value: f32 = array[1];');
+      expect(result).to.contain('self.array[1] = 1.0;');
+    })
+  })
+  describe('Error handling', function() {
+    it('should throw when lexer fails', function() {
+      const pbkCode = addPBKWrapper(`
+        $cow
+      `);
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message')
+        .that.contain('[LEXER]')
+        .and.contain('unexpected character');
+    })
+    it('should throw when parser fails', function() {
+      const pbkCode = addPBKWrapper(`
+        float2 = 1;
+      `);
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message')
+        .that.contain('[PARSER]')
+    })
   })
 })
 

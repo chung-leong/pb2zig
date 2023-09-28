@@ -141,24 +141,24 @@ pub const kernel = struct {
                         t[2] = @as(f32, if (viewdir[2] < 0.0) -eps else 1.0 + eps);
                         t = (floor(v + t) - v) / viewdir;
                         if (t[0] < t[1] and t[0] < t[2]) {
-                            v = v + @as(@Vector(3, f32), @splat(t[0])) * viewdir;
+                            v += @as(@Vector(3, f32), @splat(t[0])) * viewdir;
                             dst2 = colorX * self.input.src.sampleLinear(fract(@shuffle(f32, v, undefined, @Vector(2, i32){ 1, 2 })) * imagesize);
                         } else {
                             if (t[1] < t[0] and t[1] < t[2]) {
-                                v = v + @as(@Vector(3, f32), @splat(t[1])) * viewdir;
+                                v += @as(@Vector(3, f32), @splat(t[1])) * viewdir;
                                 dst2 = colorY * self.input.src.sampleLinear(fract(@shuffle(f32, v, undefined, @Vector(2, i32){ 0, 2 })) * imagesize);
                             } else {
-                                v = v + @as(@Vector(3, f32), @splat(t[2])) * viewdir;
+                                v += @as(@Vector(3, f32), @splat(t[2])) * viewdir;
                                 dst2 = colorZ * self.input.src.sampleLinear(abs(fract(@shuffle(f32, v, undefined, @Vector(2, i32){ 0, 1 }))) * imagesize);
                             }
                         }
                         dst2 = @shuffle(f32, dst2, mix(@shuffle(f32, bgcolor, undefined, @Vector(3, i32){ 0, 1, 2 }), @shuffle(f32, dst2, undefined, @Vector(3, i32){ 0, 1, 2 }), currentAlpha), @Vector(4, i32){ -1, -2, -3, 3 });
-                        currentAlpha = currentAlpha * fade;
-                        self.dst = self.dst + dst2 * @as(@Vector(4, f32), @splat(dst2[3])) * @as(@Vector(4, f32), @splat((1.0 - self.dst[3])));
-                        i = i + 1;
+                        currentAlpha *= fade;
+                        self.dst += dst2 * @as(@Vector(4, f32), @splat(dst2[3])) * @as(@Vector(4, f32), @splat((1.0 - self.dst[3])));
+                        i += 1;
                     }
                 }
-                self.dst = self.dst + @as(@Vector(4, f32), @splat((1.0 - self.dst[3]))) * bgcolor;
+                self.dst += @as(@Vector(4, f32), @splat((1.0 - self.dst[3]))) * bgcolor;
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
