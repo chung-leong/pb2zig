@@ -50,7 +50,7 @@ pub const kernel = struct {
                 }
                 var blPos: @Vector(2, f32) = tlPos;
                 blPos[1] += @as(f32, @floatFromInt(size - 1));
-                if ((remX == remY) or @as(i32, @intFromFloat(cPos[0])) - @as(i32, @intFromFloat(blPos[0])) == @as(i32, @intFromFloat(blPos[1])) - @as(i32, @intFromFloat(cPos[1]))) {
+                if ((remX == remY) or (((@as(i32, @intFromFloat(cPos[0])) - @as(i32, @intFromFloat(blPos[0]))) == (@as(i32, @intFromFloat(blPos[1])) - @as(i32, @intFromFloat(cPos[1])))))) {
                     self.outputPx = self.input.src.sampleNearest(tlPos);
                 } else {
                     self.outputPx = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };

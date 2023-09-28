@@ -45,8 +45,8 @@ pub const kernel = struct {
                 const horizontal = self.input.horizontal;
                 
                 var coord: @Vector(2, f32) = self.outCoord();
-                coord[0] += vertical * @as(f32, if ((cos(coord[1] / vertical) > 0.0)) 1.0 else -1.0);
-                coord[1] += horizontal * @as(f32, if ((cos(coord[0] / horizontal) > 0.0)) 1.0 else -1.0);
+                coord[0] += vertical * (@as(f32, if ((cos(coord[1] / vertical) > 0.0)) 1.0 else -1.0));
+                coord[1] += horizontal * (@as(f32, if ((cos(coord[0] / horizontal) > 0.0)) 1.0 else -1.0));
                 self.dst = self.input.src.sampleNearest(coord);
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);

@@ -1,58 +1,31 @@
-// Pixel Bender "VertexRenderer" (translated using pb2zig)
+// Pixel Bender "NewFilter" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "Metallic";
-    pub const vendor = "Petri Leskinen";
+    pub const namespace = "Rays 2";
+    pub const vendor = "Mr.doob";
     pub const version = 1;
-    pub const description = "Metallic -effect";
+    pub const description = "Rays effect 2";
     pub const parameters = .{
-        .lightsource = .{
-            .type = @Vector(3, f32),
-            .minValue = .{ -1000.0, -1000.0, -1000.0 },
-            .maxValue = .{ 1000.0, 1000.0, 1000.0 },
-            .defaultValue = .{ 200.0, 60.0, 40.0 },
-            .description = "xyz-location of the light source",
-        },
-        .shininess = .{
-            .type = i32,
-            .minValue = 2,
-            .maxValue = 64,
-            .defaultValue = 40,
-            .description = "shininess",
-        },
-        .shadow = .{
-            .type = f32,
-            .minValue = 0.0,
-            .maxValue = 1.0,
-            .defaultValue = 0.4,
-            .description = "depth of shadow areas",
-        },
-        .relief = .{
-            .type = f32,
-            .minValue = 1.0,
-            .maxValue = 10.0,
-            .defaultValue = 2.0,
-            .description = "the height of 3D effect",
-        },
-        .stripesize = .{
+        .imgSize = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 1.0, 1.0 },
-            .maxValue = .{ 256.0, 200.0 },
-            .defaultValue = .{ 256.0, 10.0 },
-            .description = "the size for input 'stripe'",
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 512.0, 512.0 },
+            .defaultValue = .{ 512.0, 512.0 },
         },
-        .viewDirection = .{
-            .type = @Vector(3, f32),
-            .minValue = .{ -1.0, -1.0, -1.0 },
-            .maxValue = .{ 1.0, 1.0, 1.0 },
-            .defaultValue = .{ 0.0, 0.0, 1.0 },
+        .center = .{
+            .type = @Vector(2, f32),
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 512.0, 512.0 },
+            .defaultValue = .{ 256.0, 256.0 },
+        },
+        .offset = .{
+            .type = @Vector(2, f32),
         },
     };
     pub const inputImages = .{
-        .source = .{ .channels = 4 },
-        .stripe = .{ .channels = 4 },
+        .src = .{ .channels = 4 },
     };
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
@@ -71,70 +44,40 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                const relief = self.input.relief;
-                const lightsource = self.input.lightsource;
-                const shadow = self.input.shadow;
-                const viewDirection = self.input.viewDirection;
-                const shininess = self.input.shininess;
-                const stripesize = self.input.stripesize;
+                const center = self.input.center;
+                const imgSize = self.input.imgSize;
+                const offset = self.input.offset;
                 
-                var po: @Vector(2, f32) = self.outCoord();
-                var tmp4: @Vector(4, f32) = undefined;
-                self.dst = self.input.source.sampleLinear(po);
-                if (self.dst[3] > 0.01) {
-                    var sourcesample: @Vector(4, f32) = self.dst;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ -3.0, 0.0 });
-                    const tmp1 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ -2.0, 0.0 });
-                    const tmp2 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ -1.0, 0.0 });
-                    const tmp3 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 1.0, 0.0 });
-                    const tmp5 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 2.0, 0.0 });
-                    const tmp6 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 3.0, 0.0 });
-                    const tmp7 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, -3.0 });
-                    const tmp8 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, -2.0 });
-                    const tmp9 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, -1.0 });
-                    const tmp10 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, 1.0 });
-                    const tmp11 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, 2.0 });
-                    const tmp12 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, 3.0 });
-                    const tmp13 = tmp4;
-                    var normal: @Vector(3, f32) = @Vector(3, f32){ (0.7 * tmp1[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp2[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp3[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp5[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp6[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp7[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]), (0.7 * tmp8[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp9[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp10[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp11[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp12[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp13[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]), 12.0 / relief };
-                    var len: f32 = 1.0 / sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2] + 0.0);
-                    normal *= @as(@Vector(3, f32), @splat(len));
-                    var lightbeam: @Vector(3, f32) = lightsource;
-                    lightbeam = @shuffle(f32, lightbeam, @shuffle(f32, lightbeam, undefined, @Vector(2, i32){ 0, 1 }) - po, @Vector(3, i32){ -1, -2, 2 });
-                    tmp4 = sourcesample;
-                    const tmp14 = tmp4;
-                    lightbeam[2] -= 5.0 * relief * ((0.7 * tmp14[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - 1.0);
-                    len = 1.0 / sqrt(lightbeam[0] * lightbeam[0] + lightbeam[1] * lightbeam[1] + lightbeam[2] * lightbeam[2] + 0.0);
-                    lightbeam *= @as(@Vector(3, f32), @splat(len));
-                    var refl: f32 = shadow + (1.0 - shadow) * dot(normal, lightbeam);
-                    var v: @Vector(3, f32) = reflectVector(viewDirection, normal);
-                    var spec: f32 = dot(v, lightbeam);
-                    if (spec > 0.0) {
-                        spec = pow(spec, @as(f32, @floatFromInt(shininess)));
-                        refl += spec;
-                    }
-                    refl = clamp(refl, 0.0, 1.0);
-                    self.dst = self.input.stripe.sampleLinear(@Vector(2, f32){ 0.5 + (stripesize[0] - 1.0) * refl, stripesize[1] });
-                    self.dst[3] *= sourcesample[3];
+                var pos: @Vector(2, f32) = (self.outCoord() - center) / imgSize;
+                var pi: f32 = 3.141592653589793;
+                var a: f32 = atan2(pos[1], pos[0]);
+                var r: f32 = sqrt(pow(pos[0], 2.0) + pow(pos[1], 2.0));
+                var u: f32 = 0.0;
+                var v: f32 = 0.0;
+                var w: f32 = 0.0;
+                u += offset[0];
+                v += offset[1];
+                u += a;
+                v += a;
+                w += 1.0 / pow(r, 0.5);
+                u *= imgSize[0];
+                v *= imgSize[1];
+                if (u < 0.0) {
+                    u += imgSize[0] * ceil(-u / imgSize[0]);
                 }
+                if (v < 0.0) {
+                    v += imgSize[1] * ceil(-v / imgSize[1]);
+                }
+                if (u > imgSize[0]) {
+                    u -= imgSize[0] * floor(u / imgSize[0]);
+                }
+                if (v > imgSize[1]) {
+                    v -= imgSize[1] * floor(v / imgSize[1]);
+                }
+                self.dst = self.input.src.sampleNearest(@Vector(2, f32){ u, v });
+                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(w)), @Vector(4, i32){ -1, -2, -3, 3 });
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
-            }
-            
-            // macros
-            fn reflectVector(v: @Vector(3, f32), n: @Vector(3, f32)) @Vector(3, f32) {
-                return (@as(@Vector(3, f32), @splat(2.0)) * n * @as(@Vector(3, f32), @splat(dot(v, n))) / @as(@Vector(3, f32), @splat((n[0] * n[0] + n[1] * n[1] + n[2] * n[2]))) - v);
             }
             
             // built-in Pixel Bender functions
@@ -142,6 +85,20 @@ pub const kernel = struct {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
+            fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => calc: {
+                        var result: @TypeOf(v1) = undefined;
+                        comptime var i = 0;
+                        inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+                            result[i] = atan2(v1[i], v2[i]);
+                        }
+                        break :calc result;
+                    },
+                    else => std.math.atan2(@TypeOf(v1), v1, v2),
+                };
             }
             
             fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
@@ -162,34 +119,12 @@ pub const kernel = struct {
                 return @sqrt(v);
             }
             
-            fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
-                return switch (@typeInfo(@TypeOf(min_val))) {
-                    .Vector => calc: {
-                        const T = @typeInfo(@TypeOf(v)).Vector.child;
-                        const result1 = @select(T, v < min_val, min_val, v);
-                        const result2 = @select(T, result1 > max_val, max_val, result1);
-                        break :calc result2;
-                    },
-                    else => switch (@typeInfo(@TypeOf(v))) {
-                        .Vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
-                        else => calc: {
-                            if (v < min_val) {
-                                break :calc min_val;
-                            } else if (v > max_val) {
-                                break :calc max_val;
-                            } else {
-                                break :calc v;
-                            }
-                        },
-                    },
-                };
+            fn floor(v: anytype) @TypeOf(v) {
+                return @floor(v);
             }
             
-            fn dot(v1: anytype, v2: anytype) f32 {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => @reduce(.Add, v1 * v2),
-                    else => v1 * v2,
-                };
+            fn ceil(v: anytype) @TypeOf(v) {
+                return @ceil(v);
             }
         };
     }

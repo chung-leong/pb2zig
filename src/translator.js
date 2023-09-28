@@ -116,7 +116,7 @@ export class PixelBenderToZigTranslator {
     this.add(`const ${name} = ${value};`);
     const tmp = new ZigExpr(name, value.type);
     if (aliasing) {
-      this.variableAliases.unshift({ lvalue, tmp });
+      this.variableAliases?.unshift({ lvalue, tmp });
     }
     return tmp;
   }

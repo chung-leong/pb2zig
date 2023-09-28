@@ -48,7 +48,10 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   tag(ctx) {
     const attrs = {};
     for (const node of ctx.attribute) {
-      const { name, value } = this.visit(node);
+      let { name, value } = this.visit(node);
+      if (name === 'displayname') {
+        name = 'displayName';
+      }
       attrs[name] = value;
     }
     return attrs;

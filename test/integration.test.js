@@ -570,8 +570,9 @@ describe('Integration tests', function() {
     const name = 'sphere';
     await translate(name);
     const params = {
-      imageSize: [ 256, 256 ],
+      imgSize: [ 256, 256 ],
       center: [ 250, 192 ],
+      offset: [ 0, 0 ],
     };
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
@@ -580,8 +581,9 @@ describe('Integration tests', function() {
     const name = 'star';
     await translate(name);
     const params = {
-      imageSize: [ 512, 384 ],
+      imgSize: [ 512, 384 ],
       center: [ 250, 192 ],
+      offset: [ 0, 0 ],
     };
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
@@ -620,8 +622,9 @@ describe('Integration tests', function() {
     const name = 'vortex';
     await translate(name);
     const params = {
-      imageSize: [ 512, 384 ],
+      imgSize: [ 512, 384 ],
       center: [ 250, 192 ],
+      offset: [ 0, 0 ],
     };
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })

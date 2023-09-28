@@ -7,8 +7,8 @@ pub const kernel = struct {
     pub const vendor = "Adobe Systems Incorporated";
     pub const version = 2;
     pub const description = "Estimate alpha based on color channels.";
+    pub const displayName = "Alpha From Max Color";
     pub const category = "Utility";
-    pub const displayname = "Alpha From Max Color";
     pub const parameters = .{
     };
     pub const inputImages = .{

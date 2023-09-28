@@ -125,8 +125,8 @@ pub const kernel = struct {
                 tmpDst += self.input.src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);
                 tmpDst /= @as(@Vector(4, f32), @splat(15.0));
                 if (cond1 == 1) {
-                    self.dst = @as(@Vector(4, f32), @splat((1.0 - edgeHardness))) * ((color * @as(@Vector(4, f32), @splat(strength))) + (tmpDst * @as(@Vector(4, f32), @splat((1.0 - strength))))) + (tmpDst * @as(@Vector(4, f32), @splat(edgeHardness)));
-                    self.dst = @shuffle(f32, self.dst, @as(@Vector(3, f32), @splat(vignette)) * @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(strength)) + (@shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat((1.0 - vignette)))), @Vector(4, i32){ -1, -2, -3, 3 });
+                    self.dst = (@as(@Vector(4, f32), @splat((1.0 - edgeHardness))) * ((color * @as(@Vector(4, f32), @splat(strength))) + (tmpDst * @as(@Vector(4, f32), @splat((1.0 - strength)))))) + (tmpDst * @as(@Vector(4, f32), @splat(edgeHardness)));
+                    self.dst = @shuffle(f32, self.dst, (@as(@Vector(3, f32), @splat(vignette)) * @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(strength))) + (@shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat((1.0 - vignette)))), @Vector(4, i32){ -1, -2, -3, 3 });
                 } else {
                     self.dst = color;
                 }

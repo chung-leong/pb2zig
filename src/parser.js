@@ -163,7 +163,9 @@ export class PixelBenderParser extends CstParser {
       $.CONSUME(T.Parameter)
       $.SUBRULE($.type)
       $.CONSUME(T.Identifier)
-      $.SUBRULE($.tag)
+      $.OPTION(() => {
+        $.SUBRULE($.tag)
+      })
       $.CONSUME(T.Semicolon)
     })
     $.RULE('type', () => {
