@@ -1,15 +1,25 @@
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
+// Pixel Bender "Tint" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "AfterEffects";
-    pub const vendor = "Adobe Systems Incorporated";
-    pub const version = 2;
-    pub const description = "Estimate alpha based on color channels.";
-    pub const category = "Utility";
-    pub const displayname = "Alpha From Max Color";
+    pub const namespace = "Allen Chou";
+    pub const vendor = "";
+    pub const version = 1;
+    pub const description = "tint effect";
     pub const parameters = .{
+        .amount = .{
+            .type = f32,
+            .minValue = 1.0,
+            .maxValue = 1.0,
+            .defaultValue = 0.0,
+        },
+        .color = .{
+            .type = @Vector(3, f32),
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0 },
+        },
     };
     pub const inputImages = .{
         .src = .{ .channels = 4 },
@@ -31,13 +41,23 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                self.dst = self.input.src.sampleNearest(self.outCoord());
-                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                self.dst[3] = max(max(self.dst[0], self.dst[1]), self.dst[2]);
-                self.dst[3] *= 254.0 / 255.0;
-                if (self.dst[3] != 0.0) {
-                    self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                }
+                const color = self.input.color;
+                const amount = self.input.amount;
+                
+                var rgba: @Vector(4, f32) = undefined;
+                var r: f32 = undefined;
+                var g: f32 = undefined;
+                var b: f32 = undefined;
+                var a: f32 = undefined;
+                rgba = self.input.src.sampleNearest(self.outCoord());
+                var luminance: f32 = rgba[0] * 0.3086 + rgba[1] * 0.6094 + rgba[2] * 0.082;
+                r = (color[0] + luminance) * amount + rgba[0] * (1.0 - amount);
+                g = (color[1] + luminance) * amount + rgba[1] * (1.0 - amount);
+                b = (color[2] + luminance) * amount + rgba[2] * (1.0 - amount);
+                clamp(r, 0.0, 1.0);
+                clamp(g, 0.0, 1.0);
+                clamp(b, 0.0, 1.0);
+                self.dst = @Vector(4, f32){ r, g, b, rgba[3] };
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
@@ -49,12 +69,25 @@ pub const kernel = struct {
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
+            fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
+                return switch (@typeInfo(@TypeOf(min_val))) {
+                    .Vector => calc: {
+                        const T = @typeInfo(@TypeOf(v)).Vector.child;
+                        const result1 = @select(T, v < min_val, min_val, v);
+                        const result2 = @select(T, result1 > max_val, max_val, result1);
+                        break :calc result2;
+                    },
+                    else => switch (@typeInfo(@TypeOf(v))) {
+                        .Vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
+                        else => calc: {
+                            if (v < min_val) {
+                                break :calc min_val;
+                            } else if (v > max_val) {
+                                break :calc max_val;
+                            } else {
+                                break :calc v;
+                            }
+                        },
                     },
                 };
             }

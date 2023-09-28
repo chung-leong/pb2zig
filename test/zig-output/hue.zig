@@ -1,21 +1,20 @@
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
+// Pixel Bender "Hue" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "AfterEffects";
-    pub const vendor = "Adobe Systems Incorporated";
-    pub const version = 2;
-    pub const description = "Estimate alpha based on color channels.";
-    pub const category = "Utility";
-    pub const displayname = "Alpha From Max Color";
+    pub const namespace = "Flame";
+    pub const vendor = "Adobe";
+    pub const version = 1;
+    pub const description = "Hue blend mode";
     pub const parameters = .{
     };
     pub const inputImages = .{
+        .dst = .{ .channels = 4 },
         .src = .{ .channels = 4 },
     };
     pub const outputImages = .{
-        .dst = .{ .channels = 4 },
+        .result = .{ .channels = 4 },
     };
     
     // generic kernel instance type
@@ -26,20 +25,125 @@ pub const kernel = struct {
             outputCoord: @Vector(2, u32) = @splat(0),
             
             // output pixel
-            dst: @Vector(4, f32) = undefined,
+            result: @Vector(4, f32) = undefined,
             
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.dst = @splat(0);
-                self.dst = self.input.src.sampleNearest(self.outCoord());
-                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                self.dst[3] = max(max(self.dst[0], self.dst[1]), self.dst[2]);
-                self.dst[3] *= 254.0 / 255.0;
-                if (self.dst[3] != 0.0) {
-                    self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
+                self.result = @splat(0);
+                var a: @Vector(4, f32) = self.input.dst.sampleNearest(self.outCoord());
+                var b: @Vector(4, f32) = self.input.src.sampleNearest(self.outCoord());
+                var cb: @Vector(3, f32) = undefined;
+                var cs: @Vector(3, f32) = undefined;
+                if (a[3] > 0.0) {
+                    cb = @shuffle(f32, cb, @shuffle(f32, a, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(a[3])), @Vector(3, i32){ -1, -2, -3 });
                 }
+                if (b[3] > 0.0) {
+                    cs = @shuffle(f32, cs, @shuffle(f32, b, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(b[3])), @Vector(3, i32){ -1, -2, -3 });
+                }
+                self.result[3] = (1.0 - b[3]) * a[3] + b[3];
+                var color: @Vector(3, f32) = @shuffle(f32, cs, undefined, @Vector(3, i32){ 0, 1, 2 });
+                var satVal: f32 = saturation(cb);
+                if (color[0] <= color[1]) {
+                    if (color[1] <= color[2]) {
+                        color[1] -= color[0];
+                        color[2] -= color[0];
+                        color[0] = 0.0;
+                        if (color[2] > 0.0) {
+                            color[1] *= satVal / max(color[2], 0.0);
+                            color[2] = satVal;
+                        }
+                    } else {
+                        if (color[0] <= color[2]) {
+                            color[2] -= color[0];
+                            color[1] -= color[0];
+                            color[0] = 0.0;
+                            if (color[1] > 0.0) {
+                                color[2] *= satVal / max(color[1], 0.0);
+                                color[1] = satVal;
+                            }
+                        } else {
+                            color[0] -= color[2];
+                            color[1] -= color[2];
+                            color[2] = 0.0;
+                            if (color[1] > 0.0) {
+                                color[0] *= satVal / max(color[1], 0.0);
+                                color[1] = satVal;
+                            }
+                        }
+                    }
+                } else {
+                    if (color[0] <= color[2]) {
+                        color[0] -= color[1];
+                        color[2] -= color[1];
+                        color[1] = 0.0;
+                        if (color[2] > 0.0) {
+                            color[0] *= satVal / max(color[2], 0.0);
+                            color[2] = satVal;
+                        }
+                    } else {
+                        if (color[1] <= color[2]) {
+                            color[2] -= color[1];
+                            color[0] -= color[1];
+                            color[1] = 0.0;
+                            if (color[0] > 0.0) {
+                                color[2] *= satVal / max(color[0], 0.0);
+                                color[0] = satVal;
+                            }
+                        } else {
+                            color[1] -= color[2];
+                            color[0] -= color[2];
+                            color[2] = 0.0;
+                            if (color[0] > 0.0) {
+                                color[1] *= satVal / max(color[0], 0.0);
+                                color[0] = satVal;
+                            }
+                        }
+                    }
+                }
+                var adjVec: @Vector(3, f32) = (cb - color);
+                var adjustment: f32 = luminance(adjVec);
+                var adjustedcs: @Vector(3, f32) = color + @as(@Vector(3, f32), @splat(adjustment));
+                var color_cl: @Vector(3, f32) = adjustedcs;
+                var lum_cl: f32 = luminance(color_cl);
+                var lumVec: @Vector(3, f32) = @Vector(3, f32){ lum_cl, lum_cl, lum_cl };
+                var mini: f32 = min3v(color_cl);
+                var maxi: f32 = max3v(color_cl);
+                if (mini < 0.0) {
+                    mini = lum_cl - mini;
+                    color_cl = lumVec + (color_cl - lumVec) * @as(@Vector(3, f32), @splat(lum_cl)) / @as(@Vector(3, f32), @splat(max(mini, 0.0)));
+                }
+                if (maxi > 1.0) {
+                    maxi = maxi - lum_cl;
+                    color_cl = lumVec + (color_cl - lumVec) * @as(@Vector(3, f32), @splat((1.0 - lum_cl))) / @as(@Vector(3, f32), @splat(max(maxi, 0.0)));
+                }
+                self.result = @shuffle(f32, self.result, (@as(@Vector(3, f32), @splat((1.0 - b[3]))) * @shuffle(f32, a, undefined, @Vector(3, i32){ 0, 1, 2 })) + (@as(@Vector(3, f32), @splat((1.0 - a[3]))) * @shuffle(f32, b, undefined, @Vector(3, i32){ 0, 1, 2 })) + @as(@Vector(3, f32), @splat(b[3] * a[3])) * @shuffle(f32, color_cl, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
                 
-                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+                self.output.result.setPixel(self.outputCoord[0], self.outputCoord[1], self.result);
+            }
+            
+            // macros
+            fn max3(x: f32, y: f32, z: f32) f32 {
+                return (max(x, max(y, z)));
+            }
+            
+            fn min3(x: f32, y: f32, z: f32) f32 {
+                return (min(x, min(y, z)));
+            }
+            
+            fn saturation(C: @Vector(3, f32)) f32 {
+                return ((max3((C[0]), (C[1]), (C[2])) - min3((C[0]), (C[1]), (C[2]))));
+            }
+            
+            fn luminance(C: @Vector(3, f32)) f32 {
+                return ((((C[0]) * 0.3) + ((C[1]) * 0.59) + ((C[2]) * 0.11)));
+            }
+            
+            fn min3v(C: @Vector(3, f32)) f32 {
+                return (min3((C[0]), (C[1]), (C[2])));
+            }
+            
+            fn max3v(C: @Vector(3, f32)) f32 {
+                return (max3((C[0]), (C[1]), (C[2])));
             }
             
             // built-in Pixel Bender functions

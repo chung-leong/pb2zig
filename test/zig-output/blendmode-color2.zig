@@ -1,18 +1,17 @@
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
+// Pixel Bender "ColorBlend2" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "AfterEffects";
-    pub const vendor = "Adobe Systems Incorporated";
-    pub const version = 2;
-    pub const description = "Estimate alpha based on color channels.";
-    pub const category = "Utility";
-    pub const displayname = "Alpha From Max Color";
+    pub const namespace = "com.quasimondo";
+    pub const vendor = "Quasimondo";
+    pub const version = 1;
+    pub const description = "Alternative Color Blendmode";
     pub const parameters = .{
     };
     pub const inputImages = .{
-        .src = .{ .channels = 4 },
+        .src1 = .{ .channels = 4 },
+        .src2 = .{ .channels = 4 },
     };
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
@@ -31,13 +30,15 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                self.dst = self.input.src.sampleNearest(self.outCoord());
-                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                self.dst[3] = max(max(self.dst[0], self.dst[1]), self.dst[2]);
-                self.dst[3] *= 254.0 / 255.0;
-                if (self.dst[3] != 0.0) {
-                    self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                }
+                var rgb1: @Vector(4, f32) = self.input.src1.sampleNearest(self.outCoord());
+                var rgb2: @Vector(4, f32) = self.input.src2.sampleNearest(self.outCoord());
+                var y: f32 = rgb1[0] * 0.2902912621359223 + rgb1[1] * 0.5699029126213592 + rgb1[2] * 0.13980582524271845;
+                var u: f32 = rgb2[0] * 140.58486056821164 - rgb2[1] * 125.47469779214981 - rgb2[2] * 15.11016277606183;
+                var v: f32 = -rgb2[0] * 327.14030548802003 - rgb2[1] * 1.3881417465045216 + rgb2[2] * 325.7521637415155;
+                self.dst[0] = y + 0.004539556278762163 * u - 0.00021860911105424223 * v;
+                self.dst[1] = y - 0.0034342699108313463 * u - 0.0005884786778098704 * v;
+                self.dst[2] = y + 0.004573535488250788 * u + 0.0028527854727750856 * v;
+                self.dst[3] = rgb1[3];
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
@@ -47,16 +48,6 @@ pub const kernel = struct {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
-                    },
-                };
             }
         };
     }

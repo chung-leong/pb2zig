@@ -1,15 +1,37 @@
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
+// Pixel Bender "NewFilter" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "AfterEffects";
-    pub const vendor = "Adobe Systems Incorporated";
-    pub const version = 2;
-    pub const description = "Estimate alpha based on color channels.";
-    pub const category = "Utility";
-    pub const displayname = "Alpha From Max Color";
+    pub const namespace = "me.cosmodro.filters";
+    pub const vendor = "Steve Shipman";
+    pub const version = 1;
+    pub const description = "Skin Color filter";
     pub const parameters = .{
+        .CbMin = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1.0,
+            .defaultValue = 105.0 / 255.0,
+        },
+        .CbMax = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1.0,
+            .defaultValue = 135.0 / 255.0,
+        },
+        .CrMin = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1.0,
+            .defaultValue = 140.0 / 255.0,
+        },
+        .CrMax = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1.0,
+            .defaultValue = 165.0 / 255.0,
+        },
     };
     pub const inputImages = .{
         .src = .{ .channels = 4 },
@@ -31,12 +53,21 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const CbMin = self.input.CbMin;
+                const CbMax = self.input.CbMax;
+                const CrMin = self.input.CrMin;
+                const CrMax = self.input.CrMax;
+                
                 self.dst = self.input.src.sampleNearest(self.outCoord());
-                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                self.dst[3] = max(max(self.dst[0], self.dst[1]), self.dst[2]);
-                self.dst[3] *= 254.0 / 255.0;
-                if (self.dst[3] != 0.0) {
-                    self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
+                var ycbcr: @Vector(3, f32) = matrixCalc("*", @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }), [3]@Vector(3, f32){
+                    .{ 0.0, 0.0, 0.0 },
+                    .{ -0.168736, -0.331264, 0.5 },
+                    .{ 0.5, -0.418688, -0.081312 }
+                }) + @Vector(3, f32){ 0.0, 0.5, 0.5 };
+                if ((ycbcr[1] >= CbMin) and (ycbcr[1] <= CbMax) and (ycbcr[2] >= CrMin) and (ycbcr[2] <= CrMax)) {
+                    self.dst = @shuffle(f32, self.dst, @as(@Vector(3, f32), @splat(1.0)), @Vector(4, i32){ -1, -2, -3, 3 });
+                } else {
+                    self.dst = @shuffle(f32, self.dst, @as(@Vector(3, f32), @splat(0.0)), @Vector(4, i32){ -1, -2, -3, 3 });
                 }
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
@@ -47,16 +78,6 @@ pub const kernel = struct {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
-                    },
-                };
             }
         };
     }

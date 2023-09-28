@@ -1,21 +1,20 @@
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
+// Pixel Bender "ColorBurn" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "AfterEffects";
-    pub const vendor = "Adobe Systems Incorporated";
-    pub const version = 2;
-    pub const description = "Estimate alpha based on color channels.";
-    pub const category = "Utility";
-    pub const displayname = "Alpha From Max Color";
+    pub const namespace = "Flame";
+    pub const vendor = "Adobe";
+    pub const version = 1;
+    pub const description = "ColorBurn blend mode";
     pub const parameters = .{
     };
     pub const inputImages = .{
+        .dst = .{ .channels = 4 },
         .src = .{ .channels = 4 },
     };
     pub const outputImages = .{
-        .dst = .{ .channels = 4 },
+        .result = .{ .channels = 4 },
     };
     
     // generic kernel instance type
@@ -26,20 +25,53 @@ pub const kernel = struct {
             outputCoord: @Vector(2, u32) = @splat(0),
             
             // output pixel
-            dst: @Vector(4, f32) = undefined,
+            result: @Vector(4, f32) = undefined,
             
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.dst = @splat(0);
-                self.dst = self.input.src.sampleNearest(self.outCoord());
-                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                self.dst[3] = max(max(self.dst[0], self.dst[1]), self.dst[2]);
-                self.dst[3] *= 254.0 / 255.0;
-                if (self.dst[3] != 0.0) {
-                    self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
+                self.result = @splat(0);
+                var a: @Vector(4, f32) = self.input.dst.sampleNearest(self.outCoord());
+                var b: @Vector(4, f32) = self.input.src.sampleNearest(self.outCoord());
+                var cb: @Vector(3, f32) = @shuffle(f32, a, undefined, @Vector(3, i32){ 0, 1, 2 });
+                var cs: @Vector(3, f32) = @shuffle(f32, b, undefined, @Vector(3, i32){ 0, 1, 2 });
+                if (a[3] > 0.0) {
+                    cb = @shuffle(f32, cb, @shuffle(f32, a, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(a[3])), @Vector(3, i32){ -1, -2, -3 });
                 }
+                if (b[3] > 0.0) {
+                    cs = @shuffle(f32, cs, @shuffle(f32, b, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(b[3])), @Vector(3, i32){ -1, -2, -3 });
+                }
+                self.result[3] = (1.0 - b[3]) * a[3] + b[3];
+                var blendResult: @Vector(3, f32) = undefined;
+                if (cb[0] == 1.0) {
+                    blendResult[0] = 1.0;
+                } else {
+                    if ((1.0 - cb[0]) >= cs[0]) {
+                        blendResult[0] = 0.0;
+                    } else {
+                        blendResult[0] = 1.0 - (1.0 - cb[0]) / cs[0];
+                    }
+                }
+                if (cb[1] == 1.0) {
+                    blendResult[1] = 1.0;
+                } else {
+                    if ((1.0 - cb[1]) >= cs[1]) {
+                        blendResult[1] = 0.0;
+                    } else {
+                        blendResult[1] = 1.0 - (1.0 - cb[1]) / cs[1];
+                    }
+                }
+                if (cb[2] == 1.0) {
+                    blendResult[2] = 1.0;
+                } else {
+                    if ((1.0 - cb[2]) >= cs[2]) {
+                        blendResult[2] = 0.0;
+                    } else {
+                        blendResult[2] = 1.0 - (1.0 - cb[2]) / cs[2];
+                    }
+                }
+                self.result = @shuffle(f32, self.result, @as(@Vector(3, f32), @splat((1.0 - b[3]))) * @shuffle(f32, a, undefined, @Vector(3, i32){ 0, 1, 2 }) + @as(@Vector(3, f32), @splat((1.0 - a[3]))) * @shuffle(f32, b, undefined, @Vector(3, i32){ 0, 1, 2 }) + @as(@Vector(3, f32), @splat(b[3] * a[3])) * @shuffle(f32, blendResult, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
                 
-                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+                self.output.result.setPixel(self.outputCoord[0], self.outputCoord[1], self.result);
             }
             
             // built-in Pixel Bender functions
@@ -47,16 +79,6 @@ pub const kernel = struct {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
-                    },
-                };
             }
         };
     }

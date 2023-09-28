@@ -1,15 +1,76 @@
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
+// Pixel Bender "Scroll" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "AfterEffects";
-    pub const vendor = "Adobe Systems Incorporated";
-    pub const version = 2;
-    pub const description = "Estimate alpha based on color channels.";
-    pub const category = "Utility";
-    pub const displayname = "Alpha From Max Color";
+    pub const namespace = "www.tbyrne.org";
+    pub const vendor = "Tom Byrne";
+    pub const version = 1;
     pub const parameters = .{
+        .topRollRadius = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1000.0,
+            .defaultValue = 100.0,
+            .displayName = "Top Roll Radius",
+        },
+        .bottomRollRadius = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1000.0,
+            .defaultValue = 100.0,
+            .displayName = "Bottom Roll Radius",
+        },
+        .rollHeight = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1000.0,
+            .defaultValue = 500.0,
+            .displayName = "Roll Height",
+        },
+        .rollOffsetY = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1000.0,
+            .defaultValue = 0.0,
+            .displayName = "Roll Offset Y",
+        },
+        .rollWidth = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1000.0,
+            .defaultValue = 500.0,
+            .displayName = "Roll Width",
+        },
+        .rollOffsetX = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1000.0,
+            .defaultValue = 0.0,
+            .displayName = "Roll Offset X",
+        },
+        .fogColour = .{
+            .type = @Vector(3, f32),
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 0.0, 0.0, 0.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0 },
+            .parameterType = "colorRGB",
+            .displayName = "Fog Colour",
+        },
+        .fogInfluence = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 10.0,
+            .defaultValue = 1.0,
+            .displayName = "Fog Influence",
+        },
+        .fade = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 10.0,
+            .defaultValue = 1.0,
+            .displayName = "Fade",
+        },
     };
     pub const inputImages = .{
         .src = .{ .channels = 4 },
@@ -31,12 +92,66 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                self.dst = self.input.src.sampleNearest(self.outCoord());
-                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                self.dst[3] = max(max(self.dst[0], self.dst[1]), self.dst[2]);
-                self.dst[3] *= 254.0 / 255.0;
-                if (self.dst[3] != 0.0) {
-                    self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
+                const rollOffsetY = self.input.rollOffsetY;
+                const rollHeight = self.input.rollHeight;
+                const rollOffsetX = self.input.rollOffsetX;
+                const rollWidth = self.input.rollWidth;
+                const topRollRadius = self.input.topRollRadius;
+                const bottomRollRadius = self.input.bottomRollRadius;
+                const fogInfluence = self.input.fogInfluence;
+                const fogColour = self.input.fogColour;
+                const fade = self.input.fade;
+                
+                var pi: f32 = 3.14159265358979;
+                var pos: @Vector(2, f32) = self.outCoord();
+                var yFract: f32 = undefined;
+                var xFract: f32 = undefined;
+                var yDir: f32 = undefined;
+                var rollRadius: f32 = undefined;
+                var doRoll: bool = undefined;
+                if (pos[1] < rollOffsetY or pos[1] > rollOffsetY + rollHeight or pos[0] < rollOffsetX or pos[0] > rollOffsetX + rollWidth) {
+                    self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
+                    doRoll = true;
+                } else {
+                    if (pos[1] < rollOffsetY + topRollRadius) {
+                        doRoll = true;
+                        yFract = 1.0 - ((pos[1] - rollOffsetY) / topRollRadius);
+                        xFract = (pos[0] - rollOffsetX - rollWidth / 2.0) / (rollWidth / 2.0);
+                        yDir = -1.0;
+                        rollRadius = topRollRadius;
+                    } else {
+                        if (pos[1] > rollOffsetY + rollHeight - bottomRollRadius) {
+                            doRoll = true;
+                            yFract = ((pos[1] - (rollOffsetY + rollHeight - bottomRollRadius)) / bottomRollRadius);
+                            xFract = (pos[0] - rollOffsetX - rollWidth / 2.0) / (rollWidth / 2.0);
+                            yDir = 1.0;
+                            rollRadius = bottomRollRadius;
+                        } else {
+                            doRoll = true;
+                            self.dst = self.input.src.sampleNearest(pos);
+                        }
+                    }
+                }
+                if (doRoll) {
+                    var ySin: f32 = 1.0 - sqrt(1.0 - (yFract * yFract));
+                    var rollVisible: f32 = rollRadius * pi / 2.0;
+                    var posX: f32 = pos[0] + (xFract * ySin * rollRadius);
+                    if (posX > rollOffsetX and posX < rollOffsetX + rollWidth) {
+                        var colour: @Vector(4, f32) = self.input.src.sampleNearest(@Vector(2, f32){ posX, pos[1] + ySin * rollVisible * yDir });
+                        if (fogInfluence > 0.0) {
+                            var inf: f32 = fogInfluence * ySin;
+                            var invInf: f32 = 1.0 - inf;
+                            colour[0] = colour[0] * invInf + fogColour[0] * inf;
+                            colour[1] = colour[1] * invInf + fogColour[1] * inf;
+                            colour[2] = colour[2] * invInf + fogColour[2] * inf;
+                        }
+                        if (fade > 0.0) {
+                            colour[3] *= (1.0 - fade * ySin);
+                        }
+                        self.dst = colour;
+                    } else {
+                        self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
+                    }
                 }
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
@@ -49,14 +164,8 @@ pub const kernel = struct {
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
-                    },
-                };
+            fn sqrt(v: anytype) @TypeOf(v) {
+                return @sqrt(v);
             }
         };
     }

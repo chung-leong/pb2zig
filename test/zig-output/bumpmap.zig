@@ -1,18 +1,73 @@
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
+// Pixel Bender "Bumpmap" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "AfterEffects";
-    pub const vendor = "Adobe Systems Incorporated";
-    pub const version = 2;
-    pub const description = "Estimate alpha based on color channels.";
-    pub const category = "Utility";
-    pub const displayname = "Alpha From Max Color";
+    pub const namespace = "com.shader";
+    pub const vendor = "Elias Stehle";
+    pub const version = 1;
+    pub const description = "Bumpmap Shader - Stunning effects on texture-like inputs";
     pub const parameters = .{
+        .on = .{
+            .type = i32,
+            .minValue = 0,
+            .maxValue = 1,
+            .defaultValue = 1,
+            .description = "Only while on is 1, the shader will be applied to the input image",
+        },
+        .light = .{
+            .type = @Vector(3, f32),
+            .minValue = .{ 2560.0, 2560.0, 10000.0 },
+            .maxValue = .{ 2560.0, 2560.0, 10000.0 },
+            .defaultValue = .{ 250.0, 250.0, 800.0 },
+            .description = "The light coordinates (x,y,z). The z-coordinate always needs to be positive to be in front of the image",
+        },
+        .lightcolor = .{
+            .type = @Vector(3, f32),
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 1.0, 1.0, 1.0 },
+            .description = "Color of the light source [R,G,B]",
+        },
+        .heightmap_multi = .{
+            .type = f32,
+            .minValue = 1.0,
+            .maxValue = 10.0,
+            .defaultValue = 1.0,
+            .description = "A factor by which the heightmap differences will be multiplied",
+        },
+        .invert = .{
+            .type = i32,
+            .minValue = 0,
+            .maxValue = 1,
+            .defaultValue = 1,
+            .description = "Invert heightmap",
+        },
+        .lightwidth = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 10000.0,
+            .defaultValue = 1300.0,
+            .description = "The maximum reach/length of a light ray",
+        },
+        .reflection = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 2.0,
+            .defaultValue = 0.6,
+            .description = "The strength of the surface reflection",
+        },
+        .refl_tolerance = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1000.0,
+            .defaultValue = 9.0,
+            .description = "The lower the value, the more exactly the reflection ray needs to reflected streight back towards the light source",
+        },
     };
     pub const inputImages = .{
         .src = .{ .channels = 4 },
+        .img = .{ .channels = 4 },
     };
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
@@ -28,15 +83,80 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
+            // constants
+            const chann: i32 = 0;
+            const use_ps: i32 = 0;
+            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                self.dst = self.input.src.sampleNearest(self.outCoord());
-                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                self.dst[3] = max(max(self.dst[0], self.dst[1]), self.dst[2]);
-                self.dst[3] *= 254.0 / 255.0;
-                if (self.dst[3] != 0.0) {
-                    self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
+                const on = self.input.on;
+                const invert = self.input.invert;
+                const light = self.input.light;
+                const lightwidth = self.input.lightwidth;
+                const heightmap_multi = self.input.heightmap_multi;
+                const refl_tolerance = self.input.refl_tolerance;
+                const reflection = self.input.reflection;
+                const lightcolor = self.input.lightcolor;
+                
+                if (!(on == 0)) {
+                    self.dst = self.input.img.sampleNearest(self.outCoord());
+                } else {
+                    var height: f32 = undefined;
+                    var hvec: @Vector(3, f32) = undefined;
+                    var yvec: @Vector(3, f32) = undefined;
+                    var fac: f32 = undefined;
+                    height = self.input.src.sampleNearest(self.outCoord())[chann];
+                    if (invert == 0) {
+                        height = 1.0 - height;
+                    }
+                    var ray: @Vector(3, f32) = @Vector(3, f32){ self.outCoord()[0], self.outCoord()[1], height } - light;
+                    var tmp_ray_len: f32 = length(ray);
+                    if (tmp_ray_len > lightwidth) {
+                        self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, self.input.img.sampleNearest(self.outCoord())[3] };
+                    } else {
+                        hvec[2] = self.input.src.sampleNearest(self.outCoord() - @Vector(2, f32){ 2.0, 0.0 })[chann];
+                        hvec[2] += self.input.src.sampleNearest(self.outCoord() - @Vector(2, f32){ 1.0, 0.0 })[chann];
+                        hvec[2] -= self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ 1.0, 0.0 })[chann];
+                        hvec[2] -= self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ 2.0, 0.0 })[chann];
+                        hvec[0] = 4.0;
+                        hvec[1] = 0.0;
+                        hvec[2] *= heightmap_multi;
+                        yvec[2] = self.input.src.sampleNearest(self.outCoord() - @Vector(2, f32){ 0.0, 2.0 })[chann];
+                        yvec[2] += self.input.src.sampleNearest(self.outCoord() - @Vector(2, f32){ 0.0, 1.0 })[chann];
+                        yvec[2] -= self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ 0.0, 1.0 })[chann];
+                        yvec[2] -= self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ 0.0, 2.0 })[chann];
+                        yvec[0] = 0.0;
+                        yvec[1] = 4.0;
+                        yvec[2] *= heightmap_multi;
+                        if (invert == 1) {
+                            yvec[2] = -yvec[2];
+                            hvec[2] = -hvec[2];
+                        }
+                        var norm: @Vector(3, f32) = cross(hvec, yvec);
+                        var tmp_dot: f32 = dot(ray, norm);
+                        var refl_low: f32 = 0.99 - refl_tolerance / 10000.0;
+                        var clightrefl: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
+                        if (tmp_dot < 0.0) {
+                            fac = 1.0 - fract(tmp_dot / (tmp_ray_len * length(norm)));
+                            if (fac > refl_low) {
+                                if (fac > 1.0) {
+                                    fac = 1.0;
+                                }
+                                clightrefl = @as(@Vector(3, f32), @splat(-1.0 / (refl_low * refl_low * refl_low - 3.0 * refl_low * refl_low + 3.0 * refl_low - 1.0) * (fac - refl_low) * (fac - refl_low) * (fac - refl_low) * reflection)) * lightcolor;
+                            }
+                            fac = fac * fac * fac * 1.1;
+                            fac = fac * fac * fac * fac;
+                            if (fac > 0.0) {
+                                hvec = clightrefl + @as(@Vector(3, f32), @splat((lightwidth - tmp_ray_len) / lightwidth * fac)) * @shuffle(f32, self.input.img.sampleNearest(self.outCoord()), undefined, @Vector(3, i32){ 0, 1, 2 });
+                                self.dst = @Vector(4, f32){ hvec[0], hvec[1], hvec[2], self.input.img.sampleNearest(self.outCoord())[3] };
+                            } else {
+                                self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, self.input.img.sampleNearest(self.outCoord())[3] };
+                            }
+                        } else {
+                            self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, self.input.img.sampleNearest(self.outCoord())[3] };
+                        }
+                    }
                 }
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
@@ -49,14 +169,27 @@ pub const kernel = struct {
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
-                    },
+            fn fract(v: anytype) @TypeOf(v) {
+                return v - @floor(v);
+            }
+            
+            fn length(v: anytype) f32 {
+                const sum = @reduce(.Add, v * v);
+                return @sqrt(sum);
+            }
+            
+            fn dot(v1: anytype, v2: anytype) f32 {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => @reduce(.Add, v1 * v2),
+                    else => v1 * v2,
                 };
+            }
+            
+            fn cross(v1: anytype, v2: anytype) @TypeOf(v1) {
+                const CT = @typeInfo(@TypeOf(v1)).Vector.child;
+                const p1 = @shuffle(CT, v1, undefined, @Vector(3, i32){ 1, 2, 0 }) * @shuffle(CT, v2, undefined, @Vector(3, i32){ 2, 0, 1 });
+                const p2 = @shuffle(CT, v1, undefined, @Vector(3, i32){ 2, 0, 1 }) * @shuffle(CT, v2, undefined, @Vector(3, i32){ 1, 2, 0 });
+                return p1 - p2;
             }
         };
     }

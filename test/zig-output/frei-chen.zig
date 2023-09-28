@@ -1,15 +1,36 @@
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
+// Pixel Bender "FreiChen" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "AfterEffects";
-    pub const vendor = "Adobe Systems Incorporated";
-    pub const version = 2;
-    pub const description = "Estimate alpha based on color channels.";
-    pub const category = "Utility";
-    pub const displayname = "Alpha From Max Color";
+    pub const namespace = "com.quasimondo";
+    pub const vendor = "Mario Klingemann";
+    pub const version = 1;
     pub const parameters = .{
+        .threshold = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1.0,
+            .defaultValue = 0.0,
+        },
+        .factor = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 10.0,
+            .defaultValue = 1.0,
+        },
+        .gamma = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 20.0,
+            .defaultValue = 1.0,
+        },
+        .invert = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1.0,
+            .defaultValue = 0.0,
+        },
     };
     pub const inputImages = .{
         .src = .{ .channels = 4 },
@@ -28,16 +49,51 @@ pub const kernel = struct {
             // output pixel
             dst: @Vector(4, f32) = undefined,
             
+            // constants
+            const sqrt2: f32 = 1.41421356;
+            
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                self.dst = self.input.src.sampleNearest(self.outCoord());
-                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                self.dst[3] = max(max(self.dst[0], self.dst[1]), self.dst[2]);
-                self.dst[3] *= 254.0 / 255.0;
-                if (self.dst[3] != 0.0) {
-                    self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                }
+                const gamma = self.input.gamma;
+                const threshold = self.input.threshold;
+                const factor = self.input.factor;
+                const invert = self.input.invert;
+                
+                var c: @Vector(2, f32) = self.outCoord();
+                var p11: f32 = length(@shuffle(f32, self.input.src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                c[0] -= 1.0;
+                var p01: f32 = length(@shuffle(f32, self.input.src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                c[1] -= 1.0;
+                var p00: f32 = length(@shuffle(f32, self.input.src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                c[0] += 1.0;
+                var p10: f32 = length(@shuffle(f32, self.input.src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                c[0] += 1.0;
+                var p20: f32 = length(@shuffle(f32, self.input.src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                c[1] += 1.0;
+                var p21: f32 = length(@shuffle(f32, self.input.src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                c[1] += 1.0;
+                var p22: f32 = length(@shuffle(f32, self.input.src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                c[0] -= 1.0;
+                var p12: f32 = length(@shuffle(f32, self.input.src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                c[0] -= 1.0;
+                var p02: f32 = length(@shuffle(f32, self.input.src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                var f1: f32 = 1.0 / (2.0 * 1.41421356);
+                var g1: f32 = f1 * (p00 + sqrt2 * p10 + p20 - p02 - sqrt2 * p12 - p22);
+                var g2: f32 = f1 * (p00 + sqrt2 * p01 + p02 - p20 - sqrt2 * p21 - p22);
+                var g3: f32 = f1 * (p01 + sqrt2 * p20 + p12 - p10 - sqrt2 * p02 - p21);
+                var g4: f32 = f1 * (p11 + sqrt2 * p00 + p12 - p10 - sqrt2 * p22 - p01);
+                var g5: f32 = 0.5 * (p10 + p12 - p01 - p21);
+                var g6: f32 = 0.5 * (p20 + p02 - p00 - p22);
+                var g7: f32 = 0.166666667 * (p00 + p20 + 4.0 * p11 + p02 + p22 - 2.0 * p10 - 2.0 * p12 - 2.0 * p01 - 2.0 * p21);
+                var g8: f32 = 0.166666667 * (p10 + p12 + 4.0 * p11 + p01 + p21 - 2.0 * p00 - 2.0 * p20 - 2.0 * p02 - 2.0 * p22);
+                var g9: f32 = 0.333333333 * (p00 + p10 + p20 + p01 + p11 + p21 + p02 + p12 + p22);
+                var M: f32 = g1 * g1 + g2 * g2 + g3 * g3 + g4 * g4;
+                var S: f32 = g5 * g5 + g6 * g6 + g7 * g7 + g8 * g8 + g9 * g9 + M;
+                var v: f32 = pow(sqrt(M / S), gamma);
+                v *= (step(v, threshold) - threshold) * factor;
+                v = mix(v, 1.0 - v, invert);
+                self.dst = @Vector(4, f32){ v, v, v, 1.0 };
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
@@ -49,14 +105,51 @@ pub const kernel = struct {
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
+            fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => calc: {
+                        var result: @TypeOf(v1) = undefined;
+                        comptime var i = 0;
+                        inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+                            result[i] = pow(v1[i], v2[i]);
+                        }
+                        break :calc result;
+                    },
+                    else => std.math.pow(@TypeOf(v1), v1, v2),
+                };
+            }
+            
+            fn sqrt(v: anytype) @TypeOf(v) {
+                return @sqrt(v);
+            }
+            
+            fn step(v1: anytype, v2: anytype) @TypeOf(v2) {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => calc: {
+                        const ones: @TypeOf(v2) = @splat(1);
+                        const zeros: @TypeOf(v2) = @splat(0);
+                        break :calc @select(@typeInfo(@TypeOf(v2)).Vector.child, v2 < v1, zeros, ones);
+                    },
+                    else => switch (@typeInfo(@TypeOf(v2))) {
+                        .Vector => step(@as(@TypeOf(v2), @splat(v1)), v2),
+                        else => if (v2 < v1) 0 else 1,
                     },
                 };
+            }
+            
+            fn mix(v1: anytype, v2: anytype, p: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(p))) {
+                    .Vector => v1 * (@as(@TypeOf(p), @splat(1)) - p) + v2 * p,
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => mix(v1, v2, @as(@TypeOf(v1), @splat(p))),
+                        else => v1 * (1 - p) + v2 * p,
+                    },
+                };
+            }
+            
+            fn length(v: anytype) f32 {
+                const sum = @reduce(.Add, v * v);
+                return @sqrt(sum);
             }
         };
     }

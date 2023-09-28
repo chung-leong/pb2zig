@@ -1,21 +1,34 @@
-// Pixel Bender "AlphaFromMaxColor" (translated using pb2zig)
+// Pixel Bender "brightnessThreshold" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "AfterEffects";
-    pub const vendor = "Adobe Systems Incorporated";
-    pub const version = 2;
-    pub const description = "Estimate alpha based on color channels.";
-    pub const category = "Utility";
-    pub const displayname = "Alpha From Max Color";
+    pub const namespace = "net.onthewings.filters";
+    pub const vendor = "Andy Li";
+    pub const version = 1;
+    pub const description = "Thresholding bases on brightness.";
     pub const parameters = .{
+        .threshold = .{
+            .type = @Vector(2, f32),
+            .defaultValue = .{ 0.0, 1.0 },
+            .description = "Min and max limits.",
+        },
+        .outputColor1 = .{
+            .type = @Vector(4, f32),
+            .defaultValue = .{ 0.0, 0.0, 0.0, 1.0 },
+            .description = "Color for thresholded area.colorForAllPassedArea",
+        },
+        .outputColor2 = .{
+            .type = @Vector(4, f32),
+            .defaultValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .description = "Color for all passed area",
+        },
     };
     pub const inputImages = .{
-        .src = .{ .channels = 4 },
+        .source = .{ .channels = 4 },
     };
     pub const outputImages = .{
-        .dst = .{ .channels = 4 },
+        .target = .{ .channels = 4 },
     };
     
     // generic kernel instance type
@@ -26,20 +39,24 @@ pub const kernel = struct {
             outputCoord: @Vector(2, u32) = @splat(0),
             
             // output pixel
-            dst: @Vector(4, f32) = undefined,
+            target: @Vector(4, f32) = undefined,
             
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.dst = @splat(0);
-                self.dst = self.input.src.sampleNearest(self.outCoord());
-                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                self.dst[3] = max(max(self.dst[0], self.dst[1]), self.dst[2]);
-                self.dst[3] *= 254.0 / 255.0;
-                if (self.dst[3] != 0.0) {
-                    self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
+                self.target = @splat(0);
+                const threshold = self.input.threshold;
+                const outputColor1 = self.input.outputColor1;
+                const outputColor2 = self.input.outputColor2;
+                
+                var ori: @Vector(4, f32) = self.input.source.sampleNearest(self.outCoord());
+                var brightness: f32 = 0.2126 * ori[0] + 0.7152 * ori[1] + 0.0722 * ori[2];
+                if (brightness < threshold[0] or brightness > threshold[1]) {
+                    self.target = outputColor1;
+                } else {
+                    self.target = outputColor2;
                 }
                 
-                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+                self.output.target.setPixel(self.outputCoord[0], self.outputCoord[1], self.target);
             }
             
             // built-in Pixel Bender functions
@@ -47,16 +64,6 @@ pub const kernel = struct {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
-            }
-            
-            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @max(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @max(v1, v2),
-                    },
-                };
             }
         };
     }

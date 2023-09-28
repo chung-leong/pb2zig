@@ -9,7 +9,7 @@ export class Meta {
   vendor;
   version;
   description;
-  displayname;
+  displayName;
   category;
 }
 
@@ -26,6 +26,7 @@ export class Parameter {
   defaultValue;
   previewValue;
   parameterType;
+  displayName;
   description;
 }
 
