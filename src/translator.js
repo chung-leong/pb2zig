@@ -1199,7 +1199,7 @@ export class PixelBenderToZigTranslator {
 
   translateParentheses({ expression }) {
     const expr = this.translateExpression(expression);
-    if (/^\w+$/.test(expr) || /^@as\(.*\)$/.test(expr)) {
+    if (/^\w+$/.test(expr) || /^@as\([^)]*\)$/.test(expr)) {
       // don't need the parentheses
       return expr;
     }

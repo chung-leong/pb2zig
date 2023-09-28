@@ -126,7 +126,7 @@ pub const kernel = struct {
                 
                 var po: @Vector(2, f32) = self.outCoord() - center;
                 var theta: f32 = po[0] / focallength;
-                var viewdir: @Vector(3, f32) = @as(@Vector(3, f32), @splat(focallength)) * @as(@Vector(3, f32), @splat(cos(theta))) * @shuffle(f32, orientation[0], undefined, @Vector(3, i32){ 0, 1, 2 }) + @as(@Vector(3, f32), @splat(sin(theta))) * @shuffle(f32, orientation[1], undefined, @Vector(3, i32){ 0, 1, 2 }) + @as(@Vector(3, f32), @splat(po[1])) * @shuffle(f32, orientation[2], undefined, @Vector(3, i32){ 0, 1, 2 });
+                var viewdir: @Vector(3, f32) = @as(@Vector(3, f32), @splat(focallength)) * (@as(@Vector(3, f32), @splat(cos(theta))) * @shuffle(f32, orientation[0], undefined, @Vector(3, i32){ 0, 1, 2 }) + @as(@Vector(3, f32), @splat(sin(theta))) * @shuffle(f32, orientation[1], undefined, @Vector(3, i32){ 0, 1, 2 })) + @as(@Vector(3, f32), @splat(po[1])) * @shuffle(f32, orientation[2], undefined, @Vector(3, i32){ 0, 1, 2 });
                 var v: @Vector(3, f32) = @shuffle(f32, orientation[3], undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(size));
                 var currentAlpha: f32 = 1.0;
                 self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
@@ -136,9 +136,9 @@ pub const kernel = struct {
                 {
                     var i: i32 = 0;
                     while (i < n) {
-                        t[0] = @as(f32, if (viewdir[0] < 0.0) -eps else 1.0 + eps);
-                        t[1] = @as(f32, if (viewdir[1] < 0.0) -eps else 1.0 + eps);
-                        t[2] = @as(f32, if (viewdir[2] < 0.0) -eps else 1.0 + eps);
+                        t[0] = (@as(f32, if (viewdir[0] < 0.0) -eps else 1.0 + eps));
+                        t[1] = (@as(f32, if (viewdir[1] < 0.0) -eps else 1.0 + eps));
+                        t[2] = (@as(f32, if (viewdir[2] < 0.0) -eps else 1.0 + eps));
                         t = (floor(v + t) - v) / viewdir;
                         if (t[0] < t[1] and t[0] < t[2]) {
                             v += @as(@Vector(3, f32), @splat(t[0])) * viewdir;
