@@ -502,6 +502,20 @@ pub const kernel = struct {
                 };
             }
             
+            fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => calc: {
+                        var result: @TypeOf(v1) = undefined;
+                        comptime var i = 0;
+                        inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+                            result[i] = atan2(v1[i], v2[i]);
+                        }
+                        break :calc result;
+                    },
+                    else => std.math.atan2(@TypeOf(v1), v1, v2),
+                };
+            }
+            
             fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => calc: {

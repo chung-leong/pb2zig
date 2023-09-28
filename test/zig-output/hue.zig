@@ -153,6 +153,16 @@ pub const kernel = struct {
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
             
+            fn min(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @min(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @min(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @min(v1, v2),
+                    },
+                };
+            }
+            
             fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @max(v1, v2),

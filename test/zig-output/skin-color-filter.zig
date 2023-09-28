@@ -79,6 +79,175 @@ pub const kernel = struct {
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
+            
+            fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
+                return switch (operator[0]) {
+                    '=', '!' => bool,
+                    '+', '-', '/' => switch (@typeInfo(T2)) {
+                        .Array => T2,
+                        else => T1,
+                    },
+                    '*' => switch (@typeInfo(T2)) {
+                        .Vector => T2,
+                        else => switch (@typeInfo(T1)) {
+                            .Vector => T1,
+                            .Array => T1,
+                            else => T2,
+                        },
+                    },
+                    else => @compileError("Unknown operator: " ++ operator),
+                };
+            }
+            
+            fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) MatrixCalcResult(operator, @TypeOf(p1), @TypeOf(p2)) {
+                const calc = struct {
+                    fn @"Vector * Matrix"(v1: anytype, m2: anytype) @TypeOf(v1) {
+                        var result: @TypeOf(v1) = undefined;
+                        inline for (m2, 0..) |column, c| {
+                            result[c] = @reduce(.Add, column * v1);
+                        }
+                        return result;
+                    }
+                    
+                    fn @"Matrix * Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
+                        const ar = @typeInfo(@TypeOf(m2)).Array;
+                        var result: @TypeOf(m2) = undefined;
+                        comptime var r = 0;
+                        inline while (r < ar.len) : (r += 1) {
+                            var row: ar.child = undefined;
+                            inline for (m1, 0..) |column, c| {
+                                row[c] = column[r];
+                            }
+                            inline for (m2, 0..) |column, c| {
+                                result[c][r] = @reduce(.Add, row * column);
+                            }
+                        }
+                        return result;
+                    }
+                    
+                    fn @"Matrix * Vector"(m1: anytype, v2: anytype) @TypeOf(v2) {
+                        const ar = @typeInfo(@TypeOf(m1)).Array;
+                        var t1: @TypeOf(m1) = undefined;
+                        inline for (m1, 0..) |column, c| {
+                            comptime var r = 0;
+                            inline while (r < ar.len) : (r += 1) {
+                                t1[r][c] = column[r];
+                            }
+                        }
+                        return @"Vector * Matrix"(v2, t1);
+                    }
+                    
+                    fn @"Matrix * Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
+                        var result: @TypeOf(m1) = undefined;
+                        inline for (m1, 0..) |column, c| {
+                            result[c] = column * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+                        }
+                        return result;
+                    }
+                    
+                    fn @"Scalar * Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
+                        return @"Matrix * Scalar"(m2, s1);
+                    }
+                    
+                    fn @"Matrix + Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
+                        var result: @TypeOf(m2) = undefined;
+                        inline for (m1, 0..) |column, c| {
+                            result[c] = column + m2[c];
+                        }
+                        return result;
+                    }
+                    
+                    fn @"Matrix + Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
+                        var result: @TypeOf(m1) = undefined;
+                        inline for (m1, 0..) |column, c| {
+                            result[c] = column + @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+                        }
+                        return result;
+                    }
+                    
+                    fn @"Scalar + Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
+                        return @"Matrix + Scalar"(m2, s1);
+                    }
+                    
+                    fn @"Matrix - Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
+                        var result: @TypeOf(m2) = undefined;
+                        inline for (m1, 0..) |column, c| {
+                            result[c] = column - m2[c];
+                        }
+                        return result;
+                    }
+                    
+                    fn @"Matrix - Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
+                        var result: @TypeOf(m1) = undefined;
+                        inline for (m1, 0..) |column, c| {
+                            result[c] = column - @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+                        }
+                        return result;
+                    }
+                    
+                    fn @"Scalar - Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
+                        var result: @TypeOf(m2) = undefined;
+                        inline for (m2, 0..) |column, c| {
+                            result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) - column;
+                        }
+                        return result;
+                    }
+                    
+                    fn @"Matrix / Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
+                        var result: @TypeOf(m2) = undefined;
+                        inline for (m1, 0..) |column, c| {
+                            result[c] = column / m2[c];
+                        }
+                        return result;
+                    }
+                    
+                    fn @"Matrix / Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
+                        var result: @TypeOf(m1) = undefined;
+                        inline for (m1, 0..) |column, c| {
+                            result[c] = column / @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+                        }
+                        return result;
+                    }
+                    
+                    fn @"Scalar / Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
+                        var result: @TypeOf(m2) = undefined;
+                        inline for (m2, 0..) |column, c| {
+                            result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) / column;
+                        }
+                        return result;
+                    }
+                    
+                    fn @"Matrix == Matrix"(m1: anytype, m2: anytype) bool {
+                        inline for (m1, 0..) |column, c| {
+                            if (!@reduce(.And, column == m2[c])) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                    
+                    fn @"Matrix != Matrix"(m1: anytype, m2: anytype) bool {
+                        return !@"Matrix == Matrix"(m1, m2);
+                    }
+                    
+                    fn label(comptime T: type) []const u8 {
+                        return switch (@typeInfo(T)) {
+                            .Vector => "Vector",
+                            .Array => "Matrix",
+                            .Float, .ComptimeFloat, .Int, .ComptimeInt => "Scalar",
+                            else => @typeName(T),
+                        };
+                    }
+                };
+                const type1 = comptime calc.label(@TypeOf(p1));
+                const type2 = comptime calc.label(@TypeOf(p2));
+                const fname = type1 ++ " " ++ operator ++ " " ++ type2;
+                if (!@hasDecl(calc, fname)) {
+                    @compileError("Illegal operation: " ++ fname);
+                }
+                const f = @field(calc, fname);
+                return f(p1, p2);
+            }
         };
     }
     

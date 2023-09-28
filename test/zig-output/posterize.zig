@@ -125,17 +125,17 @@ pub const kernel = struct {
                     const tmp2 = tmp;
                     tmp = po[2] - self.dst[2];
                     const tmp3 = tmp;
-                    minDist = tmp1 * tmp + tmp2 * tmp + tmp3 * tmp;
+                    minDist = tmp1 * tmp1 + tmp2 * tmp2 + tmp3 * tmp3;
                     tmp = po[0] - color2[0];
                     const tmp4 = tmp;
                     tmp = po[1] - color2[1];
                     const tmp5 = tmp;
                     tmp = po[2] - color2[2];
                     const tmp6 = tmp;
-                    dist = tmp4 * tmp + tmp5 * tmp + tmp6 * tmp;
+                    dist = tmp4 * tmp4 + tmp5 * tmp5 + tmp6 * tmp6;
                     const tmp7 = dist;
                     if (tmp7 < minDist) {
-                        minDist = dist;
+                        minDist = tmp7;
                         self.dst = color2;
                     }
                     tmp = po[0] - color3[0];
@@ -144,10 +144,10 @@ pub const kernel = struct {
                     const tmp9 = tmp;
                     tmp = po[2] - color3[2];
                     const tmp10 = tmp;
-                    dist = tmp8 * tmp + tmp9 * tmp + tmp10 * tmp;
+                    dist = tmp8 * tmp8 + tmp9 * tmp9 + tmp10 * tmp10;
                     const tmp11 = dist;
                     if (numColors > 2 and tmp11 < minDist) {
-                        minDist = dist;
+                        minDist = tmp11;
                         self.dst = color3;
                     }
                     tmp = po[0] - color4[0];
@@ -156,10 +156,10 @@ pub const kernel = struct {
                     const tmp13 = tmp;
                     tmp = po[2] - color4[2];
                     const tmp14 = tmp;
-                    dist = tmp12 * tmp + tmp13 * tmp + tmp14 * tmp;
+                    dist = tmp12 * tmp12 + tmp13 * tmp13 + tmp14 * tmp14;
                     const tmp15 = dist;
                     if (numColors > 3 and tmp15 < minDist) {
-                        minDist = dist;
+                        minDist = tmp15;
                         self.dst = color4;
                     }
                     tmp = po[0] - color5[0];
@@ -168,10 +168,10 @@ pub const kernel = struct {
                     const tmp17 = tmp;
                     tmp = po[2] - color5[2];
                     const tmp18 = tmp;
-                    dist = tmp16 * tmp + tmp17 * tmp + tmp18 * tmp;
+                    dist = tmp16 * tmp16 + tmp17 * tmp17 + tmp18 * tmp18;
                     const tmp19 = dist;
                     if (numColors > 4 and tmp19 < minDist) {
-                        minDist = dist;
+                        minDist = tmp19;
                         self.dst = color5;
                     }
                     tmp = po[0] - color6[0];
@@ -180,10 +180,10 @@ pub const kernel = struct {
                     const tmp21 = tmp;
                     tmp = po[2] - color6[2];
                     const tmp22 = tmp;
-                    dist = tmp20 * tmp + tmp21 * tmp + tmp22 * tmp;
+                    dist = tmp20 * tmp20 + tmp21 * tmp21 + tmp22 * tmp22;
                     const tmp23 = dist;
                     if (numColors > 5 and tmp23 < minDist) {
-                        minDist = dist;
+                        minDist = tmp23;
                         self.dst = color6;
                     }
                     tmp = po[0] - color7[0];
@@ -192,10 +192,10 @@ pub const kernel = struct {
                     const tmp25 = tmp;
                     tmp = po[2] - color7[2];
                     const tmp26 = tmp;
-                    dist = tmp24 * tmp + tmp25 * tmp + tmp26 * tmp;
+                    dist = tmp24 * tmp24 + tmp25 * tmp25 + tmp26 * tmp26;
                     const tmp27 = dist;
                     if (numColors > 6 and tmp27 < minDist) {
-                        minDist = dist;
+                        minDist = tmp27;
                         self.dst = color7;
                     }
                     tmp = po[0] - color8[0];
@@ -204,7 +204,7 @@ pub const kernel = struct {
                     const tmp29 = tmp;
                     tmp = po[2] - color8[2];
                     const tmp30 = tmp;
-                    dist = tmp28 * tmp + tmp29 * tmp + tmp30 * tmp;
+                    dist = tmp28 * tmp28 + tmp29 * tmp29 + tmp30 * tmp30;
                     const tmp31 = dist;
                     if (numColors > 7 and tmp31 < minDist) {
                         self.dst = color8;

@@ -308,7 +308,8 @@ describe('Integration tests', function() {
     const name = 'frei-chen';
     await translate(name);
     const params = {
-      threshold: 0.25
+      threshold: 0.25,
+      factor: 4,
     };
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })

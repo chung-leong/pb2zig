@@ -91,8 +91,8 @@ pub const kernel = struct {
                 } else {
                     tmp = z[0] - 0.5;
                     const tmp1 = tmp;
-                    tmp1 = z[1] - 0.5 * sqr3;
-                    const tmp2 = tmp1;
+                    tmp = z[1] - 0.5 * sqr3;
+                    const tmp2 = tmp;
                     if (tmp1 * tmp1 + tmp2 * tmp2 < fill) {
                         alf = 1.0;
                     } else {
@@ -105,8 +105,8 @@ pub const kernel = struct {
                         } else {
                             tmp = z[0] - 1.0;
                             const tmp4 = tmp;
-                            tmp4 = z[1] - sqr3;
-                            const tmp5 = tmp4;
+                            tmp = z[1] - sqr3;
+                            const tmp5 = tmp;
                             if (tmp4 * tmp4 + tmp5 * tmp5 < fill) {
                                 alf = 1.0;
                                 znew += halfPixel;

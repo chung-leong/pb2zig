@@ -77,19 +77,27 @@ export class PixelBenderToZigTranslator {
     f(tree);
   }
 
-  find(classes, recursive = false) {
+  find(classes, recursive = false, includeMacros = false) {
     if (!Array.isArray(classes)) {
       classes = [ classes ];
     }
     const list = [];
-    this.walk(this.ast, (node) => {
-      if (classes.some(c => node instanceof c)) {
-        list.push(node);
-        if (!recursive) {
-          return true;
-        }
+    const asts = [ this.ast ];
+    if (includeMacros) {
+      for (const macroAST of this.macroASTs) {
+        asts.push(macroAST);
       }
-    });
+    }
+    for (const ast of asts) {
+      this.walk(ast, (node) => {
+        if (classes.some(c => node instanceof c)) {
+          list.push(node);
+          if (!recursive) {
+            return true;
+          }
+        }
+      });
+    }
     return list;
   }
 
@@ -496,9 +504,9 @@ export class PixelBenderToZigTranslator {
   addCalledFunctions() {
     // find function calls
     const inUse = {};
-    const calls = this.find(N.FunctionCall, true);
+    const calls = this.find(N.FunctionCall, true, true);
     const [ ] = imageFunctions
-    for (const { name, args } of calls) {
+    for (const { name, args, type } of calls) {
       // atan with two arguments is atan2
       const actualName = (name === 'atan' && args.length === 2) ? 'atan2' : name;
       inUse[actualName] = true;
@@ -508,11 +516,12 @@ export class PixelBenderToZigTranslator {
     const decls = this.find([
       N.FunctionDefinition,
       N.FunctionArgument,
+      N.ConstructorCall,
       N.VariableDeclaration,
       N.ConstantDeclaration,
       N.DependentDeclaration,
       N.Parameter,
-    ], true);
+    ], true, true);
     if (decls.some(v => isMatrix(v.type))) {
       inUse['MatrixCalcResult'] = true;
       inUse['matrixCalc'] = true;
@@ -554,8 +563,8 @@ export class PixelBenderToZigTranslator {
   findExternalReferences(args, statements) {
     const referenced = {};
     let variables = { ...this.variables };
-    for (const arg of args) {
-      variables[arg.name] = arg.type;
+    for (const { name, type } of args) {
+      variables[name] = { type };
     }
     const scopeStack = [];
     const cb = (node) => {
@@ -572,9 +581,11 @@ export class PixelBenderToZigTranslator {
         scopeStack.push(variables);
         variables = { ...variables };
       } else if (node instanceof N.VariableDeclaration) {
-        variables[node.name] = node.type;
+        const { name, type } = node;
+        variables[name] = type;
       } else if (node instanceof N.FunctionCall) {
-        const expanded = this.expandMacro(node.name, node.args);
+        const { name, args } = node;
+        const expanded = this.expandMacro(name, args);
         if (expanded) {
           this.walk(expanded, cb);
         }
@@ -694,8 +705,8 @@ export class PixelBenderToZigTranslator {
       this.startScope();
       this.evaluatingDependents = name == 'evaluateDependents';
       // add arguments to scope
-      for (const arg of args) {
-        this.variables[arg.name] = arg.type;
+      for (const { name, type } of args) {
+        this.variables[name] = { type };
       }
       const argList = args.map(a => `${a.name}: ${getZigType(a.type)}`);
       if (f.receiver === 'self') {
@@ -917,10 +928,12 @@ export class PixelBenderToZigTranslator {
     return value;
   }
 
-  translateVariableAccess(expression) {
-    const tmp = this.findTempVariable(expression);
-    if (tmp) {
-      return tmp;
+  translateVariableAccess(expression, typeExpected) {
+    if (typeExpected !== 'void') {
+      const tmp = this.findTempVariable(expression);
+      if (tmp) {
+        return tmp;
+      }
     }
     const { name, property, element } = expression;
     let value = this.resolveVariable(name);
@@ -1132,7 +1145,8 @@ export class PixelBenderToZigTranslator {
   }
 
   translateAssignmentOperation({ lvalue, operator, rvalue }, typeExpected) {
-    const valueL = this.translateExpression(lvalue, typeExpected);
+    // pass 'void' so that we don't get a tmp variable
+    const valueL = this.translateExpression(lvalue, 'void');
     const valueR = this.translateExpression(rvalue, valueL.type);
     if (operator.length === 2 && (valueL.isMatrix() || valueR.isMatrix())) {
       // matrix operation need to be expanded
