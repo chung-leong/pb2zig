@@ -1257,7 +1257,7 @@ class ZigExpr {
   convert(type) {
     if (this.type !== type) {
       if (type === 'bool') {
-        this.text = `(${this.text} == 0)`;
+        this.text = `(${this.text} != 0)`;
       } else if (this.type === 'bool') {
         this.text = `(if (${this.text}) 1 else 0)`;
       } else if (type === 'float') {

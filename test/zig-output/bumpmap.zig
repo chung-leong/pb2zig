@@ -99,7 +99,7 @@ pub const kernel = struct {
                 const reflection = self.input.reflection;
                 const lightcolor = self.input.lightcolor;
                 
-                if (!(on == 0)) {
+                if (!(on != 0)) {
                     self.dst = self.input.img.sampleNearest(self.outCoord());
                 } else {
                     var height: f32 = undefined;
