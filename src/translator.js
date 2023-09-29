@@ -105,7 +105,16 @@ export class PixelBenderToZigTranslator {
   }
 
   endScope() {
+    const previous = this.variables;
     const { variables, functions } = this.scopeStack.pop();
+    for (const [ name, { unused } ] of Object.entries(previous)) {
+      if (unused) {
+        if (!variables[name]) {
+          // it's only in the scope we're exiting
+          this.add(`_ = ${name};`);
+        }
+      }
+    }
     this.variables = variables;
     this.functions = functions;
   }
@@ -170,7 +179,7 @@ export class PixelBenderToZigTranslator {
     const calls = this.findFunctionCalls(expression);
     this.addExternalReferences(external);
     for (const { name, type } of argsWithTypes) {
-      this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false };
+      this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false, unused: true };
     }
     let expr;
     try {
@@ -347,7 +356,7 @@ export class PixelBenderToZigTranslator {
           }
           this.add(`const ${name} = ${expr};`);
           const { type } = expr;
-          this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false };
+          this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false, unused: false };
           count++;
         } catch (err) {
           // if the expression uses variables not defined in the global
@@ -383,7 +392,7 @@ export class PixelBenderToZigTranslator {
         previewValue,
         ...others
       } = param;
-      this.variables[name] = { name, type, scope: 'input', mutable: false };
+      this.variables[name] = { name, type, scope: 'input', mutable: false, pointer: false, unused: false };
       const typeZ = getZigType(type);
       this.add(`.${param.name} = .{`);
       this.add(`.type = ${typeZ},`);
@@ -418,7 +427,7 @@ export class PixelBenderToZigTranslator {
     for (const { name, type } of inputs) {
       const channels = getVectorWidth(type);
       this.add(`.${name} = .{ .channels = ${channels} },`);
-      this.variables[name] = { name, type, scope: 'input', mutable: false, pointer: false };
+      this.variables[name] = { name, type, scope: 'input', mutable: false, pointer: false, unused: false };
     }
     this.add('};');
   }
@@ -429,7 +438,7 @@ export class PixelBenderToZigTranslator {
     for (const { name, type } of outputs) {
       const channels = getVectorWidth(type);
       this.add(`.${name} = .{ .channels = ${channels} },`);
-      this.variables[name] = { name, type, scope: 'output', mutable: true, pointer: false };
+      this.variables[name] = { name, type, scope: 'output', mutable: true, pointer: false, unused: false };
     }
     this.add('};');
   }
@@ -484,7 +493,7 @@ export class PixelBenderToZigTranslator {
     // set the types of constants now in case array-dimensions involve constants
     const constDecls = this.find([ N.ConstantDeclaration, N.FunctionDefinition ]).filter(d => d instanceof N.ConstantDeclaration);
     for (const { name, type } of constDecls) {
-      this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false };
+      this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false, unused: false };
     }
     const decls = this.find(N.DependentDeclaration);
     if (decls.length > 0) {
@@ -582,7 +591,7 @@ export class PixelBenderToZigTranslator {
     let variables = { ...this.variables };
     for (const { name, type, direction } of args) {
       const pointer = direction.includes('out');
-      variables[name] = { name, type, scope: 'local', mutable: !pointer, pointer };
+      variables[name] = { name, type, scope: 'local', mutable: !pointer, pointer, unused: true };
     }
     const scopeStack = [];
     const cb = (node) => {
@@ -600,7 +609,7 @@ export class PixelBenderToZigTranslator {
         variables = { ...variables };
       } else if (node instanceof N.VariableDeclaration) {
         const { name, type } = node;
-        variables[name] = { name, type, scope: 'local', mutable: true, pointer: false };
+        variables[name] = { name, type, scope: 'local', mutable: true, pointer: false, unused: true };
       } else if (node instanceof N.FunctionCall) {
         const { name, args } = node;
         const expanded = this.expandMacro(name, args);
@@ -632,13 +641,13 @@ export class PixelBenderToZigTranslator {
       if (scope === 'input') {
         // shorten references to input images
         this.add(`const ${name} = self.input.${name};`);
-        this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false };
+        this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false, unused: true };
         count++;
       } else if (scope === 'kernel') {
         if (this.currentFunctionName !== 'evaluateDependents') {
           // place value in a const or it cannot be unintentionally changed
           this.add(`const ${name} = self.${name};`);
-          this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false };
+          this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false, unused: true };
           count++;
         } else {
           // resolveVariable() should return self.[name] so the variable can be modified
@@ -733,7 +742,7 @@ export class PixelBenderToZigTranslator {
       // add arguments to scope
       for (const { name, type, direction } of args) {
         const pointer = direction.includes('out');
-        this.variables[name] = { name, type, scope: 'local', mutable: !pointer, pointer };
+        this.variables[name] = { name, type, scope: 'local', mutable: !pointer, pointer, unused: true };
       }
       const argList = args.map((a) => {
         let type = getZigType(a.type);
@@ -811,13 +820,13 @@ export class PixelBenderToZigTranslator {
   addVariableDeclaration({ type, name, initializer }) {
     const valueR = (initializer) ? this.translateExpression(initializer, type) : 'undefined';
     this.add(`var ${name}: ${getZigType(type)} = ${valueR};`);
-    this.variables[name] = { name, type, scope: 'local', mutable: true, pointer: false };
+    this.variables[name] = { name, type, scope: 'local', mutable: true, pointer: false, unused: true };
   }
 
   addConstantDeclaration({ type, name, initializer }) {
     const valueR = this.translateExpression(initializer, type);
     this.add(`const ${name}: ${getZigType(type)} = ${valueR};`);
-    this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false };
+    this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false, unused: false };
   }
 
   addDependentDeclaration({ type, name, width }) {
@@ -828,7 +837,7 @@ export class PixelBenderToZigTranslator {
       type = `${type}[]`;
     }
     this.add(`${name}: ${typeZ} = undefined,`)
-    this.variables[name] = { name, type, scope: 'kernel', mutable: true, pointer: false };
+    this.variables[name] = { name, type, scope: 'kernel', mutable: true, pointer: false, unused: false };
   }
 
   addExpressionStatement({ expression }) {
@@ -956,12 +965,15 @@ export class PixelBenderToZigTranslator {
     }
     const { type, scope, pointer } = variable;
     let code;
-    if (scope === 'local' || scope === 'global') {
+    if (scope === 'global') {
+      code = name;
+    } if (scope === 'local') {
       if (pointer) {
         code = `${name}.*`;
       } else {
         code = name;
       }
+      variable.unused = false;
     } else if (scope === 'kernel') {
       code = `self.${name}`;
     } else if (scope === 'input') {

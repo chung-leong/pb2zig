@@ -456,13 +456,21 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'rays';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = {
+      imgSize: [ 512, 384 ],
+      center: [ 256, 192 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate rays2.pbk', async function() {
     this.timeout(60000);
     const name = 'rays2';
     await translate(name);
-    await apply(name, { src: 'malgorzata-socha.png' });
+    const params = {
+      imgSize: [ 512, 384 ],
+      center: [ 256, 192 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate raytracer.pbk', async function() {
     this.timeout(60000);

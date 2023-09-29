@@ -195,7 +195,7 @@ pub const kernel = struct {
                 var uv: @Vector(2, f32) = undefined;
                 while (rayShots > 0) {
                     dir = normalize(dir);
-                    self.shootRay(origin, dir, &hit, &hitPoint, &t, &sphereNum);
+                    _ = self.shootRay(origin, dir, &hit, &hitPoint, &t, &sphereNum);
                     if (hit != 0) {
                         spherePos = @Vector(3, f32){ sphereArray[@intCast(sphereNum)], sphereArray[@intCast(sphereNum + 1)], sphereArray[@intCast(sphereNum + 2)] };
                         sphereRadius = sphereArray[@intCast(sphereNum + 3)];
@@ -206,7 +206,7 @@ pub const kernel = struct {
                         lightVector = lightPos - hitPoint;
                         lightVectorLen = length(lightVector);
                         l = lightVector / @as(@Vector(3, f32), @splat(lightVectorLen));
-                        self.shootRay(hitPoint, l, &shadowTest, &temp, &t, &temp2);
+                        _ = self.shootRay(hitPoint, l, &shadowTest, &temp, &t, &temp2);
                         if (shadowTest == 0) {
                             shadowTest = 1;
                         } else {

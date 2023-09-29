@@ -79,6 +79,7 @@ pub const kernel = struct {
                 self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(w)), @Vector(4, i32){ -1, -2, -3, 3 });
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+                _ = pi;
             }
             
             // built-in Pixel Bender functions
@@ -358,12 +359,15 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     inline for (param_fields, 0..) |field, index| {
         const param = @field(Kernel.parameters, field.name);
         const default_value: ?*const anyopaque = get_def: {
-            if (@hasField(@TypeOf(param), "defaultValue")) {
-                const value: param.type = param.defaultValue;
-                break :get_def @ptrCast(&value);
-            } else {
-                break :get_def null;
-            }
+            const value: param.type = if (@hasField(@TypeOf(param), "defaultValue"))
+            param.defaultValue
+            else switch (@typeInfo(param.type)) {
+                .Int, .Float => 0,
+                .Bool => false,
+                .Vector => @splat(0),
+                else => @compileError("Unrecognized parameter type: " ++ @typeName(param.type)),
+            };
+            break :get_def @ptrCast(&value);
         };
         struct_fields[index] = .{
             .name = field.name,

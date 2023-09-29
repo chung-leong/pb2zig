@@ -65,7 +65,7 @@ kernel SmartNormalMap <
 
         float3 normal=float3(dx*(invert_red)*(amount/(1.0+float(soft_sobel))), -(dy*invert_green)*(amount/(1.0+float(soft_sobel))), 1.0);
 
-        //normalize(normal);
+        normalize(normal);
         normal=((normal + 1.0)/2.0 );
 
         dst=float4(normal.r, normal.g, normal.b, 1.0);

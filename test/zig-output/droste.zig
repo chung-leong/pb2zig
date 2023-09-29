@@ -364,7 +364,7 @@ pub const kernel = struct {
                     z = complexMult(z, power(ratio, levelStart));
                 }
                 iteration = 0;
-                self.render(z, &alphaRemaining, &sign, &iteration, &colorSoFar);
+                _ = self.render(z, &alphaRemaining, &sign, &iteration, &colorSoFar);
                 if (sign < 0) {
                     ratio = complexMult(@Vector(2, f32){ r2 / r1, 0.0 }, complexExp(complexMult(angle, I)));
                 }
@@ -375,9 +375,12 @@ pub const kernel = struct {
                 var maxIteration: i32 = levels + levelStart - 1;
                 while (sign != 0 and iteration < maxIteration) {
                     z = complexMult(z, ratio);
-                    self.render(z, &alphaRemaining, &sign, &iteration, &colorSoFar);
+                    _ = self.render(z, &alphaRemaining, &sign, &iteration, &colorSoFar);
                 }
                 return colorSoFar;
+                _ = d;
+                _ = polar;
+                _ = radius;
             }
             
             pub fn evaluatePixel(self: *@This()) void {

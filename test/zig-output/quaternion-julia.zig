@@ -211,7 +211,7 @@ pub const kernel = struct {
                 while (n < 150) {
                     var z: @Vector(4, f32) = @Vector(4, f32){ rO.*[0], rO.*[1], rO.*[2], 0.0 };
                     var zp: @Vector(4, f32) = @Vector(4, f32){ 1.0, 0.0, 0.0, 0.0 };
-                    iterateIntersect(&z, &zp, c, maxIterations);
+                    _ = iterateIntersect(&z, &zp, c, maxIterations);
                     var normZ: f32 = length(z);
                     dist[0] = 0.5 * normZ * log(normZ) / length(zp);
                     rO.* += rD.* * @as(@Vector(3, f32), @splat(dist[0]));

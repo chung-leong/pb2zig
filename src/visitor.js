@@ -20,9 +20,6 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   create(c, props) {
     const obj = new c;
     for (const [ name, value ] of Object.entries(props)) {
-      if (!obj.hasOwnProperty(name)) {
-        console.warn(`${c.name} does not have the property "${name}"`);
-      }
       obj[name] = value;
     }
     return obj;

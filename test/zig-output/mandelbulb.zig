@@ -407,6 +407,7 @@ pub const kernel = struct {
                     diffuse = colorDiffuse * @as(@Vector(3, f32), @splat(abs(NdotL))) * @as(@Vector(3, f32), @splat(rimLight));
                 }
                 return (colorAmbient * @as(@Vector(3, f32), @splat(colorAmbientIntensity))) + diffuse;
+                _ = color;
             }
             
             fn rayDirection(self: *@This(), p: @Vector(2, f32)) @Vector(3, f32) {
@@ -1144,12 +1145,15 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     inline for (param_fields, 0..) |field, index| {
         const param = @field(Kernel.parameters, field.name);
         const default_value: ?*const anyopaque = get_def: {
-            if (@hasField(@TypeOf(param), "defaultValue")) {
-                const value: param.type = param.defaultValue;
-                break :get_def @ptrCast(&value);
-            } else {
-                break :get_def null;
-            }
+            const value: param.type = if (@hasField(@TypeOf(param), "defaultValue"))
+            param.defaultValue
+            else switch (@typeInfo(param.type)) {
+                .Int, .Float => 0,
+                .Bool => false,
+                .Vector => @splat(0),
+                else => @compileError("Unrecognized parameter type: " ++ @typeName(param.type)),
+            };
+            break :get_def @ptrCast(&value);
         };
         struct_fields[index] = .{
             .name = field.name,

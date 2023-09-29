@@ -79,6 +79,8 @@ pub const kernel = struct {
                 self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(w)), @Vector(4, i32){ -1, -2, -3, 3 });
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+                _ = pi;
+                _ = a;
             }
             
             // built-in Pixel Bender functions

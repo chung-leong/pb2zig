@@ -79,6 +79,7 @@ pub const kernel = struct {
                     dy += src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] - 1.0 })[0] / 1.0;
                 }
                 var normal: @Vector(3, f32) = @Vector(3, f32){ dx * invert_red * (amount / (1.0 + @as(f32, @floatFromInt(soft_sobel)))), -(dy * invert_green) * (amount / (1.0 + @as(f32, @floatFromInt(soft_sobel)))), 1.0 };
+                _ = normalize(normal);
                 normal = ((normal + @as(@Vector(3, f32), @splat(1.0))) / @as(@Vector(3, f32), @splat(2.0)));
                 self.dst = @Vector(4, f32){ normal[0], normal[1], normal[2], 1.0 };
                 
@@ -90,6 +91,13 @@ pub const kernel = struct {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
+            fn normalize(v: anytype) @TypeOf(v) {
+                return switch (@typeInfo(@TypeOf(v))) {
+                    .Vector => v / @as(@TypeOf(v), @splat(@sqrt(@reduce(.Add, v * v)))),
+                    else => if (v > 0) 1 else -1,
+                };
             }
         };
     }
@@ -322,12 +330,15 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     inline for (param_fields, 0..) |field, index| {
         const param = @field(Kernel.parameters, field.name);
         const default_value: ?*const anyopaque = get_def: {
-            if (@hasField(@TypeOf(param), "defaultValue")) {
-                const value: param.type = param.defaultValue;
-                break :get_def @ptrCast(&value);
-            } else {
-                break :get_def null;
-            }
+            const value: param.type = if (@hasField(@TypeOf(param), "defaultValue"))
+            param.defaultValue
+            else switch (@typeInfo(param.type)) {
+                .Int, .Float => 0,
+                .Bool => false,
+                .Vector => @splat(0),
+                else => @compileError("Unrecognized parameter type: " ++ @typeName(param.type)),
+            };
+            break :get_def @ptrCast(&value);
         };
         struct_fields[index] = .{
             .name = field.name,

@@ -61,6 +61,7 @@ pub const kernel = struct {
                 self.dst = @Vector(4, f32){ r, g, b, rgba[3] };
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+                _ = a;
             }
             
             // built-in Pixel Bender functions
