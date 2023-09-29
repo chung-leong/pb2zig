@@ -65,6 +65,7 @@ pub const kernel = struct {
                 const tick = self.input.tick;
                 const image_h = self.input.image_h;
                 const spread = self.input.spread;
+                const src = self.input.src;
                 
                 var pos: @Vector(2, f32) = self.outCoord() - center;
                 var d: f32 = tick * (image_h + spread) - (image_h / 2.0);
@@ -79,13 +80,13 @@ pub const kernel = struct {
                             self.dst[3] = 0.0;
                         } else {
                             var ny: f32 = pos[1] / sin(angle);
-                            self.dst = self.input.src.sampleLinear(center + @Vector(2, f32){ pos[0], ny });
+                            self.dst = src.sampleLinear(center + @Vector(2, f32){ pos[0], ny });
                         }
                     } else {
-                        self.dst = self.input.src.sampleLinear(self.outCoord());
+                        self.dst = src.sampleLinear(self.outCoord());
                     }
                 } else {
-                    self.dst = self.input.src.sampleLinear(self.outCoord());
+                    self.dst = src.sampleLinear(self.outCoord());
                 }
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);

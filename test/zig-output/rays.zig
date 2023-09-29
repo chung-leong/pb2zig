@@ -47,6 +47,7 @@ pub const kernel = struct {
                 const center = self.input.center;
                 const imgSize = self.input.imgSize;
                 const offset = self.input.offset;
+                const src = self.input.src;
                 
                 var pos: @Vector(2, f32) = (self.outCoord() - center) / imgSize;
                 var pi: f32 = 3.141592653589793;
@@ -74,7 +75,7 @@ pub const kernel = struct {
                 if (v > imgSize[1]) {
                     v -= imgSize[1] * floor(v / imgSize[1]);
                 }
-                self.dst = self.input.src.sampleNearest(@Vector(2, f32){ u, v });
+                self.dst = src.sampleNearest(@Vector(2, f32){ u, v });
                 self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(w)), @Vector(4, i32){ -1, -2, -3, 3 });
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);

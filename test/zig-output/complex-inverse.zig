@@ -109,6 +109,7 @@ pub const kernel = struct {
                 const distort = self.input.distort;
                 const fill = self.input.fill;
                 const imagesize = self.input.imagesize;
+                const src = self.input.src;
                 const bgcolor = self.input.bgcolor;
                 
                 var po: @Vector(2, f32) = (self.outCoord() - center) / @as(@Vector(2, f32), @splat(scale));
@@ -117,7 +118,7 @@ pub const kernel = struct {
                 po2 = complexMult(po2, po3);
                 po3 = po - c;
                 po2 = complexMult(po2, po3);
-                po = @Vector(2, f32){ d[0] * po2[0] + d[1] * po2[1], -d[0] * po2[1] + d[1] * po2[0] } / @as(@Vector(2, f32), @splat((po2[0] * po2[0] + po2[1] * po2[1] + focus)));
+                po = self.complexDiv(d, po2);
                 var tmp: f32 = undefined;
                 var alf: f32 = 0.0;
                 po = (distort * po);
@@ -165,7 +166,7 @@ pub const kernel = struct {
                     }
                 }
                 po = mod(po, imagesize);
-                self.dst = self.input.src.sampleNearest(po);
+                self.dst = src.sampleNearest(po);
                 self.dst = mix(bgcolor, self.dst, alf);
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
@@ -174,6 +175,11 @@ pub const kernel = struct {
             // macros
             fn complexMult(a: @Vector(2, f32), b: @Vector(2, f32)) @Vector(2, f32) {
                 return @Vector(2, f32){ a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0] };
+            }
+            
+            fn complexDiv(self: *@This(), a: @Vector(2, f32), b: @Vector(2, f32)) @Vector(2, f32) {
+                const focus = self.input.focus;
+                return @Vector(2, f32){ a[0] * b[0] + a[1] * b[1], -a[0] * b[1] + a[1] * b[0] } / @as(@Vector(2, f32), @splat((b[0] * b[0] + b[1] * b[1] + focus)));
             }
             
             // built-in Pixel Bender functions

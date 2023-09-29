@@ -29,26 +29,28 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const src = self.input.src;
+                
                 var denominator: f32 = 0.0;
                 var colorAccumulator: @Vector(4, f32) = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
-                var singlePixel: @Vector(2, f32) = self.input.src.pixelSize();
-                colorAccumulator += self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ -singlePixel[0], -singlePixel[1] });
+                var singlePixel: @Vector(2, f32) = src.pixelSize();
+                colorAccumulator += src.sampleNearest(self.outCoord() + @Vector(2, f32){ -singlePixel[0], -singlePixel[1] });
                 denominator += 1.0;
-                colorAccumulator += self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ -singlePixel[0], 0.0 });
+                colorAccumulator += src.sampleNearest(self.outCoord() + @Vector(2, f32){ -singlePixel[0], 0.0 });
                 denominator += 1.0;
-                colorAccumulator += self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ -singlePixel[0], singlePixel[1] });
+                colorAccumulator += src.sampleNearest(self.outCoord() + @Vector(2, f32){ -singlePixel[0], singlePixel[1] });
                 denominator += 1.0;
-                colorAccumulator += self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ 0.0, -singlePixel[1] });
+                colorAccumulator += src.sampleNearest(self.outCoord() + @Vector(2, f32){ 0.0, -singlePixel[1] });
                 denominator += 1.0;
-                colorAccumulator += self.input.src.sampleNearest(self.outCoord());
+                colorAccumulator += src.sampleNearest(self.outCoord());
                 denominator += 1.0;
-                colorAccumulator += self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ 0.0, singlePixel[1] });
+                colorAccumulator += src.sampleNearest(self.outCoord() + @Vector(2, f32){ 0.0, singlePixel[1] });
                 denominator += 1.0;
-                colorAccumulator += self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ singlePixel[0], -singlePixel[1] });
+                colorAccumulator += src.sampleNearest(self.outCoord() + @Vector(2, f32){ singlePixel[0], -singlePixel[1] });
                 denominator += 1.0;
-                colorAccumulator += self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ singlePixel[0], 0.0 });
+                colorAccumulator += src.sampleNearest(self.outCoord() + @Vector(2, f32){ singlePixel[0], 0.0 });
                 denominator += 1.0;
-                colorAccumulator += self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ singlePixel[0], singlePixel[1] });
+                colorAccumulator += src.sampleNearest(self.outCoord() + @Vector(2, f32){ singlePixel[0], singlePixel[1] });
                 denominator += 1.0;
                 self.dst = colorAccumulator / @as(@Vector(4, f32), @splat(denominator));
                 

@@ -124,7 +124,7 @@ pub const kernel = struct {
                 }
             }
             
-            fn shootRay(self: *@This(), origin: @Vector(3, f32), dir: @Vector(3, f32), hit: i32, pos: @Vector(3, f32), t: f32, sphereNum: i32) void {
+            fn shootRay(self: *@This(), origin: @Vector(3, f32), dir: @Vector(3, f32), hit: *const i32, pos: *const @Vector(3, f32), t: *const f32, sphereNum: *const i32) void {
                 const sphereArray = self.sphereArray;
                 
                 var curT: f32 = undefined;
@@ -134,8 +134,8 @@ pub const kernel = struct {
                 var spherePos: @Vector(3, f32) = undefined;
                 var sphereToOrigin: @Vector(3, f32) = undefined;
                 var sphereRadius: f32 = undefined;
-                hit = 0;
-                t = 99999.0;
+                hit.* = 0;
+                t.* = 99999.0;
                 {
                     var i: i32 = 0;
                     while (i < NUM_SPHERES * SPHERE_PARAMETER_COUNT) {
@@ -147,16 +147,16 @@ pub const kernel = struct {
                         disc = B * B - C;
                         if (disc > 0.0) {
                             curT = -B - sqrt(disc);
-                            if (curT > 0.0 and curT < t) {
-                                sphereNum = i;
-                                t = curT;
-                                hit = 1;
+                            if (curT > 0.0 and curT < t.*) {
+                                sphereNum.* = i;
+                                t.* = curT;
+                                hit.* = 1;
                             }
                         }
                         i += SPHERE_PARAMETER_COUNT;
                     }
                 }
-                pos = origin + dir * @as(@Vector(3, f32), @splat(t));
+                pos.* = origin + dir * @as(@Vector(3, f32), @splat(t.*));
             }
             
             pub fn evaluatePixel(self: *@This()) void {

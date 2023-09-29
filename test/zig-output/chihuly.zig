@@ -59,6 +59,7 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.outputPixel = @splat(0);
+                const inputImage = self.input.inputImage;
                 const line = self.input.line;
                 const height = self.input.height;
                 const stemScale = self.input.stemScale;
@@ -66,7 +67,7 @@ pub const kernel = struct {
                 const animationIndex = self.input.animationIndex;
                 
                 var coord: @Vector(2, f32) = self.outCoord();
-                var px: @Vector(4, f32) = self.input.inputImage.sampleNearest(coord);
+                var px: @Vector(4, f32) = inputImage.sampleNearest(coord);
                 var blankPx: @Vector(4, f32) = @as(@Vector(4, f32), @splat(0.0));
                 if (coord[1] < line) {
                     self.outputPixel = px;
@@ -85,7 +86,7 @@ pub const kernel = struct {
                         var taperPx: f32 = stemWidth * taperRatio;
                         var cutRatio: f32 = mod(shift + coord[0] + pxOffset + taperPx / 2.0, stemWidth) / stemWidth;
                         var ratioPerPixel: f32 = 1.0 / stemWidth;
-                        var tpx1: @Vector(4, f32) = self.input.inputImage.sampleNearest(coord + @Vector(2, f32){ pxOffset, 0.0 });
+                        var tpx1: @Vector(4, f32) = inputImage.sampleNearest(coord + @Vector(2, f32){ pxOffset, 0.0 });
                         tpx1 = @as(@Vector(4, f32), if (cutRatio < taperRatio) tpx1 else blankPx);
                         stemWidth = 35.0 * stemScale;
                         stemHeight = 1.0 * height;
@@ -100,7 +101,7 @@ pub const kernel = struct {
                         taperPx = stemWidth * taperRatio;
                         cutRatio = mod(shift + coord[0] + pxOffset + taperPx / 2.0, stemWidth) / stemWidth;
                         ratioPerPixel = 1.0 / stemWidth;
-                        var tpx2: @Vector(4, f32) = self.input.inputImage.sampleNearest(coord + @Vector(2, f32){ pxOffset, 0.0 });
+                        var tpx2: @Vector(4, f32) = inputImage.sampleNearest(coord + @Vector(2, f32){ pxOffset, 0.0 });
                         tpx2 = @as(@Vector(4, f32), if (cutRatio < taperRatio) tpx2 else blankPx);
                         stemWidth = 25.0 * stemScale;
                         stemHeight = 0.5 * height;
@@ -115,7 +116,7 @@ pub const kernel = struct {
                         taperPx = stemWidth * taperRatio;
                         cutRatio = mod(shift + coord[0] + pxOffset + taperPx / 2.0, stemWidth) / stemWidth;
                         ratioPerPixel = 1.0 / stemWidth;
-                        var tpx3: @Vector(4, f32) = self.input.inputImage.sampleNearest(coord + @Vector(2, f32){ pxOffset, 0.0 });
+                        var tpx3: @Vector(4, f32) = inputImage.sampleNearest(coord + @Vector(2, f32){ pxOffset, 0.0 });
                         tpx3 = @as(@Vector(4, f32), if (cutRatio < taperRatio) tpx3 else blankPx);
                         self.outputPixel = (tpx1 + tpx2 + tpx3) / @as(@Vector(4, f32), @splat((tpx1[3] + tpx2[3] + tpx3[3] + 0.000001)));
                     } else {

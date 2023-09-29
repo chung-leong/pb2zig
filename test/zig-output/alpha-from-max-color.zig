@@ -31,7 +31,9 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                self.dst = self.input.src.sampleNearest(self.outCoord());
+                const src = self.input.src;
+                
+                self.dst = src.sampleNearest(self.outCoord());
                 self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
                 self.dst[3] = max(max(self.dst[0], self.dst[1]), self.dst[2]);
                 self.dst[3] *= 254.0 / 255.0;

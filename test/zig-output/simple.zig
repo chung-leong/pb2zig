@@ -46,9 +46,10 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const src = self.input.src;
                 const transform = self.input.transform;
                 
-                self.dst = self.input.src.sampleNearest(self.outCoord());
+                self.dst = src.sampleNearest(self.outCoord());
                 self.dst = matrixCalc("*", transform, self.dst);
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);

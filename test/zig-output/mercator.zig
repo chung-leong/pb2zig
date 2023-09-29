@@ -43,11 +43,12 @@ pub const kernel = struct {
                 self.dst = @splat(0);
                 const center = self.input.center;
                 const width = self.input.width;
+                const src = self.input.src;
                 
                 var pi: f32 = 3.14159265358979;
                 var pos: @Vector(2, f32) = self.outCoord();
                 var dest: @Vector(2, f32) = @Vector(2, f32){ center - (center - pos[0]) * sin((pi / width) * pos[1]), pos[1] };
-                self.dst = self.input.src.sampleNearest(dest);
+                self.dst = src.sampleNearest(dest);
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }

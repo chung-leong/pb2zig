@@ -118,6 +118,7 @@ pub const kernel = struct {
                 const orientation = self.input.orientation;
                 const size = self.input.size;
                 const colorX = self.input.colorX;
+                const src = self.input.src;
                 const imagesize = self.input.imagesize;
                 const colorY = self.input.colorY;
                 const colorZ = self.input.colorZ;
@@ -142,14 +143,14 @@ pub const kernel = struct {
                         t = (floor(v + t) - v) / viewdir;
                         if (t[0] < t[1] and t[0] < t[2]) {
                             v += @as(@Vector(3, f32), @splat(t[0])) * viewdir;
-                            dst2 = colorX * self.input.src.sampleLinear(fract(@shuffle(f32, v, undefined, @Vector(2, i32){ 1, 2 })) * imagesize);
+                            dst2 = colorX * src.sampleLinear(fract(@shuffle(f32, v, undefined, @Vector(2, i32){ 1, 2 })) * imagesize);
                         } else {
                             if (t[1] < t[0] and t[1] < t[2]) {
                                 v += @as(@Vector(3, f32), @splat(t[1])) * viewdir;
-                                dst2 = colorY * self.input.src.sampleLinear(fract(@shuffle(f32, v, undefined, @Vector(2, i32){ 0, 2 })) * imagesize);
+                                dst2 = colorY * src.sampleLinear(fract(@shuffle(f32, v, undefined, @Vector(2, i32){ 0, 2 })) * imagesize);
                             } else {
                                 v += @as(@Vector(3, f32), @splat(t[2])) * viewdir;
-                                dst2 = colorZ * self.input.src.sampleLinear(abs(fract(@shuffle(f32, v, undefined, @Vector(2, i32){ 0, 1 }))) * imagesize);
+                                dst2 = colorZ * src.sampleLinear(abs(fract(@shuffle(f32, v, undefined, @Vector(2, i32){ 0, 1 }))) * imagesize);
                             }
                         }
                         dst2 = @shuffle(f32, dst2, mix(@shuffle(f32, bgcolor, undefined, @Vector(3, i32){ 0, 1, 2 }), @shuffle(f32, dst2, undefined, @Vector(3, i32){ 0, 1, 2 }), currentAlpha), @Vector(4, i32){ -1, -2, -3, 3 });

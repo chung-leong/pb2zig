@@ -97,6 +97,7 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const src = self.input.src;
                 const blur = self.input.blur;
                 const color1 = self.input.color1;
                 const color2 = self.input.color2;
@@ -111,9 +112,9 @@ pub const kernel = struct {
                 var dist: f32 = undefined;
                 var minDist: f32 = undefined;
                 var tmp: f32 = undefined;
-                var po: @Vector(4, f32) = self.input.src.sampleLinear(self.outCoord());
-                po += self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ blur, 0.0 }) + self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ -blur, 0.0 });
-                po += self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, blur }) + self.input.src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, -blur });
+                var po: @Vector(4, f32) = src.sampleLinear(self.outCoord());
+                po += src.sampleLinear(self.outCoord() + @Vector(2, f32){ blur, 0.0 }) + src.sampleLinear(self.outCoord() + @Vector(2, f32){ -blur, 0.0 });
+                po += src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, blur }) + src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, -blur });
                 if (po[3] < 0.01) {
                     self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 } else {

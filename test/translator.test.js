@@ -243,6 +243,16 @@ describe('Translator tests', function() {
       expect(result).to.contain('if (hello < 10) continue else break;');
     })
   })
+  describe('Function definition', function() {
+    it('should transfer input image into the scope of function', function() {
+      const pbkCode = addPBKWrapper(`
+        float4 p = sampleLinear(src, float2(1, 2));
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('const src = self.input.src;')
+      expect(result).to.contain(' = src.sampleLinear(@Vector(2, f32){ 1.0, 2.0 })');
+    })
+  })
   describe('Function calls', function() {
     it('should import built-in functions', function() {
       const pbkCode = addPBKWrapper(`
@@ -259,6 +269,13 @@ describe('Translator tests', function() {
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('var c: f32 = min(@as(f32, 1.0), 2.0);');
+    })
+    it('should correctly translate pixelSize(dst)', function() {
+      const pbkCode = addPBKWrapper(`
+        float2 s = pixelSize(dst);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('self.output.dst.pixelSize()');
     })
   })
   describe('Macros', function() {
@@ -316,7 +333,6 @@ describe('Translator tests', function() {
         dependent float number;
         dependent float array[COUNT1*COUNT2];
 
-
         void
         evaluateDependents()
         {
@@ -331,6 +347,7 @@ describe('Translator tests', function() {
       }
       `;
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      console.log(result);
       expect(result).to.contain('array: [COUNT1 * COUNT2]f32 = undefined,');
       expect(result).to.contain('number: f32 = undefined,');
       expect(result).to.contain('const array = self.array;');

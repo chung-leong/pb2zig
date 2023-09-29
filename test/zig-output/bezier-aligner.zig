@@ -109,6 +109,7 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const background = self.input.background;
                 const startpoint = self.input.startpoint;
                 const control1 = self.input.control1;
                 const control2 = self.input.control2;
@@ -119,9 +120,10 @@ pub const kernel = struct {
                 const scale = self.input.scale;
                 const offset = self.input.offset;
                 const imagewidth = self.input.imagewidth;
+                const texture = self.input.texture;
                 
                 var p: @Vector(2, f32) = self.outCoord();
-                self.dst = self.input.background.sampleLinear(p);
+                self.dst = background.sampleLinear(p);
                 var fx: @Vector(4, f32) = @Vector(4, f32){ startpoint[0], 3.0 * (control1[0] - startpoint[0]), 3.0 * (startpoint[0] - 2.0 * control1[0] + control2[0]), endpoint[0] - startpoint[0] + 3.0 * (control1[0] - control2[0]) };
                 var fy: @Vector(4, f32) = @Vector(4, f32){ startpoint[1], 3.0 * (control1[1] - startpoint[1]), 3.0 * (startpoint[1] - 2.0 * control1[1] + control2[1]), endpoint[1] - startpoint[1] + 3.0 * (control1[1] - control2[1]) };
                 var dfx: @Vector(4, f32) = derivative(fx);
@@ -178,7 +180,7 @@ pub const kernel = struct {
                     if (imagewidth > 0.1) {
                         p2[0] = mod(p2[0], imagewidth);
                     }
-                    var dst2: @Vector(4, f32) = self.input.texture.sampleLinear(p2);
+                    var dst2: @Vector(4, f32) = texture.sampleLinear(p2);
                     self.dst += @as(@Vector(4, f32), @splat(dst2[3])) * (dst2 - self.dst);
                 }
                 

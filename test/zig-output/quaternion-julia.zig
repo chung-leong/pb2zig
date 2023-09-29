@@ -155,13 +155,13 @@ pub const kernel = struct {
                 return r;
             }
             
-            fn iterateIntersect(q: @Vector(4, f32), qp: @Vector(4, f32), c: @Vector(4, f32), maxIterations: i32) void {
+            fn iterateIntersect(q: *const @Vector(4, f32), qp: *const @Vector(4, f32), c: @Vector(4, f32), maxIterations: i32) void {
                 {
                     var i: i32 = 0;
                     while (i < maxIterations) {
-                        qp = @as(@Vector(4, f32), @splat(2.0)) * quatMult(q, qp);
-                        q = quatSq(q) + c;
-                        if (dot(q, q) > ESCAPE_THRESHOLD) {
+                        qp.* = @as(@Vector(4, f32), @splat(2.0)) * quatMult(q.*, qp.*);
+                        q.* = quatSq(q.*) + c;
+                        if (dot(q.*, q.*) > ESCAPE_THRESHOLD) {
                             break;
                         }
                         i += 1;
@@ -202,20 +202,20 @@ pub const kernel = struct {
                 return N;
             }
             
-            fn intersectQJulia(self: *@This(), rO: @Vector(3, f32), rD: @Vector(3, f32), c: @Vector(4, f32)) @Vector(2, f32) {
+            fn intersectQJulia(self: *@This(), rO: *const @Vector(3, f32), rD: *const @Vector(3, f32), c: @Vector(4, f32)) @Vector(2, f32) {
                 const maxIterations = self.input.maxIterations;
                 const ambientOcclusion = self.input.ambientOcclusion;
                 
                 var dist: @Vector(2, f32) = undefined;
                 var n: i32 = 0;
                 while (n < 150) {
-                    var z: @Vector(4, f32) = @Vector(4, f32){ rO[0], rO[1], rO[2], 0.0 };
+                    var z: @Vector(4, f32) = @Vector(4, f32){ rO.*[0], rO.*[1], rO.*[2], 0.0 };
                     var zp: @Vector(4, f32) = @Vector(4, f32){ 1.0, 0.0, 0.0, 0.0 };
                     iterateIntersect(z, zp, c, maxIterations);
                     var normZ: f32 = length(z);
                     dist[0] = 0.5 * normZ * log(normZ) / length(zp);
-                    rO += rD * @as(@Vector(3, f32), @splat(dist[0]));
-                    if (dist[0] < EPSILON or dot(rO, rO) > BOUNDING_RADIUS_2) {
+                    rO.* += rD.* * @as(@Vector(3, f32), @splat(dist[0]));
+                    if (dist[0] < EPSILON or dot(rO.*, rO.*) > BOUNDING_RADIUS_2) {
                         break;
                     }
                     n += 1;

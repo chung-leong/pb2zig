@@ -36,11 +36,12 @@ pub const kernel = struct {
             pub fn evaluatePixel(self: *@This()) void {
                 self.outputPixel = @splat(0);
                 const dimension = self.input.dimension;
+                const inputImage = self.input.inputImage;
                 
                 var dimAsFloat: f32 = @as(f32, @floatFromInt(dimension));
                 var sc: @Vector(2, f32) = floor(self.outCoord() / @Vector(2, f32){ dimAsFloat, dimAsFloat });
                 sc *= @as(@Vector(2, f32), @splat(dimAsFloat));
-                self.outputPixel = self.input.inputImage.sampleNearest(sc);
+                self.outputPixel = inputImage.sampleNearest(sc);
                 
                 self.output.outputPixel.setPixel(self.outputCoord[0], self.outputCoord[1], self.outputPixel);
             }

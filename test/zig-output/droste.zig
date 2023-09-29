@@ -254,36 +254,37 @@ pub const kernel = struct {
                 self.sampleContribution = 1.0 / pow(@as(f32, @floatFromInt(antialiasing)), 2.0);
             }
             
-            fn render(self: *@This(), z: @Vector(2, f32), alphaRemaining: f32, sign: i32, iteration: i32, colorSoFar: @Vector(4, f32)) void {
+            fn render(self: *@This(), z: @Vector(2, f32), alphaRemaining: *const f32, sign: *const i32, iteration: *const i32, colorSoFar: *const @Vector(4, f32)) void {
                 const minDimension = self.minDimension;
                 const _shift = self._shift;
                 const tileBasedOnTransparency = self.tileBasedOnTransparency;
+                const src = self.input.src;
                 const transparentOutside = self.input.transparentOutside;
                 const r1 = self.r1;
                 const r2 = self.r2;
                 
                 var d: @Vector(2, f32) = minDimension * (z + _shift);
-                sign = 0;
-                if (tileBasedOnTransparency or iteration == 0) {
-                    var color: @Vector(4, f32) = self.input.src.sampleLinear(d);
-                    colorSoFar += color * @as(@Vector(4, f32), @splat((color[3] * alphaRemaining)));
-                    alphaRemaining *= (1.0 - colorSoFar[3]);
+                sign.* = 0;
+                if (tileBasedOnTransparency or iteration.* == 0) {
+                    var color: @Vector(4, f32) = src.sampleLinear(d);
+                    colorSoFar.* += color * @as(@Vector(4, f32), @splat((color[3] * alphaRemaining.*)));
+                    alphaRemaining.* *= (1.0 - colorSoFar.*[3]);
                 }
                 if (tileBasedOnTransparency) {
-                    if (!transparentOutside and alphaRemaining > 0.0) {
-                        sign = -1;
+                    if (!transparentOutside and alphaRemaining.* > 0.0) {
+                        sign.* = -1;
                     }
-                    if (transparentOutside and alphaRemaining > 0.0) {
-                        sign = 1;
+                    if (transparentOutside and alphaRemaining.* > 0.0) {
+                        sign.* = 1;
                     }
                 } else {
-                    if (iteration > 0) {
-                        colorSoFar = self.input.src.sampleLinear(d);
+                    if (iteration.* > 0) {
+                        colorSoFar.* = src.sampleLinear(d);
                     }
                     var radius: f32 = length(z);
-                    sign = @as(i32, if ((radius < r1)) -1 else (@as(i32, if (radius > r2) 1 else 0)));
+                    sign.* = @as(i32, if ((radius < r1)) -1 else (@as(i32, if (radius > r2) 1 else 0)));
                 }
-                iteration += 1;
+                iteration.* += 1;
             }
             
             fn renderPoint(self: *@This(), s: @Vector(2, f32)) @Vector(4, f32) {
@@ -323,7 +324,7 @@ pub const kernel = struct {
                 var colorSoFar: @Vector(4, f32) = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 z = @Vector(2, f32){ (xBounds[0] + (xBounds[1] - xBounds[0]) * ((s[0] - _center[0]) + w / 2.0) / w), (yBounds[0] + (yBounds[1] - yBounds[0]) * ((s[1] - _center[1]) + h / 2.0) / h) };
                 if (twist) {
-                    z = xyMiddle + complexMult(complexDivision((z - xyMiddle), _zoom), complexExp(complexMult(-I, _rotate)));
+                    z = xyMiddle + complexMult(self.complexDivision((z - xyMiddle), _zoom), complexExp(complexMult(-I, _rotate)));
                 }
                 if (hyperDroste) {
                     z = complexSin(z);
@@ -336,11 +337,11 @@ pub const kernel = struct {
                     theta = PI180 * rotatePolar;
                     div = (1.0 + pow(z[0], 2.0) + pow(z[1], 2.0) + ((1.0 - pow(z[0], 2.0) - pow(z[1], 2.0)) * cos(theta)) - (2.0 * z[0] * sin(theta))) / 2.0;
                     z[0] = z[0] * cos(theta) + ((1.0 - pow(z[0], 2.0) - pow(z[1], 2.0)) * sin(theta) / 2.0);
-                    z = complexDivision(z, @Vector(2, f32){ div, 0.0 });
+                    z = self.complexDivision(z, @Vector(2, f32){ div, 0.0 });
                 }
                 z = matrixCalc("*", z, imageSpin);
                 if (twist) {
-                    z = complexLog(complexDivision(z, @Vector(2, f32){ r1, 0.0 }));
+                    z = complexLog(self.complexDivision(z, @Vector(2, f32){ r1, 0.0 }));
                 }
                 var alpha: @Vector(2, f32) = @Vector(2, f32){ atan((p2 / p1) * (log(r2 / r1) / TWOPI)), 0.0 };
                 var f: @Vector(2, f32) = @Vector(2, f32){ cos(alpha[0]), 0.0 };
@@ -352,7 +353,7 @@ pub const kernel = struct {
                 if (strandMirror) {
                     angle /= @as(@Vector(2, f32), @splat(p2));
                 }
-                z = complexDivision(complexMult(@Vector(2, f32){ p1, 0.0 }, z), beta);
+                z = self.complexDivision(complexMult(@Vector(2, f32){ p1, 0.0 }, z), beta);
                 z = complexMult(@Vector(2, f32){ r1, 0.0 }, complexExp(z));
                 if (tileBasedOnTransparency and levelStart > 0) {
                     if (transparentOutside) {
@@ -425,7 +426,7 @@ pub const kernel = struct {
                 return @Vector(2, f32){ a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0] };
             }
             
-            fn complexDivision(a: @Vector(2, f32), b: @Vector(2, f32)) @Vector(2, f32) {
+            fn complexDivision(self: *@This(), a: @Vector(2, f32), b: @Vector(2, f32)) @Vector(2, f32) {
                 return complexMult(a, complexReciprocal(b));
             }
             

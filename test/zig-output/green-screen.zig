@@ -53,9 +53,10 @@ pub const kernel = struct {
             
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const src = self.input.src;
                 const strength = self.input.strength;
                 
-                var pRGBA: @Vector(4, f32) = self.input.src.sampleNearest(self.outCoord());
+                var pRGBA: @Vector(4, f32) = src.sampleNearest(self.outCoord());
                 var pYIQA: @Vector(4, f32) = matrixCalc("*", YIQMatrix, pRGBA);
                 if (pYIQA[1] < 0 and pYIQA[2] < 0 and pYIQA[0] > 0.01) {
                     var alpha: f32 = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;

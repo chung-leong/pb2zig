@@ -200,7 +200,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   argumentDeclaration(ctx) {
-    const direction = this.visit(ctx.argumentDirection);
+    const direction = this.visit(ctx.argumentDirection) ?? 'in';
     const type = this.visit(ctx.type);
     const name = this.name(ctx.Identifier);
     return this.create(N.FunctionArgument, { direction, type, name });

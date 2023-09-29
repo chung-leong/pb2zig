@@ -37,6 +37,7 @@ pub const kernel = struct {
             pub fn evaluatePixel(self: *@This()) void {
                 self.outputPx = @splat(0);
                 const size = self.input.size;
+                const src = self.input.src;
                 
                 var cPos: @Vector(2, f32) = self.outCoord();
                 var tlPos: @Vector(2, f32) = undefined;
@@ -51,7 +52,7 @@ pub const kernel = struct {
                 var blPos: @Vector(2, f32) = tlPos;
                 blPos[1] += @as(f32, @floatFromInt(size - 1));
                 if ((remX == remY) or (((@as(i32, @intFromFloat(cPos[0])) - @as(i32, @intFromFloat(blPos[0]))) == (@as(i32, @intFromFloat(blPos[1])) - @as(i32, @intFromFloat(cPos[1])))))) {
-                    self.outputPx = self.input.src.sampleNearest(tlPos);
+                    self.outputPx = src.sampleNearest(tlPos);
                 } else {
                     self.outputPx = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 }

@@ -98,6 +98,7 @@ pub const kernel = struct {
                 const rollWidth = self.input.rollWidth;
                 const topRollRadius = self.input.topRollRadius;
                 const bottomRollRadius = self.input.bottomRollRadius;
+                const src = self.input.src;
                 const fogInfluence = self.input.fogInfluence;
                 const fogColour = self.input.fogColour;
                 const fade = self.input.fade;
@@ -128,7 +129,7 @@ pub const kernel = struct {
                             rollRadius = bottomRollRadius;
                         } else {
                             doRoll = true;
-                            self.dst = self.input.src.sampleNearest(pos);
+                            self.dst = src.sampleNearest(pos);
                         }
                     }
                 }
@@ -137,7 +138,7 @@ pub const kernel = struct {
                     var rollVisible: f32 = rollRadius * pi / 2.0;
                     var posX: f32 = pos[0] + (xFract * ySin * rollRadius);
                     if (posX > rollOffsetX and posX < rollOffsetX + rollWidth) {
-                        var colour: @Vector(4, f32) = self.input.src.sampleNearest(@Vector(2, f32){ posX, pos[1] + ySin * rollVisible * yDir });
+                        var colour: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ posX, pos[1] + ySin * rollVisible * yDir });
                         if (fogInfluence > 0.0) {
                             var inf: f32 = fogInfluence * ySin;
                             var invInf: f32 = 1.0 - inf;

@@ -30,8 +30,11 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.result = @splat(0);
-                var a: @Vector(4, f32) = self.input.dst.sampleNearest(self.outCoord());
-                var b: @Vector(4, f32) = self.input.src.sampleNearest(self.outCoord());
+                const dst = self.input.dst;
+                const src = self.input.src;
+                
+                var a: @Vector(4, f32) = dst.sampleNearest(self.outCoord());
+                var b: @Vector(4, f32) = src.sampleNearest(self.outCoord());
                 var cb: @Vector(3, f32) = undefined;
                 var cs: @Vector(3, f32) = undefined;
                 if (a[3] > 0.0) {

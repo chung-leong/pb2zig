@@ -50,11 +50,12 @@ pub const kernel = struct {
                 const amplitude = self.input.amplitude;
                 const wavelength = self.input.wavelength;
                 const phase = self.input.phase;
+                const src = self.input.src;
                 
                 var coord: @Vector(2, f32) = self.outCoord();
                 coord[0] += amplitude[0] * sin((coord[0] / wavelength[0]) + phase[0]);
                 coord[1] += amplitude[1] * cos((coord[1] / wavelength[1]) + phase[1]);
-                self.dst = self.input.src.sampleLinear(@Vector(2, f32){ coord[0], coord[1] });
+                self.dst = src.sampleLinear(@Vector(2, f32){ coord[0], coord[1] });
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }

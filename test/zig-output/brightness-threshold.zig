@@ -44,11 +44,12 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.target = @splat(0);
+                const source = self.input.source;
                 const threshold = self.input.threshold;
                 const outputColor1 = self.input.outputColor1;
                 const outputColor2 = self.input.outputColor2;
                 
-                var ori: @Vector(4, f32) = self.input.source.sampleNearest(self.outCoord());
+                var ori: @Vector(4, f32) = source.sampleNearest(self.outCoord());
                 var brightness: f32 = 0.2126 * ori[0] + 0.7152 * ori[1] + 0.0722 * ori[2];
                 if (brightness < threshold[0] or brightness > threshold[1]) {
                     self.target = outputColor1;

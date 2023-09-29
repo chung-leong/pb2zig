@@ -54,6 +54,7 @@ pub const kernel = struct {
                 const basepoint = self.input.basepoint;
                 const direction = self.input.direction;
                 const angle = self.input.angle;
+                const src = self.input.src;
                 
                 var po: @Vector(2, f32) = self.outCoord() - basepoint;
                 var theta: f32 = atan2(po[1], po[0]) - direction + 2.0 * DOUPLEPI;
@@ -65,7 +66,7 @@ pub const kernel = struct {
                 }
                 newAngle += direction;
                 const tmp1 = newAngle;
-                self.dst = self.input.src.sampleLinear(basepoint + @Vector(2, f32){ radius * cos(tmp1), radius * sin(tmp1) });
+                self.dst = src.sampleLinear(basepoint + @Vector(2, f32){ radius * cos(tmp1), radius * sin(tmp1) });
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }

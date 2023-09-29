@@ -71,41 +71,43 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const source = self.input.source;
                 const relief = self.input.relief;
                 const lightsource = self.input.lightsource;
                 const shadow = self.input.shadow;
                 const viewDirection = self.input.viewDirection;
                 const shininess = self.input.shininess;
+                const stripe = self.input.stripe;
                 const stripesize = self.input.stripesize;
                 
                 var po: @Vector(2, f32) = self.outCoord();
                 var tmp4: @Vector(4, f32) = undefined;
-                self.dst = self.input.source.sampleLinear(po);
+                self.dst = source.sampleLinear(po);
                 if (self.dst[3] > 0.01) {
                     var sourcesample: @Vector(4, f32) = self.dst;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ -3.0, 0.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ -3.0, 0.0 });
                     const tmp1 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ -2.0, 0.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ -2.0, 0.0 });
                     const tmp2 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ -1.0, 0.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ -1.0, 0.0 });
                     const tmp3 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 1.0, 0.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 1.0, 0.0 });
                     const tmp5 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 2.0, 0.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 2.0, 0.0 });
                     const tmp6 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 3.0, 0.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 3.0, 0.0 });
                     const tmp7 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, -3.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, -3.0 });
                     const tmp8 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, -2.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, -2.0 });
                     const tmp9 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, -1.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, -1.0 });
                     const tmp10 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, 1.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, 1.0 });
                     const tmp11 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, 2.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, 2.0 });
                     const tmp12 = tmp4;
-                    tmp4 = self.input.source.sampleLinear(po + @Vector(2, f32){ 0.0, 3.0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, 3.0 });
                     const tmp13 = tmp4;
                     var normal: @Vector(3, f32) = @Vector(3, f32){ (0.7 * tmp1[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp2[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp3[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp5[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp6[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp7[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]), (0.7 * tmp8[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp9[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp10[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp11[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp12[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp13[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]), 12.0 / relief };
                     var len: f32 = 1.0 / sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2] + 0.0);
@@ -125,7 +127,7 @@ pub const kernel = struct {
                         refl += spec;
                     }
                     refl = clamp(refl, 0.0, 1.0);
-                    self.dst = self.input.stripe.sampleLinear(@Vector(2, f32){ 0.5 + (stripesize[0] - 1.0) * refl, stripesize[1] });
+                    self.dst = stripe.sampleLinear(@Vector(2, f32){ 0.5 + (stripesize[0] - 1.0) * refl, stripesize[1] });
                     self.dst[3] *= sourcesample[3];
                 }
                 

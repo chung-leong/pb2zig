@@ -75,6 +75,7 @@ pub const kernel = struct {
                 const fill = self.input.fill;
                 const minSolid = self.input.minSolid;
                 const maxSolid = self.input.maxSolid;
+                const src = self.input.src;
                 
                 var z: @Vector(2, f32) = @as(@Vector(2, f32), @splat(scale * 0.001)) * (self.outCoord() - center);
                 var pixelCheck: f32 = z[0] * z[0] + z[1] * z[1];
@@ -126,7 +127,7 @@ pub const kernel = struct {
                 z /= @as(@Vector(2, f32), @splat(z[0] * z[0] + z[1] * z[1]));
                 tmp = 1.0 - smoothStep(minSolid, maxSolid, pixelCheck / scale);
                 alf = max(tmp, alf);
-                self.dst = self.input.src.sampleNearest(z + center);
+                self.dst = src.sampleNearest(z + center);
                 self.dst[3] *= alf;
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);

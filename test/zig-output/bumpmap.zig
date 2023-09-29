@@ -91,6 +91,8 @@ pub const kernel = struct {
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
                 const on = self.input.on;
+                const img = self.input.img;
+                const src = self.input.src;
                 const invert = self.input.invert;
                 const light = self.input.light;
                 const lightwidth = self.input.lightwidth;
@@ -100,32 +102,32 @@ pub const kernel = struct {
                 const lightcolor = self.input.lightcolor;
                 
                 if (!(on != 0)) {
-                    self.dst = self.input.img.sampleNearest(self.outCoord());
+                    self.dst = img.sampleNearest(self.outCoord());
                 } else {
                     var height: f32 = undefined;
                     var hvec: @Vector(3, f32) = undefined;
                     var yvec: @Vector(3, f32) = undefined;
                     var fac: f32 = undefined;
-                    height = self.input.src.sampleNearest(self.outCoord())[chann];
+                    height = src.sampleNearest(self.outCoord())[chann];
                     if (invert == 0) {
                         height = 1.0 - height;
                     }
                     var ray: @Vector(3, f32) = @Vector(3, f32){ self.outCoord()[0], self.outCoord()[1], height } - light;
                     var tmp_ray_len: f32 = length(ray);
                     if (tmp_ray_len > lightwidth) {
-                        self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, self.input.img.sampleNearest(self.outCoord())[3] };
+                        self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, img.sampleNearest(self.outCoord())[3] };
                     } else {
-                        hvec[2] = self.input.src.sampleNearest(self.outCoord() - @Vector(2, f32){ 2.0, 0.0 })[chann];
-                        hvec[2] += self.input.src.sampleNearest(self.outCoord() - @Vector(2, f32){ 1.0, 0.0 })[chann];
-                        hvec[2] -= self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ 1.0, 0.0 })[chann];
-                        hvec[2] -= self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ 2.0, 0.0 })[chann];
+                        hvec[2] = src.sampleNearest(self.outCoord() - @Vector(2, f32){ 2.0, 0.0 })[chann];
+                        hvec[2] += src.sampleNearest(self.outCoord() - @Vector(2, f32){ 1.0, 0.0 })[chann];
+                        hvec[2] -= src.sampleNearest(self.outCoord() + @Vector(2, f32){ 1.0, 0.0 })[chann];
+                        hvec[2] -= src.sampleNearest(self.outCoord() + @Vector(2, f32){ 2.0, 0.0 })[chann];
                         hvec[0] = 4.0;
                         hvec[1] = 0.0;
                         hvec[2] *= heightmap_multi;
-                        yvec[2] = self.input.src.sampleNearest(self.outCoord() - @Vector(2, f32){ 0.0, 2.0 })[chann];
-                        yvec[2] += self.input.src.sampleNearest(self.outCoord() - @Vector(2, f32){ 0.0, 1.0 })[chann];
-                        yvec[2] -= self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ 0.0, 1.0 })[chann];
-                        yvec[2] -= self.input.src.sampleNearest(self.outCoord() + @Vector(2, f32){ 0.0, 2.0 })[chann];
+                        yvec[2] = src.sampleNearest(self.outCoord() - @Vector(2, f32){ 0.0, 2.0 })[chann];
+                        yvec[2] += src.sampleNearest(self.outCoord() - @Vector(2, f32){ 0.0, 1.0 })[chann];
+                        yvec[2] -= src.sampleNearest(self.outCoord() + @Vector(2, f32){ 0.0, 1.0 })[chann];
+                        yvec[2] -= src.sampleNearest(self.outCoord() + @Vector(2, f32){ 0.0, 2.0 })[chann];
                         yvec[0] = 0.0;
                         yvec[1] = 4.0;
                         yvec[2] *= heightmap_multi;
@@ -148,13 +150,13 @@ pub const kernel = struct {
                             fac = fac * fac * fac * 1.1;
                             fac = fac * fac * fac * fac;
                             if (fac > 0.0) {
-                                hvec = clightrefl + @as(@Vector(3, f32), @splat((lightwidth - tmp_ray_len) / lightwidth * fac)) * @shuffle(f32, self.input.img.sampleNearest(self.outCoord()), undefined, @Vector(3, i32){ 0, 1, 2 });
-                                self.dst = @Vector(4, f32){ hvec[0], hvec[1], hvec[2], self.input.img.sampleNearest(self.outCoord())[3] };
+                                hvec = clightrefl + @as(@Vector(3, f32), @splat((lightwidth - tmp_ray_len) / lightwidth * fac)) * @shuffle(f32, img.sampleNearest(self.outCoord()), undefined, @Vector(3, i32){ 0, 1, 2 });
+                                self.dst = @Vector(4, f32){ hvec[0], hvec[1], hvec[2], img.sampleNearest(self.outCoord())[3] };
                             } else {
-                                self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, self.input.img.sampleNearest(self.outCoord())[3] };
+                                self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, img.sampleNearest(self.outCoord())[3] };
                             }
                         } else {
-                            self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, self.input.img.sampleNearest(self.outCoord())[3] };
+                            self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, img.sampleNearest(self.outCoord())[3] };
                         }
                     }
                 }

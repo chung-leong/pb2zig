@@ -49,6 +49,7 @@ pub const kernel = struct {
                 self.pxl = @splat(0);
                 const size = self.input.size;
                 const base = self.input.base;
+                const img = self.input.img;
                 
                 var grid: @Vector(2, f32) = @Vector(2, f32){ size, sqrt3 * size };
                 var po1: @Vector(2, f32) = floor((self.outCoord() - base) / grid + @as(@Vector(2, f32), @splat(0.5)));
@@ -59,7 +60,7 @@ pub const kernel = struct {
                 po2 = po2 * grid + base2 - self.outCoord();
                 var dst2: f32 = po2[0] * po2[0] + po2[1] * po2[1];
                 po1 = @as(@Vector(2, f32), if ((dst1 < dst2)) po1 else po2);
-                self.pxl = self.input.img.sampleNearest(po1 + self.outCoord());
+                self.pxl = img.sampleNearest(po1 + self.outCoord());
                 
                 self.output.pxl.setPixel(self.outputCoord[0], self.outputCoord[1], self.pxl);
             }

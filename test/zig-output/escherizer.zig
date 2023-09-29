@@ -93,6 +93,7 @@ pub const kernel = struct {
                 const yPos = self.input.yPos;
                 const range = self.input.range;
                 const size = self.input.size;
+                const src = self.input.src;
                 
                 var pos: @Vector(2, f32) = self.outCoord();
                 var PI: f32 = 3.1415926535;
@@ -131,7 +132,7 @@ pub const kernel = struct {
                 if (r2 > size[1]) {
                     r2 = mod(r2, size[1]);
                 }
-                self.dst = self.input.src.sampleNearest(@Vector(2, f32){ r1, r2 });
+                self.dst = src.sampleNearest(@Vector(2, f32){ r1, r2 });
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }

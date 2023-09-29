@@ -70,6 +70,7 @@ pub const kernel = struct {
                 const c = self.input.c;
                 const b = self.input.b;
                 const a = self.input.a;
+                const src = self.input.src;
                 const size = self.input.size;
                 
                 var po: @Vector(2, f32) = self.outCoord() - center;
@@ -77,7 +78,7 @@ pub const kernel = struct {
                 var po2: @Vector(2, f32) = d + complexMult(c, po);
                 po = b + complexMult(a, po);
                 po = complexDiv(po, po2);
-                self.dst = self.input.src.sampleLinear(size * fract(po / size));
+                self.dst = src.sampleLinear(size * fract(po / size));
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }

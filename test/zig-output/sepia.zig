@@ -35,6 +35,7 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const src = self.input.src;
                 const intensity = self.input.intensity;
                 
                 var rgbaColor: @Vector(4, f32) = undefined;
@@ -51,7 +52,7 @@ pub const kernel = struct {
                     .{ 0.621, -0.647, 1.7, 0.0 },
                     .{ 0.0, 0.0, 0.0, 1.0 }
                 };
-                rgbaColor = self.input.src.sampleNearest(self.outCoord());
+                rgbaColor = src.sampleNearest(self.outCoord());
                 yiqaColor = matrixCalc("*", YIQMatrix, rgbaColor);
                 yiqaColor[1] = intensity;
                 yiqaColor[2] = 0.0;

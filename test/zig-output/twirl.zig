@@ -60,6 +60,7 @@ pub const kernel = struct {
                 const center = self.input.center;
                 const radius = self.input.radius;
                 const gaussOrSinc = self.input.gaussOrSinc;
+                const oImage = self.input.oImage;
                 
                 var twirlAngleRadians: f32 = radians(twirlAngle);
                 var relativePos: @Vector(2, f32) = self.outCoord() - center;
@@ -77,7 +78,7 @@ pub const kernel = struct {
                     .{ -sinAngle, cosAngle }
                 };
                 relativePos = matrixCalc("*", rotationMat, relativePos);
-                self.outputColor = self.input.oImage.sampleLinear(relativePos + center);
+                self.outputColor = oImage.sampleLinear(relativePos + center);
                 
                 self.output.outputColor.setPixel(self.outputCoord[0], self.outputCoord[1], self.outputColor);
             }

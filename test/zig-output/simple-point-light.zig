@@ -57,10 +57,11 @@ pub const kernel = struct {
                 const center = self.input.center;
                 const attenuationDecay = self.input.attenuationDecay;
                 const attenuationSpeed = self.input.attenuationSpeed;
+                const src = self.input.src;
                 
                 var out_pixel_coord: @Vector(2, f32) = self.outCoord();
                 var attenuation: f32 = pow(attenuationDelta / pow(distance(out_pixel_coord, center), attenuationDecay), attenuationSpeed);
-                self.dst = @as(@Vector(4, f32), @splat(attenuation)) * self.input.src.sampleNearest(out_pixel_coord);
+                self.dst = @as(@Vector(4, f32), @splat(attenuation)) * src.sampleNearest(out_pixel_coord);
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }

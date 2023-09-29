@@ -89,6 +89,7 @@ pub const kernel = struct {
                 const zoom = self.input.zoom;
                 const turn = self.input.turn;
                 const radius = self.input.radius;
+                const src = self.input.src;
                 
                 var pos: @Vector(2, f32) = self.outCoord() - center;
                 var r: f32 = sqrt(pos[0] * pos[0] + pos[1] * pos[1]);
@@ -103,7 +104,7 @@ pub const kernel = struct {
                 var nx: f32 = (xy_replication[0] - 1.0) * meridian / PI - (xy_replication[0]);
                 var vx: f32 = radius * cos(nx);
                 var vy: f32 = radius * sin(ny);
-                self.dst = self.input.src.sampleLinear(center + @Vector(2, f32){ vx, vy * damp });
+                self.dst = src.sampleLinear(center + @Vector(2, f32){ vx, vy * damp });
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }

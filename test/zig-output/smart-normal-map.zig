@@ -54,6 +54,7 @@ pub const kernel = struct {
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
                 const soft_sobel = self.input.soft_sobel;
+                const src = self.input.src;
                 const invert_red = self.input.invert_red;
                 const amount = self.input.amount;
                 const invert_green = self.input.invert_green;
@@ -61,21 +62,21 @@ pub const kernel = struct {
                 var dx: f32 = undefined;
                 var dy: f32 = undefined;
                 if (soft_sobel == 0) {
-                    dx = self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] })[0] - self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] })[0];
-                    dy = self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0], self.outCoord()[1] - 1.0 })[0] - self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0], self.outCoord()[1] + 1.0 })[0];
+                    dx = src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] })[0] - src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] })[0];
+                    dy = src.sampleNearest(@Vector(2, f32){ self.outCoord()[0], self.outCoord()[1] - 1.0 })[0] - src.sampleNearest(@Vector(2, f32){ self.outCoord()[0], self.outCoord()[1] + 1.0 })[0];
                 } else {
-                    dx = self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] - 1.0 })[0] / -1.0;
-                    dx += self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] })[0] / -2.0;
-                    dx += self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] + 1.0 })[0] / -1.0;
-                    dx += self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] - 1.0 })[0] / 1.0;
-                    dx += self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] })[0] / 2.0;
-                    dx += self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] + 1.0 })[0] / 1.0;
-                    dy = self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] + 1.0 })[0] / -1.0;
-                    dy += self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0], self.outCoord()[1] + 1.0 })[0] / -2.0;
-                    dy += self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] + 1.0 })[0] / -1.0;
-                    dy += self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] - 1.0 })[0] / 1.0;
-                    dy += self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0], self.outCoord()[1] - 1.0 })[0] / 2.0;
-                    dy += self.input.src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] - 1.0 })[0] / 1.0;
+                    dx = src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] - 1.0 })[0] / -1.0;
+                    dx += src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] })[0] / -2.0;
+                    dx += src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] + 1.0 })[0] / -1.0;
+                    dx += src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] - 1.0 })[0] / 1.0;
+                    dx += src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] })[0] / 2.0;
+                    dx += src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] + 1.0 })[0] / 1.0;
+                    dy = src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] + 1.0 })[0] / -1.0;
+                    dy += src.sampleNearest(@Vector(2, f32){ self.outCoord()[0], self.outCoord()[1] + 1.0 })[0] / -2.0;
+                    dy += src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] + 1.0 })[0] / -1.0;
+                    dy += src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] - 1.0, self.outCoord()[1] - 1.0 })[0] / 1.0;
+                    dy += src.sampleNearest(@Vector(2, f32){ self.outCoord()[0], self.outCoord()[1] - 1.0 })[0] / 2.0;
+                    dy += src.sampleNearest(@Vector(2, f32){ self.outCoord()[0] + 1.0, self.outCoord()[1] - 1.0 })[0] / 1.0;
                 }
                 var normal: @Vector(3, f32) = @Vector(3, f32){ dx * invert_red * (amount / (1.0 + @as(f32, @floatFromInt(soft_sobel)))), -(dy * invert_green) * (amount / (1.0 + @as(f32, @floatFromInt(soft_sobel)))), 1.0 };
                 normal = ((normal + @as(@Vector(3, f32), @splat(1.0))) / @as(@Vector(3, f32), @splat(2.0)));

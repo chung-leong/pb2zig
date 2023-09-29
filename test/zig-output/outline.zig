@@ -50,16 +50,17 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const src = self.input.src;
                 const difference = self.input.difference;
                 const color = self.input.color;
                 const bgcolor = self.input.bgcolor;
                 
                 var srcpos: @Vector(2, f32) = self.outCoord();
-                var dst0: @Vector(4, f32) = self.input.src.sampleNearest(@Vector(2, f32){ srcpos[0], srcpos[1] });
-                var dst1: @Vector(4, f32) = self.input.src.sampleNearest(@Vector(2, f32){ srcpos[0] + 1.0, srcpos[1] });
-                var dst2: @Vector(4, f32) = self.input.src.sampleNearest(@Vector(2, f32){ srcpos[0], srcpos[1] + 1.0 });
-                var dst3: @Vector(4, f32) = self.input.src.sampleNearest(@Vector(2, f32){ srcpos[0] + 1.0, srcpos[1] + 1.0 });
-                var dst4: @Vector(4, f32) = self.input.src.sampleNearest(@Vector(2, f32){ srcpos[0] - 1.0, srcpos[1] + 1.0 });
+                var dst0: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ srcpos[0], srcpos[1] });
+                var dst1: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ srcpos[0] + 1.0, srcpos[1] });
+                var dst2: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ srcpos[0], srcpos[1] + 1.0 });
+                var dst3: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ srcpos[0] + 1.0, srcpos[1] + 1.0 });
+                var dst4: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ srcpos[0] - 1.0, srcpos[1] + 1.0 });
                 var distance1: f32 = 0.0;
                 var distance2: f32 = 0.0;
                 var distance3: f32 = 0.0;

@@ -29,12 +29,14 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.o = @splat(0);
+                const i = self.input.i;
+                
                 var c: @Vector(2, f32) = self.outCoord();
                 var p: @Vector(2, f32) = undefined;
                 var n: @Vector(4, f32) = undefined;
                 self.o = @Vector(4, f32){ 0.0, 0.0, 0.0, 1.0 };
                 p = @Vector(2, f32){ -1.0, -1.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -45,7 +47,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ -1.0, 0.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -56,7 +58,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ -1.0, 1.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -67,7 +69,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ 0.0, -1.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -78,7 +80,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ 0.0, 0.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -89,7 +91,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ 0.0, 1.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -100,7 +102,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ 1.0, -1.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -111,7 +113,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ 1.0, 0.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -122,7 +124,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ 1.0, 1.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -133,7 +135,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ -2.0, 0.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -144,7 +146,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ 2.0, 0.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -155,7 +157,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ 0.0, -2.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }
@@ -166,7 +168,7 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ 0.0, 2.0 };
-                n = self.input.i.sampleNearest(c + p);
+                n = i.sampleNearest(c + p);
                 if (self.o[0] < n[0]) {
                     self.o[0] = n[0];
                 }

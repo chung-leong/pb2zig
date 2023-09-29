@@ -51,6 +51,7 @@ pub const kernel = struct {
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
                 const dist = self.input.dist;
+                const src = self.input.src;
                 const size = self.input.size;
                 const edgeAlpha = self.input.edgeAlpha;
                 
@@ -61,7 +62,7 @@ pub const kernel = struct {
                 newP[0] = xPos;
                 newP[1] = yPos;
                 var distt: f32 = distance(inP - @as(@Vector(2, f32), @splat((dist / 2.0))), newP);
-                self.dst = self.input.src.sampleNearest(newP);
+                self.dst = src.sampleNearest(newP);
                 var ssize: f32 = size * self.dst[3];
                 if (2.0 * distt / ssize > dist) {
                     self.dst[3] = 0.0;

@@ -50,6 +50,7 @@ pub const kernel = struct {
                 const center = self.input.center;
                 const frequency = self.input.frequency;
                 const amplitude = self.input.amplitude;
+                const src = self.input.src;
                 
                 var coord: @Vector(2, f32) = self.outCoord();
                 var dx: f32 = coord[0] - center[0];
@@ -60,7 +61,7 @@ pub const kernel = struct {
                 var dest: @Vector(2, f32) = @Vector(2, f32){ 0.0, 0.0 };
                 dest[0] = center[0] + cos(a) * r;
                 dest[1] = center[1] + sin(a) * r;
-                self.dst = self.input.src.sampleNearest(dest);
+                self.dst = src.sampleNearest(dest);
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }

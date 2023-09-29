@@ -57,6 +57,7 @@ pub const kernel = struct {
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
                 const size = self.input.size;
+                const src = self.input.src;
                 
                 var div: f32 = size;
                 var newP: @Vector(2, f32) = base1 + matrixCalc("*", matrixCalc("*", rot1r, div), (floor(matrixCalc("*", rot1, (self.outCoord() - base1)) / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5))));
@@ -66,7 +67,7 @@ pub const kernel = struct {
                 div = 19.0 / 20.0 * size;
                 p = @as(@Vector(2, f32), @splat(div)) * (floor(self.outCoord() / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5)));
                 newP = @as(@Vector(2, f32), if (length(p - self.outCoord()) < length(newP - self.outCoord())) p else newP);
-                self.dst = self.input.src.sampleNearest(newP);
+                self.dst = src.sampleNearest(newP);
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }

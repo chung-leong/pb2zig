@@ -42,11 +42,13 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const src1 = self.input.src1;
                 const channels = self.input.channels;
                 const amplitude = self.input.amplitude;
+                const src = self.input.src;
                 
                 var coord: @Vector(2, f32) = self.outCoord();
-                var pix: @Vector(4, f32) = self.input.src1.sampleNearest(coord);
+                var pix: @Vector(4, f32) = src1.sampleNearest(coord);
                 var dx: f32 = undefined;
                 if (channels[0] == 0) {
                     dx = coord[0] + (0.5 - pix[0]) * amplitude[0];
@@ -73,7 +75,7 @@ pub const kernel = struct {
                 if (channels[1] == 3) {
                     dy = coord[1] + (0.5 - pix[3]) * amplitude[1];
                 }
-                var Opix: @Vector(4, f32) = self.input.src.sampleNearest(@Vector(2, f32){ dx, dy });
+                var Opix: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ dx, dy });
                 Opix[3] = pix[3];
                 self.dst = Opix;
                 

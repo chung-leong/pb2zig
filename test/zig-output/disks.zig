@@ -77,6 +77,7 @@ pub const kernel = struct {
                 const rotation = self.input.rotation;
                 const size = self.input.size;
                 const base = self.input.base;
+                const src = self.input.src;
                 const radius = self.input.radius;
                 
                 var rotationR: [2]@Vector(2, f32) = inverse2x2(rotation);
@@ -85,81 +86,81 @@ pub const kernel = struct {
                 var p: @Vector(2, f32) = floor(matrixCalc("*", (self.outCoord() - base), rot) + @as(@Vector(2, f32), @splat(0.5)));
                 self.pxlOut = @as(@Vector(4, f32), @splat(0.0));
                 var p1: @Vector(2, f32) = matrixCalc("*", p, rotR) + base - self.outCoord();
-                var pxl: @Vector(4, f32) = self.input.src.sampleNearest(p1 + self.outCoord());
-                var dist: f32 = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
+                var pxl: @Vector(4, f32) = src.sampleNearest(p1 + self.outCoord());
+                var dist: f32 = self.distanceSquared(p1);
                 self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                 p1 = matrixCalc("*", (p + @Vector(2, f32){ -1.0, -1.0 }), rotR) + base - self.outCoord();
-                pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                pxl = src.sampleNearest(p1 + self.outCoord());
                 dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                 self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                 p1 = matrixCalc("*", (p + @Vector(2, f32){ -1.0, 0.0 }), rotR) + base - self.outCoord();
-                pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                pxl = src.sampleNearest(p1 + self.outCoord());
                 dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                 self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                 p1 = matrixCalc("*", (p + @Vector(2, f32){ 0.0, -1.0 }), rotR) + base - self.outCoord();
-                pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                pxl = src.sampleNearest(p1 + self.outCoord());
                 dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                 self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                 p1 = matrixCalc("*", (p + @Vector(2, f32){ 0.0, 1.0 }), rotR) + base - self.outCoord();
-                pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                pxl = src.sampleNearest(p1 + self.outCoord());
                 dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                 self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                 p1 = matrixCalc("*", (p + @Vector(2, f32){ 1.0, -1.0 }), rotR) + base - self.outCoord();
-                pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                pxl = src.sampleNearest(p1 + self.outCoord());
                 dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                 self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                 p1 = matrixCalc("*", (p + @Vector(2, f32){ 1.0, 0.0 }), rotR) + base - self.outCoord();
-                pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                pxl = src.sampleNearest(p1 + self.outCoord());
                 dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                 self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                 p1 = matrixCalc("*", (p + @Vector(2, f32){ 1.0, 1.0 }), rotR) + base - self.outCoord();
-                pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                pxl = src.sampleNearest(p1 + self.outCoord());
                 dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                 self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                 p1 = matrixCalc("*", (p + @Vector(2, f32){ -1.0, 1.0 }), rotR) + base - self.outCoord();
-                pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                pxl = src.sampleNearest(p1 + self.outCoord());
                 dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                 self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                 if (radius > 2.25) {
                     p1 = matrixCalc("*", (p + @Vector(2, f32){ -2.0, 0.0 }), rotR) + base - self.outCoord();
-                    pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                    pxl = src.sampleNearest(p1 + self.outCoord());
                     dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                     self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                     p1 = matrixCalc("*", (p + @Vector(2, f32){ -2.0, -1.0 }), rotR) + base - self.outCoord();
-                    pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                    pxl = src.sampleNearest(p1 + self.outCoord());
                     dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                     self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                     p1 = matrixCalc("*", (p + @Vector(2, f32){ -1.0, -2.0 }), rotR) + base - self.outCoord();
-                    pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                    pxl = src.sampleNearest(p1 + self.outCoord());
                     dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                     self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                     p1 = matrixCalc("*", (p + @Vector(2, f32){ 0.0, -2.0 }), rotR) + base - self.outCoord();
-                    pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                    pxl = src.sampleNearest(p1 + self.outCoord());
                     dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                     self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                     p1 = matrixCalc("*", (p + @Vector(2, f32){ 0.0, 2.0 }), rotR) + base - self.outCoord();
-                    pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                    pxl = src.sampleNearest(p1 + self.outCoord());
                     dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                     self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                     p1 = matrixCalc("*", (p + @Vector(2, f32){ 1.0, 2.0 }), rotR) + base - self.outCoord();
-                    pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                    pxl = src.sampleNearest(p1 + self.outCoord());
                     dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                     self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                     p1 = matrixCalc("*", (p + @Vector(2, f32){ 2.0, 0.0 }), rotR) + base - self.outCoord();
-                    pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                    pxl = src.sampleNearest(p1 + self.outCoord());
                     dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                     self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                     p1 = matrixCalc("*", (p + @Vector(2, f32){ 2.0, 1.0 }), rotR) + base - self.outCoord();
-                    pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                    pxl = src.sampleNearest(p1 + self.outCoord());
                     dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                     self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                     if (radius > 3.0) {
                         p1 = matrixCalc("*", (p + @Vector(2, f32){ -2.0, -2.0 }), rotR) + base - self.outCoord();
-                        pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                        pxl = src.sampleNearest(p1 + self.outCoord());
                         dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                         self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                         p1 = matrixCalc("*", (p + @Vector(2, f32){ 2.0, 2.0 }), rotR) + base - self.outCoord();
-                        pxl = self.input.src.sampleNearest(p1 + self.outCoord());
+                        pxl = src.sampleNearest(p1 + self.outCoord());
                         dist = ((p1[0] * p1[0]) + (p1[1] * p1[1])) / size / size;
                         self.pxlOut += @as(@Vector(4, f32), @splat((clamp(0.75 * size * (1.0 - dist / radius), 0.0, 1.0)))) * pxl;
                     }
@@ -175,6 +176,11 @@ pub const kernel = struct {
                     .{ rot[1][1], -rot[0][1] },
                     .{ -rot[1][0], rot[0][0] }
                 }, (rot[0][0] * rot[1][1] - rot[1][0] * rot[0][1]));
+            }
+            
+            fn distanceSquared(self: *@This(), a: @Vector(2, f32)) f32 {
+                const size = self.input.size;
+                return ((a[0] * a[0]) + (a[1] * a[1])) / size / size;
             }
             
             // built-in Pixel Bender functions

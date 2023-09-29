@@ -44,11 +44,13 @@ pub const kernel = struct {
                 self.dst = @splat(0);
                 const size = self.input.size;
                 const charCount = self.input.charCount;
+                const src = self.input.src;
+                const text = self.input.text;
                 
                 var sizef: f32 = @as(f32, @floatFromInt(size));
                 var charCountf: f32 = @as(f32, @floatFromInt(charCount));
                 var offset2: @Vector(2, f32) = mod(self.outCoord(), sizef);
-                var mosaicPixel4: @Vector(4, f32) = self.input.src.sampleNearest(self.outCoord() - offset2);
+                var mosaicPixel4: @Vector(4, f32) = src.sampleNearest(self.outCoord() - offset2);
                 var luma: f32 = 0.2126 * mosaicPixel4[0] + 0.7152 * mosaicPixel4[1] + 0.0722 * mosaicPixel4[2];
                 var range: f32 = (1.0 / (charCountf - 1.0));
                 var fontOffset: f32 = sizef * floor(luma / range);
@@ -56,7 +58,7 @@ pub const kernel = struct {
                 var yRow: f32 = floor(fontOffset / fontmapsize);
                 offset2[1] = offset2[1] + (sizef * yRow);
                 offset2[0] = offset2[0] + (fontOffset - (fontmapsize * yRow));
-                var charPixel4: @Vector(4, f32) = self.input.text.sampleLinear(offset2);
+                var charPixel4: @Vector(4, f32) = text.sampleLinear(offset2);
                 self.dst = @shuffle(f32, self.dst, @shuffle(f32, mosaicPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }) * @shuffle(f32, charPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
                 self.dst[3] = mosaicPixel4[3];
                 

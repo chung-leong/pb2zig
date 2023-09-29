@@ -56,6 +56,7 @@ pub const kernel = struct {
                 const base = self.input.base;
                 const size = self.input.size;
                 const radius = self.input.radius;
+                const src = self.input.src;
                 
                 var po: @Vector(2, f32) = self.outCoord() - base;
                 var polar: @Vector(2, f32) = @Vector(2, f32){ length(po), atan2(po[1], po[0]) };
@@ -68,7 +69,7 @@ pub const kernel = struct {
                 po = base + @as(@Vector(2, f32), @splat(polar[0])) * @Vector(2, f32){ cos(polar[1]), sin(polar[1]) };
                 self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 if (radius * size > length(po - self.outCoord())) {
-                    self.dst = self.input.src.sampleLinear(po);
+                    self.dst = src.sampleLinear(po);
                 }
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);

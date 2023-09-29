@@ -41,6 +41,7 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const src = self.input.src;
                 const color = self.input.color;
                 const amount = self.input.amount;
                 
@@ -48,7 +49,7 @@ pub const kernel = struct {
                 var r: f32 = undefined;
                 var g: f32 = undefined;
                 var b: f32 = undefined;
-                rgba = self.input.src.sampleNearest(self.outCoord());
+                rgba = src.sampleNearest(self.outCoord());
                 var luminance: f32 = rgba[0] * 0.3086 + rgba[1] * 0.6094 + rgba[2] * 0.082;
                 r = (color[0] + luminance) * amount + rgba[0] * (1.0 - amount);
                 g = (color[1] + luminance) * amount + rgba[1] * (1.0 - amount);

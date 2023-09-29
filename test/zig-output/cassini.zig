@@ -65,6 +65,7 @@ pub const kernel = struct {
                 const zoom = self.input.zoom;
                 const lambda = self.input.lambda;
                 const poi = self.input.poi;
+                const src = self.input.src;
                 
                 var center: @Vector(2, f32) = @Vector(2, f32){ imageWH[0] / 2.0, imageWH[1] / 2.0 };
                 var po: @Vector(2, f32) = self.outCoord() - center;
@@ -76,7 +77,7 @@ pub const kernel = struct {
                 var l: f32 = l1 + atan2(tan(xx), cos(d));
                 var nx: f32 = mod((l * (poi[0] / 2.0) / PI + (poi[0] / 2.0)), (poi[0] - 1.0) - (poi[0] / 2.0));
                 var ny: f32 = phi * ((poi[1] / 2.0)) / (PI / 2.0);
-                self.dst = self.input.src.sampleLinear(center + @Vector(2, f32){ nx, ny });
+                self.dst = src.sampleLinear(center + @Vector(2, f32){ nx, ny });
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }

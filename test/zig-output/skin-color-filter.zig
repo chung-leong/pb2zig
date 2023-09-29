@@ -53,12 +53,13 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
+                const src = self.input.src;
                 const CbMin = self.input.CbMin;
                 const CbMax = self.input.CbMax;
                 const CrMin = self.input.CrMin;
                 const CrMax = self.input.CrMax;
                 
-                self.dst = self.input.src.sampleNearest(self.outCoord());
+                self.dst = src.sampleNearest(self.outCoord());
                 var ycbcr: @Vector(3, f32) = matrixCalc("*", @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }), [3]@Vector(3, f32){
                     .{ 0.0, 0.0, 0.0 },
                     .{ -0.168736, -0.331264, 0.5 },

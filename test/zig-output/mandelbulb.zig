@@ -270,7 +270,7 @@ pub const kernel = struct {
             objRotation: [3]@Vector(3, f32) = undefined,
             
             // functions defined in kernel
-            fn DE(self: *@This(), z0: @Vector(3, f32), min_dist: f32) f32 {
+            fn DE(self: *@This(), z0: @Vector(3, f32), min_dist: *const f32) f32 {
                 const julia = self.input.julia;
                 const julia_c = self.input.julia_c;
                 const power = self.input.power;
@@ -286,8 +286,8 @@ pub const kernel = struct {
                 var r: f32 = length(z);
                 var th: f32 = atan2(z[1], z[0]);
                 var ph: f32 = asin(z[2] / r);
-                if (r < min_dist) {
-                    min_dist = r;
+                if (r < min_dist.*) {
+                    min_dist.* = r;
                 }
                 var dz: @Vector(3, f32) = undefined;
                 var ph_dz: f32 = 0.0;
@@ -316,8 +316,8 @@ pub const kernel = struct {
                             z[1] = radiolariaFactor;
                         }
                         r = length(z);
-                        if (r < min_dist) {
-                            min_dist = r;
+                        if (r < min_dist.*) {
+                            min_dist.* = r;
                         }
                         if (r > bailout) {
                             break;
@@ -330,16 +330,16 @@ pub const kernel = struct {
                 return 0.5 * r * log(r) / r_dz;
             }
             
-            fn intersectBoundingSphere(self: *@This(), origin: @Vector(3, f32), direction: @Vector(3, f32), tmin: f32, tmax: f32) bool {
+            fn intersectBoundingSphere(self: *@This(), origin: @Vector(3, f32), direction: @Vector(3, f32), tmin: *const f32, tmax: *const f32) bool {
                 const bounding = self.input.bounding;
                 
                 var hit: bool = true;
                 var b: f32 = dot(origin, direction);
                 var c: f32 = dot(origin, origin) - bounding;
                 var disc: f32 = b * b - c;
-                tmax = 0.0;
-                const tmp1 = tmax;
-                tmin = tmp1;
+                tmax.* = 0.0;
+                const tmp1 = tmax.*;
+                tmin.* = tmp1;
                 if (disc > 0.0) {
                     var sdisc: f32 = sqrt(disc);
                     var t0: f32 = -b - sdisc;
@@ -347,14 +347,14 @@ pub const kernel = struct {
                     if (t0 >= 0.0) {
                         var min_dist: f32 = undefined;
                         var z: @Vector(3, f32) = origin + @as(@Vector(3, f32), @splat(t0)) * direction;
-                        tmin = self.DE(z, min_dist);
-                        tmax = t0 + t1;
+                        tmin.* = self.DE(z, min_dist);
+                        tmax.* = t0 + t1;
                     } else {
                         if (t0 < 0.0) {
                             var min_dist: f32 = undefined;
                             var z: @Vector(3, f32) = origin;
-                            tmin = self.DE(z, min_dist);
-                            tmax = t1;
+                            tmin.* = self.DE(z, min_dist);
+                            tmax.* = t1;
                         }
                     }
                     hit = true;
@@ -376,7 +376,7 @@ pub const kernel = struct {
                 return normalize(@Vector(3, f32){ dx, dy, dz } / @as(@Vector(3, f32), @splat((2.0 * e))));
             }
             
-            fn Phong(self: *@This(), pt: @Vector(3, f32), N: @Vector(3, f32), specular: f32) @Vector(3, f32) {
+            fn Phong(self: *@This(), pt: @Vector(3, f32), N: @Vector(3, f32), specular: *const f32) @Vector(3, f32) {
                 const light = self.input.light;
                 const objRotation = self.objRotation;
                 const colorDiffuse = self.input.colorDiffuse;
@@ -391,7 +391,7 @@ pub const kernel = struct {
                 
                 var diffuse: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
                 var color: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
-                specular = 0.0;
+                specular.* = 0.0;
                 var L: @Vector(3, f32) = normalize(matrixCalc("*", light, matrixCalc("-", objRotation, pt)));
                 var NdotL: f32 = dot(N, L);
                 if (NdotL > 0.0) {
@@ -401,7 +401,7 @@ pub const kernel = struct {
                     var R: @Vector(3, f32) = L - @as(@Vector(3, f32), @splat(2.0 * NdotL)) * N;
                     var RdE: f32 = dot(R, E);
                     if (RdE <= 0.0) {
-                        specular = specularity * pow(abs(RdE), specularExponent);
+                        specular.* = specularity * pow(abs(RdE), specularExponent);
                     }
                 } else {
                     diffuse = colorDiffuse * @as(@Vector(3, f32), @splat(abs(NdotL))) * @as(@Vector(3, f32), @splat(rimLight));
