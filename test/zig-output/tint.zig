@@ -49,11 +49,15 @@ pub const kernel = struct {
                 var r: f32 = undefined;
                 var g: f32 = undefined;
                 var b: f32 = undefined;
+                var a: f32 = undefined;
                 rgba = src.sampleNearest(self.outCoord());
                 var luminance: f32 = rgba[0] * 0.3086 + rgba[1] * 0.6094 + rgba[2] * 0.082;
                 r = (color[0] + luminance) * amount + rgba[0] * (1.0 - amount);
                 g = (color[1] + luminance) * amount + rgba[1] * (1.0 - amount);
                 b = (color[2] + luminance) * amount + rgba[2] * (1.0 - amount);
+                _ = clamp(r, 0.0, 1.0);
+                _ = clamp(g, 0.0, 1.0);
+                _ = clamp(b, 0.0, 1.0);
                 self.dst = @Vector(4, f32){ r, g, b, rgba[3] };
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
@@ -64,6 +68,29 @@ pub const kernel = struct {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
+            fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
+                return switch (@typeInfo(@TypeOf(min_val))) {
+                    .Vector => calc: {
+                        const T = @typeInfo(@TypeOf(v)).Vector.child;
+                        const result1 = @select(T, v < min_val, min_val, v);
+                        const result2 = @select(T, result1 > max_val, max_val, result1);
+                        break :calc result2;
+                    },
+                    else => switch (@typeInfo(@TypeOf(v))) {
+                        .Vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
+                        else => calc: {
+                            if (v < min_val) {
+                                break :calc min_val;
+                            } else if (v > max_val) {
+                                break :calc max_val;
+                            } else {
+                                break :calc v;
+                            }
+                        },
+                    },
+                };
             }
         };
     }

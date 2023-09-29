@@ -468,7 +468,11 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'raytracer';
     await translate(name);
-    await apply(name, { oImage: 'malgorzata-socha.png' });
+    const params = {
+      outputWidth: 512,
+      outputHeight: 512,
+    };
+    await apply(name, {}, params);
   })
   it('should correctly translate rt-julia.pbk', async function() {
     this.timeout(60000);

@@ -28,7 +28,7 @@ kernel Tint
     void evaluatePixel()
     {
         float4 rgba;
-        float r, g, b;
+        float r, g, b, a;
 
         // sample pixel value
         rgba = sampleNearest(src, outCoord());
@@ -42,6 +42,11 @@ kernel Tint
         r = (color.r + luminance) * amount + rgba.r * (1.0 - amount);
         g = (color.g + luminance) * amount + rgba.g * (1.0 - amount);
         b = (color.b + luminance) * amount + rgba.b * (1.0 - amount);
+
+        //range assurance
+        clamp(r, 0.0, 1.0);
+        clamp(g, 0.0, 1.0);
+        clamp(b, 0.0, 1.0);
 
         // set output pixel
         dst = float4(r, g, b, rgba.a);

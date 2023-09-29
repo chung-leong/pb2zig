@@ -254,7 +254,7 @@ pub const kernel = struct {
                 self.sampleContribution = 1.0 / pow(@as(f32, @floatFromInt(antialiasing)), 2.0);
             }
             
-            fn render(self: *@This(), z: @Vector(2, f32), alphaRemaining: *const f32, sign: *const i32, iteration: *const i32, colorSoFar: *const @Vector(4, f32)) void {
+            fn render(self: *@This(), z: @Vector(2, f32), alphaRemaining: *f32, sign: *i32, iteration: *i32, colorSoFar: *@Vector(4, f32)) void {
                 const minDimension = self.minDimension;
                 const _shift = self._shift;
                 const tileBasedOnTransparency = self.tileBasedOnTransparency;
@@ -364,7 +364,7 @@ pub const kernel = struct {
                     z = complexMult(z, power(ratio, levelStart));
                 }
                 iteration = 0;
-                self.render(z, alphaRemaining, sign, iteration, colorSoFar);
+                self.render(z, &alphaRemaining, &sign, &iteration, &colorSoFar);
                 if (sign < 0) {
                     ratio = complexMult(@Vector(2, f32){ r2 / r1, 0.0 }, complexExp(complexMult(angle, I)));
                 }
@@ -375,7 +375,7 @@ pub const kernel = struct {
                 var maxIteration: i32 = levels + levelStart - 1;
                 while (sign != 0 and iteration < maxIteration) {
                     z = complexMult(z, ratio);
-                    self.render(z, alphaRemaining, sign, iteration, colorSoFar);
+                    self.render(z, &alphaRemaining, &sign, &iteration, &colorSoFar);
                 }
                 return colorSoFar;
             }

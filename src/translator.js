@@ -184,7 +184,7 @@ export class PixelBenderToZigTranslator {
       this.endScope();
     }
     const argTypes = argsWithTypes.map(a => a.type);
-    const argPointers = argTypesWithTypes.map(a => a.pointer);
+    const argPointers = argsWithTypes.map(a => a.pointer);
     const needSelf = (external.length > 0) || calls.find(({ name }) => {
       if (this.functions[name]?.receiver === 'self') {
         return true;
@@ -978,6 +978,23 @@ export class PixelBenderToZigTranslator {
     return new ZigExpr(code, type);
   }
 
+  translateIndex(element) {
+    const expr = this.translateExpression(element);
+    if (element instanceof N.Literal) {
+      // a number
+      return expr;
+    }
+    if (element instanceof N.VariableAccess) {
+      const variable = this.variables[element.name];
+      if (variable.scope === 'global') {
+        // a constant
+        return expr;
+      }
+    }
+    // need to use @intCast() on int
+    return new ZigExpr(`@intCast(${expr})`, expr.value);
+  }
+
   translateVariableAccess(expression, typeExpected) {
     if (typeExpected !== 'void') {
       const tmp = this.findTempVariable(expression);
@@ -999,7 +1016,7 @@ export class PixelBenderToZigTranslator {
         value = new ZigExpr(`${value}[${index}]`, typeS);
       }
     } else if (element) {
-      const index = this.translateExpression(element);
+      const index = this.translateIndex(element);
       const typeC = getChildType(value.type);
       value = new ZigExpr(`${value}[${index}]`, typeC);
     }
@@ -1021,7 +1038,7 @@ export class PixelBenderToZigTranslator {
         return new ZigExpr(`${value}[${index}]`, typeS);
       }
     } else {
-      const index = this.translateExpression(element);
+      const index = this.translateIndex(element);
       const typeC = getChildType(type);
       return new ZigExpr(`${value}[${index}]`, typeC);
     }
@@ -1047,7 +1064,7 @@ export class PixelBenderToZigTranslator {
     return tmp ?? value;
   }
 
-  translateFunctionCall({ name, args }) {
+  translateFunctionCall({ name, args }, typeExpected) {
     let argList = args.map(a => this.translateExpression(a));
     if (!this.functions[name]) {
       // try converting macro to a global function
@@ -1098,7 +1115,12 @@ export class PixelBenderToZigTranslator {
       }
       return arg;
     });
-    return new ZigExpr(`${name}(${argListWithPtr.join(', ')})`, type);
+    const expr = new ZigExpr(`${name}(${argListWithPtr.join(', ')})`, type);
+    if (typeExpected === 'void') {
+      this.add(`_ = ${expr};`);
+      return null;
+    }
+    return expr;
   }
 
   translateConstructorCall({ type, args }, typeExpected) {

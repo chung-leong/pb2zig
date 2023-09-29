@@ -270,7 +270,7 @@ pub const kernel = struct {
             objRotation: [3]@Vector(3, f32) = undefined,
             
             // functions defined in kernel
-            fn DE(self: *@This(), z0: @Vector(3, f32), min_dist: *const f32) f32 {
+            fn DE(self: *@This(), z0: @Vector(3, f32), min_dist: *f32) f32 {
                 const julia = self.input.julia;
                 const julia_c = self.input.julia_c;
                 const power = self.input.power;
@@ -330,7 +330,7 @@ pub const kernel = struct {
                 return 0.5 * r * log(r) / r_dz;
             }
             
-            fn intersectBoundingSphere(self: *@This(), origin: @Vector(3, f32), direction: @Vector(3, f32), tmin: *const f32, tmax: *const f32) bool {
+            fn intersectBoundingSphere(self: *@This(), origin: @Vector(3, f32), direction: @Vector(3, f32), tmin: *f32, tmax: *f32) bool {
                 const bounding = self.input.bounding;
                 
                 var hit: bool = true;
@@ -347,13 +347,13 @@ pub const kernel = struct {
                     if (t0 >= 0.0) {
                         var min_dist: f32 = undefined;
                         var z: @Vector(3, f32) = origin + @as(@Vector(3, f32), @splat(t0)) * direction;
-                        tmin.* = self.DE(z, min_dist);
+                        tmin.* = self.DE(z, &min_dist);
                         tmax.* = t0 + t1;
                     } else {
                         if (t0 < 0.0) {
                             var min_dist: f32 = undefined;
                             var z: @Vector(3, f32) = origin;
-                            tmin.* = self.DE(z, min_dist);
+                            tmin.* = self.DE(z, &min_dist);
                             tmax.* = t1;
                         }
                     }
@@ -370,13 +370,13 @@ pub const kernel = struct {
                 var z4: @Vector(3, f32) = z - @Vector(3, f32){ 0.0, e, 0.0 };
                 var z5: @Vector(3, f32) = z + @Vector(3, f32){ 0.0, 0.0, e };
                 var z6: @Vector(3, f32) = z - @Vector(3, f32){ 0.0, 0.0, e };
-                var dx: f32 = self.DE(z1, min_dst) - self.DE(z2, min_dst);
-                var dy: f32 = self.DE(z3, min_dst) - self.DE(z4, min_dst);
-                var dz: f32 = self.DE(z5, min_dst) - self.DE(z6, min_dst);
+                var dx: f32 = self.DE(z1, &min_dst) - self.DE(z2, &min_dst);
+                var dy: f32 = self.DE(z3, &min_dst) - self.DE(z4, &min_dst);
+                var dz: f32 = self.DE(z5, &min_dst) - self.DE(z6, &min_dst);
                 return normalize(@Vector(3, f32){ dx, dy, dz } / @as(@Vector(3, f32), @splat((2.0 * e))));
             }
             
-            fn Phong(self: *@This(), pt: @Vector(3, f32), N: @Vector(3, f32), specular: *const f32) @Vector(3, f32) {
+            fn Phong(self: *@This(), pt: @Vector(3, f32), N: @Vector(3, f32), specular: *f32) @Vector(3, f32) {
                 const light = self.input.light;
                 const objRotation = self.objRotation;
                 const colorDiffuse = self.input.colorDiffuse;
@@ -442,7 +442,7 @@ pub const kernel = struct {
                 var color: @Vector(4, f32) = undefined;
                 color = @shuffle(f32, color, colorBackground, @Vector(4, i32){ -1, -2, -3, 3 });
                 color[3] = colorBackgroundTransparency;
-                if (self.intersectBoundingSphere(eye, ray_direction, tmin, tmax)) {
+                if (self.intersectBoundingSphere(eye, ray_direction, &tmin, &tmax)) {
                     var ray: @Vector(3, f32) = eye + @as(@Vector(3, f32), @splat(tmin)) * ray_direction;
                     var dist: f32 = undefined;
                     var ao: f32 = undefined;
@@ -454,7 +454,7 @@ pub const kernel = struct {
                     var f: f32 = undefined;
                     i = 0;
                     while (i < max_steps) {
-                        dist = self.DE(ray, min_dist);
+                        dist = self.DE(ray, &min_dist);
                         f = epsilonScale * dist;
                         ray += @as(@Vector(3, f32), @splat(f)) * ray_direction;
                         ray_length += f * dist;
@@ -469,7 +469,7 @@ pub const kernel = struct {
                         if (phong) {
                             var normal: @Vector(3, f32) = estimate_normal(ray, eps / 2.0);
                             var specular: f32 = 0.0;
-                            color = @shuffle(f32, color, self.Phong(ray, normal, specular), @Vector(4, i32){ -1, -2, -3, 3 });
+                            color = @shuffle(f32, color, self.Phong(ray, normal, &specular), @Vector(4, i32){ -1, -2, -3, 3 });
                             if (shadows > 0.0) {
                                 var light_direction: @Vector(3, f32) = normalize(matrixCalc("*", (light - ray), objRotation));
                                 ray += normal * @as(@Vector(3, f32), @splat(eps)) * @as(@Vector(3, f32), @splat(2.0));
@@ -478,7 +478,7 @@ pub const kernel = struct {
                                 {
                                     var j: i32 = 0;
                                     while (j < max_steps) {
-                                        dist = self.DE(ray, min_dist2);
+                                        dist = self.DE(ray, &min_dist2);
                                         f = epsilonScale * dist;
                                         ray += @as(@Vector(3, f32), @splat(f)) * light_direction;
                                         if (dist < eps or dot(ray, ray) > bounding * bounding) {

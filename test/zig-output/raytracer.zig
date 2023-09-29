@@ -108,23 +108,23 @@ pub const kernel = struct {
                     var i: i32 = SPHERE_PARAMETER_COUNT * 2;
                     while (i < NUM_SPHERES * SPHERE_PARAMETER_COUNT) {
                         var ifloat: f32 = @as(f32, @floatFromInt(i));
-                        self.sphereArray[i] = sin(ifloat / 5.0) * 6.0;
-                        self.sphereArray[i + 1] = sin(ifloat / 4.1) * 2.5;
-                        self.sphereArray[i + 2] = -18.0 - sin(ifloat / 3.1 + 1.2) * 10.0;
-                        self.sphereArray[i + 3] = pow(sin(ifloat / 1.34 + 65.3) * 0.5 + 0.5, 3.0) * 1.0 + 0.2;
-                        self.sphereArray[i + 4] = cos(ifloat / 2.1 + 1.3) * 0.5 + 0.5;
-                        self.sphereArray[i + 5] = cos(ifloat / 0.1 + 1.3) * 0.5 + 0.5;
-                        self.sphereArray[i + 6] = cos(ifloat / 5.1 + 6.3) * 0.5 + 0.5;
-                        self.sphereArray[i + 7] = 0.1;
-                        self.sphereArray[i + 8] = 0.7;
-                        self.sphereArray[i + 9] = 1.0;
-                        self.sphereArray[i + 10] = pow(sin(ifloat / 2.1 + 1.243) * 0.5 + 0.5, 5.0);
+                        self.sphereArray[@intCast(i)] = sin(ifloat / 5.0) * 6.0;
+                        self.sphereArray[@intCast(i + 1)] = sin(ifloat / 4.1) * 2.5;
+                        self.sphereArray[@intCast(i + 2)] = -18.0 - sin(ifloat / 3.1 + 1.2) * 10.0;
+                        self.sphereArray[@intCast(i + 3)] = pow(sin(ifloat / 1.34 + 65.3) * 0.5 + 0.5, 3.0) * 1.0 + 0.2;
+                        self.sphereArray[@intCast(i + 4)] = cos(ifloat / 2.1 + 1.3) * 0.5 + 0.5;
+                        self.sphereArray[@intCast(i + 5)] = cos(ifloat / 0.1 + 1.3) * 0.5 + 0.5;
+                        self.sphereArray[@intCast(i + 6)] = cos(ifloat / 5.1 + 6.3) * 0.5 + 0.5;
+                        self.sphereArray[@intCast(i + 7)] = 0.1;
+                        self.sphereArray[@intCast(i + 8)] = 0.7;
+                        self.sphereArray[@intCast(i + 9)] = 1.0;
+                        self.sphereArray[@intCast(i + 10)] = pow(sin(ifloat / 2.1 + 1.243) * 0.5 + 0.5, 5.0);
                         i += SPHERE_PARAMETER_COUNT;
                     }
                 }
             }
             
-            fn shootRay(self: *@This(), origin: @Vector(3, f32), dir: @Vector(3, f32), hit: *const i32, pos: *const @Vector(3, f32), t: *const f32, sphereNum: *const i32) void {
+            fn shootRay(self: *@This(), origin: @Vector(3, f32), dir: @Vector(3, f32), hit: *i32, pos: *@Vector(3, f32), t: *f32, sphereNum: *i32) void {
                 const sphereArray = self.sphereArray;
                 
                 var curT: f32 = undefined;
@@ -139,8 +139,8 @@ pub const kernel = struct {
                 {
                     var i: i32 = 0;
                     while (i < NUM_SPHERES * SPHERE_PARAMETER_COUNT) {
-                        spherePos = @Vector(3, f32){ sphereArray[i], sphereArray[i + 1], sphereArray[i + 2] };
-                        sphereRadius = sphereArray[i + 3];
+                        spherePos = @Vector(3, f32){ sphereArray[@intCast(i)], sphereArray[@intCast(i + 1)], sphereArray[@intCast(i + 2)] };
+                        sphereRadius = sphereArray[@intCast(i + 3)];
                         sphereToOrigin = origin - spherePos;
                         B = dot(sphereToOrigin, dir);
                         C = dot(sphereToOrigin, sphereToOrigin) - sphereRadius * sphereRadius;
@@ -195,18 +195,18 @@ pub const kernel = struct {
                 var uv: @Vector(2, f32) = undefined;
                 while (rayShots > 0) {
                     dir = normalize(dir);
-                    self.shootRay(origin, dir, hit, hitPoint, t, sphereNum);
+                    self.shootRay(origin, dir, &hit, &hitPoint, &t, &sphereNum);
                     if (hit != 0) {
-                        spherePos = @Vector(3, f32){ sphereArray[sphereNum], sphereArray[sphereNum + 1], sphereArray[sphereNum + 2] };
-                        sphereRadius = sphereArray[sphereNum + 3];
-                        sphereColor = @Vector(3, f32){ sphereArray[sphereNum + 4], sphereArray[sphereNum + 5], sphereArray[sphereNum + 6] };
-                        sphereMaterial = @Vector(4, f32){ sphereArray[sphereNum + 7], sphereArray[sphereNum + 8], sphereArray[sphereNum + 9], sphereArray[sphereNum + 10] };
+                        spherePos = @Vector(3, f32){ sphereArray[@intCast(sphereNum)], sphereArray[@intCast(sphereNum + 1)], sphereArray[@intCast(sphereNum + 2)] };
+                        sphereRadius = sphereArray[@intCast(sphereNum + 3)];
+                        sphereColor = @Vector(3, f32){ sphereArray[@intCast(sphereNum + 4)], sphereArray[@intCast(sphereNum + 5)], sphereArray[@intCast(sphereNum + 6)] };
+                        sphereMaterial = @Vector(4, f32){ sphereArray[@intCast(sphereNum + 7)], sphereArray[@intCast(sphereNum + 8)], sphereArray[@intCast(sphereNum + 9)], sphereArray[@intCast(sphereNum + 10)] };
                         sphereHit = hitPoint - spherePos;
                         n = sphereHit / @as(@Vector(3, f32), @splat(sphereRadius));
                         lightVector = lightPos - hitPoint;
                         lightVectorLen = length(lightVector);
                         l = lightVector / @as(@Vector(3, f32), @splat(lightVectorLen));
-                        self.shootRay(hitPoint, l, shadowTest, temp, t, temp2);
+                        self.shootRay(hitPoint, l, &shadowTest, &temp, &t, &temp2);
                         if (shadowTest == 0) {
                             shadowTest = 1;
                         } else {

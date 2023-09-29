@@ -155,7 +155,7 @@ pub const kernel = struct {
                 return r;
             }
             
-            fn iterateIntersect(q: *const @Vector(4, f32), qp: *const @Vector(4, f32), c: @Vector(4, f32), maxIterations: i32) void {
+            fn iterateIntersect(q: *@Vector(4, f32), qp: *@Vector(4, f32), c: @Vector(4, f32), maxIterations: i32) void {
                 {
                     var i: i32 = 0;
                     while (i < maxIterations) {
@@ -202,7 +202,7 @@ pub const kernel = struct {
                 return N;
             }
             
-            fn intersectQJulia(self: *@This(), rO: *const @Vector(3, f32), rD: *const @Vector(3, f32), c: @Vector(4, f32)) @Vector(2, f32) {
+            fn intersectQJulia(self: *@This(), rO: *@Vector(3, f32), rD: *@Vector(3, f32), c: @Vector(4, f32)) @Vector(2, f32) {
                 const maxIterations = self.input.maxIterations;
                 const ambientOcclusion = self.input.ambientOcclusion;
                 
@@ -211,7 +211,7 @@ pub const kernel = struct {
                 while (n < 150) {
                     var z: @Vector(4, f32) = @Vector(4, f32){ rO.*[0], rO.*[1], rO.*[2], 0.0 };
                     var zp: @Vector(4, f32) = @Vector(4, f32){ 1.0, 0.0, 0.0, 0.0 };
-                    iterateIntersect(z, zp, c, maxIterations);
+                    iterateIntersect(&z, &zp, c, maxIterations);
                     var normZ: f32 = length(z);
                     dist[0] = 0.5 * normZ * log(normZ) / length(zp);
                     rO.* += rD.* * @as(@Vector(3, f32), @splat(dist[0]));
@@ -283,7 +283,7 @@ pub const kernel = struct {
                 rD = normalize(rD);
                 rO = intersectSphere(rO, rD);
                 if (dot(rO, rO) < BOUNDING_RADIUS_2 + 0.01) {
-                    var dist: @Vector(2, f32) = self.intersectQJulia(rO, rD, mu);
+                    var dist: @Vector(2, f32) = self.intersectQJulia(&rO, &rD, mu);
                     if (dist[0] < EPSILON) {
                         var N: @Vector(3, f32) = self.normEstimate(rO, mu);
                         color = @shuffle(f32, color, self.Phong(lightSource, rD, rO, N, dist[1]), @Vector(4, i32){ -1, -2, -3, 3 });
@@ -291,7 +291,7 @@ pub const kernel = struct {
                         if (shadows > 0.0) {
                             var L: @Vector(3, f32) = normalize(lightSource - rO);
                             rO += N * @as(@Vector(3, f32), @splat(EPSILON)) * @as(@Vector(3, f32), @splat(2.0));
-                            dist = self.intersectQJulia(rO, L, mu);
+                            dist = self.intersectQJulia(&rO, &L, mu);
                             if (dist[0] < EPSILON) {
                                 color = @shuffle(f32, color, @shuffle(f32, color, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(1.0 - shadows)), @Vector(4, i32){ -1, -2, -3, 3 });
                             }
