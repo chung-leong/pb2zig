@@ -1288,19 +1288,18 @@ class ZigExpr {
         this.text = `(if (${this.text}) 1 else 0)`;
       } else if (type === 'float') {
         const value = parseFloat(this.text);
-        if (isNaN(value)) {
+        if (isNumber(this.text)) {
+          this.text = getZigLiteral(parseFloat(this.text), type);
+        } else {
           const typeZ = getZigType(type);
           this.text = `@as(${typeZ}, @floatFromInt(${this.text}))`;
-        } else {
-          this.text = getZigLiteral(value, type);
         }
       } else if (type === 'int') {
-        const value = parseInt(this.text);
-        if (isNaN(value)) {
+        if (isNumber(this.text)) {
+          this.text = getZigLiteral(parseInt(this.text), type);
+        } else {
           const typeZ = getZigType(type);
           this.text = `@as(${typeZ}, @intFromFloat(${this.text}))`;
-        } else {
-          this.text = getZigLiteral(value, type);
         }
       }
     }
@@ -1308,17 +1307,10 @@ class ZigExpr {
   }
 
   decomptime() {
-    if (this.type === 'float') {
-      const value = parseFloat(this.text);
-      if (!isNaN(value)) {
-        const typeZ = getZigType(this.type);
-        this.text = `@as(${typeZ}, ${this.text})`;
-      }
-    } else if (this.type === 'int') {
-      const value = parseInt(this.text);
-      if (!isNaN(value)) {
-        const typeZ = getZigType(this.type);
-        this.text = `@as(${typeZ}, ${this.text})`;
+    if (isNumber(this.text)) {
+      if (this.type === 'float' || this.type === 'int') {
+       const typeZ = getZigType(this.type);
+       this.text = `@as(${typeZ}, ${this.text})`;
       }
     }
   }
@@ -1394,6 +1386,10 @@ function isArray(type) {
 
 function isUnsupported(type) {
   return [ 'region', 'imageRef' ].includes(type);
+}
+
+function isNumber(text) {
+  return /^[-+]?([0-9]*[.])?[0-9]+([eE][-+]?\d+)?$/.test(text);
 }
 
 function getVectorWidth(type) {
@@ -1626,8 +1622,8 @@ const builtInFunctions = (() => {
     ],
   };
   const returnTypeSources = {
-    // nothing here since all built-in overloaded functions get the return type
-    // from the first argument
+    // most overloaded functions get the return type from the first argument
+    step: 1,
   };
   const functions = {};
   for (const [ name, signature ] of Object.entries(signatures)) {
