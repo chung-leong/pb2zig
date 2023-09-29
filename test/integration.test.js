@@ -428,6 +428,16 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
+  it('should correctly translate levels.pbk', async function() {
+    this.timeout(60000);
+    const name = 'levels';
+    await translate(name);
+    const params = {
+      blue: [ 0.5, 1 ],
+      luminance: [ 0.5, 1 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
+  })
   it('should correctly translate luminosity.pbk', async function() {
     this.timeout(60000);
     const name = 'luminosity';
@@ -437,11 +447,17 @@ describe('Integration tests', function() {
       src: 'mandelbrot.png',
     });
   })
+  it('should correctly translate mandelbulb-quick.pbk', async function() {
+    this.timeout(60000);
+    const name = 'mandelbulb-quick';
+    await translate(name);
+    await apply(name, {});
+  })
   it('should correctly translate mandelbulb.pbk', async function() {
     this.timeout(60000);
     const name = 'mandelbulb';
     await translate(name);
-    await apply(name, { oImage: 'malgorzata-socha.png' });
+    await apply(name, {});
   })
   it('should correctly translate mercator.pbk', async function() {
     this.timeout(60000);
@@ -469,6 +485,12 @@ describe('Integration tests', function() {
       source: 'zig-logo.png',
       stripe: 'stripe.png',
     }, params);
+  })
+  it('should correctly translate newton-raphson.pbk', async function() {
+    this.timeout(60000);
+    const name = 'newton-raphson';
+    await translate(name);
+    await apply(name, {});
   })
   it('should correctly translate outline.pbk', async function() {
     this.timeout(60000);
@@ -601,6 +623,14 @@ describe('Integration tests', function() {
     };
     await apply(name, { inputUsedToTest: 'malgorzata-socha.png' }, params);
   })
+  it('should correctly translate rt-terrain.pbk', async function() {
+    this.timeout(60000);
+    const name = 'rt-terrain';
+    await translate(name);
+    const params = {
+    };
+    await apply(name, { inputUsedToTest: 'malgorzata-socha.png' }, params);
+  })
   it('should correctly translate ripple-blocks.pbk', async function() {
     this.timeout(60000);
     const name = 'ripple-blocks';
@@ -652,6 +682,12 @@ describe('Integration tests', function() {
     const name = 'skin-color-filter';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate smart-ssao.pbk', async function() {
+    this.timeout(60000);
+    const name = 'smart-ssao';
+    await translate(name);
+    await apply(name, { depthmap: 'malgorzata-socha.png' });
   })
   it('should correctly translate slices.pbk', async function() {
     this.timeout(60000);
