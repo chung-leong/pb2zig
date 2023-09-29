@@ -1,29 +1,31 @@
-// Pixel Bender "Distort" (translated using pb2zig)
+// Pixel Bender "NewFilter" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "net.nicoptere.filters";
-    pub const vendor = "nicoptere";
+    pub const namespace = "Planes";
+    pub const vendor = "Mr.doob";
     pub const version = 1;
-    pub const description = "displace";
+    pub const description = "Planes effect";
     pub const parameters = .{
-        .amplitude = .{
+        .imgSize = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -100.0, -100.0 },
-            .maxValue = .{ 100.0, 100.0 },
-            .defaultValue = .{ 0.0, 0.0 },
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 512.0, 512.0 },
+            .defaultValue = .{ 512.0, 512.0 },
         },
-        .channels = .{
-            .type = @Vector(2, i32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 3, 3 },
-            .defaultValue = .{ 0, 1 },
+        .center = .{
+            .type = @Vector(2, f32),
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 512.0, 512.0 },
+            .defaultValue = .{ 256.0, 256.0 },
+        },
+        .offset = .{
+            .type = @Vector(2, f32),
         },
     };
     pub const inputImages = .{
         .src = .{ .channels = 4 },
-        .src1 = .{ .channels = 4 },
     };
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
@@ -42,44 +44,44 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                const src1 = self.input.src1;
-                const channels = self.input.channels;
-                const amplitude = self.input.amplitude;
+                const center = self.input.center;
+                const imgSize = self.input.imgSize;
+                const offset = self.input.offset;
                 const src = self.input.src;
                 
-                var coord: @Vector(2, f32) = self.outCoord();
-                var pix: @Vector(4, f32) = src1.sampleNearest(coord);
-                var dx: f32 = undefined;
-                if (channels[0] == 0) {
-                    dx = coord[0] + (0.5 - pix[0]) * amplitude[0];
+                var pos: @Vector(2, f32) = (self.outCoord() - center) / imgSize;
+                var pi: f32 = 3.141592653589793;
+                var a: f32 = atan2(pos[1], pos[0]);
+                var r: f32 = sqrt(pow(pos[0], 2.0) + pow(pos[1], 2.0));
+                var u: f32 = 0.0;
+                var v: f32 = 0.0;
+                var w: f32 = 0.0;
+                u += offset[0];
+                v += offset[1];
+                u += 0.2 / abs(pos[1]);
+                v += 0.2 * pos[0] / abs(pos[1]);
+                w += abs(pos[1] * 2.0);
+                u *= imgSize[0];
+                v *= imgSize[1];
+                if (u < 0.0) {
+                    u += imgSize[0] * ceil(-u / imgSize[0]);
                 }
-                if (channels[0] == 1) {
-                    dx = coord[0] + (0.5 - pix[1]) * amplitude[0];
+                if (v < 0.0) {
+                    v += imgSize[1] * ceil(-v / imgSize[1]);
                 }
-                if (channels[0] == 2) {
-                    dx = coord[0] + (0.5 - pix[2]) * amplitude[0];
+                if (u > imgSize[0]) {
+                    u -= imgSize[0] * floor(u / imgSize[0]);
                 }
-                if (channels[0] == 3) {
-                    dx = coord[0] + (0.5 - pix[3]) * amplitude[0];
+                if (v > imgSize[1]) {
+                    v -= imgSize[1] * floor(v / imgSize[1]);
                 }
-                var dy: f32 = undefined;
-                if (channels[1] == 0) {
-                    dy = coord[1] + (0.5 - pix[0]) * amplitude[1];
-                }
-                if (channels[1] == 1) {
-                    dy = coord[1] + (0.5 - pix[1]) * amplitude[1];
-                }
-                if (channels[1] == 2) {
-                    dy = coord[1] + (0.5 - pix[2]) * amplitude[1];
-                }
-                if (channels[1] == 3) {
-                    dy = coord[1] + (0.5 - pix[3]) * amplitude[1];
-                }
-                var Opix: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ dx, dy });
-                Opix[3] = pix[3];
-                self.dst = Opix;
+                self.dst = src.sampleNearest(@Vector(2, f32){ u, v });
+                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(w)), @Vector(4, i32){ -1, -2, -3, 3 });
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+                _ = pi;
+                _ = a;
+                _ = r;
             }
             
             // built-in Pixel Bender functions
@@ -87,6 +89,50 @@ pub const kernel = struct {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
+            fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => calc: {
+                        var result: @TypeOf(v1) = undefined;
+                        comptime var i = 0;
+                        inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+                            result[i] = atan2(v1[i], v2[i]);
+                        }
+                        break :calc result;
+                    },
+                    else => std.math.atan2(@TypeOf(v1), v1, v2),
+                };
+            }
+            
+            fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => calc: {
+                        var result: @TypeOf(v1) = undefined;
+                        comptime var i = 0;
+                        inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+                            result[i] = pow(v1[i], v2[i]);
+                        }
+                        break :calc result;
+                    },
+                    else => std.math.pow(@TypeOf(v1), v1, v2),
+                };
+            }
+            
+            fn sqrt(v: anytype) @TypeOf(v) {
+                return @sqrt(v);
+            }
+            
+            fn abs(v: anytype) @TypeOf(v) {
+                return @fabs(v);
+            }
+            
+            fn floor(v: anytype) @TypeOf(v) {
+                return @floor(v);
+            }
+            
+            fn ceil(v: anytype) @TypeOf(v) {
+                return @ceil(v);
             }
         };
     }

@@ -1,32 +1,47 @@
-// Pixel Bender "Distort" (translated using pb2zig)
+// Pixel Bender "deformer" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "net.nicoptere.filters";
-    pub const vendor = "nicoptere";
+    pub const namespace = "deformer";
+    pub const vendor = "Frank Reitberger";
     pub const version = 1;
-    pub const description = "displace";
+    pub const description = "deforms whatever get�s in the way.";
     pub const parameters = .{
-        .amplitude = .{
-            .type = @Vector(2, f32),
-            .minValue = .{ -100.0, -100.0 },
-            .maxValue = .{ 100.0, 100.0 },
-            .defaultValue = .{ 0.0, 0.0 },
+        .center_x = .{
+            .type = f32,
+            .minValue = 182.0,
+            .maxValue = 249.0,
+            .defaultValue = 204.64,
+            .description = "center point x",
         },
-        .channels = .{
-            .type = @Vector(2, i32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 3, 3 },
-            .defaultValue = .{ 0, 1 },
+        .center_y = .{
+            .type = f32,
+            .minValue = 158.0,
+            .maxValue = 249.0,
+            .defaultValue = 182.16,
+            .description = "center point y",
+        },
+        .imageHeight = .{
+            .type = f32,
+            .minValue = 1.0,
+            .maxValue = 2024.0,
+            .defaultValue = 323.0,
+            .description = "set image height",
+        },
+        .stretch = .{
+            .type = i32,
+            .minValue = 1,
+            .maxValue = 3,
+            .defaultValue = 2,
+            .description = "calculate stretch(es)",
         },
     };
     pub const inputImages = .{
         .src = .{ .channels = 4 },
-        .src1 = .{ .channels = 4 },
     };
     pub const outputImages = .{
-        .dst = .{ .channels = 4 },
+        .pxl = .{ .channels = 4 },
     };
     
     // generic kernel instance type
@@ -37,49 +52,40 @@ pub const kernel = struct {
             outputCoord: @Vector(2, u32) = @splat(0),
             
             // output pixel
-            dst: @Vector(4, f32) = undefined,
+            pxl: @Vector(4, f32) = undefined,
             
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.dst = @splat(0);
-                const src1 = self.input.src1;
-                const channels = self.input.channels;
-                const amplitude = self.input.amplitude;
+                self.pxl = @splat(0);
+                const center_x = self.input.center_x;
+                const center_y = self.input.center_y;
+                const imageHeight = self.input.imageHeight;
+                const stretch = self.input.stretch;
                 const src = self.input.src;
                 
-                var coord: @Vector(2, f32) = self.outCoord();
-                var pix: @Vector(4, f32) = src1.sampleNearest(coord);
-                var dx: f32 = undefined;
-                if (channels[0] == 0) {
-                    dx = coord[0] + (0.5 - pix[0]) * amplitude[0];
+                var center: @Vector(2, f32) = undefined;
+                center[0] = center_x;
+                center[1] = center_y;
+                var pi: f32 = 3.141592653589793;
+                var pos: @Vector(2, f32) = self.outCoord() - center;
+                pos *= @as(@Vector(2, f32), @splat(cos(pi / 1.5 / imageHeight * pos[0])));
+                var stepY: f32 = length(pos) / center[1];
+                var stepX: f32 = length(pos) / center[0];
+                if (stretch == 1) {
+                    pos *= @as(@Vector(2, f32), @splat((stepY * stepX)));
                 }
-                if (channels[0] == 1) {
-                    dx = coord[0] + (0.5 - pix[1]) * amplitude[0];
+                if (stretch == 2) {
+                    pos *= @as(@Vector(2, f32), @splat((sin(stepY) * cos(stepX))));
                 }
-                if (channels[0] == 2) {
-                    dx = coord[0] + (0.5 - pix[2]) * amplitude[0];
+                if (stretch == 3) {
+                    pos *= @as(@Vector(2, f32), @splat(tan(stepY * stepX) / pi));
                 }
-                if (channels[0] == 3) {
-                    dx = coord[0] + (0.5 - pix[3]) * amplitude[0];
+                if (stretch == 4) {
+                    pos += @as(@Vector(2, f32), @splat(atan(cos(stepY) * sin(stepX))));
                 }
-                var dy: f32 = undefined;
-                if (channels[1] == 0) {
-                    dy = coord[1] + (0.5 - pix[0]) * amplitude[1];
-                }
-                if (channels[1] == 1) {
-                    dy = coord[1] + (0.5 - pix[1]) * amplitude[1];
-                }
-                if (channels[1] == 2) {
-                    dy = coord[1] + (0.5 - pix[2]) * amplitude[1];
-                }
-                if (channels[1] == 3) {
-                    dy = coord[1] + (0.5 - pix[3]) * amplitude[1];
-                }
-                var Opix: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ dx, dy });
-                Opix[3] = pix[3];
-                self.dst = Opix;
+                self.pxl = src.sampleLinear(center + pos);
                 
-                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+                self.output.pxl.setPixel(self.outputCoord[0], self.outputCoord[1], self.pxl);
             }
             
             // built-in Pixel Bender functions
@@ -87,6 +93,37 @@ pub const kernel = struct {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
+            fn sin(v: anytype) @TypeOf(v) {
+                return @sin(v);
+            }
+            
+            fn cos(v: anytype) @TypeOf(v) {
+                return @cos(v);
+            }
+            
+            fn tan(v: anytype) @TypeOf(v) {
+                return @tan(v);
+            }
+            
+            fn atan(v: anytype) @TypeOf(v) {
+                return switch (@typeInfo(@TypeOf(v))) {
+                    .Vector => calc: {
+                        var result: @TypeOf(v) = undefined;
+                        comptime var i = 0;
+                        inline while (i < @typeInfo(@TypeOf(v)).Vector.len) : (i += 1) {
+                            result[i] = atan(v[i]);
+                        }
+                        break :calc result;
+                    },
+                    else => std.math.atan(v),
+                };
+            }
+            
+            fn length(v: anytype) f32 {
+                const sum = @reduce(.Add, v * v);
+                return @sqrt(sum);
             }
         };
     }

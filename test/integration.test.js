@@ -248,6 +248,18 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
+  it('should correctly translate deformer.pbk', async function() {
+    this.timeout(60000);
+    const name = 'deformer';
+    await translate(name);
+    const params = {
+      center_x: 249,
+      center_y: 200,
+      imageHeight: 384,
+      stretch: 1,
+    }
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
+  })
   it('should correctly translate displace.pbk', async function() {
     this.timeout(60000);
     const name = 'displace';
@@ -255,7 +267,7 @@ describe('Integration tests', function() {
     const params = { amplitude: [ 100, -100 ] };
     await apply(name, {
       src: 'malgorzata-socha.png',
-      src1: 'malgorzata-socha.png'
+      src1: 'mandelbrot.png'
     }, params);
   })
   it('should correctly translate dilate-diamond.pbk', async function() {
@@ -276,6 +288,16 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { oImage: 'malgorzata-socha.png' });
   })
+  it('should correctly translate dynamic-palette.pbk', async function() {
+    this.timeout(60000);
+    const name = 'dynamic-palette';
+    await translate(name);
+    const params = {
+      palette: 4,
+    };
+    await apply(name, { src1: 'malgorzata-socha.png' }, params);
+  })
+
   it('should correctly translate erode-diamond.pbk', async function() {
     this.timeout(60000);
     const name = 'erode-diamond';
@@ -335,6 +357,17 @@ describe('Integration tests', function() {
       src: 'mandelbrot.png',
     });
   })
+  it('should correctly translate hypno.pbk', async function() {
+    this.timeout(60000);
+    const name = 'hypno';
+    await translate(name);
+    const params = {
+      imgSize: [ 512, 384 ],
+      center: [ 256, 192 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
+  })
+
   it('should correctly translate invert-rgb.pbk', async function() {
     this.timeout(60000);
     const name = 'invert-rgb';
@@ -419,6 +452,27 @@ describe('Integration tests', function() {
     await translate(name);
     const params = { dimension: 10 };
     await apply(name, { inputImage: 'malgorzata-socha.png' }, params);
+  })
+  it('should correctly translate plasma.pbk', async function() {
+    this.timeout(60000);
+    const name = 'plasma';
+    await translate(name);
+    const params = {
+      size: [ 400, 400 ],
+      distort: 0.1,
+      color_offset: [ 0, 1.5, 1 ],
+    };
+    await apply(name, {}, params);
+  })
+  it('should correctly translate planes.pbk', async function() {
+    this.timeout(60000);
+    const name = 'planes';
+    await translate(name);
+    const params = {
+      imgSize: [ 512, 384 ],
+      center: [ 256, 192 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate posterize.pbk', async function() {
     this.timeout(60000);

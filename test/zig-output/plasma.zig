@@ -1,29 +1,51 @@
-// Pixel Bender "Distort" (translated using pb2zig)
+// Pixel Bender "PlasmaEffect" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "net.nicoptere.filters";
-    pub const vendor = "nicoptere";
+    pub const namespace = "com.mrdoob.shaders";
+    pub const vendor = "Mr.doob";
     pub const version = 1;
-    pub const description = "displace";
+    pub const description = "Good old plasma effect";
     pub const parameters = .{
-        .amplitude = .{
+        .size = .{
+            .type = @Vector(2, f32),
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 1024.0, 1024.0 },
+            .defaultValue = .{ 1024.0, 512.0 },
+        },
+        .center = .{
+            .type = @Vector(2, f32),
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 1024.0, 1024.0 },
+            .defaultValue = .{ 512.0, 256.0 },
+        },
+        .distort = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 0.1,
+            .defaultValue = 0.0,
+        },
+        .offset = .{
             .type = @Vector(2, f32),
             .minValue = .{ -100.0, -100.0 },
             .maxValue = .{ 100.0, 100.0 },
             .defaultValue = .{ 0.0, 0.0 },
         },
-        .channels = .{
-            .type = @Vector(2, i32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 3, 3 },
-            .defaultValue = .{ 0, 1 },
+        .color_offset = .{
+            .type = @Vector(3, f32),
+            .minValue = .{ -5.0, -5.0, -5.0 },
+            .maxValue = .{ 5.0, 5.0, 5.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0 },
+        },
+        .wave = .{
+            .type = @Vector(2, f32),
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 0.1, 0.1 },
+            .defaultValue = .{ 0.05, 0.05 },
         },
     };
     pub const inputImages = .{
-        .src = .{ .channels = 4 },
-        .src1 = .{ .channels = 4 },
     };
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
@@ -42,42 +64,17 @@ pub const kernel = struct {
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                const src1 = self.input.src1;
-                const channels = self.input.channels;
-                const amplitude = self.input.amplitude;
-                const src = self.input.src;
+                const center = self.input.center;
+                const distort = self.input.distort;
+                const offset = self.input.offset;
+                const wave = self.input.wave;
+                const color_offset = self.input.color_offset;
                 
-                var coord: @Vector(2, f32) = self.outCoord();
-                var pix: @Vector(4, f32) = src1.sampleNearest(coord);
-                var dx: f32 = undefined;
-                if (channels[0] == 0) {
-                    dx = coord[0] + (0.5 - pix[0]) * amplitude[0];
-                }
-                if (channels[0] == 1) {
-                    dx = coord[0] + (0.5 - pix[1]) * amplitude[0];
-                }
-                if (channels[0] == 2) {
-                    dx = coord[0] + (0.5 - pix[2]) * amplitude[0];
-                }
-                if (channels[0] == 3) {
-                    dx = coord[0] + (0.5 - pix[3]) * amplitude[0];
-                }
-                var dy: f32 = undefined;
-                if (channels[1] == 0) {
-                    dy = coord[1] + (0.5 - pix[0]) * amplitude[1];
-                }
-                if (channels[1] == 1) {
-                    dy = coord[1] + (0.5 - pix[1]) * amplitude[1];
-                }
-                if (channels[1] == 2) {
-                    dy = coord[1] + (0.5 - pix[2]) * amplitude[1];
-                }
-                if (channels[1] == 3) {
-                    dy = coord[1] + (0.5 - pix[3]) * amplitude[1];
-                }
-                var Opix: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ dx, dy });
-                Opix[3] = pix[3];
-                self.dst = Opix;
+                var pos: @Vector(2, f32) = self.outCoord();
+                var dist: @Vector(2, f32) = pos - center;
+                var distance: f32 = sqrt((dist[0] * dist[0]) + (dist[1] * dist[1])) * distort;
+                var color: f32 = cos((offset[0] + pos[0]) * wave[0]) + sin((offset[1] + pos[1]) * wave[1]) + sin(distance) + cos(distance);
+                self.dst = @Vector(4, f32){ color + color_offset[0], color + color_offset[1], color + color_offset[2], 1.0 };
                 
                 self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
@@ -87,6 +84,18 @@ pub const kernel = struct {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
+            fn sin(v: anytype) @TypeOf(v) {
+                return @sin(v);
+            }
+            
+            fn cos(v: anytype) @TypeOf(v) {
+                return @cos(v);
+            }
+            
+            fn sqrt(v: anytype) @TypeOf(v) {
+                return @sqrt(v);
             }
         };
     }
