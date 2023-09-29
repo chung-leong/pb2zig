@@ -1,4 +1,4 @@
-// Pixel Bender "Erode_diamond" (translated using pb2zig)
+// Pixel Bender "Erode_quad" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
@@ -6,7 +6,7 @@ pub const kernel = struct {
     pub const namespace = "com.gasubasu";
     pub const vendor = "gasubasu";
     pub const version = 1;
-    pub const description = "flash compatible erode filter 'diamond'";
+    pub const description = "flash compatible erode filter 'quad'";
     pub const parameters = .{
     };
     pub const inputImages = .{
@@ -124,50 +124,6 @@ pub const kernel = struct {
                     self.o[2] = n[2];
                 }
                 p = @Vector(2, f32){ 1.0, 1.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ -2.0, 0.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 2.0, 0.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 0.0, -2.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 0.0, 2.0 };
                 n = i.sampleNearest(c + p);
                 if (self.o[0] > n[0]) {
                     self.o[0] = n[0];

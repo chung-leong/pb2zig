@@ -1,19 +1,31 @@
-// Pixel Bender "Erode_diamond" (translated using pb2zig)
+// Pixel Bender "HighContrastFilter" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "com.gasubasu";
-    pub const vendor = "gasubasu";
+    pub const namespace = "com.mimswright";
+    pub const vendor = "MimsWright.com";
     pub const version = 1;
-    pub const description = "flash compatible erode filter 'diamond'";
+    pub const description = "extreme contrast filter that converts to either 1 or 0 based on brightness of source.";
     pub const parameters = .{
+        .threshhold = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 255.0,
+            .defaultValue = 128.0,
+        },
+        .invert = .{
+            .type = i32,
+            .minValue = 0,
+            .maxValue = 1,
+            .defaultValue = 0,
+        },
     };
     pub const inputImages = .{
-        .i = .{ .channels = 4 },
+        .src = .{ .channels = 4 },
     };
     pub const outputImages = .{
-        .o = .{ .channels = 4 },
+        .dst = .{ .channels = 4 },
     };
     
     // generic kernel instance type
@@ -24,162 +36,26 @@ pub const kernel = struct {
             outputCoord: @Vector(2, u32) = @splat(0),
             
             // output pixel
-            o: @Vector(4, f32) = undefined,
+            dst: @Vector(4, f32) = undefined,
             
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.o = @splat(0);
-                const i = self.input.i;
+                self.dst = @splat(0);
+                const src = self.input.src;
+                const invert = self.input.invert;
+                const threshhold = self.input.threshhold;
                 
-                var c: @Vector(2, f32) = self.outCoord();
-                var p: @Vector(2, f32) = undefined;
-                var n: @Vector(4, f32) = undefined;
-                self.o = @Vector(4, f32){ 1.0, 1.0, 1.0, 1.0 };
-                p = @Vector(2, f32){ -1.0, -1.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
+                var px: @Vector(4, f32) = src.sampleNearest(self.outCoord());
+                var brightest: f32 = max(px[0], max(px[1], px[2]));
+                var v: f32 = undefined;
+                if (invert > 0) {
+                    v = step(threshhold, (brightest * 255.0));
+                } else {
+                    v = step((brightest * 255.0), threshhold);
                 }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ -1.0, 0.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ -1.0, 1.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 0.0, -1.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 0.0, 0.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 0.0, 1.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 1.0, -1.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 1.0, 0.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 1.0, 1.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ -2.0, 0.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 2.0, 0.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 0.0, -2.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
-                p = @Vector(2, f32){ 0.0, 2.0 };
-                n = i.sampleNearest(c + p);
-                if (self.o[0] > n[0]) {
-                    self.o[0] = n[0];
-                }
-                if (self.o[1] > n[1]) {
-                    self.o[1] = n[1];
-                }
-                if (self.o[2] > n[2]) {
-                    self.o[2] = n[2];
-                }
+                self.dst = @Vector(4, f32){ v, v, v, v };
                 
-                self.output.o.setPixel(self.outputCoord[0], self.outputCoord[1], self.o);
+                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
             
             // built-in Pixel Bender functions
@@ -187,6 +63,30 @@ pub const kernel = struct {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
+            }
+            
+            fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
+                return switch (@typeInfo(@TypeOf(v2))) {
+                    .Vector => @max(v1, v2),
+                    else => switch (@typeInfo(@TypeOf(v1))) {
+                        .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
+                        else => @max(v1, v2),
+                    },
+                };
+            }
+            
+            fn step(v1: anytype, v2: anytype) @TypeOf(v2) {
+                return switch (@typeInfo(@TypeOf(v1))) {
+                    .Vector => calc: {
+                        const ones: @TypeOf(v2) = @splat(1);
+                        const zeros: @TypeOf(v2) = @splat(0);
+                        break :calc @select(@typeInfo(@TypeOf(v2)).Vector.child, v2 < v1, zeros, ones);
+                    },
+                    else => switch (@typeInfo(@TypeOf(v2))) {
+                        .Vector => step(@as(@TypeOf(v2), @splat(v1)), v2),
+                        else => if (v2 < v1) 0 else 1,
+                    },
+                };
             }
         };
     }

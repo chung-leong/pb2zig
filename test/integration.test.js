@@ -270,9 +270,27 @@ describe('Integration tests', function() {
       src1: 'mandelbrot.png'
     }, params);
   })
+  it('should correctly translate dilate-circle.pbk', async function() {
+    this.timeout(60000);
+    const name = 'dilate-circle';
+    await translate(name);
+    await apply(name, { i: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate dilate-cross.pbk', async function() {
+    this.timeout(60000);
+    const name = 'dilate-cross';
+    await translate(name);
+    await apply(name, { i: 'malgorzata-socha.png' });
+  })
   it('should correctly translate dilate-diamond.pbk', async function() {
     this.timeout(60000);
     const name = 'dilate-diamond';
+    await translate(name);
+    await apply(name, { i: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate dilate-quad.pbk', async function() {
+    this.timeout(60000);
+    const name = 'dilate-quad';
     await translate(name);
     await apply(name, { i: 'malgorzata-socha.png' });
   })
@@ -297,10 +315,27 @@ describe('Integration tests', function() {
     };
     await apply(name, { src1: 'malgorzata-socha.png' }, params);
   })
-
+  it('should correctly translate erode-circle.pbk', async function() {
+    this.timeout(60000);
+    const name = 'erode-circle';
+    await translate(name);
+    await apply(name, { i: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate erode-cross.pbk', async function() {
+    this.timeout(60000);
+    const name = 'erode-cross';
+    await translate(name);
+    await apply(name, { i: 'malgorzata-socha.png' });
+  })
   it('should correctly translate erode-diamond.pbk', async function() {
     this.timeout(60000);
     const name = 'erode-diamond';
+    await translate(name);
+    await apply(name, { i: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate erode-quad.pbk', async function() {
+    this.timeout(60000);
+    const name = 'erode-quad';
     await translate(name);
     await apply(name, { i: 'malgorzata-socha.png' });
   })
@@ -325,6 +360,14 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
+  it('should correctly translate fractal-explorer.pbk', async function() {
+    this.timeout(60000);
+    const name = 'fractal-explorer';
+    await translate(name);
+    const params = {
+    };
+    await apply(name, {}, params);
+  })
   it('should correctly translate frei-chen.pbk', async function() {
     this.timeout(60000);
     const name = 'frei-chen';
@@ -348,6 +391,12 @@ describe('Integration tests', function() {
     const params = { size: 10 };
     await apply(name, { img: 'malgorzata-socha.png' }, params);
   })
+  it('should correctly translate high-contrast.pbk', async function() {
+    this.timeout(60000);
+    const name = 'high-contrast';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
   it('should correctly translate hue.pbk', async function() {
     this.timeout(60000);
     const name = 'hue';
@@ -367,7 +416,6 @@ describe('Integration tests', function() {
     };
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
-
   it('should correctly translate invert-rgb.pbk', async function() {
     this.timeout(60000);
     const name = 'invert-rgb';
@@ -664,7 +712,46 @@ describe('Integration tests', function() {
     };
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
-
+  it('should correctly translate tunnel.pbk', async function() {
+    this.timeout(60000);
+    const name = 'tunnel';
+    await translate(name);
+    const params = {
+      imgSize: [ 512, 384 ],
+      center: [ 256, 192 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
+  })
+  it('should correctly translate tunnel2.pbk', async function() {
+    this.timeout(60000);
+    const name = 'tunnel2';
+    await translate(name);
+    const params = {
+      imgSize: [ 512, 384 ],
+      center: [ 256, 192 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
+  })
+  it('should correctly translate tunnel3.pbk', async function() {
+    this.timeout(60000);
+    const name = 'tunnel3';
+    await translate(name);
+    const params = {
+      imgSize: [ 512, 384 ],
+      center: [ 256, 192 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
+  })
+  it('should correctly translate tunnel4.pbk', async function() {
+    this.timeout(60000);
+    const name = 'tunnel4';
+    await translate(name);
+    const params = {
+      imgSize: [ 512, 384 ],
+      center: [ 256, 192 ],
+    };
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
+  })
   it('should correctly translate twirl.pbk', async function() {
     this.timeout(60000);
     const name = 'twirl';
