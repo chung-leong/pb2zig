@@ -243,6 +243,24 @@ describe('Translator tests', function() {
       expect(result).to.contain('if (hello < 10) continue else break;');
     })
   })
+  describe('Function calls', function() {
+    it('should import built-in functions', function() {
+      const pbkCode = addPBKWrapper(`
+        float a = 1, b = 2;
+        float c = min(a, b);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var c: f32 = min(a, b);');
+      expect(result).to.contain('fn min(v1: anytype, v2: anytype) @TypeOf(v1) {');
+    })
+    it('should use @as on literal where function requires it for return type', function() {
+      const pbkCode = addPBKWrapper(`
+        float c = min(1.0, 2.0);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var c: f32 = min(@as(f32, 1.0), 2.0);');
+    })
+  })
   describe('Macros', function() {
     it('should correctly translate a macro', function() {
       const pbkCode = addPBKWrapper(`
@@ -319,6 +337,13 @@ describe('Translator tests', function() {
       expect(result).to.contain('var value: f32 = array[1];');
       expect(result).to.contain('self.array[1] = 1.0;');
     })
+    it('should import built-in functions used in macro', function() {
+      const pbkCode = addPBKWrapper(`
+        #define COW(a, b) min(a, b)
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('fn min(v1: anytype, v2: anytype) @TypeOf(v1) {');
+    })
   })
   describe('Error handling', function() {
     it('should throw when lexer fails', function() {
@@ -337,6 +362,28 @@ describe('Translator tests', function() {
       expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
         .with.property('message')
         .that.contain('[PARSER]')
+    })
+    it('should report lexer error in macro with right line number', function() {
+      const pbkCode = addPBKWrapper(`
+        #define COW $cow
+      `);
+      const lines = pbkCode.split('\n');
+      const lineNo = lines.findIndex(l => l.includes('#define')) + 1;
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message')
+        .that.contain('[LEXER]')
+        .and.contain(`line ${lineNo}`);
+    })
+    it('should report parser error in macro with right line number', function() {
+      const pbkCode = addPBKWrapper(`
+        #define COW float2 = 1
+      `);
+      const lines = pbkCode.split('\n');
+      const lineNo = lines.findIndex(l => l.includes('#define')) + 1;
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message')
+        .that.contain('[PARSER]')
+        .and.contain(`line ${lineNo}`);
     })
   })
 })
