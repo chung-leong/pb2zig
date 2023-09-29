@@ -184,6 +184,7 @@ export class PixelBenderToZigTranslator {
       this.endScope();
     }
     const argTypes = argsWithTypes.map(a => a.type);
+    const argPointers = argTypesWithTypes.map(a => a.pointer);
     const needSelf = (external.length > 0) || calls.find(({ name }) => {
       if (this.functions[name]?.receiver === 'self') {
         return true;
@@ -205,6 +206,7 @@ export class PixelBenderToZigTranslator {
       type: 'macro',
       returnType,
       argTypes,
+      argPointers,
       overloaded: false,
       receiver: (needSelf) ? 'self' : undefined,
       external,
@@ -679,6 +681,7 @@ export class PixelBenderToZigTranslator {
         type: 'user',
         returnType: type,
         argTypes: args.map(a => a.type),
+        argPointers: args.map(a => a.direction.includes('out')),
         overloaded: false,
         receiver: (external.length > 0 || publicMethods.includes(name)) ? 'self' : null,
         external,
@@ -735,7 +738,7 @@ export class PixelBenderToZigTranslator {
       const argList = args.map((a) => {
         let type = getZigType(a.type);
         if (this.variables[a.name].pointer) {
-          type = `*const ${type}`;
+          type = `*${type}`;
         }
         return `${a.name}: ${type}`;
       });
@@ -1089,7 +1092,13 @@ export class PixelBenderToZigTranslator {
     if (recv) {
       name = `${recv}.${name}`;
     }
-    return new ZigExpr(`${name}(${argList.join(', ')})`, type);
+    const argListWithPtr = argList.map((arg, index) => {
+      if (f.argPointers[index]) {
+        arg = new ZigExpr(`&${arg}`, arg.type);
+      }
+      return arg;
+    });
+    return new ZigExpr(`${name}(${argListWithPtr.join(', ')})`, type);
   }
 
   translateConstructorCall({ type, args }, typeExpected) {
@@ -1678,11 +1687,13 @@ const builtInFunctions = (() => {
     const overloaded = Array.isArray(signature[0]);
     const returnType = (overloaded) ? signature.map(s => s[0]) : signature[0];
     const argTypes = (overloaded) ? signature.map(s => s.slice(1)) : signature.slice(1);
+    const argPointers = argTypes.map(a => false);
     functions[name] = {
       type: 'builtin',
       returnType,
       returnTypeSource: (overloaded) ? returnTypeSources[name] ?? 0 : undefined,
       argTypes,
+      argPointers,
       overloaded,
       receiver: null,
     };
