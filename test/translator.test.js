@@ -347,7 +347,6 @@ describe('Translator tests', function() {
       }
       `;
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      console.log(result);
       expect(result).to.contain('array: [COUNT1 * COUNT2]f32 = undefined,');
       expect(result).to.contain('number: f32 = undefined,');
       expect(result).to.contain('const array = self.array;');
