@@ -2,7 +2,7 @@
   "name": "pb2zig",
   "version": "0.0.1",
   "description": "Pixel Bender to Zig code translator",
-  "main": "index.js",
+  "main": "./src/index.js",
   "type": "module",
   "scripts": {
     "test": "node --experimental-loader node-zigar --no-warnings ./node_modules/mocha/bin/mocha.js --parallel -- test/*.test.js",

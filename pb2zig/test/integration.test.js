@@ -878,18 +878,19 @@ async function apply(name, sources, options = {}) {
     outputHeight,
     ...params
   } = options;
-  const { apply, allocate } = await import(`${zigDir}/${name}.zig`);
-  const input = { ...params };
+  const { Input, createOutput } = await import(`${zigDir}/${name}.zig`);
+  const input = new Input(undefined);
   let width = 400, height = 400, channels = 4, depth = 'uchar', srcCount = 0;
   for (const [ srcName, filename ] of Object.entries(sources)) {
     let img = sharp(`${imgInDir}/${filename}`);
     img = img.ensureAlpha();
     img = img.raw();
-    const { data, info } = await img.toBuffer({ resolveWithObject: true });
+    const { data, info, premultiplied } = await img.toBuffer({ resolveWithObject: true });
     input[srcName] = {
-      pixels: data,
+      data,
       width: info.width,
-      height: info.height
+      height: info.height,
+      premultiplied,
     };
     if (srcCount++ === 0) {
       width = info.width;
@@ -902,12 +903,11 @@ async function apply(name, sources, options = {}) {
   if (outputHeight !== undefined) {
     height = outputHeight;
   }
-  const output = allocate(width, height);
-  apply(input, output);
+  const output = createOutput(width, height, input, params);
   const outputImages = Object.values(output);
   for (const [ index, image ] of outputImages.entries())  {
     const filename = (outputImages.length > 1) ? name + index : name;
-    const dstPixels = image.pixels.typedArray;
+    const dstPixels = image.data.typedArray;
     sharp(dstPixels, {
       raw: { width, height, channels, depth, premultiplied: true },
     }).png().toFile(`${imgOutDir}/${filename}.png`);

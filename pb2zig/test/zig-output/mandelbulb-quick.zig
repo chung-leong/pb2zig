@@ -242,8 +242,9 @@ pub const kernel = struct {
     };
     
     // generic kernel instance type
-    fn Instance(comptime InputStruct: type, comptime OutputStruct: type) type {
+    fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {
         return struct {
+            params: ParameterStruct,
             input: InputStruct,
             output: OutputStruct,
             outputCoord: @Vector(2, u32) = @splat(0),
@@ -264,7 +265,7 @@ pub const kernel = struct {
             
             // functions defined in kernel
             fn powN(self: *@This(), z: *@Vector(3, f32), zr0: f32, dr: *f32) void {
-                const power = self.input.power;
+                const power = self.params.power;
                 
                 var zo0: f32 = asin(z.*[2] / zr0);
                 var zi0: f32 = atan2(z.*[1], z.*[0]);
@@ -278,12 +279,12 @@ pub const kernel = struct {
             }
             
             fn DE(self: *@This(), z0: @Vector(3, f32), min_dist: *f32) f32 {
-                const julia = self.input.julia;
-                const julia_c = self.input.julia_c;
-                const maxIterations = self.input.maxIterations;
-                const radiolaria = self.input.radiolaria;
-                const radiolariaFactor = self.input.radiolariaFactor;
-                const bailout = self.input.bailout;
+                const julia = self.params.julia;
+                const julia_c = self.params.julia_c;
+                const maxIterations = self.params.maxIterations;
+                const radiolaria = self.params.radiolaria;
+                const radiolariaFactor = self.params.radiolariaFactor;
+                const bailout = self.params.bailout;
                 
                 var c: @Vector(3, f32) = @as(@Vector(3, f32), if (julia) julia_c else z0);
                 var z: @Vector(3, f32) = z0;
@@ -314,7 +315,7 @@ pub const kernel = struct {
             }
             
             fn intersectBoundingSphere(self: *@This(), origin: @Vector(3, f32), direction: @Vector(3, f32), tmin: *f32, tmax: *f32) bool {
-                const bounding = self.input.bounding;
+                const bounding = self.params.bounding;
                 
                 var hit: bool = true;
                 var b: f32 = dot(origin, direction);
@@ -360,17 +361,17 @@ pub const kernel = struct {
             }
             
             fn Phong(self: *@This(), pt: @Vector(3, f32), N: @Vector(3, f32), specular: *f32) @Vector(3, f32) {
-                const light = self.input.light;
+                const light = self.params.light;
                 const objRotation = self.objRotation;
-                const colorDiffuse = self.input.colorDiffuse;
-                const colorSpread = self.input.colorSpread;
-                const colorLight = self.input.colorLight;
+                const colorDiffuse = self.params.colorDiffuse;
+                const colorSpread = self.params.colorSpread;
+                const colorLight = self.params.colorLight;
                 const eye = self.eye;
-                const specularity = self.input.specularity;
-                const specularExponent = self.input.specularExponent;
-                const rimLight = self.input.rimLight;
-                const colorAmbient = self.input.colorAmbient;
-                const colorAmbientIntensity = self.input.colorAmbientIntensity;
+                const specularity = self.params.specularity;
+                const specularExponent = self.params.specularExponent;
+                const rimLight = self.params.rimLight;
+                const colorAmbient = self.params.colorAmbient;
+                const colorAmbientIntensity = self.params.colorAmbientIntensity;
                 
                 var diffuse: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
                 var color: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
@@ -395,8 +396,8 @@ pub const kernel = struct {
             
             fn rayDirection(self: *@This(), p: @Vector(2, f32)) @Vector(3, f32) {
                 const aspectRatio = self.aspectRatio;
-                const size = self.input.size;
-                const cameraZoom = self.input.cameraZoom;
+                const size = self.params.size;
+                const cameraZoom = self.params.cameraZoom;
                 const viewRotation = self.viewRotation;
                 const objRotation = self.objRotation;
                 
@@ -405,20 +406,20 @@ pub const kernel = struct {
             }
             
             fn renderPixel(self: *@This(), pixel: @Vector(2, f32)) @Vector(4, f32) {
-                const colorBackground = self.input.colorBackground;
-                const colorBackgroundTransparency = self.input.colorBackgroundTransparency;
+                const colorBackground = self.params.colorBackground;
+                const colorBackgroundTransparency = self.params.colorBackgroundTransparency;
                 const eye = self.eye;
-                const stepLimit = self.input.stepLimit;
-                const epsilonScale = self.input.epsilonScale;
+                const stepLimit = self.params.stepLimit;
+                const epsilonScale = self.params.epsilonScale;
                 const pixel_scale = self.pixel_scale;
-                const ambientOcclusion = self.input.ambientOcclusion;
-                const phong = self.input.phong;
-                const shadows = self.input.shadows;
-                const light = self.input.light;
+                const ambientOcclusion = self.params.ambientOcclusion;
+                const phong = self.params.phong;
+                const shadows = self.params.shadows;
+                const light = self.params.light;
                 const objRotation = self.objRotation;
-                const bounding = self.input.bounding;
-                const colorDiffuse = self.input.colorDiffuse;
-                const ambientOcclusionEmphasis = self.input.ambientOcclusionEmphasis;
+                const bounding = self.params.bounding;
+                const colorDiffuse = self.params.colorDiffuse;
+                const ambientOcclusionEmphasis = self.params.ambientOcclusionEmphasis;
                 
                 var tmin: f32 = undefined;
                 var tmax: f32 = undefined;
@@ -491,12 +492,12 @@ pub const kernel = struct {
             }
             
             pub fn evaluateDependents(self: *@This()) void {
-                const size = self.input.size;
-                const cameraRotation = self.input.cameraRotation;
-                const rotation = self.input.rotation;
-                const cameraPosition = self.input.cameraPosition;
-                const cameraPositionFine = self.input.cameraPositionFine;
-                const antialiasing = self.input.antialiasing;
+                const size = self.params.size;
+                const cameraRotation = self.params.cameraRotation;
+                const rotation = self.params.rotation;
+                const cameraPosition = self.params.cameraPosition;
+                const cameraPositionFine = self.params.cameraPositionFine;
+                const antialiasing = self.params.antialiasing;
                 
                 self.aspectRatio = @as(f32, @floatFromInt(size[0])) / @as(f32, @floatFromInt(size[1]));
                 var c1: f32 = cos(radians(-cameraRotation[0]));
@@ -555,7 +556,7 @@ pub const kernel = struct {
             
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                const antialiasing = self.input.antialiasing;
+                const antialiasing = self.params.antialiasing;
                 const sampleStep = self.sampleStep;
                 const sampleContribution = self.sampleContribution;
                 
@@ -887,33 +888,75 @@ pub const kernel = struct {
     }
     
     // kernel instance creation function
-    pub fn create(input: anytype, output: anytype) Instance(@TypeOf(input), @TypeOf(output)) {
+    pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
             .output = output,
+            .params = params,
         };
     }
 };
 
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
+pub const Parameters = KernelParameters(kernel);
 
-pub fn apply(input: Input, output: Output) void {
-    processImage(kernel, input, output);
+pub fn createOutput(
+allocator: std.mem.Allocator,
+width: u32,
+height: u32,
+input: Input,
+params: Parameters,
+) !Output {
+    return createPartialOutputOf(u8, allocator, width, height, 0, height, input, params);
 }
 
-pub fn allocate(allocator: std.mem.Allocator, width: u32, height: u32) !Output {
-    var output: Output = undefined;
+pub fn createPartialOutput(
+allocator: std.mem.Allocator,
+width: u32,
+height: u32,
+start: u32,
+count: u32,
+input: Input,
+params: Parameters,
+) !Output {
+    return createPartialOutputOf(u8, allocator, width, height, start, count, input, params);
+}
+
+fn createPartialOutputOf(
+comptime T: type,
+allocator: std.mem.Allocator,
+width: u32,
+height: u32,
+start: u32,
+count: u32,
+input: KernelInput(T, kernel),
+params: Parameters,
+) !KernelOutput(u8, kernel) {
+    var output: KernelOutput(u8, kernel) = undefined;
     inline for (std.meta.fields(Output)) |field| {
         const ImageT = @TypeOf(@field(output, field.name));
         @field(output, field.name) = .{
-            .pixels = try allocator.alloc(ImageT.Pixel, height * width),
+            .data = try allocator.alloc(ImageT.Pixel, count * width),
             .width = width,
             .height = height,
+            .offset = start * width,
         };
+    }
+    var instance = kernel.create(input, output, params);
+    var y: u32 = 0;
+    while (y < height) : (y += 1) {
+        var x: u32 = 0;
+        instance.outputCoord[1] = y;
+        while (x < width) : (x += 1) {
+            instance.outputCoord[0] = x;
+            instance.evaluatePixel();
+        }
     }
     return output;
 }
+
+const ColorSpace = enum { srgb, @"display-p3" };
 
 pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) type {
     return struct {
@@ -921,9 +964,12 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         pub const FPixel = @Vector(len, f32);
         pub const channels = len;
         
-        pixels: if (writable) []Pixel else []const Pixel,
+        data: if (writable) []Pixel else []const Pixel,
         width: u32,
         height: u32,
+        colorSpace: ColorSpace = .srgb,
+        premultiplied: bool = false,
+        offset: usize = 0,
         
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
             if (len == 4) {
@@ -1034,7 +1080,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
                 return @as(FPixel, @splat(0));
             }
             const index = (uy * self.width) + ux;
-            const pixel = self.pixels[index];
+            const pixel = self.data[index];
             return switch (@typeInfo(T)) {
                 .Float => pbPixelFromFloatPixel(pixel),
                 .Int => pbPixelFromIntPixel(pixel),
@@ -1046,8 +1092,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             if (comptime !writable) {
                 return;
             }
-            const index = (y * self.width) + x;
-            self.pixels[index] = switch (@typeInfo(T)) {
+            const index = (y * self.width) + x - self.offset;
+            self.data[index] = switch (@typeInfo(T)) {
                 .Float => floatPixelFromPBPixel(pixel),
                 .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
@@ -1101,16 +1147,59 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
     };
 }
 
-const ImageSize = struct {
-    x: u32,
-    y: u32,
-};
-
 pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
-    const param_fields = std.meta.fields(@TypeOf(Kernel.parameters));
     const input_fields = std.meta.fields(@TypeOf(Kernel.inputImages));
-    const field_count = param_fields.len + input_fields.len;
-    comptime var struct_fields: [field_count]std.builtin.Type.StructField = undefined;
+    comptime var struct_fields: [input_fields.len]std.builtin.Type.StructField = undefined;
+    inline for (input_fields, 0..) |field, index| {
+        const input = @field(Kernel.inputImages, field.name);
+        const ImageT = Image(T, input.channels, false);
+        const default_value: ImageT = undefined;
+        struct_fields[index] = .{
+            .name = field.name,
+            .type = ImageT,
+            .default_value = @ptrCast(&default_value),
+            .is_comptime = false,
+            .alignment = @alignOf(ImageT),
+        };
+    }
+    return @Type(.{
+        .Struct = .{
+            .layout = .Auto,
+            .fields = &struct_fields,
+            .decls = &.{},
+            .is_tuple = false,
+        },
+    });
+}
+
+pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
+    const output_fields = std.meta.fields(@TypeOf(Kernel.outputImages));
+    comptime var struct_fields: [output_fields.len]std.builtin.Type.StructField = undefined;
+    inline for (output_fields, 0..) |field, index| {
+        const output = @field(Kernel.outputImages, field.name);
+        const ImageT = Image(T, output.channels, true);
+        const default_value: ImageT = undefined;
+        struct_fields[index] = .{
+            .name = field.name,
+            .type = ImageT,
+            .default_value = @ptrCast(&default_value),
+            .is_comptime = false,
+            .alignment = @alignOf(ImageT),
+        };
+    }
+    return @Type(.{
+        .Struct = .{
+            .layout = .Auto,
+            .fields = &struct_fields,
+            .decls = &.{},
+            .is_tuple = false,
+        },
+    });
+}
+
+pub fn KernelParameters(comptime Kernel: type) type {
+    const param_fields = std.meta.fields(@TypeOf(Kernel.parameters));
+    comptime var struct_fields: [param_fields.len]std.builtin.Type.StructField = undefined;
     inline for (param_fields, 0..) |field, index| {
         const param = @field(Kernel.parameters, field.name);
         const default_value: ?*const anyopaque = get_def: {
@@ -1132,18 +1221,6 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
             .alignment = @alignOf(param.type),
         };
     }
-    const offset = param_fields.len;
-    inline for (input_fields, 0..) |field, index| {
-        const input = @field(Kernel.inputImages, field.name);
-        const ImageT = Image(T, input.channels, false);
-        struct_fields[offset + index] = .{
-            .name = field.name,
-            .type = ImageT,
-            .default_value = null,
-            .is_comptime = false,
-            .alignment = @alignOf(ImageT),
-        };
-    }
     return @Type(.{
         .Struct = .{
             .layout = .Auto,
@@ -1152,55 +1229,4 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
             .is_tuple = false,
         },
     });
-}
-
-pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
-    const output_fields = std.meta.fields(@TypeOf(Kernel.outputImages));
-    comptime var struct_fields: [output_fields.len]std.builtin.Type.StructField = undefined;
-    inline for (output_fields, 0..) |field, index| {
-        const output = @field(Kernel.outputImages, field.name);
-        const ImageT = Image(T, output.channels, true);
-        struct_fields[index] = .{
-            .name = field.name,
-            .type = ImageT,
-            .default_value = null,
-            .is_comptime = false,
-            .alignment = @alignOf(ImageT),
-        };
-    }
-    return @Type(.{
-        .Struct = .{
-            .layout = .Auto,
-            .fields = &struct_fields,
-            .decls = &.{},
-            .is_tuple = false,
-        },
-    });
-}
-
-pub fn processImage(comptime Kernel: type, input: anytype, output: anytype) void {
-    var instance = Kernel.create(input, output);
-    const width: u32 = get: {
-        inline for (std.meta.fields(@TypeOf(output))) |field| {
-            const image = @field(output, field.name);
-            break :get image.width;
-        }
-        break :get 0;
-    };
-    const height: u32 = get: {
-        inline for (std.meta.fields(@TypeOf(output))) |field| {
-            const image = @field(output, field.name);
-            break :get image.height;
-        }
-        break :get 0;
-    };
-    var y: u32 = 0;
-    while (y < height) : (y += 1) {
-        var x: u32 = 0;
-        instance.outputCoord[1] = y;
-        while (x < width) : (x += 1) {
-            instance.outputCoord[0] = x;
-            instance.evaluatePixel();
-        }
-    }
 }

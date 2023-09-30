@@ -392,7 +392,7 @@ export class PixelBenderToZigTranslator {
         previewValue,
         ...others
       } = param;
-      this.variables[name] = { name, type, scope: 'input', mutable: false, pointer: false, unused: false };
+      this.variables[name] = { name, type, scope: 'params', mutable: false, pointer: false, unused: false };
       const typeZ = getZigType(type);
       this.add(`.${param.name} = .{`);
       this.add(`.type = ${typeZ},`);
@@ -445,7 +445,7 @@ export class PixelBenderToZigTranslator {
 
   addInstanceFunction() {
     this.add(`// generic kernel instance type`);
-    this.add(`fn Instance(comptime InputStruct: type, comptime OutputStruct: type) type {`);
+    this.add(`fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {`);
     this.add(`return struct {`);
     this.addInputOutputFields();
     this.addDependentFields();
@@ -458,6 +458,7 @@ export class PixelBenderToZigTranslator {
   }
 
   addInputOutputFields() {
+    this.add(`params: ParameterStruct,`)
     this.add(`input: InputStruct,`);
     this.add(`output: OutputStruct,`);
     this.add(`outputCoord: @Vector(2, u32) = @splat(0),`);
@@ -508,10 +509,11 @@ export class PixelBenderToZigTranslator {
   addCreateFunction() {
     this.add(`// kernel instance creation function`);
     this.add(`
-      pub fn create(input: anytype, output: anytype) Instance(@TypeOf(input), @TypeOf(output)) {
+      pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
           .input = input,
           .output = output,
+          .params = params,
         };
       }
     `.trim());
@@ -638,7 +640,12 @@ export class PixelBenderToZigTranslator {
         continue;
       }
       const { scope, type } = variable;
-      if (scope === 'input') {
+      if (scope === 'params') {
+        // shorten references to parameters
+        this.add(`const ${name} = self.params.${name};`);
+        this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false, unused: true };
+        count++;
+      } else if (scope === 'input') {
         // shorten references to input images
         this.add(`const ${name} = self.input.${name};`);
         this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false, unused: true };

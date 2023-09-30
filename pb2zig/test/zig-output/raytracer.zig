@@ -55,8 +55,9 @@ pub const kernel = struct {
     };
     
     // generic kernel instance type
-    fn Instance(comptime InputStruct: type, comptime OutputStruct: type) type {
+    fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {
         return struct {
+            params: ParameterStruct,
             input: InputStruct,
             output: OutputStruct,
             outputCoord: @Vector(2, u32) = @splat(0),
@@ -77,10 +78,10 @@ pub const kernel = struct {
             
             // functions defined in kernel
             pub fn evaluateDependents(self: *@This()) void {
-                const sphere0Position = self.input.sphere0Position;
-                const sphere0Radius = self.input.sphere0Radius;
-                const sphere0Color = self.input.sphere0Color;
-                const sphere0Material = self.input.sphere0Material;
+                const sphere0Position = self.params.sphere0Position;
+                const sphere0Radius = self.params.sphere0Radius;
+                const sphere0Color = self.params.sphere0Color;
+                const sphere0Material = self.params.sphere0Material;
                 
                 self.sphereArray[0] = sphere0Position[0];
                 self.sphereArray[1] = sphere0Position[1];
@@ -161,9 +162,9 @@ pub const kernel = struct {
             
             pub fn evaluatePixel(self: *@This()) void {
                 self.dst = @splat(0);
-                const viewPlaneDistance = self.input.viewPlaneDistance;
+                const viewPlaneDistance = self.params.viewPlaneDistance;
                 const sphereArray = self.sphereArray;
-                const lightPos = self.input.lightPos;
+                const lightPos = self.params.lightPos;
                 
                 self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 1.0 };
                 var origin: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
@@ -338,33 +339,75 @@ pub const kernel = struct {
     }
     
     // kernel instance creation function
-    pub fn create(input: anytype, output: anytype) Instance(@TypeOf(input), @TypeOf(output)) {
+    pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
             .output = output,
+            .params = params,
         };
     }
 };
 
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
+pub const Parameters = KernelParameters(kernel);
 
-pub fn apply(input: Input, output: Output) void {
-    processImage(kernel, input, output);
+pub fn createOutput(
+allocator: std.mem.Allocator,
+width: u32,
+height: u32,
+input: Input,
+params: Parameters,
+) !Output {
+    return createPartialOutputOf(u8, allocator, width, height, 0, height, input, params);
 }
 
-pub fn allocate(allocator: std.mem.Allocator, width: u32, height: u32) !Output {
-    var output: Output = undefined;
+pub fn createPartialOutput(
+allocator: std.mem.Allocator,
+width: u32,
+height: u32,
+start: u32,
+count: u32,
+input: Input,
+params: Parameters,
+) !Output {
+    return createPartialOutputOf(u8, allocator, width, height, start, count, input, params);
+}
+
+fn createPartialOutputOf(
+comptime T: type,
+allocator: std.mem.Allocator,
+width: u32,
+height: u32,
+start: u32,
+count: u32,
+input: KernelInput(T, kernel),
+params: Parameters,
+) !KernelOutput(u8, kernel) {
+    var output: KernelOutput(u8, kernel) = undefined;
     inline for (std.meta.fields(Output)) |field| {
         const ImageT = @TypeOf(@field(output, field.name));
         @field(output, field.name) = .{
-            .pixels = try allocator.alloc(ImageT.Pixel, height * width),
+            .data = try allocator.alloc(ImageT.Pixel, count * width),
             .width = width,
             .height = height,
+            .offset = start * width,
         };
+    }
+    var instance = kernel.create(input, output, params);
+    var y: u32 = 0;
+    while (y < height) : (y += 1) {
+        var x: u32 = 0;
+        instance.outputCoord[1] = y;
+        while (x < width) : (x += 1) {
+            instance.outputCoord[0] = x;
+            instance.evaluatePixel();
+        }
     }
     return output;
 }
+
+const ColorSpace = enum { srgb, @"display-p3" };
 
 pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) type {
     return struct {
@@ -372,9 +415,12 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         pub const FPixel = @Vector(len, f32);
         pub const channels = len;
         
-        pixels: if (writable) []Pixel else []const Pixel,
+        data: if (writable) []Pixel else []const Pixel,
         width: u32,
         height: u32,
+        colorSpace: ColorSpace = .srgb,
+        premultiplied: bool = false,
+        offset: usize = 0,
         
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
             if (len == 4) {
@@ -485,7 +531,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
                 return @as(FPixel, @splat(0));
             }
             const index = (uy * self.width) + ux;
-            const pixel = self.pixels[index];
+            const pixel = self.data[index];
             return switch (@typeInfo(T)) {
                 .Float => pbPixelFromFloatPixel(pixel),
                 .Int => pbPixelFromIntPixel(pixel),
@@ -497,8 +543,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             if (comptime !writable) {
                 return;
             }
-            const index = (y * self.width) + x;
-            self.pixels[index] = switch (@typeInfo(T)) {
+            const index = (y * self.width) + x - self.offset;
+            self.data[index] = switch (@typeInfo(T)) {
                 .Float => floatPixelFromPBPixel(pixel),
                 .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
@@ -552,16 +598,59 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
     };
 }
 
-const ImageSize = struct {
-    x: u32,
-    y: u32,
-};
-
 pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
-    const param_fields = std.meta.fields(@TypeOf(Kernel.parameters));
     const input_fields = std.meta.fields(@TypeOf(Kernel.inputImages));
-    const field_count = param_fields.len + input_fields.len;
-    comptime var struct_fields: [field_count]std.builtin.Type.StructField = undefined;
+    comptime var struct_fields: [input_fields.len]std.builtin.Type.StructField = undefined;
+    inline for (input_fields, 0..) |field, index| {
+        const input = @field(Kernel.inputImages, field.name);
+        const ImageT = Image(T, input.channels, false);
+        const default_value: ImageT = undefined;
+        struct_fields[index] = .{
+            .name = field.name,
+            .type = ImageT,
+            .default_value = @ptrCast(&default_value),
+            .is_comptime = false,
+            .alignment = @alignOf(ImageT),
+        };
+    }
+    return @Type(.{
+        .Struct = .{
+            .layout = .Auto,
+            .fields = &struct_fields,
+            .decls = &.{},
+            .is_tuple = false,
+        },
+    });
+}
+
+pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
+    const output_fields = std.meta.fields(@TypeOf(Kernel.outputImages));
+    comptime var struct_fields: [output_fields.len]std.builtin.Type.StructField = undefined;
+    inline for (output_fields, 0..) |field, index| {
+        const output = @field(Kernel.outputImages, field.name);
+        const ImageT = Image(T, output.channels, true);
+        const default_value: ImageT = undefined;
+        struct_fields[index] = .{
+            .name = field.name,
+            .type = ImageT,
+            .default_value = @ptrCast(&default_value),
+            .is_comptime = false,
+            .alignment = @alignOf(ImageT),
+        };
+    }
+    return @Type(.{
+        .Struct = .{
+            .layout = .Auto,
+            .fields = &struct_fields,
+            .decls = &.{},
+            .is_tuple = false,
+        },
+    });
+}
+
+pub fn KernelParameters(comptime Kernel: type) type {
+    const param_fields = std.meta.fields(@TypeOf(Kernel.parameters));
+    comptime var struct_fields: [param_fields.len]std.builtin.Type.StructField = undefined;
     inline for (param_fields, 0..) |field, index| {
         const param = @field(Kernel.parameters, field.name);
         const default_value: ?*const anyopaque = get_def: {
@@ -583,18 +672,6 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
             .alignment = @alignOf(param.type),
         };
     }
-    const offset = param_fields.len;
-    inline for (input_fields, 0..) |field, index| {
-        const input = @field(Kernel.inputImages, field.name);
-        const ImageT = Image(T, input.channels, false);
-        struct_fields[offset + index] = .{
-            .name = field.name,
-            .type = ImageT,
-            .default_value = null,
-            .is_comptime = false,
-            .alignment = @alignOf(ImageT),
-        };
-    }
     return @Type(.{
         .Struct = .{
             .layout = .Auto,
@@ -603,55 +680,4 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
             .is_tuple = false,
         },
     });
-}
-
-pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
-    const output_fields = std.meta.fields(@TypeOf(Kernel.outputImages));
-    comptime var struct_fields: [output_fields.len]std.builtin.Type.StructField = undefined;
-    inline for (output_fields, 0..) |field, index| {
-        const output = @field(Kernel.outputImages, field.name);
-        const ImageT = Image(T, output.channels, true);
-        struct_fields[index] = .{
-            .name = field.name,
-            .type = ImageT,
-            .default_value = null,
-            .is_comptime = false,
-            .alignment = @alignOf(ImageT),
-        };
-    }
-    return @Type(.{
-        .Struct = .{
-            .layout = .Auto,
-            .fields = &struct_fields,
-            .decls = &.{},
-            .is_tuple = false,
-        },
-    });
-}
-
-pub fn processImage(comptime Kernel: type, input: anytype, output: anytype) void {
-    var instance = Kernel.create(input, output);
-    const width: u32 = get: {
-        inline for (std.meta.fields(@TypeOf(output))) |field| {
-            const image = @field(output, field.name);
-            break :get image.width;
-        }
-        break :get 0;
-    };
-    const height: u32 = get: {
-        inline for (std.meta.fields(@TypeOf(output))) |field| {
-            const image = @field(output, field.name);
-            break :get image.height;
-        }
-        break :get 0;
-    };
-    var y: u32 = 0;
-    while (y < height) : (y += 1) {
-        var x: u32 = 0;
-        instance.outputCoord[1] = y;
-        while (x < width) : (x += 1) {
-            instance.outputCoord[0] = x;
-            instance.evaluatePixel();
-        }
-    }
 }
