@@ -1,12 +1,10 @@
-import { createPartialOutput, Input } from '[WASM-JS-FILENAME]';
-
 export function createImageData(width, height, source = {}, params = {}) {
   return createPartialImageData(width, height, 0, height, source, params);
 }
 
 export function createPartialImageData(width, height, start, count, source = {}, params = {}) {
   const input = new Input(undefined);
-  const inputKeys = Object.keys(input);
+  const inputKeys = Object.keys(kernel.inputImages);
   const missing = [];
   let colorSpace;
   for (const key of inputKeys) {
@@ -28,7 +26,8 @@ export function createPartialImageData(width, height, start, count, source = {},
       colorSpace = imageData.colorSpace;
     }
   }
-  if (missing) {
+  console.log({ missing });
+  if (missing.length > 0) {
     throw new Error(`Missing input image${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`);
   }
   const output = createPartialOutput(width, height, start, count, input, params);

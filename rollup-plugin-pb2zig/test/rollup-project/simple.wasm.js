@@ -7,6 +7,7 @@ import {
   useVector,
   useStruct,
   useSlice,
+  useEnumeration,
   useArgStruct,
   useErrorSet,
   useErrorUnion,
@@ -15,7 +16,9 @@ import {
   useInt,
   useFloat,
   useType,
+  useBool,
   useVoid,
+  useEnumerationItem,
 } from "zigar-runtime";
 
 // activate features
@@ -25,6 +28,7 @@ usePointer();
 useVector();
 useStruct();
 useSlice();
+useEnumeration();
 useArgStruct();
 useErrorSet();
 useErrorUnion();
@@ -33,7 +37,9 @@ useObject();
 useInt();
 useFloat();
 useType();
+useBool();
 useVoid();
+useEnumerationItem();
 
 // define structures
 const s = {
@@ -63,7 +69,13 @@ const m = {
   bitSize: 32,
   byteSize: 4,
 };
-const s0 = {
+const s0 = {}, s1 = {}, s2 = {}, s3 = {}, s4 = {}, s5 = {}, s6 = {}, s7 = {}, s8 = {}, s9 = {};
+const s10 = {}, s11 = {}, s12 = {}, s13 = {}, s14 = {}, s15 = {}, s16 = {}, s17 = {}, s18 = {}, s19 = {};
+const s20 = {}, s21 = {}, s22 = {}, s23 = {}, s24 = {}, s25 = {}, s26 = {}, s27 = {}, s28 = {}, s29 = {};
+const s30 = {}, s31 = {}, s32 = {}, s33 = {}, s34 = {}, s35 = {}, s36 = {}, s37 = {}, s38 = {}, s39 = {};
+const s40 = {}, s41 = {}, s42 = {}, s43 = {}, s44 = {}, s45 = {}, s46 = {}, s47 = {}, s48 = {}, s49 = {};
+const s50 = {}, s51 = {}, s52 = {}, s53 = {}, s54 = {}, s55 = {}, s56 = {}, s57 = {}, s58 = {};
+Object.assign(s0, {
   ...s,
   name: "u8",
   length: 1,
@@ -77,15 +89,15 @@ const s0 = {
         bitOffset: 0,
         bitSize: 8,
         byteSize: 1,
-        structure: undefined,
+        structure: s0,
       },
     ],
     methods: [],
     template: null
   },
   slot: 5,
-};
-const s1 = {
+});
+Object.assign(s1, {
   ...s,
   type: 1,
   name: "[14:0]u8",
@@ -106,8 +118,8 @@ const s1 = {
     template: null
   },
   slot: 4,
-};
-const s2 = {
+});
+Object.assign(s2, {
   ...s,
   type: 11,
   name: "*const [14:0]u8",
@@ -127,8 +139,8 @@ const s2 = {
     template: null
   },
   slot: 3,
-};
-const s3 = {
+});
+Object.assign(s3, {
   ...s,
   type: 11,
   name: "*const *const [14:0]u8",
@@ -148,8 +160,8 @@ const s3 = {
     template: null
   },
   slot: 2,
-};
-const s4 = {
+});
+Object.assign(s4, {
   ...s,
   type: 1,
   name: "[11:0]u8",
@@ -170,8 +182,8 @@ const s4 = {
     template: null
   },
   slot: 8,
-};
-const s5 = {
+});
+Object.assign(s5, {
   ...s,
   type: 11,
   name: "*const [11:0]u8",
@@ -191,8 +203,8 @@ const s5 = {
     template: null
   },
   slot: 7,
-};
-const s6 = {
+});
+Object.assign(s6, {
   ...s,
   type: 11,
   name: "*const *const [11:0]u8",
@@ -212,8 +224,8 @@ const s6 = {
     template: null
   },
   slot: 6,
-};
-const s7 = {
+});
+Object.assign(s7, {
   ...s,
   name: "i32",
   length: 1,
@@ -223,15 +235,15 @@ const s7 = {
         ...m,
         type: 2,
         bitOffset: 0,
-        structure: undefined,
+        structure: s7,
       },
     ],
     methods: [],
     template: null
   },
   slot: 10,
-};
-const s8 = {
+});
+Object.assign(s8, {
   ...s,
   type: 11,
   name: "*const i32",
@@ -251,8 +263,8 @@ const s8 = {
     template: null
   },
   slot: 9,
-};
-const s9 = {
+});
+Object.assign(s9, {
   ...s,
   name: "f32",
   length: 1,
@@ -262,15 +274,15 @@ const s9 = {
         ...m,
         type: 4,
         bitOffset: 0,
-        structure: undefined,
+        structure: s9,
       },
     ],
     methods: [],
     template: null
   },
-  slot: 49,
-};
-const s10 = {
+  slot: 54,
+});
+Object.assign(s10, {
   ...s,
   type: 13,
   name: "@Vector(3, f32)",
@@ -288,9 +300,9 @@ const s10 = {
     methods: [],
     template: null
   },
-  slot: 19,
-};
-const s11 = {
+  slot: 31,
+});
+Object.assign(s11, {
   ...s,
   type: 1,
   name: "[3]@Vector(3, f32)",
@@ -310,9 +322,9 @@ const s11 = {
     methods: [],
     template: null
   },
-  slot: 18,
-};
-const s12 = {
+  slot: 30,
+});
+Object.assign(s12, {
   ...s,
   type: 11,
   name: "*const [3]@Vector(3, f32)",
@@ -331,15 +343,16 @@ const s12 = {
     methods: [],
     template: null
   },
-  slot: 51,
-};
-const a0 = new Uint8Array([ 160, 30, 16, 0 ]);
-const a1 = new Uint8Array([ 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 0, 0, 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 0, 0, 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 0, 0 ]);
-const a2 = new Uint8Array([ 112, 30, 16, 0 ]);
-const a3 = new Uint8Array([ 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 0, 0 ]);
-const a4 = new Uint8Array([ 64, 30, 16, 0 ]);
-const a5 = new Uint8Array([ 0, 0, 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 154, 153, 153, 62, 0, 0, 128, 63, 51, 51, 51, 63, 0, 0, 0, 0, 205, 204, 204, 61, 154, 153, 153, 62, 205, 204, 76, 63, 0, 0, 0, 0 ]);
-const s13 = {
+  slot: 57,
+});
+const a0 = new Uint8Array([  ]);
+const a1 = new Uint8Array([ 160, 30, 16, 0 ]);
+const a2 = new Uint8Array([ 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 0, 0, 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 0, 0, 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 128, 191, 0, 0, 0, 0 ]);
+const a3 = new Uint8Array([ 112, 30, 16, 0 ]);
+const a4 = new Uint8Array([ 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 128, 63, 0, 0, 0, 0 ]);
+const a5 = new Uint8Array([ 64, 30, 16, 0 ]);
+const a6 = new Uint8Array([ 0, 0, 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 154, 153, 153, 62, 0, 0, 128, 63, 51, 51, 51, 63, 0, 0, 0, 0, 205, 204, 204, 61, 154, 153, 153, 62, 205, 204, 76, 63, 0, 0, 0, 0 ]);
+Object.assign(s13, {
   ...s,
   type: 2,
   name: "struct{comptime type: type = [3]@Vector(3, f32), comptime minValue: [3]@Vector(3, f32) = .{ .{ -1, -1, -1 }, .{ -1, -1, -1 }, .{ -1, -1, -1 } }, comptime maxValue: [3]@Vector(3, f32) = .{ .{ 1, 1, 1 }, .{ 1, 1, 1 }, .{ 1, 1, 1 } }, comptime defaultValue: [3]@Vector(3, f32) = .{ .{ 0.5, 0, 0 }, .{ 0.30000001192092896, 1, 0.699999988079071 }, .{ 0.10000000149011612, 0.30000001192092896, 0.800000011920929 } }}",
@@ -378,36 +391,37 @@ const s13 = {
     ],
     methods: [],
     template: {
+      memory: { array: a0 },
       slots: {
         0: {
           structure: s12,
-          memory: { array: a0 },
+          memory: { array: a1 },
           slots: {
             0: {
               structure: s11,
-              memory: { array: a1 },
+              memory: { array: a2 },
               address: 1056416,
             },
           },
         },
         1: {
           structure: s12,
-          memory: { array: a2 },
+          memory: { array: a3 },
           slots: {
             0: {
               structure: s11,
-              memory: { array: a3 },
+              memory: { array: a4 },
               address: 1056368,
             },
           },
         },
         2: {
           structure: s12,
-          memory: { array: a4 },
+          memory: { array: a5 },
           slots: {
             0: {
               structure: s11,
-              memory: { array: a5 },
+              memory: { array: a6 },
               address: 1056320,
             },
           },
@@ -415,9 +429,9 @@ const s13 = {
       },
     },
   },
-  slot: 33,
-};
-const s14 = {
+  slot: 37,
+});
+Object.assign(s14, {
   ...s,
   type: 11,
   name: "*const struct{comptime type: type = [3]@Vector(3, f32), comptime minValue: [3]@Vector(3, f32) = .{ .{ -1, -1, -1 }, .{ -1, -1, -1 }, .{ -1, -1, -1 } }, comptime maxValue: [3]@Vector(3, f32) = .{ .{ 1, 1, 1 }, .{ 1, 1, 1 }, .{ 1, 1, 1 } }, comptime defaultValue: [3]@Vector(3, f32) = .{ .{ 0.5, 0, 0 }, .{ 0.30000001192092896, 1, 0.699999988079071 }, .{ 0.10000000149011612, 0.30000001192092896, 0.800000011920929 } }}",
@@ -436,11 +450,12 @@ const s14 = {
     methods: [],
     template: null
   },
-  slot: 32,
-};
-const a6 = new Uint8Array([ 170, 170, 170, 170 ]);
+  slot: 36,
+});
 const a7 = new Uint8Array([  ]);
-const s15 = {
+const a8 = new Uint8Array([ 170, 170, 170, 170 ]);
+const a9 = new Uint8Array([  ]);
+Object.assign(s15, {
   ...s,
   type: 2,
   name: "struct{comptime transform: struct{comptime type: type = [3]@Vector(3, f32), comptime minValue: [3]@Vector(3, f32) = .{ .{ -1, -1, -1 }, .{ -1, -1, -1 }, .{ -1, -1, -1 } }, comptime maxValue: [3]@Vector(3, f32) = .{ .{ 1, 1, 1 }, .{ 1, 1, 1 }, .{ 1, 1, 1 } }, comptime defaultValue: [3]@Vector(3, f32) = .{ .{ 0.5, 0, 0 }, .{ 0.30000001192092896, 1, 0.699999988079071 }, .{ 0.10000000149011612, 0.30000001192092896, 0.800000011920929 } }} = .{.type = [3]@Vector(3, f32), .minValue = .{ .{ -1, -1, -1 }, .{ -1, -1, -1 }, .{ -1, -1, -1 } }, .maxValue = .{ .{ 1, 1, 1 }, .{ 1, 1, 1 }, .{ 1, 1, 1 } }, .defaultValue = .{ .{ 0.5, 0, 0 }, .{ 0.30000001192092896, 1, 0.699999988079071 }, .{ 0.10000000149011612, 0.30000001192092896, 0.800000011920929 } }}}",
@@ -459,14 +474,15 @@ const s15 = {
     ],
     methods: [],
     template: {
+      memory: { array: a7 },
       slots: {
         0: {
           structure: s14,
-          memory: { array: a6 },
+          memory: { array: a8 },
           slots: {
             0: {
               structure: s13,
-              memory: { array: a7 },
+              memory: { array: a9 },
               address: -1431655766,
             },
           },
@@ -475,8 +491,8 @@ const s15 = {
     },
   },
   slot: 12,
-};
-const s16 = {
+});
+Object.assign(s16, {
   ...s,
   type: 11,
   name: "*const struct{comptime transform: struct{comptime type: type = [3]@Vector(3, f32), comptime minValue: [3]@Vector(3, f32) = .{ .{ -1, -1, -1 }, .{ -1, -1, -1 }, .{ -1, -1, -1 } }, comptime maxValue: [3]@Vector(3, f32) = .{ .{ 1, 1, 1 }, .{ 1, 1, 1 }, .{ 1, 1, 1 } }, comptime defaultValue: [3]@Vector(3, f32) = .{ .{ 0.5, 0, 0 }, .{ 0.30000001192092896, 1, 0.699999988079071 }, .{ 0.10000000149011612, 0.30000001192092896, 0.800000011920929 } }} = .{.type = [3]@Vector(3, f32), .minValue = .{ .{ -1, -1, -1 }, .{ -1, -1, -1 }, .{ -1, -1, -1 } }, .maxValue = .{ .{ 1, 1, 1 }, .{ 1, 1, 1 }, .{ 1, 1, 1 } }, .defaultValue = .{ .{ 0.5, 0, 0 }, .{ 0.30000001192092896, 1, 0.699999988079071 }, .{ 0.10000000149011612, 0.30000001192092896, 0.800000011920929 } }}}",
@@ -496,10 +512,11 @@ const s16 = {
     template: null
   },
   slot: 11,
-};
-const a8 = new Uint8Array([ 48, 30, 16, 0 ]);
-const a9 = new Uint8Array([ 3, 0, 0, 0 ]);
-const s17 = {
+});
+const a10 = new Uint8Array([  ]);
+const a11 = new Uint8Array([ 48, 30, 16, 0 ]);
+const a12 = new Uint8Array([ 3, 0, 0, 0 ]);
+Object.assign(s17, {
   ...s,
   type: 2,
   name: "struct{comptime channels: comptime_int = 3}",
@@ -518,14 +535,15 @@ const s17 = {
     ],
     methods: [],
     template: {
+      memory: { array: a10 },
       slots: {
         0: {
           structure: s8,
-          memory: { array: a8 },
+          memory: { array: a11 },
           slots: {
             0: {
               structure: s7,
-              memory: { array: a9 },
+              memory: { array: a12 },
               address: 1056304,
             },
           },
@@ -533,9 +551,9 @@ const s17 = {
       },
     },
   },
-  slot: 35,
-};
-const s18 = {
+  slot: 39,
+});
+Object.assign(s18, {
   ...s,
   type: 11,
   name: "*const struct{comptime channels: comptime_int = 3}",
@@ -554,10 +572,11 @@ const s18 = {
     methods: [],
     template: null
   },
-  slot: 34,
-};
-const a10 = new Uint8Array([ 170, 170, 170, 170 ]);
-const s19 = {
+  slot: 38,
+});
+const a13 = new Uint8Array([  ]);
+const a14 = new Uint8Array([ 170, 170, 170, 170 ]);
+Object.assign(s19, {
   ...s,
   type: 2,
   name: "struct{comptime src: struct{comptime channels: comptime_int = 3} = .{.channels = 3}}",
@@ -576,14 +595,15 @@ const s19 = {
     ],
     methods: [],
     template: {
+      memory: { array: a13 },
       slots: {
         0: {
           structure: s18,
-          memory: { array: a10 },
+          memory: { array: a14 },
           slots: {
             0: {
               structure: s17,
-              memory: { array: a7 },
+              memory: { array: a9 },
               address: -1431655766,
             },
           },
@@ -592,8 +612,8 @@ const s19 = {
     },
   },
   slot: 14,
-};
-const s20 = {
+});
+Object.assign(s20, {
   ...s,
   type: 11,
   name: "*const struct{comptime src: struct{comptime channels: comptime_int = 3} = .{.channels = 3}}",
@@ -613,9 +633,10 @@ const s20 = {
     template: null
   },
   slot: 13,
-};
-const a11 = new Uint8Array([ 170, 170, 170, 170 ]);
-const s21 = {
+});
+const a15 = new Uint8Array([  ]);
+const a16 = new Uint8Array([ 170, 170, 170, 170 ]);
+Object.assign(s21, {
   ...s,
   type: 2,
   name: "struct{comptime dst: struct{comptime channels: comptime_int = 3} = .{.channels = 3}}",
@@ -634,14 +655,15 @@ const s21 = {
     ],
     methods: [],
     template: {
+      memory: { array: a15 },
       slots: {
         0: {
           structure: s18,
-          memory: { array: a11 },
+          memory: { array: a16 },
           slots: {
             0: {
               structure: s17,
-              memory: { array: a7 },
+              memory: { array: a9 },
               address: -1431655766,
             },
           },
@@ -650,8 +672,8 @@ const s21 = {
     },
   },
   slot: 16,
-};
-const s22 = {
+});
+Object.assign(s22, {
   ...s,
   type: 11,
   name: "*const struct{comptime dst: struct{comptime channels: comptime_int = 3} = .{.channels = 3}}",
@@ -671,19 +693,21 @@ const s22 = {
     template: null
   },
   slot: 15,
-};
-const a12 = new Uint8Array([ 216, 45, 16, 0 ]);
-const a13 = new Uint8Array([ 173, 45, 16, 0 ]);
-const a14 = new Uint8Array([ 89, 111, 117, 114, 32, 78, 97, 109, 101, 115, 112, 97, 99, 101, 0 ]);
-const a15 = new Uint8Array([ 212, 45, 16, 0 ]);
-const a16 = new Uint8Array([ 151, 45, 16, 0 ]);
-const a17 = new Uint8Array([ 89, 111, 117, 114, 32, 86, 101, 110, 100, 111, 114, 0 ]);
-const a18 = new Uint8Array([ 208, 45, 16, 0 ]);
-const a19 = new Uint8Array([ 1, 0, 0, 0 ]);
-const a20 = new Uint8Array([ 170, 170, 170, 170 ]);
-const a21 = new Uint8Array([ 170, 170, 170, 170 ]);
-const a22 = new Uint8Array([ 170, 170, 170, 170 ]);
-const s23 = {
+});
+const a17 = new Uint8Array([  ]);
+const a18 = new Uint8Array([  ]);
+const a19 = new Uint8Array([ 92, 47, 16, 0 ]);
+const a20 = new Uint8Array([ 23, 47, 16, 0 ]);
+const a21 = new Uint8Array([ 89, 111, 117, 114, 32, 78, 97, 109, 101, 115, 112, 97, 99, 101, 0 ]);
+const a22 = new Uint8Array([ 88, 47, 16, 0 ]);
+const a23 = new Uint8Array([ 1, 47, 16, 0 ]);
+const a24 = new Uint8Array([ 89, 111, 117, 114, 32, 86, 101, 110, 100, 111, 114, 0 ]);
+const a25 = new Uint8Array([ 84, 47, 16, 0 ]);
+const a26 = new Uint8Array([ 1, 0, 0, 0 ]);
+const a27 = new Uint8Array([ 170, 170, 170, 170 ]);
+const a28 = new Uint8Array([ 170, 170, 170, 170 ]);
+const a29 = new Uint8Array([ 170, 170, 170, 170 ]);
+Object.assign(s23, {
   ...s,
   type: 2,
   name: "simple.kernel",
@@ -694,6 +718,7 @@ const s23 = {
     members: [],
     methods: [],
     template: {
+      memory: { array: a17 },
     },
   },
   static: {
@@ -743,20 +768,21 @@ const s23 = {
     ],
     methods: [],
     template: {
+      memory: { array: a18 },
       slots: {
         0: {
           structure: s3,
-          memory: { array: a12 },
+          memory: { array: a19 },
           slots: {
             0: {
               structure: s2,
-              memory: { array: a13 },
-              address: 1060312,
+              memory: { array: a20 },
+              address: 1060700,
               slots: {
                 0: {
                   structure: s1,
-                  memory: { array: a14 },
-                  address: 1060269,
+                  memory: { array: a21 },
+                  address: 1060631,
                 },
               },
             },
@@ -764,17 +790,17 @@ const s23 = {
         },
         1: {
           structure: s6,
-          memory: { array: a15 },
+          memory: { array: a22 },
           slots: {
             0: {
               structure: s5,
-              memory: { array: a16 },
-              address: 1060308,
+              memory: { array: a23 },
+              address: 1060696,
               slots: {
                 0: {
                   structure: s4,
-                  memory: { array: a17 },
-                  address: 1060247,
+                  memory: { array: a24 },
+                  address: 1060609,
                 },
               },
             },
@@ -782,44 +808,44 @@ const s23 = {
         },
         2: {
           structure: s8,
-          memory: { array: a18 },
+          memory: { array: a25 },
           slots: {
             0: {
               structure: s7,
-              memory: { array: a19 },
-              address: 1060304,
+              memory: { array: a26 },
+              address: 1060692,
             },
           },
         },
         3: {
           structure: s16,
-          memory: { array: a20 },
+          memory: { array: a27 },
           slots: {
             0: {
               structure: s15,
-              memory: { array: a7 },
+              memory: { array: a9 },
               address: -1431655766,
             },
           },
         },
         4: {
           structure: s20,
-          memory: { array: a21 },
+          memory: { array: a28 },
           slots: {
             0: {
               structure: s19,
-              memory: { array: a7 },
+              memory: { array: a9 },
               address: -1431655766,
             },
           },
         },
         5: {
           structure: s22,
-          memory: { array: a22 },
+          memory: { array: a29 },
           slots: {
             0: {
               structure: s21,
-              memory: { array: a7 },
+              memory: { array: a9 },
               address: -1431655766,
             },
           },
@@ -828,8 +854,8 @@ const s23 = {
     },
   },
   slot: 1,
-};
-const s24 = {
+});
+Object.assign(s24, {
   ...s,
   type: 13,
   name: "@Vector(4, u8)",
@@ -847,9 +873,9 @@ const s24 = {
     methods: [],
     template: null
   },
-  slot: 28,
-};
-const s25 = {
+  slot: 21,
+});
+Object.assign(s25, {
   ...s,
   type: 12,
   name: "[_]const @Vector(4, u8)",
@@ -865,9 +891,9 @@ const s25 = {
     methods: [],
     template: null
   },
-  slot: 27,
-};
-const s26 = {
+  slot: 20,
+});
+Object.assign(s26, {
   ...s,
   type: 11,
   name: "[]const @Vector(4, u8)",
@@ -889,9 +915,9 @@ const s26 = {
     methods: [],
     template: null
   },
-  slot: 26,
-};
-const s27 = {
+  slot: 19,
+});
+Object.assign(s27, {
   ...s,
   name: "u32",
   length: 1,
@@ -901,15 +927,85 @@ const s27 = {
         ...m,
         type: 3,
         bitOffset: 0,
-        structure: undefined,
+        structure: s27,
       },
     ],
     methods: [],
     template: null
   },
-  slot: 29,
-};
-const s28 = {
+  slot: 22,
+});
+const a30 = new Uint8Array([ 0, 0, 0, 0, 1, 0, 0, 0 ]);
+Object.assign(s28, {
+  ...s,
+  type: 9,
+  name: "simple.ColorSpace",
+  length: 1,
+  byteSize: 1,
+  align: 0,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 2,
+        name: "srgb",
+        structure: s7,
+      },
+      {
+        ...m,
+        type: 2,
+        name: "display-p3",
+        structure: s7,
+      },
+    ],
+    methods: [],
+    template: {
+      memory: { array: a30 },
+    },
+  },
+  slot: 23,
+});
+Object.assign(s29, {
+  ...s,
+  name: "bool",
+  length: 1,
+  byteSize: 1,
+  align: 0,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 1,
+        bitOffset: 0,
+        bitSize: 1,
+        byteSize: 1,
+        structure: s29,
+      },
+    ],
+    methods: [],
+    template: null
+  },
+  slot: 24,
+});
+Object.assign(s30, {
+  ...s,
+  name: "usize",
+  length: 1,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 3,
+        bitOffset: 0,
+        structure: s30,
+      },
+    ],
+    methods: [],
+    template: null
+  },
+  slot: 25,
+});
+Object.assign(s31, {
   ...s,
   type: 3,
   name: "getPixel",
@@ -924,17 +1020,17 @@ const s28 = {
         type: 6,
         isRequired: true,
         bitOffset: 128,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s39,
       },
       {
         ...m,
         type: 2,
         isRequired: true,
-        bitOffset: 256,
+        bitOffset: 320,
         slot: 1,
         name: "1",
         structure: s7,
@@ -943,7 +1039,7 @@ const s28 = {
         ...m,
         type: 2,
         isRequired: true,
-        bitOffset: 288,
+        bitOffset: 352,
         slot: 2,
         name: "2",
         structure: s7,
@@ -963,9 +1059,9 @@ const s28 = {
     methods: [],
     template: null
   },
-  slot: 36,
-};
-const s29 = {
+  slot: 40,
+});
+Object.assign(s32, {
   ...s,
   name: "void",
   length: 1,
@@ -978,15 +1074,15 @@ const s29 = {
         bitOffset: 0,
         bitSize: 0,
         byteSize: 0,
-        structure: undefined,
+        structure: s32,
       },
     ],
     methods: [],
     template: null
   },
-  slot: 25,
-};
-const s30 = {
+  slot: 55,
+});
+Object.assign(s33, {
   ...s,
   type: 3,
   name: "setPixel",
@@ -1001,17 +1097,17 @@ const s30 = {
         type: 6,
         isRequired: true,
         bitOffset: 128,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s39,
       },
       {
         ...m,
         type: 3,
         isRequired: true,
-        bitOffset: 256,
+        bitOffset: 320,
         slot: 1,
         name: "1",
         structure: s27,
@@ -1020,7 +1116,7 @@ const s30 = {
         ...m,
         type: 3,
         isRequired: true,
-        bitOffset: 288,
+        bitOffset: 352,
         slot: 2,
         name: "2",
         structure: s27,
@@ -1044,15 +1140,15 @@ const s30 = {
         byteSize: 0,
         slot: 4,
         name: "retval",
-        structure: s29,
+        structure: s32,
       },
     ],
     methods: [],
     template: null
   },
-  slot: 37,
-};
-const s31 = {
+  slot: 41,
+});
+Object.assign(s34, {
   ...s,
   type: 13,
   name: "@Vector(2, f32)",
@@ -1070,14 +1166,14 @@ const s31 = {
     methods: [],
     template: null
   },
-  slot: 50,
-};
-const s32 = {
+  slot: 56,
+});
+Object.assign(s35, {
   ...s,
   type: 3,
   name: "pixelSize",
   length: 1,
-  byteSize: 24,
+  byteSize: 32,
   align: 3,
   hasPointer: true,
   instance: {
@@ -1087,11 +1183,11 @@ const s32 = {
         type: 6,
         isRequired: true,
         bitOffset: 64,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s39,
       },
       {
         ...m,
@@ -1102,20 +1198,20 @@ const s32 = {
         byteSize: 8,
         slot: 1,
         name: "retval",
-        structure: s31,
+        structure: s34,
       },
     ],
     methods: [],
     template: null
   },
-  slot: 38,
-};
-const s33 = {
+  slot: 42,
+});
+Object.assign(s36, {
   ...s,
   type: 3,
   name: "pixelAspectRatio",
   length: 1,
-  byteSize: 20,
+  byteSize: 28,
   hasPointer: true,
   instance: {
     members: [
@@ -1124,17 +1220,17 @@ const s33 = {
         type: 6,
         isRequired: true,
         bitOffset: 0,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s39,
       },
       {
         ...m,
         type: 4,
         isRequired: true,
-        bitOffset: 128,
+        bitOffset: 192,
         slot: 1,
         name: "retval",
         structure: s9,
@@ -1143,9 +1239,9 @@ const s33 = {
     methods: [],
     template: null
   },
-  slot: 39,
-};
-const s34 = {
+  slot: 43,
+});
+Object.assign(s37, {
   ...s,
   type: 3,
   name: "sampleNearest",
@@ -1160,11 +1256,11 @@ const s34 = {
         type: 6,
         isRequired: true,
         bitOffset: 192,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s39,
       },
       {
         ...m,
@@ -1175,7 +1271,7 @@ const s34 = {
         byteSize: 8,
         slot: 1,
         name: "1",
-        structure: s31,
+        structure: s34,
       },
       {
         ...m,
@@ -1192,9 +1288,9 @@ const s34 = {
     methods: [],
     template: null
   },
-  slot: 40,
-};
-const s35 = {
+  slot: 44,
+});
+Object.assign(s38, {
   ...s,
   type: 3,
   name: "sampleLinear",
@@ -1209,11 +1305,11 @@ const s35 = {
         type: 6,
         isRequired: true,
         bitOffset: 192,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s39,
       },
       {
         ...m,
@@ -1224,7 +1320,7 @@ const s35 = {
         byteSize: 8,
         slot: 1,
         name: "1",
-        structure: s31,
+        structure: s34,
       },
       {
         ...m,
@@ -1241,46 +1337,47 @@ const s35 = {
     methods: [],
     template: null
   },
-  slot: 41,
-};
-const a23 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
-const a24 = new Uint8Array([ 48, 30, 16, 0 ]);
+  slot: 45,
+});
+const a31 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
+const a32 = new Uint8Array([  ]);
+const a33 = new Uint8Array([ 48, 30, 16, 0 ]);
 const f0 = {
-  argStruct: s28,
-  thunk: 12,
+  argStruct: s31,
+  thunk: 4,
   name: "getPixel",
 };
 const f1 = {
-  argStruct: s30,
-  thunk: 4,
+  argStruct: s33,
+  thunk: 3,
   name: "setPixel",
 };
 const f2 = {
-  argStruct: s32,
-  thunk: 8,
+  argStruct: s35,
+  thunk: 19,
   name: "pixelSize",
 };
 const f3 = {
-  argStruct: s33,
-  thunk: 5,
+  argStruct: s36,
+  thunk: 6,
   name: "pixelAspectRatio",
 };
 const f4 = {
-  argStruct: s34,
-  thunk: 6,
+  argStruct: s37,
+  thunk: 1,
   name: "sampleNearest",
 };
 const f5 = {
-  argStruct: s35,
-  thunk: 17,
+  argStruct: s38,
+  thunk: 15,
   name: "sampleLinear",
 };
-const s36 = {
+Object.assign(s39, {
   ...s,
   type: 2,
   name: "simple.Image(u8,3,false)",
   length: 1,
-  byteSize: 16,
+  byteSize: 24,
   hasPointer: true,
   instance: {
     members: [
@@ -1292,7 +1389,7 @@ const s36 = {
         bitSize: 64,
         byteSize: 8,
         slot: 0,
-        name: "pixels",
+        name: "data",
         structure: s26,
       },
       {
@@ -1313,10 +1410,38 @@ const s36 = {
         name: "height",
         structure: s27,
       },
+      {
+        ...m,
+        type: 5,
+        bitOffset: 160,
+        bitSize: 1,
+        byteSize: 1,
+        slot: 3,
+        name: "colorSpace",
+        structure: s28,
+      },
+      {
+        ...m,
+        type: 1,
+        bitOffset: 168,
+        bitSize: 1,
+        byteSize: 1,
+        slot: 4,
+        name: "premultiplied",
+        structure: s29,
+      },
+      {
+        ...m,
+        type: 3,
+        bitOffset: 128,
+        slot: 5,
+        name: "offset",
+        structure: s30,
+      },
     ],
     methods: [ f0, f1, f2, f3, f4, f5 ],
     template: {
-      memory: { array: a23 },
+      memory: { array: a31 },
     },
   },
   static: {
@@ -1343,14 +1468,15 @@ const s36 = {
     ],
     methods: [ f0, f1, f2, f3, f4, f5 ],
     template: {
+      memory: { array: a32 },
       slots: {
         0: {
           structure: s8,
-          memory: { array: a24 },
+          memory: { array: a33 },
           slots: {
             0: {
               structure: s7,
-              memory: { array: a9 },
+              memory: { array: a12 },
               address: 1056304,
             },
           },
@@ -1358,16 +1484,18 @@ const s36 = {
       },
     },
   },
-  slot: 23,
-};
-const a25 = new Uint8Array([ 0, 0, 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 154, 153, 153, 62, 0, 0, 128, 63, 51, 51, 51, 63, 0, 0, 0, 0, 205, 204, 204, 61, 154, 153, 153, 62, 205, 204, 76, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
-const s37 = {
+  slot: 18,
+});
+const a34 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
+const a35 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
+const a36 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0 ]);
+const a37 = new Uint8Array([  ]);
+Object.assign(s40, {
   ...s,
   type: 2,
   name: "simple.KernelInput(u8,simple.kernel)",
   length: 1,
-  byteSize: 64,
-  align: 4,
+  byteSize: 24,
   hasPointer: true,
   instance: {
     members: [
@@ -1375,32 +1503,39 @@ const s37 = {
         ...m,
         type: 6,
         bitOffset: 0,
-        bitSize: 352,
-        byteSize: 48,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
-        name: "transform",
-        structure: s11,
-      },
-      {
-        ...m,
-        type: 6,
-        isRequired: true,
-        bitOffset: 384,
-        bitSize: 128,
-        byteSize: 16,
-        slot: 1,
         name: "src",
-        structure: s36,
+        structure: s39,
       },
     ],
     methods: [],
     template: {
-      memory: { array: a25 },
+      memory: { array: a34 },
+      slots: {
+        0: {
+          structure: s39,
+          memory: { array: a35 },
+          slots: {
+            0: {
+              structure: s26,
+              memory: { array: a36 },
+              slots: {
+                0: {
+                  structure: s25,
+                  memory: { array: a37 },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
   slot: 17,
-};
-const s38 = {
+});
+Object.assign(s41, {
   ...s,
   type: 12,
   name: "[_]@Vector(4, u8)",
@@ -1416,9 +1551,9 @@ const s38 = {
     methods: [],
     template: null
   },
-  slot: 27,
-};
-const s39 = {
+  slot: 20,
+});
+Object.assign(s42, {
   ...s,
   type: 11,
   name: "[]@Vector(4, u8)",
@@ -1433,15 +1568,15 @@ const s39 = {
         bitSize: 64,
         byteSize: 8,
         slot: 0,
-        structure: s38,
+        structure: s41,
       },
     ],
     methods: [],
     template: null
   },
-  slot: 30,
-};
-const s40 = {
+  slot: 28,
+});
+Object.assign(s43, {
   ...s,
   type: 3,
   name: "getPixel",
@@ -1456,17 +1591,17 @@ const s40 = {
         type: 6,
         isRequired: true,
         bitOffset: 128,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s49,
       },
       {
         ...m,
         type: 2,
         isRequired: true,
-        bitOffset: 256,
+        bitOffset: 320,
         slot: 1,
         name: "1",
         structure: s7,
@@ -1475,7 +1610,7 @@ const s40 = {
         ...m,
         type: 2,
         isRequired: true,
-        bitOffset: 288,
+        bitOffset: 352,
         slot: 2,
         name: "2",
         structure: s7,
@@ -1495,9 +1630,9 @@ const s40 = {
     methods: [],
     template: null
   },
-  slot: 42,
-};
-const s41 = {
+  slot: 46,
+});
+Object.assign(s44, {
   ...s,
   type: 3,
   name: "setPixel",
@@ -1512,17 +1647,17 @@ const s41 = {
         type: 6,
         isRequired: true,
         bitOffset: 128,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s49,
       },
       {
         ...m,
         type: 3,
         isRequired: true,
-        bitOffset: 256,
+        bitOffset: 320,
         slot: 1,
         name: "1",
         structure: s27,
@@ -1531,7 +1666,7 @@ const s41 = {
         ...m,
         type: 3,
         isRequired: true,
-        bitOffset: 288,
+        bitOffset: 352,
         slot: 2,
         name: "2",
         structure: s27,
@@ -1555,20 +1690,20 @@ const s41 = {
         byteSize: 0,
         slot: 4,
         name: "retval",
-        structure: s29,
+        structure: s32,
       },
     ],
     methods: [],
     template: null
   },
-  slot: 43,
-};
-const s42 = {
+  slot: 47,
+});
+Object.assign(s45, {
   ...s,
   type: 3,
   name: "pixelSize",
   length: 1,
-  byteSize: 24,
+  byteSize: 32,
   align: 3,
   hasPointer: true,
   instance: {
@@ -1578,11 +1713,11 @@ const s42 = {
         type: 6,
         isRequired: true,
         bitOffset: 64,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s49,
       },
       {
         ...m,
@@ -1593,20 +1728,20 @@ const s42 = {
         byteSize: 8,
         slot: 1,
         name: "retval",
-        structure: s31,
+        structure: s34,
       },
     ],
     methods: [],
     template: null
   },
-  slot: 44,
-};
-const s43 = {
+  slot: 48,
+});
+Object.assign(s46, {
   ...s,
   type: 3,
   name: "pixelAspectRatio",
   length: 1,
-  byteSize: 20,
+  byteSize: 28,
   hasPointer: true,
   instance: {
     members: [
@@ -1615,17 +1750,17 @@ const s43 = {
         type: 6,
         isRequired: true,
         bitOffset: 0,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s49,
       },
       {
         ...m,
         type: 4,
         isRequired: true,
-        bitOffset: 128,
+        bitOffset: 192,
         slot: 1,
         name: "retval",
         structure: s9,
@@ -1634,9 +1769,9 @@ const s43 = {
     methods: [],
     template: null
   },
-  slot: 45,
-};
-const s44 = {
+  slot: 49,
+});
+Object.assign(s47, {
   ...s,
   type: 3,
   name: "sampleNearest",
@@ -1651,11 +1786,11 @@ const s44 = {
         type: 6,
         isRequired: true,
         bitOffset: 192,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s49,
       },
       {
         ...m,
@@ -1666,7 +1801,7 @@ const s44 = {
         byteSize: 8,
         slot: 1,
         name: "1",
-        structure: s31,
+        structure: s34,
       },
       {
         ...m,
@@ -1683,9 +1818,9 @@ const s44 = {
     methods: [],
     template: null
   },
-  slot: 46,
-};
-const s45 = {
+  slot: 50,
+});
+Object.assign(s48, {
   ...s,
   type: 3,
   name: "sampleLinear",
@@ -1700,11 +1835,11 @@ const s45 = {
         type: 6,
         isRequired: true,
         bitOffset: 192,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "0",
-        structure: undefined,
+        structure: s49,
       },
       {
         ...m,
@@ -1715,7 +1850,7 @@ const s45 = {
         byteSize: 8,
         slot: 1,
         name: "1",
-        structure: s31,
+        structure: s34,
       },
       {
         ...m,
@@ -1732,46 +1867,47 @@ const s45 = {
     methods: [],
     template: null
   },
-  slot: 47,
-};
-const a26 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
-const a27 = new Uint8Array([ 48, 30, 16, 0 ]);
+  slot: 51,
+});
+const a38 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
+const a39 = new Uint8Array([  ]);
+const a40 = new Uint8Array([ 48, 30, 16, 0 ]);
 const f6 = {
-  argStruct: s40,
+  argStruct: s43,
   thunk: 20,
   name: "getPixel",
 };
 const f7 = {
-  argStruct: s41,
-  thunk: 21,
+  argStruct: s44,
+  thunk: 14,
   name: "setPixel",
 };
 const f8 = {
-  argStruct: s42,
-  thunk: 7,
+  argStruct: s45,
+  thunk: 11,
   name: "pixelSize",
 };
 const f9 = {
-  argStruct: s43,
-  thunk: 9,
+  argStruct: s46,
+  thunk: 5,
   name: "pixelAspectRatio",
 };
 const f10 = {
-  argStruct: s44,
-  thunk: 10,
+  argStruct: s47,
+  thunk: 7,
   name: "sampleNearest",
 };
 const f11 = {
-  argStruct: s45,
-  thunk: 2,
+  argStruct: s48,
+  thunk: 17,
   name: "sampleLinear",
 };
-const s46 = {
+Object.assign(s49, {
   ...s,
   type: 2,
   name: "simple.Image(u8,3,true)",
   length: 1,
-  byteSize: 16,
+  byteSize: 24,
   hasPointer: true,
   instance: {
     members: [
@@ -1783,8 +1919,8 @@ const s46 = {
         bitSize: 64,
         byteSize: 8,
         slot: 0,
-        name: "pixels",
-        structure: s39,
+        name: "data",
+        structure: s42,
       },
       {
         ...m,
@@ -1804,10 +1940,38 @@ const s46 = {
         name: "height",
         structure: s27,
       },
+      {
+        ...m,
+        type: 5,
+        bitOffset: 160,
+        bitSize: 1,
+        byteSize: 1,
+        slot: 3,
+        name: "colorSpace",
+        structure: s28,
+      },
+      {
+        ...m,
+        type: 1,
+        bitOffset: 168,
+        bitSize: 1,
+        byteSize: 1,
+        slot: 4,
+        name: "premultiplied",
+        structure: s29,
+      },
+      {
+        ...m,
+        type: 3,
+        bitOffset: 128,
+        slot: 5,
+        name: "offset",
+        structure: s30,
+      },
     ],
     methods: [ f6, f7, f8, f9, f10, f11 ],
     template: {
-      memory: { array: a26 },
+      memory: { array: a38 },
     },
   },
   static: {
@@ -1834,14 +1998,15 @@ const s46 = {
     ],
     methods: [ f6, f7, f8, f9, f10, f11 ],
     template: {
+      memory: { array: a39 },
       slots: {
         0: {
           structure: s8,
-          memory: { array: a27 },
+          memory: { array: a40 },
           slots: {
             0: {
               structure: s7,
-              memory: { array: a9 },
+              memory: { array: a12 },
               address: 1056304,
             },
           },
@@ -1849,89 +2014,88 @@ const s46 = {
       },
     },
   },
-  slot: 24,
-};
-const a28 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
-const s47 = {
+  slot: 27,
+});
+const a41 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
+const a42 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
+const a43 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0 ]);
+Object.assign(s50, {
   ...s,
   type: 2,
   name: "simple.KernelOutput(u8,simple.kernel)",
   length: 1,
-  byteSize: 16,
+  byteSize: 24,
   hasPointer: true,
   instance: {
     members: [
       {
         ...m,
         type: 6,
-        isRequired: true,
         bitOffset: 0,
-        bitSize: 128,
-        byteSize: 16,
+        bitSize: 192,
+        byteSize: 24,
         slot: 0,
         name: "dst",
-        structure: s46,
+        structure: s49,
       },
     ],
     methods: [],
     template: {
-      memory: { array: a28 },
+      memory: { array: a41 },
+      slots: {
+        0: {
+          structure: s49,
+          memory: { array: a42 },
+          slots: {
+            0: {
+              structure: s42,
+              memory: { array: a43 },
+              slots: {
+                0: {
+                  structure: s41,
+                  memory: { array: a37 },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
-  slot: 20,
-};
-const s48 = {
+  slot: 26,
+});
+const a44 = new Uint8Array([ 0, 0, 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 154, 153, 153, 62, 0, 0, 128, 63, 51, 51, 51, 63, 0, 0, 0, 0, 205, 204, 204, 61, 154, 153, 153, 62, 205, 204, 76, 63, 0, 0, 0, 0 ]);
+Object.assign(s51, {
   ...s,
-  type: 3,
-  name: "apply",
+  type: 2,
+  name: "simple.KernelParameters(simple.kernel)",
   length: 1,
-  byteSize: 80,
+  byteSize: 48,
   align: 4,
-  hasPointer: true,
   instance: {
     members: [
       {
         ...m,
         type: 6,
-        isRequired: true,
         bitOffset: 0,
-        bitSize: 512,
-        byteSize: 64,
+        bitSize: 352,
+        byteSize: 48,
         slot: 0,
-        name: "0",
-        structure: s37,
-      },
-      {
-        ...m,
-        type: 6,
-        isRequired: true,
-        bitOffset: 512,
-        bitSize: 128,
-        byteSize: 16,
-        slot: 1,
-        name: "1",
-        structure: s47,
-      },
-      {
-        ...m,
-        isRequired: true,
-        bitOffset: 640,
-        bitSize: 0,
-        byteSize: 0,
-        slot: 2,
-        name: "retval",
-        structure: s29,
+        name: "transform",
+        structure: s11,
       },
     ],
     methods: [],
-    template: null
+    template: {
+      memory: { array: a44 },
+    },
   },
-  slot: 21,
-};
-const s49 = {
+  slot: 29,
+});
+Object.assign(s52, {
   ...s,
   type: 8,
-  name: "@typeInfo(@typeInfo(@TypeOf(simple.allocate)).Fn.return_type.?).ErrorUnion.error_set",
+  name: "@typeInfo(@typeInfo(@TypeOf(simple.createOutput)).Fn.return_type.?).ErrorUnion.error_set",
   length: 1,
   byteSize: 2,
   align: 1,
@@ -1947,46 +2111,12 @@ const s49 = {
     methods: [],
     template: null
   },
-  slot: 48,
-};
-const s50 = {
+  slot: 52,
+});
+Object.assign(s53, {
   ...s,
   type: 7,
-  name: "@typeInfo(@typeInfo(@TypeOf(simple.allocate)).Fn.return_type.?).ErrorUnion.error_set!simple.KernelOutput(u8,simple.kernel)",
-  length: 1,
-  byteSize: 20,
-  hasPointer: true,
-  instance: {
-    members: [
-      {
-        ...m,
-        type: 6,
-        bitOffset: 0,
-        bitSize: 128,
-        byteSize: 16,
-        slot: 0,
-        name: "value",
-        structure: s47,
-      },
-      {
-        ...m,
-        type: 3,
-        bitOffset: 128,
-        bitSize: 16,
-        byteSize: 2,
-        name: "error",
-        structure: s49,
-      },
-    ],
-    methods: [],
-    template: null
-  },
-  slot: 31,
-};
-const s51 = {
-  ...s,
-  type: 3,
-  name: "allocate",
+  name: "@typeInfo(@typeInfo(@TypeOf(simple.createOutput)).Fn.return_type.?).ErrorUnion.error_set!simple.KernelOutput(u8,simple.kernel)",
   length: 1,
   byteSize: 28,
   hasPointer: true,
@@ -1994,9 +2124,44 @@ const s51 = {
     members: [
       {
         ...m,
+        type: 6,
+        bitOffset: 0,
+        bitSize: 192,
+        byteSize: 24,
+        slot: 0,
+        name: "value",
+        structure: s50,
+      },
+      {
+        ...m,
+        type: 3,
+        bitOffset: 192,
+        bitSize: 16,
+        byteSize: 2,
+        name: "error",
+        structure: s52,
+      },
+    ],
+    methods: [],
+    template: null
+  },
+  slot: 34,
+});
+Object.assign(s54, {
+  ...s,
+  type: 3,
+  name: "createOutput",
+  length: 1,
+  byteSize: 112,
+  align: 4,
+  hasPointer: true,
+  instance: {
+    members: [
+      {
+        ...m,
         type: 3,
         isRequired: true,
-        bitOffset: 0,
+        bitOffset: 384,
         slot: 0,
         name: "0",
         structure: s27,
@@ -2005,7 +2170,7 @@ const s51 = {
         ...m,
         type: 3,
         isRequired: true,
-        bitOffset: 32,
+        bitOffset: 416,
         slot: 1,
         name: "1",
         structure: s27,
@@ -2014,30 +2179,192 @@ const s51 = {
         ...m,
         type: 6,
         isRequired: true,
-        bitOffset: 64,
-        bitSize: 160,
-        byteSize: 20,
+        bitOffset: 448,
+        bitSize: 192,
+        byteSize: 24,
         slot: 2,
+        name: "2",
+        structure: s40,
+      },
+      {
+        ...m,
+        type: 6,
+        isRequired: true,
+        bitOffset: 0,
+        bitSize: 384,
+        byteSize: 48,
+        slot: 3,
+        name: "3",
+        structure: s51,
+      },
+      {
+        ...m,
+        type: 6,
+        isRequired: true,
+        bitOffset: 640,
+        bitSize: 224,
+        byteSize: 28,
+        slot: 4,
         name: "retval",
-        structure: s50,
+        structure: s53,
       },
     ],
     methods: [],
     template: null
   },
-  slot: 22,
-};
+  slot: 32,
+});
+Object.assign(s55, {
+  ...s,
+  type: 8,
+  name: "@typeInfo(@typeInfo(@TypeOf(simple.createPartialOutput)).Fn.return_type.?).ErrorUnion.error_set",
+  length: 1,
+  byteSize: 2,
+  align: 1,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 6,
+        slot: 22,
+        name: "OutOfMemory",
+      },
+    ],
+    methods: [],
+    template: null
+  },
+  slot: 53,
+});
+Object.assign(s56, {
+  ...s,
+  type: 7,
+  name: "@typeInfo(@typeInfo(@TypeOf(simple.createPartialOutput)).Fn.return_type.?).ErrorUnion.error_set!simple.KernelOutput(u8,simple.kernel)",
+  length: 1,
+  byteSize: 28,
+  hasPointer: true,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 6,
+        bitOffset: 0,
+        bitSize: 192,
+        byteSize: 24,
+        slot: 0,
+        name: "value",
+        structure: s50,
+      },
+      {
+        ...m,
+        type: 3,
+        bitOffset: 192,
+        bitSize: 16,
+        byteSize: 2,
+        name: "error",
+        structure: s55,
+      },
+    ],
+    methods: [],
+    template: null
+  },
+  slot: 35,
+});
+Object.assign(s57, {
+  ...s,
+  type: 3,
+  name: "createPartialOutput",
+  length: 1,
+  byteSize: 128,
+  align: 4,
+  hasPointer: true,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 3,
+        isRequired: true,
+        bitOffset: 384,
+        slot: 0,
+        name: "0",
+        structure: s27,
+      },
+      {
+        ...m,
+        type: 3,
+        isRequired: true,
+        bitOffset: 416,
+        slot: 1,
+        name: "1",
+        structure: s27,
+      },
+      {
+        ...m,
+        type: 3,
+        isRequired: true,
+        bitOffset: 448,
+        slot: 2,
+        name: "2",
+        structure: s27,
+      },
+      {
+        ...m,
+        type: 3,
+        isRequired: true,
+        bitOffset: 480,
+        slot: 3,
+        name: "3",
+        structure: s27,
+      },
+      {
+        ...m,
+        type: 6,
+        isRequired: true,
+        bitOffset: 512,
+        bitSize: 192,
+        byteSize: 24,
+        slot: 4,
+        name: "4",
+        structure: s40,
+      },
+      {
+        ...m,
+        type: 6,
+        isRequired: true,
+        bitOffset: 0,
+        bitSize: 384,
+        byteSize: 48,
+        slot: 5,
+        name: "5",
+        structure: s51,
+      },
+      {
+        ...m,
+        type: 6,
+        isRequired: true,
+        bitOffset: 704,
+        bitSize: 224,
+        byteSize: 28,
+        slot: 6,
+        name: "retval",
+        structure: s56,
+      },
+    ],
+    methods: [],
+    template: null
+  },
+  slot: 33,
+});
 const f12 = {
-  argStruct: s48,
-  thunk: 19,
-  name: "apply",
+  argStruct: s54,
+  thunk: 12,
+  name: "createOutput",
 };
 const f13 = {
-  argStruct: s51,
-  thunk: 14,
-  name: "allocate",
+  argStruct: s57,
+  thunk: 16,
+  name: "createPartialOutput",
 };
-const s52 = {
+Object.assign(s58, {
   ...s,
   type: 2,
   name: "simple",
@@ -2048,6 +2375,7 @@ const s52 = {
     members: [],
     methods: [],
     template: {
+      memory: { array: a37 },
     },
   },
   static: {
@@ -2062,20 +2390,26 @@ const s52 = {
         ...m,
         type: 7,
         name: "Input",
-        structure: s37,
+        structure: s40,
       },
       {
         ...m,
         type: 7,
         name: "Output",
-        structure: s47,
+        structure: s50,
+      },
+      {
+        ...m,
+        type: 7,
+        name: "Parameters",
+        structure: s51,
       },
     ],
     methods: [ f12, f13 ],
     template: null
   },
   slot: 0,
-};
+});
 
 // finalize structures
 const structures = [
@@ -2084,10 +2418,10 @@ const structures = [
   s20, s21, s22, s23, s24, s25, s26, s27, s28, s29,
   s30, s31, s32, s33, s34, s35, s36, s37, s38, s39,
   s40, s41, s42, s43, s44, s45, s46, s47, s48, s49,
-  s50, s51, s52,
+  s50, s51, s52, s53, s54, s55, s56, s57, s58,
 ];
 const linkage = finalizeStructures(structures);
-const module = s52.constructor;
+const module = s58.constructor;
 
 // initiate loading and compilation of WASM bytecodes
 const wasmPromise = (async () => {
@@ -2105,18 +2439,20 @@ const __init = linkModule(wasmPromise, { ...linkage, writeBack: true });
 
 // export functions, types, and constants
 const {
-  apply,
-  allocate,
+  createOutput,
+  createPartialOutput,
   kernel,
   Input,
   Output,
+  Parameters,
 } = module;
 export {
   module as default,
-  apply,
-  allocate,
+  createOutput,
+  createPartialOutput,
   kernel,
   Input,
   Output,
+  Parameters,
   __init,
 };
