@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
-import * as N from './nodes.js';
+import * as N from './pb-nodes.js';
 
 export class PixelBenderToZigTranslator {
   lines = [];

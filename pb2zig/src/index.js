@@ -1,5 +1,5 @@
-import { parse } from './parser.js';
-import { process } from './visitor.js';
+import { parse } from './pb-parser.js';
+import { process } from './pb-visitor.js';
 import { translate } from './translator.js';
 
 export function convertPixelBender(code, options) {

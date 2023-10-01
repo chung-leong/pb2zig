@@ -1,47 +1,47 @@
 import { expect } from 'chai';
 
-import { parser, lexer } from '../src/parser.js';
-import { visitor } from '../src/visitor.js';
-import * as N from '../src/nodes.js';
+import { parser, lexer } from '../src/pb-parser.js';
+import { visitor } from '../src/pb-visitor.js';
+import * as PB from '../src/pb-nodes.js';
 
 describe('Parser tests', function() {
   it('should correctly parse a ternary expression', function() {
     const code = 'a > b ? 1 : 0';
     const ast = parse(code);
-    expect(ast).to.be.instanceOf(N.Conditional);
-    expect(ast.condition).to.be.instanceOf(N.BinaryOperation);
-    expect(ast.onTrue).to.be.instanceOf(N.Literal);
-    expect(ast.onFalse).to.be.instanceOf(N.Literal);
+    expect(ast).to.be.instanceOf(PB.Conditional);
+    expect(ast.condition).to.be.instanceOf(PB.BinaryOperation);
+    expect(ast.onTrue).to.be.instanceOf(PB.Literal);
+    expect(ast.onFalse).to.be.instanceOf(PB.Literal);
   })
   it('should correctly parse a ternary expression', function() {
     const code = 'length(a) > length(b) ? 1 : 0';
     const ast = parse(code);
-    expect(ast).to.be.instanceOf(N.Conditional);
-    expect(ast.condition).to.be.instanceOf(N.BinaryOperation);
-    expect(ast.onTrue).to.be.instanceOf(N.Literal);
-    expect(ast.onFalse).to.be.instanceOf(N.Literal);
+    expect(ast).to.be.instanceOf(PB.Conditional);
+    expect(ast.condition).to.be.instanceOf(PB.BinaryOperation);
+    expect(ast.onTrue).to.be.instanceOf(PB.Literal);
+    expect(ast.onFalse).to.be.instanceOf(PB.Literal);
   })
   it('should parse postfix and prefix operator', function() {
     const code = 'a++ + --b';
     const ast = parse(code);
-    expect(ast).to.be.instanceOf(N.BinaryOperation);
-    expect(ast.operand1).to.be.instanceOf(N.IncrementOperation)
+    expect(ast).to.be.instanceOf(PB.BinaryOperation);
+    expect(ast.operand1).to.be.instanceOf(PB.IncrementOperation)
     expect(ast.operand1.post).to.be.true;
-    expect(ast.operand2).to.be.instanceOf(N.IncrementOperation)
+    expect(ast.operand2).to.be.instanceOf(PB.IncrementOperation)
     expect(ast.operand2.post).to.be.false;
   })
   it('should fix the order of binary operations', function() {
     const code = '2 * 3 + 1';
     const ast = parse(code);
-    expect(ast).to.be.instanceOf(N.BinaryOperation);
+    expect(ast).to.be.instanceOf(PB.BinaryOperation);
     expect(ast.operator).to.equal('+');
-    expect(ast.operand1).be.instanceOf(N.BinaryOperation);
+    expect(ast.operand1).be.instanceOf(PB.BinaryOperation);
     expect(ast.operand1.operator).to.equal('*');
   })
   it('should parse a float without leading zero', function() {
     const code = '.123';
     const ast = parse(code);
-    expect(ast).to.be.instanceOf(N.Literal);
+    expect(ast).to.be.instanceOf(PB.Literal);
     expect(ast.value).to.equal(0.123);
   })
   it('should parse a if statement', function() {
@@ -51,12 +51,12 @@ describe('Parser tests', function() {
       }
     `;
     const ast = parse(code, 'statement');
-    expect(ast).to.be.instanceOf(N.IfStatement);
-    expect(ast.condition).to.be.instanceOf(N.ComparisonOperation);
+    expect(ast).to.be.instanceOf(PB.IfStatement);
+    expect(ast.condition).to.be.instanceOf(PB.ComparisonOperation);
     expect(ast.condition.operator).to.equal('<');
     expect(ast.statements).to.have.lengthOf(1);
-    expect(ast.statements[0]).to.be.instanceOf(N.ExpressionStatement);
-    expect(ast.statements[0].expression).to.be.instanceOf(N.IncrementOperation);
+    expect(ast.statements[0]).to.be.instanceOf(PB.ExpressionStatement);
+    expect(ast.statements[0].expression).to.be.instanceOf(PB.IncrementOperation);
   })
   it('should parse a while loop', function() {
     const code = `
@@ -65,12 +65,12 @@ describe('Parser tests', function() {
       }
     `;
     const ast = parse(code, 'statement');
-    expect(ast).to.be.instanceOf(N.WhileStatement);
-    expect(ast.condition).to.be.instanceOf(N.ComparisonOperation);
+    expect(ast).to.be.instanceOf(PB.WhileStatement);
+    expect(ast.condition).to.be.instanceOf(PB.ComparisonOperation);
     expect(ast.condition.operator).to.equal('<');
     expect(ast.statements).to.have.lengthOf(1);
-    expect(ast.statements[0]).to.be.instanceOf(N.ExpressionStatement);
-    expect(ast.statements[0].expression).to.be.instanceOf(N.IncrementOperation);
+    expect(ast.statements[0]).to.be.instanceOf(PB.ExpressionStatement);
+    expect(ast.statements[0].expression).to.be.instanceOf(PB.IncrementOperation);
   })
   it('should parse a while loop with break', function() {
     const code = `
@@ -80,12 +80,12 @@ describe('Parser tests', function() {
       }
     `;
     const ast = parse(code, 'statement');
-    expect(ast).to.be.instanceOf(N.WhileStatement);
-    expect(ast.condition).to.be.instanceOf(N.Literal);
+    expect(ast).to.be.instanceOf(PB.WhileStatement);
+    expect(ast.condition).to.be.instanceOf(PB.Literal);
     expect(ast.condition.value).to.be.true;
     expect(ast.statements).to.have.lengthOf(2);
-    expect(ast.statements[0]).to.be.instanceOf(N.IfStatement);
-    expect(ast.statements[0].statements[0]).to.be.instanceOf(N.BreakStatement);
+    expect(ast.statements[0]).to.be.instanceOf(PB.IfStatement);
+    expect(ast.statements[0].statements[0]).to.be.instanceOf(PB.BreakStatement);
   })
   it('should parse a for loop', function() {
     const code = `
@@ -95,17 +95,17 @@ describe('Parser tests', function() {
       }
     `;
     const ast = parse(code, 'statement');
-    expect(ast).to.be.instanceOf(N.ForStatement);
+    expect(ast).to.be.instanceOf(PB.ForStatement);
     expect(ast.initializers).to.have.lengthOf(1);
-    expect(ast.initializers[0]).to.be.an.instanceOf(N.VariableDeclaration);
-    expect(ast.condition).to.be.instanceOf(N.ComparisonOperation);
+    expect(ast.initializers[0]).to.be.an.instanceOf(PB.VariableDeclaration);
+    expect(ast.condition).to.be.instanceOf(PB.ComparisonOperation);
     expect(ast.condition.operator).to.equal('<');
     expect(ast.statements).to.have.lengthOf(2);
-    expect(ast.statements[0].expression).to.be.instanceOf(N.FunctionCall);
-    expect(ast.statements[1].expression).to.be.instanceOf(N.FunctionCall);
+    expect(ast.statements[0].expression).to.be.instanceOf(PB.FunctionCall);
+    expect(ast.statements[1].expression).to.be.instanceOf(PB.FunctionCall);
     expect(ast.incrementals).to.have.lengthOf(1);
-    expect(ast.incrementals[0]).to.be.an.instanceOf(N.ExpressionStatement);
-    expect(ast.incrementals[0].expression).to.be.an.instanceOf(N.IncrementOperation);
+    expect(ast.incrementals[0]).to.be.an.instanceOf(PB.ExpressionStatement);
+    expect(ast.incrementals[0].expression).to.be.an.instanceOf(PB.IncrementOperation);
   })
   it('should parse a for loop with multiple variable declarations', function() {
     const code = `
@@ -114,13 +114,13 @@ describe('Parser tests', function() {
       }
     `;
     const ast = parse(code, 'statement');
-    expect(ast).to.be.instanceOf(N.ForStatement);
+    expect(ast).to.be.instanceOf(PB.ForStatement);
     expect(ast.initializers).to.have.lengthOf(3);
-    expect(ast.initializers[0]).to.be.an.instanceOf(N.VariableDeclaration);
+    expect(ast.initializers[0]).to.be.an.instanceOf(PB.VariableDeclaration);
     expect(ast.initializers[0].name).to.equal('i');
-    expect(ast.initializers[1]).to.be.an.instanceOf(N.VariableDeclaration);
+    expect(ast.initializers[1]).to.be.an.instanceOf(PB.VariableDeclaration);
     expect(ast.initializers[1].name).to.equal('j');
-    expect(ast.initializers[2]).to.be.an.instanceOf(N.VariableDeclaration);
+    expect(ast.initializers[2]).to.be.an.instanceOf(PB.VariableDeclaration);
     expect(ast.initializers[2].name).to.equal('k');
     expect(ast.incrementals).to.have.lengthOf(3);
   })
@@ -131,9 +131,9 @@ describe('Parser tests', function() {
       }
     `;
     const ast = parse(code, 'statement');
-    expect(ast).to.be.instanceOf(N.ForStatement);
+    expect(ast).to.be.instanceOf(PB.ForStatement);
     expect(ast.initializers).to.have.lengthOf(1);
-    expect(ast.initializers[0]).to.be.an.instanceOf(N.ExpressionStatement);
+    expect(ast.initializers[0]).to.be.an.instanceOf(PB.ExpressionStatement);
   })
   it('should parse a for loop with no initializer', function() {
     const code = `
@@ -143,7 +143,7 @@ describe('Parser tests', function() {
     `;
     const ast = parse(code, 'statement');
     expect(ast.initializers).to.have.lengthOf(0);
-    expect(ast).to.be.instanceOf(N.ForStatement);
+    expect(ast).to.be.instanceOf(PB.ForStatement);
   })
 })
 

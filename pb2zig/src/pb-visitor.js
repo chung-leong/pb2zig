@@ -1,5 +1,5 @@
-import { BaseCstVisitor } from './parser.js';
-import * as N from './nodes.js';
+import { BaseCstVisitor } from './pb-parser.js';
+import * as PB from './pb-nodes.js';
 
 export class PixelBenderAstVisitor extends BaseCstVisitor {
   constructor() {
@@ -15,14 +15,6 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     for (const node of Object.values(ctx)) {
       return this.name(node)
     }
-  }
-
-  create(c, props) {
-    const obj = new c;
-    for (const [ name, value ] of Object.entries(props)) {
-      obj[name] = value;
-    }
-    return obj;
   }
 
   visitAny(ctx) {
@@ -85,14 +77,14 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
           value = null;
           break;
       }
-      return this.create(N.Literal, { type, value });
+      return PB.Literal.create({ type, value });
     }
   }
 
   literalConstructorCall(ctx) {
     const type = this.visit(ctx.type);
     const args = this.visit(ctx.literalList);
-    return this.create(N.LiteralConstructorCall, { type, args });
+    return PB.LiteralConstructorCall.create({ type, args });
   }
 
   literalList(ctx) {
@@ -107,9 +99,9 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   kernel(ctx) {
     const name = this.name(ctx.Identifier);
-    const meta = this.create(N.Meta, this.visit(ctx.tag));
+    const meta = PB.Meta.create(this.visit(ctx.tag));
     const statements = this.visit(ctx.kernelBody);
-    return this.create(N.Kernel, { name, meta, statements });
+    return PB.Kernel.create({ name, meta, statements });
   }
 
   kernelBody(ctx) {
@@ -133,7 +125,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const type = this.visit(ctx.type);
     const name = this.name(ctx.Identifier);
     const tag = this.visit(ctx.tag);
-    return this.create(N.Parameter, { type, name, ...tag });
+    return PB.Parameter.create({ type, name, ...tag });
   }
 
   type(ctx) {
@@ -147,7 +139,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   inputDeclaration(ctx) {
     const type = this.name(ctx.Image);
     const name = this.name(ctx.Identifier);
-    return this.create(N.InputDeclaration, { type, name });
+    return PB.InputDeclaration.create({ type, name });
   }
 
   outputDeclaration(ctx) {
@@ -158,7 +150,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
       type = 'float' + this.name(ctx.Pixel).slice(-1)
     }
     const name = this.name(ctx.Identifier);
-    return this.create(N.OutputDeclaration, { type, name });
+    return PB.OutputDeclaration.create({ type, name });
   }
 
   functionDeclaration(ctx) {
@@ -171,7 +163,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
       }
     }
     const statements = this.visit(ctx.statementBlock);
-    return this.create(N.FunctionDefinition, { type, name, args, statements });
+    return PB.FunctionDefinition.create({ type, name, args, statements });
   }
 
   macroDeclaration(ctx) {
@@ -184,7 +176,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
       }
     }
     const expression = this.visit(ctx.expression);
-    return this.create(N.MacroDefinition, { name, args, expression });
+    return PB.MacroDefinition.create({ name, args, expression });
   }
 
   returnType(ctx) {
@@ -200,7 +192,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const direction = this.visit(ctx.argumentDirection) ?? 'in';
     const type = this.visit(ctx.type);
     const name = this.name(ctx.Identifier);
-    return this.create(N.FunctionArgument, { direction, type, name });
+    return PB.FunctionArgument.create({ direction, type, name });
   }
 
   argumentDirection(ctx) {
@@ -268,19 +260,19 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   identifierWithArrayLength(ctx) {
     const name = this.name(ctx.Identifier);
     const width = this.visit(ctx.expression);
-    return this.create(N.DependentDeclaration, { name, width });
+    return PB.DependentDeclaration.create({ name, width });
   }
 
   identifierWithInit(ctx) {
     const name = this.name(ctx.Identifier);
     const initializer = this.visit(ctx.expression);
-    return this.create(N.VariableDeclaration, { name, initializer });
+    return PB.VariableDeclaration.create({ name, initializer });
   }
 
   identifierWithMandatoryInit(ctx) {
     const name = this.name(ctx.Identifier);
     const initializer = this.visit(ctx.expression);
-    return this.create(N.ConstantDeclaration, { name, initializer });
+    return PB.ConstantDeclaration.create({ name, initializer });
   }
 
   expression(ctx) {
@@ -289,7 +281,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
       const operator = this.visit(ctx.assignmentOperator);
       const lvalue = expr;
       const rvalue = this.visit(ctx.expression);
-      return this.create(N.AssignmentOperation, { lvalue, operator, rvalue });
+      return PB.AssignmentOperation.create({ lvalue, operator, rvalue });
     } else {
       return expr;
     }
@@ -305,7 +297,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
       const condition = expr;
       const onTrue = this.visit(ctx.ternaryOperation[0]);
       const onFalse = this.visit(ctx.ternaryOperation[1]);
-      return this.create(N.Conditional, { condition, onTrue, onFalse });
+      return PB.Conditional.create({ condition, onTrue, onFalse });
     } else {
       return expr;
     }
@@ -316,20 +308,20 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     let operator, type;
     if (ctx.arithmeticOperator) {
       operator = this.visit(ctx.arithmeticOperator);
-      type = N.ArithmeticOperation;
+      type = PB.ArithmeticOperation;
     } else if (ctx.comparisonOperator) {
       operator = this.visit(ctx.comparisonOperator);
-      type = N.ComparisonOperation;
+      type = PB.ComparisonOperation;
     } else if (ctx.assignmentOperator) {
       operator = this.visit(ctx.assignmentOperator);
-      type = N.AssignmentOperation;
+      type = PB.AssignmentOperation;
     } else {
       return expr;
     }
     const operand1 = expr;
     const operand2 = this.visit(ctx.binaryOperation);
-    const exprL = this.create(type, { operand1, operator, operand2 });
-    if (operand2 instanceof N.BinaryOperation) {
+    const exprL = type.create({ operand1, operator, operand2 });
+    if (operand2 instanceof PB.BinaryOperation) {
       const exprR = operand2;
       const precedenceL = getPrecedence(exprL.operator);
       const precedenceR = getPrecedence(exprR.operator);
@@ -359,9 +351,9 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   unaryOperation(ctx) {
     const expr = this.visit(ctx.nullaryOperation);
     if (ctx.Minus || ctx.Plus) {
-      return this.create(N.SignOperation, { sign: (ctx.Minus) ? '-' : '+', operand: expr });
+      return PB.SignOperation.create({ sign: (ctx.Minus) ? '-' : '+', operand: expr });
     } else if (ctx.Exclam) {
-      return this.create(N.NotOperation, { operand: expr });
+      return PB.NotOperation.create({ operand: expr });
     } else {
       return expr;
     }
@@ -376,7 +368,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
       element = this.visit(ctx.element);
     }
     if (property || element) {
-      return this.create(N.ElementAccess, { expression: expr, property, element })
+      return PB.ElementAccess.create({ expression: expr, property, element })
     } else {
       return expr;
     }
@@ -385,14 +377,14 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   incrementPrefix(ctx) {
     const operator = this.visit(ctx.incrementOperator);
     const lvalue = this.visit(ctx.variable);
-    return this.create(N.IncrementOperation, { operator, post: false, lvalue });
+    return PB.IncrementOperation.create({ operator, post: false, lvalue });
   }
 
   incrementPostfix(ctx) {
     const lvalue = this.visit(ctx.variable);
     if (ctx.incrementOperator) {
       const operator = this.visit(ctx.incrementOperator);
-      return this.create(N.IncrementOperation, { operator, post: true, lvalue });
+      return PB.IncrementOperation.create({ operator, post: true, lvalue });
     } else {
       return lvalue;
     }
@@ -405,13 +397,13 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   functionCall(ctx) {
     const name = this.name(ctx.Identifier);
     const args = this.visit(ctx.argumentList);
-    return this.create(N.FunctionCall, { name, args });
+    return PB.FunctionCall.create({ name, args });
   }
 
   constructorCall(ctx) {
     const type = this.visit(ctx.type);
     const args = this.visit(ctx.argumentList);
-    return this.create(N.ConstructorCall, { type, args });
+    return PB.ConstructorCall.create({ type, args });
   }
 
   argumentList(ctx) {
@@ -432,7 +424,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     } else if (ctx.element) {
       element = this.visit(ctx.element);
     }
-    return this.create(N.VariableAccess, { name, property, element });
+    return PB.VariableAccess.create({ name, property, element });
   }
 
   property(ctx) {
@@ -445,19 +437,19 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   parentheses(ctx) {
     const expression = this.visit(ctx.expression);
-    return this.create(N.Parentheses, { expression });
+    return PB.Parentheses.create({ expression });
   }
 
   ifStatement(ctx) {
     const condition = this.visit(ctx.expression);
     const statements = arrayOf(this.visit(ctx.statement));
     const elseClause = (ctx.elseClause) ? this.visit(ctx.elseClause) : undefined;
-    return this.create(N.IfStatement, { condition, statements, elseClause });
+    return PB.IfStatement.create({ condition, statements, elseClause });
   }
 
   elseClause(ctx) {
     const statements = arrayOf(this.visit(ctx.statement));
-    return this.create(N.IfStatement, { statements });
+    return PB.IfStatement.create({ statements });
   }
 
   forStatement(ctx) {
@@ -465,7 +457,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const condition = this.visit(ctx.forCondition);
     const incrementals = this.visit(ctx.forIncremental);
     const statements = arrayOf(this.visit(ctx.statement));
-    return this.create(N.ForStatement, { initializers, condition, incrementals, statements });
+    return PB.ForStatement.create({ initializers, condition, incrementals, statements });
   }
 
   forInitializer(ctx) {
@@ -489,7 +481,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const stmts = [];
     for (const node of ctx.expression) {
       const expression = this.visit(node);
-      stmts.push(this.create(N.ExpressionStatement, { expression }));
+      stmts.push(PB.ExpressionStatement.create({ expression }));
     }
     return stmts;
   }
@@ -497,35 +489,35 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   whileStatement(ctx) {
     const condition = this.visit(ctx.expression);
     const statements = arrayOf(this.visit(ctx.statement));
-    return this.create(N.WhileStatement, { condition, statements });
+    return PB.WhileStatement.create({ condition, statements });
   }
 
   doWhileStatement(ctx) {
     const condition = this.visit(ctx.expression);
     const statements = arrayOf(this.visit(ctx.statement));
-    return this.create(N.DoWhileStatement, { condition, statements });
+    return PB.DoWhileStatement.create({ condition, statements });
   }
 
   continueStatement(ctx) {
-    return this.create(N.ContinueStatement, {});
+    return PB.ContinueStatement.create({});
   }
 
   breakStatement(ctx) {
-    return this.create(N.BreakStatement, {});
+    return PB.BreakStatement.create({});
   }
 
   returnStatement(ctx) {
     const expression = (ctx.expression) ? this.visit(ctx.expression) : undefined;
-    return this.create(N.ReturnStatement, { expression });
+    return PB.ReturnStatement.create({ expression });
   }
 
   expressionStatement(cxt) {
     const expression = this.visit(cxt.expression);
-    return this.create(N.ExpressionStatement, { expression });
+    return PB.ExpressionStatement.create({ expression });
   }
 
   emptyStatement(ctx) {
-    return this.create(N.EmptyStatement, {});
+    return PB.EmptyStatement.create({});
   }
 }
 
