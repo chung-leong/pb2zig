@@ -34,7 +34,6 @@ let nextJobID = 1;
 function startJob(workerNum, name, args = [], transfer = []) {
   let worker = workers[workerNum];
   if (!worker) {
-    console.log(`Creating worker ${workerNum} ${workerURL}`);
     worker = workers[workerNum] = new Worker(workerURL, { type: 'module' });
     worker.onmessage = handleMessage;
     worker.onerror = (evt) => console.error(evt);
