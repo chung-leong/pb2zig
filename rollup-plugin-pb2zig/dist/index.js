@@ -14,6 +14,10 @@ const schema = {
   required: [],
   additionalProperties: false,
   properties: {
+    webWorker: {
+      type: 'boolean',
+      title: 'Use web worker to process images in the background',
+    },
   }
 };
 
@@ -31,6 +35,12 @@ export default function createPlugin(options = {}) {
     zigarOptions.optimize = 'ReleaseSmall';
   }
   verifyOptions(pb2zigOptions, schema);
+  const {
+    webWorker = false,
+  } = pb2zigOptions;
+  if (webWorker) {
+    zigarOptions.topLevelAwait = false;
+  }
   const zigarPlugin = createZigarPlugin(zigarOptions);
   const workerScripts = {};
   let serving = false;
@@ -69,9 +79,6 @@ export default function createPlugin(options = {}) {
     },
     async load(id) {
       if (id.endsWith('.pbk')) {
-        const {
-          webWorker = false,
-        } = pb2zigOptions;
         // load the code and translate it to Zig
         const pbkPath = resolve(id);
         const pbkCode = await readFile(pbkPath, 'utf-8');
