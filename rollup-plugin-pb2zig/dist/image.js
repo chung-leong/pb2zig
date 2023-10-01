@@ -26,7 +26,6 @@ export function createPartialImageData(width, height, start, count, source = {},
       colorSpace = imageData.colorSpace;
     }
   }
-  console.log({ missing });
   if (missing.length > 0) {
     throw new Error(`Missing input image${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`);
   }
@@ -36,9 +35,15 @@ export function createPartialImageData(width, height, start, count, source = {},
     const resultSet = {};
     for (const key of outputKeys) {
       const { data: { typedArray: ta }, width, height } = output[key];
-      // convert Uint8Array to Uint8ClampedArray required by ImageData
-      const clampedArray = new Uint8ClampedArray(ta.buffer, ta.byteOffset, ta.byteLength);
-      const imageData = new ImageData(clampedArray, width, height, { colorSpace });
+      let imageData;
+      if (typeof(ImageData) === 'function') {
+        // convert Uint8Array to Uint8ClampedArray required by ImageData
+        const clampedArray = new Uint8ClampedArray(ta.buffer, ta.byteOffset, ta.byteLength);
+        imageData = new ImageData(clampedArray, width, height, { colorSpace });
+      } else {
+        // for Node.js, which doesn't have ImageData
+        imageData = { data: ta, width, height };
+      }
       if (outputKeys.length === 1) {
         // just return the one image
         return imageData;
@@ -53,3 +58,9 @@ export function createPartialImageData(width, height, start, count, source = {},
   }
   return createResult(output);
 }
+
+export function getKernel() {
+  return kernel;
+}
+
+export { __init };

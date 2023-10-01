@@ -14,7 +14,11 @@ function App() {
     const srcImageData = srcCTX.getImageData(0, 0, width, height);
     const dstImageData = createImageData(width, height, srcImageData, {});
     const dstCTX = dstCanvas.getContext('2d');
-    dstCTX.putImageData(dstImageData, 0, 0);
+    if (dstImageData instanceof Promise) {
+      dstImageData.then(data => dstCTX.putImageData(data, 0, 0));
+    } else {
+      dstCTX.putImageData(dstImageData, 0, 0);
+    }
   }, []);
 
   useEffect(() => {

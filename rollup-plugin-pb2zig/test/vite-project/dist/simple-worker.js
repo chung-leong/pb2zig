@@ -1,4 +1,24 @@
-import { usePrimitive, useArray, usePointer, useVector, useStruct, useSlice, useEnumeration, useErrorSet, useErrorUnion, useArgStruct, useUint, useObject, useInt, useFloat, useType, useBool, useEnumerationItem, finalizeStructures, linkModule } from 'zigar-runtime';
+import {
+  finalizeStructures,
+  linkModule,
+  usePrimitive,
+  useArray,
+  usePointer,
+  useVector,
+  useStruct,
+  useSlice,
+  useEnumeration,
+  useErrorSet,
+  useErrorUnion,
+  useArgStruct,
+  useUint,
+  useObject,
+  useInt,
+  useFloat,
+  useType,
+  useBool,
+  useEnumerationItem,
+} from "zigar-runtime";
 
 // activate features
 usePrimitive();
@@ -1714,15 +1734,8 @@ const module = s44.constructor;
 
 // initiate loading and compilation of WASM bytecodes
 const wasmPromise = (async () => {
-  const url = new URL('assets/simple-7d98870e.wasm', import.meta.url).href;
-  if (typeof(process) === 'object' && process[Symbol.toStringTag] === 'process') {
-    const { readFile } = await import('fs/promises');
-    const { fileURLToPath } = await import('url');
-    const path = fileURLToPath(url);
-    return readFile(path);
-  } else {
-    return fetch(url);
-  }
+  const url = import.meta.ROLLUP_FILE_URL_790546c9;
+  return fetch(url);
 })();
 const __init = linkModule(wasmPromise, { ...linkage, writeBack: true });
 
@@ -1737,11 +1750,11 @@ const {
 } = module;
 
 // rollup-plugin-pb2zig additions
-function createImageData(width, height, source = {}, params = {}) {
+export function createImageData(width, height, source = {}, params = {}) {
   return createPartialImageData(width, height, 0, height, source, params);
 }
 
-function createPartialImageData(width, height, start, count, source = {}, params = {}) {
+export function createPartialImageData(width, height, start, count, source = {}, params = {}) {
   const input = new Input(undefined);
   const inputKeys = Object.keys(kernel.inputImages);
   const missing = [];
@@ -1798,8 +1811,37 @@ function createPartialImageData(width, height, start, count, source = {}, params
   return createResult(output);
 }
 
-function getKernel() {
+export function getKernel() {
   return kernel;
 }
 
-export { __init, createImageData, createPartialImageData, getKernel };
+export { __init };
+console.log('worker started');
+onmessage = (evt) => {
+  console.log(evt);
+  const [ name, jobID, ...args ] = evt.data;
+  let result;
+  let transfer = [];
+  try {
+    switch (name) {
+      case 'getKernel':
+        result = getKernel(...args);
+        break;
+      case 'createPartialImageData':
+        result = createPartialImageData(...args);
+        if ('data' in result && 'width' in result && 'height' in result) {
+          transfer.push(result.data.buffer);
+        } else {
+          for (const image of result) {
+            transfer.push(image.data.buffer);
+          }
+        }
+        break;
+      default:
+        throw new Error(`Unknown function: ${name}`);
+    }
+    postMessage([ name, jobID, result ], { transfer });
+  } catch (err) {
+    postMessage([ 'error', jobID, err ]);
+  }
+};
