@@ -1098,7 +1098,7 @@ export class PixelBenderToZigTranslator {
     if (name === 'outCoord') {
       return new ZigExpr(`self.outCoord()`, 'float2');
     } else if (name === 'sample') {
-      name = 'sampleLinear';
+      name = 'sampleNearest';
     } else if (name === 'atan') {
       if (args.length === 2) {
         name = 'atan2';
