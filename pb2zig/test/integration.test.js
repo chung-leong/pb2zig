@@ -885,12 +885,11 @@ async function apply(name, sources, options = {}) {
     let img = sharp(`${imgInDir}/${filename}`);
     img = img.ensureAlpha();
     img = img.raw();
-    const { data, info, premultiplied } = await img.toBuffer({ resolveWithObject: true });
+    const { data, info } = await img.toBuffer({ resolveWithObject: true });
     input[srcName] = {
       data,
       width: info.width,
       height: info.height,
-      premultiplied,
     };
     if (srcCount++ === 0) {
       width = info.width;
@@ -909,7 +908,7 @@ async function apply(name, sources, options = {}) {
     const filename = (outputImages.length > 1) ? name + index : name;
     const dstPixels = image.data.typedArray;
     sharp(dstPixels, {
-      raw: { width, height, channels, depth, premultiplied: true },
+      raw: { width, height, channels, depth },
     }).png().toFile(`${imgOutDir}/${filename}.png`);
   }
 }

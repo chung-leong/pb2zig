@@ -9,9 +9,9 @@ kernel simple
 {
    parameter float strength
     <
-        minValue: 0;
-        maxValue: 100;
-        defaultValue: 4;
+        minValue: 0.0;
+        maxValue: 100.0;
+        defaultValue: 4.0;
     >;
 
     input image4 src;
@@ -43,12 +43,12 @@ kernel simple
 
         // the south-west quadrance is greenish
         // see https://en.wikipedia.org/wiki/YIQ
-		if(pYIQA[1] < 0 && pYIQA[2] < 0 && pYIQA[0] > 0.01) {
+		if(pYIQA[1] < 0.0 && pYIQA[2] < 0.0 && pYIQA[0] > 0.01) {
             // reduces alpha based on how green and bright it is
  			float alpha = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
             // discard chroma component
-			pYIQA[1] = 0;
-            pYIQA[2] = 0;
+			pYIQA[1] = 0.0;
+            pYIQA[2] = 0.0;
 
             // convert back from YIQA and apply alpha
             dst = inverseYIQ * pYIQA * alpha;
