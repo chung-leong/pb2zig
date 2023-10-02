@@ -11,6 +11,7 @@ export class FieldDeclaration extends Node {
 }
 
 export class VariableDeclaration extends Node {
+  isConstant = true;
   type;
   name;
   initializer;
@@ -31,77 +32,15 @@ export class FunctionDefinition extends Node {
   statements;
 }
 
-export class Literal extends Node {
-  type;
-  value;
-}
-
 export class FunctionArgument extends Node {
   type;
   name;
-}
-
-export class Expression extends Node {
-  type;
-}
-
-export class FunctionCall extends Expression {
-  name;
-  args;
-}
-
-export class VariableAccess extends Expression {
-  name;
-  property;
-  element;
-}
-
-export class ElementAccess extends Node {
-  expression;
-  property;
-  element;
 }
 
 export class AssignmentStatement extends Node {
   operator;
   lvalue;
   rvalue;
-}
-
-export class BinaryOperation extends Expression {
-  operator;
-  operand1;
-  operand2;
-}
-
-export class ArithmeticOperation extends BinaryOperation {
-}
-
-export class ComparisonOperation extends BinaryOperation {
-}
-
-export class LogicalOperation extends BinaryOperation {
-}
-
-export class UnaryOperation extends Expression {
-  operand;
-}
-
-export class SignOperation extends UnaryOperation {
-  sign;
-}
-
-export class NotOperation extends UnaryOperation {
-}
-
-export class Conditional extends Expression {
-  condition;
-  onTrue;
-  onFalse;
-}
-
-export class Parentheses extends Expression {
-  expression;
 }
 
 export class IfStatement extends Node {
@@ -129,6 +68,62 @@ export class ExpressionStatement extends Node {
   expression;
 }
 
+export class Expression extends Node {
+  type;
+
+  isScalar() { return isScalar(this.type ) }
+  isVector() { return isVector(this.type ) }
+  isMatrix() { return isVector(this.type ) }
+  getVectorWidth() { return getVectorWidth(this.type) }
+  getVectorIndices() { return getVectorIndices(this.type) }
+  getChildType() { return getChildType(this.type) }
+}
+
+export class Literal extends Expression {
+  value;
+}
+
+export class FunctionCall extends Expression {
+  receiver;
+  name;
+  args;
+}
+
+export class VariableAccess extends Expression {
+  name;
+}
+
+export class ElementAccess extends Expression {
+  expression;
+  index;
+}
+
+export class BinaryOperation extends Expression {
+  operator;
+  operand1;
+  operand2;
+}
+
+export class UnaryOperation extends Expression {
+  operator;
+  operand;
+}
+
+export class Conditional extends Expression {
+  condition;
+  onTrue;
+  onFalse;
+}
+
+export class Parentheses extends Expression {
+  expression;
+}
+
+export class SideEffectExpression extends Expression {
+  statements;
+  expression;
+}
+
 export function isVector(type) {
   return /^@Vector\(/.test(type);
 }
@@ -139,4 +134,36 @@ export function isMatrix(type) {
 
 export function isArray(type) {
   return /^\[.*\]/i.test(type);
+}
+
+export function getVectorWidth(type) {
+  const m = /^@Vector\((\d+)/.exec(type);
+  if (m) {
+    return parseInt(m[1]);
+  }
+}
+
+export function getVectorIndices(type) {
+  const width = getVectorWidth(type);
+  const indices = [];
+  for (let i = 0; i < width; i++) {
+    indices.push(i);
+  }
+  return indices;
+}
+
+export function getChildType(type) {
+  const m1 = /^\[.*?\](.*)/.exec(type);
+  if (m1) {
+    return m1[1];
+  }
+  const m2 = /^@Vector\(.*?, (.*?)\)/.exec(type);
+  if (m2) {
+    return m2[1];
+  }
+}
+
+export function changeVectorWidth(type, width) {
+  const typeC = getChildType(type);
+  return `@Vector(width, ${typeC})`;
 }

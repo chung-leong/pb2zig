@@ -18,6 +18,7 @@ export class PixelBenderToZigTranslator {
 
   translate() {
     this.addImports();
+    return this.zigAST;
   }
 
   startScope() {
@@ -77,15 +78,148 @@ export class PixelBenderToZigTranslator {
     });
   }
 
+  translateType(type) {
+    if (type === undefined) {
+      return undefined;
+    }
+    if (type.startsWith('image')) {
+      return 'Image';
+    }
+    const table = {
+      bool: 'bool',
+      bool2: 'bool[2]',
+      bool3: 'bool[3]',
+      bool4: 'bool[4]',
+
+      int: 'i32',
+      int2: '@Vector(2, i32)',
+      int3: '@Vector(3, i32)',
+      int4: '@Vector(4, i32)',
+
+      float: 'f32',
+      float2: '@Vector(2, f32)',
+      float3: '@Vector(3, f32)',
+      float4: '@Vector(4, f32)',
+
+      float2x2: '[2]@Vector(2, f32)',
+      float3x3: '[3]@Vector(3, f32)',
+      float4x4: '[4]@Vector(4, f32)',
+
+      void: 'void',
+    };
+    const typeC = table[type];
+    if (!typeC) {
+      throw new Error(`Unknown type: ${type}`);
+    }
+    return typeC;
+  }
+
+  translateStatement(statement) {
+    const fname = `translate${statement.constructor.name}`;
+    const f = this[fname];
+    if (f) {
+      return f.call(this, statement);
+    } else {
+      console.log(`TODO: ${fname}`);
+      console.log(statement);
+    }
+  }
+
+  translateVariableDeclaration(pb) {
+    const { name } = pb;
+    const type = this.translateType(pb.type);
+    const initializer = this.translateExpression(pb.initializer);
+    this.variables[name] = { name, type, scope: 'local', mutable: true, pointer: false, unused: true };
+    return ZIG.VariableDeclaration.create({ name, type, initializer });
+  }
+
+  translateConstantDeclaration(pb) {
+    const { name } = pb;
+    const initializer = this.translateExpression(pb.initializer);
+    const scope = (this.currentFunction) ? 'local' : 'global';
+    this.variables[name] = { name, type, scope, mutable: false, pointer: false, unused: false };
+    return ZIG.VariableDeclaration.create({ name, initializer, isConstant: true });
+  }
+
+  translateDependentDeclaration(pb) {
+    const { name } = pb;
+    let type = this.translateType(pb.type);
+    if (pb.width) {
+      const dim = this.translateExpression(pb.width, 'u32');
+      type = `[${dim}]${type}`;
+    }
+    this.variables[name] = { name, type, scope: 'kernel', mutable: true, pointer: false, unused: false };
+    return ZIG.FieldDeclaration.create({ name, type })
+  }
+
+  translateExpressionStatement(pb) {
+    const expression = this.translateExpression(pb.expression, 'void');
+    return ZIG.ExpressionStatement({ expression });
+  }
+
+  translateIfStatement(pb) {
+    let elsePrefix = '';
+    const condition = this.translateExpression(pb.condition);
+    const statements = this.translateStatements(pb.statements);
+    const elseClause = (pb.elseClause) ? this.translateIfStatement(pb.elseClause) : null;
+    return ZIG.IfStatement.create({ condition, statements, elseCaluse });
+  }
+
+  translateForStatement(pb) {
+    const hasDeclarations = !!pb.initializers.find(i => i instanceof PB.VariableDeclaration);
+    if (hasDeclarations) {
+      // need to start a new code block
+      this.startScope();
+    }
+    const initializers = this.translateStatement(pb.initializers);
+    const condition = this.translateExpression(pb.condition);
+    const statements = this.translateStatements(pb.statements);
+    const increments = this.translateStatements(pb.incrementals);
+    if (hasDeclarations) {
+      this.endScope();
+    }
+    return ZIG.ForStatement.create({ initializers, condition, increments, statements, hasDeclarations });
+  }
+
+  translateWhileStatement(pb) {
+    this.startScope();
+    const condition = this.translateExpression(pb.condition);
+    const statements = this.translateStatements(pb.statements);
+    this.endScope();
+    return ZIG.WhileStatement.create({ condition, statements })
+  }
+
+  translateDoWhileStatement({ condition, statements }) {
+    this.startScope();
+    const condition = ZIG.Literal.create({ value: true, type: 'bool' });
+    const statements = this.translateStatements(pb.statements);
+    this.endScope();
+    return ZIG.DoWhileStatement.create({ condition, statements })
+  }
+
+  translateBreakStatement() {
+    return ZIG.BreakStatement.create({});
+  }
+
+  translateContinueStatement() {
+    return ZIG.ContinueStatement.create({});
+  }
+
+  translateReturnStatement(pb) {
+    const expression = this.translateExpression(pb.expression);
+    return ZIG.ReturnStatement.create({ expression });
+  }
+
+  translateEmptyStatement() {
+    return ZIG.EmptyStatement.create({});
+  }
+
   translateExpression(expression, typeExpected) {
     const fname = `translate${expression.constructor.name}`;
     const f = this[fname];
     if (f) {
       return f.call(this, expression, typeExpected);
     } else {
-      if (expression.constructor.name === 'ZigExpr') {
-        throw new Error('Already translated');
-      }
       console.log(`TODO: ${fname}`);
       console.log(expression);
     }
@@ -697,3 +831,47 @@ const builtInFunctions = (() => {
   }
   return functions;
 })();
+
+export function translate(ast, macroASTs, options) {
+  const translater = new PixelBenderToZigTranslator(ast, macroASTs);
+  return translater.translate();
+}
+
+function walk(tree, cb) {
+  const f = (node) => {
+    if (Array.isArray(node)) {
+      for (const n of node) {
+        const res = f(n);
+        // end iteration if callback returns false
+        if (res === false) {
+          return false;
+        }
+      }
+    } else if (node instanceof Object) {
+      const res = cb(node);
+      if (res !== undefined) {
+        return res;
+      }
+      // scan sub-nodes if callback doesn't return anything
+      f(Object.values(node));
+    }
+  };
+  f(tree);
+}
+
+function find(classes, recursive = false) {
+  if (!Array.isArray(classes)) {
+    classes = [ classes ];
+  }
+  const list = [];
+  const asts = [ this.ast ];
+  walk(ast, (node) => {
+    if (classes.some(c => node instanceof c)) {
+      list.push(node);
+      if (!recursive) {
+        return true;
+      }
+    }
+  });
+  return list;
+}
