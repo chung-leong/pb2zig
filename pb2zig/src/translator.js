@@ -1,940 +1,80 @@
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import * as N from './pb-nodes.js';
+import * as PB from './pb-nodes.js';
+import * as ZIG from './zig-noides.js';
 
 export class PixelBenderToZigTranslator {
-  lines = [];
-  indent = 0;
-  ast;
-  macroASTs;
+  pbAST;
+  pbMacroASTs;
+  zigAST = [];
   scopeStack = [];
   functions = { ...builtInFunctions };
   variables = {};
   variableAliases = [];
-  currentFunctionName = '';
+  currentFunction = null;
 
-  translate(ast, macroASTs, options = {}) {
-    const {
-      kernelOnly = false,
-    } = options;
-    this.ast = ast;
-    this.macroASTs = macroASTs;
-    this.addHeading();
+  constructor(ast, macroASTs) {
+    this.pbAST = ast;
+    this.pbMacroASTs = macroASTs;
+  }
+
+  translate() {
     this.addImports();
-    this.addKernel();
-    if (!kernelOnly) {
-      this.addProcessFunctions();
-    }
-    return this.lines.join('\n');
-  }
-
-  add(text) {
-    const newLines = text.trim().split('\n').map(l => l.trim());
-    for (const line of newLines) {
-      let indent = this.indent;
-      if (line.startsWith('}')) {
-        indent--;
-      }
-      const spaces = ' '.repeat(Math.max(0, indent) * 4);
-      this.lines.push(spaces + line);
-      //console.log(spaces + line);
-      for (const c of line) {
-        if (c === '{') {
-          this.indent++;
-        } else if (c === '}') {
-          this.indent--;
-        }
-      }
-    }
-  }
-
-  walk(tree, cb, cbExit = null) {
-    const f = (node) => {
-      if (Array.isArray(node)) {
-        for (const n of node) {
-          const res = f(n);
-          // end iteration if callback returns false
-          if (res === false) {
-            return false;
-          }
-        }
-      } else if (node instanceof Object) {
-        const res = cb(node);
-        if (res !== undefined) {
-          // call exit function if one is provided
-          cbExit?.(node);
-          return res;
-        }
-        // scan sub-nodes if callback doesn't return anything
-        f(Object.values(node));
-        cbExit?.(node);
-      }
-    };
-    f(tree);
-  }
-
-  find(classes, recursive = false, includeMacros = false) {
-    if (!Array.isArray(classes)) {
-      classes = [ classes ];
-    }
-    const list = [];
-    const asts = [ this.ast ];
-    if (includeMacros) {
-      for (const macroAST of this.macroASTs) {
-        asts.push(macroAST);
-      }
-    }
-    for (const ast of asts) {
-      this.walk(ast, (node) => {
-        if (classes.some(c => node instanceof c)) {
-          list.push(node);
-          if (!recursive) {
-            return true;
-          }
-        }
-      });
-    }
-    return list;
   }
 
   startScope() {
-    const { variables, functions } = this;
-    this.scopeStack.push({ variables, functions });
+    const { variables, currentFunction } = this;
+    this.scopeStack.push({ variables, currentFunction });
     this.variables = { ...variables };
-    this.functions = { ...functions };
   }
 
   endScope() {
-    const previous = this.variables;
-    const { variables, functions } = this.scopeStack.pop();
-    for (const [ name, { unused } ] of Object.entries(previous)) {
-      if (unused) {
-        if (!variables[name]) {
-          // it's only in the scope we're exiting
-          this.add(`_ = ${name};`);
-        }
+    const variablesBefore = this.variables;
+    const functionBefore = this.currentFunction;
+    const { variables, currentFunction } = this.scopeStack.pop();
+    for (const [ name, { unused } ] of Object.entries(variablesBefore)) {
+      if (unused && variables[name]) {
+        // it's only in the scope we're exiting
+        const variable = this.resolveVariable(name);
+        const ignore = this.createIgnoreStatement(variable);
+        functionBefore.statements.push(ignore);
       }
     }
     this.variables = variables;
-    this.functions = functions;
-  }
-
-  addTempVariable(lvalue, value, aliasing = false) {
-    let count = 1;
-    let name;
-    do {
-      name = `tmp${count++}`;
-    } while(this.variables[name]);
-    const { type } = value;
-    this.variables[name] = { type };
-    this.add(`const ${name} = ${value};`);
-    const tmp = new ZigExpr(name, value.type);
-    if (aliasing) {
-      this.variableAliases?.unshift({ lvalue, tmp });
-    }
-    return tmp;
-  }
-
-  findTempVariable(lvalue) {
-    if (!this.variableAliases) {
-      return;
-    }
-    const list = this.variableAliases;
-    this.variableAliases = null;
-    const expr1 = this.translateExpression(lvalue);
-    const entry = list.find(e => {
-      const expr2 = this.translateExpression(e.lvalue);
-      return (`${expr1}` === `${expr2}`);
-    });
-    this.variableAliases = list;
-    return entry?.tmp;
-  }
-
-  convertMacro(name, argsGiven) {
-    const macro = this.macroASTs.find(m => m.name === name);
-    if (!macro || !macro.args) {
-      return false;
-    }
-    const { args, expression } = macro;
-    if (args?.length !== argsGiven?.length) {
-      const s = (args.length > 1) ? 's' : '';
-      throw new Error(`Macro ${name}() expects ${args.length} argument${s}, received ${argsGiven?.length}`);
-    }
-    // use the types from the arguments given
-    const argsWithTypes = args.map((name, index) => {
-      const { type } = argsGiven[index];
-      return { name, type, direction: 'in' };
-    });
-    // save the current scope stack and go back to the top-level
-    this.startScope();
-    const savedLines = this.lines;
-    const savedStack = this.scopeStack;
-    this.scopeStack = [];
-    this.variables = savedStack[0].variables;
-    this.functions = savedStack[0].functions;
-    // capture lines being added
-    const lines = this.lines = [];
-    this.startScope();
-    const external = this.findExternalReferences(argsWithTypes, expression);
-    const calls = this.findFunctionCalls(expression);
-    this.addExternalReferences(external);
-    for (const { name, type } of argsWithTypes) {
-      this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false, unused: true };
-    }
-    let expr;
-    try {
-      expr = this.translateExpression(expression);
-    } catch (err) {
-      return false;
-    } finally {
-      this.endScope();
-      this.scopeStack = savedStack;
-      this.lines = savedLines;
-      this.endScope();
-    }
-    const argTypes = argsWithTypes.map(a => a.type);
-    const argPointers = argsWithTypes.map(a => a.pointer);
-    const needSelf = (external.length > 0) || calls.find(({ name }) => {
-      if (this.functions[name]?.receiver === 'self') {
-        return true;
-      } else if (imageFunctions.includes(name)) {
-        return true;
-      } else {
-        return false;
-      }
-    });
-    const argList = argsWithTypes.map(({ name, type }) => {
-      const typeZ = getZigType(type);
-      return `${name}: ${typeZ}`;
-    });
-    if (needSelf) {
-      argList.unshift(`self: *@This()`);
-    }
-    const returnType = expr.type;
-    const f = this.functions[name] = {
-      type: 'macro',
-      returnType,
-      argTypes,
-      argPointers,
-      overloaded: false,
-      receiver: (needSelf) ? 'self' : undefined,
-      external,
-    };
-    const typeZ = getZigType(returnType);
-    // save the lines and add them later
-    f.lines = [
-      `fn ${name}(${argList.join(', ')}) ${typeZ} {`,
-      ...lines.filter(l => !!l.trim()),
-      `return ${expr};`,
-      `}`,
-    ];
-    // make function appear in all the other scopes too
-    for (const { functions } of this.scopeStack) {
-      functions[name] = f;
-    }
-    return true;
-  }
-
-  expandMacro(name, argsGiven = null) {
-    const macro = this.macroASTs.find(m => m.name === name);
-    if (!macro || !macro.args !== !argsGiven) {
-      return null;
-    }
-    const { args, expression } = macro;
-    const argsByName = {};
-    if (args) {
-      if (args?.length !== argsGiven?.length) {
-        const s = (args.length > 1) ? 's' : '';
-        throw new Error(`Macro ${name}() expects ${args.length} argument${s}, received ${argsGiven?.length}`);
-      }
-      if (args) {
-        for (const [ index, argName ] of args.entries()) {
-          argsByName[argName] = argsGiven[index];
-        }
-      }
-    }
-    const clone = (object) => {
-      if (Array.isArray(object)) {
-        return object.map(clone);
-      } else if (object && typeof(object) === 'object') {
-        if (object instanceof N.VariableAccess) {
-          const { name, property } = object;
-          const arg = argsByName[name];
-          if (arg) {
-            if (property) {
-              // access the prop of the argument
-              return this.createExpression(N.VariableAccess, { name: arg.name, property });
-            } else {
-              return arg;
-            }
-          }
-        }
-        const copy = new object.constructor();
-        for (const [ name, child ] of Object.entries(object)) {
-          copy[name] = clone(child);
-        }
-        return copy;
-      } else {
-        return object;
-      }
-    };
-    return clone(expression);
-  }
-
-  expandAssignmentOp({ lvalue, operator, rvalue }) {
-    const expression = this.createExpression(N.ArithmeticOperation, {
-      operator: operator.charAt(0),
-      operand1: lvalue,
-      operand2: rvalue,
-    });
-    return this.createExpression(N.AssignmentOperation, {
-      operator: '=',
-      lvalue,
-      rvalue: expression,
-    });
-  }
-
-  getReturnType(name, args) {
-    const f = this.functions[name];
-    if (!f) {
-      throw new Error(`Undeclared function: ${name}()`);
-    }
-    const { argTypes, returnType, overloaded } = f;
-    const types = args.map(a => a?.type);
-    const findMismatch = (list) => types.findIndex((type, i) => type !== list[i]);
-    if (overloaded) {
-      for (const [ n, argTypesN ] of argTypes.entries()) {
-        const index = findMismatch(argTypesN);
-        if (index === -1) {
-          return returnType[n];
-        }
-      }
-      throw new Error(`${name}() does not accept these arguments: ${types.join(', ')}`);
-    } else {
-      const index = findMismatch(argTypes);
-      if (index !== -1) {
-        throw new Error(`${name}() expects argument ${index + 1} to be ${argTypes[index + 1]}, got ${types[index]}`);
-      }
-      return returnType;
-    }
+    this.currentFunction = currentFunction;
   }
 
   addImports() {
-    this.add(`const std = @import("std");`);
-    this.add(``);
-  }
-
-  addHeading() {
-    const { name, meta } = this.ast;
-    this.add(`// Pixel Bender "${name}" (translated using pb2zig)`);
-  }
-
-  addKernel() {
-    this.add(`pub const kernel = struct {`);
-    this.addGlobalConstants();
-    this.addMetadata();
-    this.addParameterDecls();
-    this.addInputImages();
-    this.addOutputImages();
-    this.add(``);
-    this.addInstanceFunction();
-    this.add(``);
-    this.addCreateFunction();
-    this.add(`};`);
-  }
-
-  addGlobalConstants() {
-    // convert macros without dependencies on unknown variables into constants
-    let count = 0;
-    for (const macro of this.macroASTs) {
-      const { name, args, expression } = macro;
-      if (!args) {
-        try {
-          const expr = this.translateExpression(expression);
-          if (count === 0) {
-            this.add(`// constants`);
-          }
-          this.add(`const ${name} = ${expr};`);
-          const { type } = expr;
-          this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false, unused: false };
-          count++;
-        } catch (err) {
-          // if the expression uses variables not defined in the global
-          // scope, it will fail and land here
-        }
-      }
-    }
-    if (count > 0) {
-      this.add(``);
-    }
-  }
-
-  addMetadata() {
-    this.add(`// kernel information`);
-    for (const [ field, literal ] of Object.entries(this.ast.meta)) {
-      if (literal) {
-        this.add(`pub const ${field} = ${this.translateExpression(literal)};`);
-      }
-    }
-  }
-
-  addParameterDecls() {
-    const params = this.find(N.Parameter);
-    this.add(`pub const parameters = .{`);
-    for (const param of params) {
-      const {
+    for (const name of [ 'std' ]) {
+      this.zigAST.push(ZIG.VariableDeclaration.create({
         name,
+        initializer: ZIG.FunctionCall.create({ name: '@import', args: [
+          ZIG.Literal.create({ value: name, type: '[]const u8' }),
+        ]}),
+      }));
+    }
+  }
+
+  promoteExpression(expression, type) {
+    if (expression.type === type) {
+      return expression;
+    }
+    if (ZIG.isVector(type) && expression.isScalar()) {
+      return ZIG.FunctionCall.create({ name: '@as', args: [
         type,
-        minValue,
-        maxValue,
-        stepInterval,
-        defaultValue,
-        previewValue,
-        ...others
-      } = param;
-      this.variables[name] = { name, type, scope: 'params', mutable: false, pointer: false, unused: false };
-      const typeZ = getZigType(type);
-      this.add(`.${param.name} = .{`);
-      this.add(`.type = ${typeZ},`);
-      if (minValue !== undefined) {
-        this.add(`.minValue = ${this.translateExpression(minValue, 'comptime')},`);
-      }
-      if (maxValue !== undefined) {
-        this.add(`.maxValue = ${this.translateExpression(maxValue, 'comptime')},`);
-      }
-      if (stepInterval !== undefined) {
-        this.add(`.stepInterval = ${this.translateExpression(stepInterval, 'comptime')},`);
-      }
-      if (defaultValue !== undefined) {
-        this.add(`.defaultValue = ${this.translateExpression(defaultValue, 'comptime')},`);
-      }
-      if (previewValue !== undefined) {
-        this.add(`.previewValue = ${this.translateExpression(previewValue, 'comptime')},`);
-      }
-      for (const [ name, value ] of Object.entries(others)) {
-        if (value) {
-          this.add(`.${name} = ${this.translateExpression(value)},`);
-        }
-      }
-      this.add(`},`);
-    }
-    this.add(`};`);
-  }
-
-  addInputImages() {
-    const inputs = this.find(N.InputDeclaration);
-    this.add(`pub const inputImages = .{`);
-    for (const { name, type } of inputs) {
-      const channels = getVectorWidth(type);
-      this.add(`.${name} = .{ .channels = ${channels} },`);
-      this.variables[name] = { name, type, scope: 'input', mutable: false, pointer: false, unused: false };
-    }
-    this.add('};');
-  }
-
-  addOutputImages() {
-    const outputs = this.find(N.OutputDeclaration);
-    this.add(`pub const outputImages = .{`);
-    for (const { name, type } of outputs) {
-      const channels = getVectorWidth(type);
-      this.add(`.${name} = .{ .channels = ${channels} },`);
-      this.variables[name] = { name, type, scope: 'output', mutable: true, pointer: false, unused: false };
-    }
-    this.add('};');
-  }
-
-  addInstanceFunction() {
-    this.add(`// generic kernel instance type`);
-    this.add(`fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {`);
-    this.add(`return struct {`);
-    this.addInputOutputFields();
-    this.addDependentFields();
-    this.addConstants();
-    this.addDefinedFunctions();
-    this.addMacroFunctions();
-    this.addCalledFunctions();
-    this.add(`};`);
-    this.add(`}`);
-  }
-
-  addInputOutputFields() {
-    this.add(`params: ParameterStruct,`)
-    this.add(`input: InputStruct,`);
-    this.add(`output: OutputStruct,`);
-    this.add(`outputCoord: @Vector(2, u32) = @splat(0),`);
-    this.add(``);
-    let count = 0;
-    for (const [ name, { type, scope } ] of Object.entries(this.variables)) {
-      if (scope === 'output') {
-        const typeZ = getZigType(type);
-        if (count++ === 0) {
-          this.add(`// output pixel`);
-        }
-        this.add(`${name}: ${typeZ} = undefined,`);
-      }
-    }
-    if (count > 0) {
-      this.add(``);
-    }
-  }
-
-  addConstants() {
-    // look for function definition so we don't scan into them
-    const decls = this.find([ N.ConstantDeclaration, N.FunctionDefinition ]).filter(d => d instanceof N.ConstantDeclaration);
-    if (decls.length > 0) {
-      this.add(`// constants`);
-      for (const decl of decls) {
-        this.addStatement(decl);
-      }
-      this.add(``);
-    }
-  }
-
-  addDependentFields() {
-    // set the types of constants now in case array-dimensions involve constants
-    const constDecls = this.find([ N.ConstantDeclaration, N.FunctionDefinition ]).filter(d => d instanceof N.ConstantDeclaration);
-    for (const { name, type } of constDecls) {
-      this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false, unused: false };
-    }
-    const decls = this.find(N.DependentDeclaration);
-    if (decls.length > 0) {
-      this.add(`// dependent variables`);
-      for (const decl of decls) {
-        this.addStatement(decl);
-      }
-      this.add(``);
-    }
-  }
-
-  addCreateFunction() {
-    this.add(`// kernel instance creation function`);
-    this.add(`
-      pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
-        return .{
-          .input = input,
-          .output = output,
-          .params = params,
-        };
-      }
-    `.trim());
-  }
-
-  addProcessFunctions() {
-    const codeURL = new URL('../zig/process.zig', import.meta.url);
-    const content = readFileSync(fileURLToPath(codeURL), 'utf-8');
-    const marker = '//---start of code';
-    const index = content.indexOf(marker);
-    const code = content.substring(index + marker.length);
-    this.add(``);
-    this.add(code);
-  }
-
-  addCalledFunctions() {
-    // find function calls
-    const inUse = {};
-    const calls = this.find(N.FunctionCall, true, true);
-    const [ ] = imageFunctions
-    for (const { name, args, type } of calls) {
-      // atan with two arguments is atan2
-      const actualName = (name === 'atan' && args.length === 2) ? 'atan2' : name;
-      inUse[actualName] = true;
-    }
-
-    // find matrix variables
-    const decls = this.find([
-      N.FunctionDefinition,
-      N.FunctionArgument,
-      N.ConstructorCall,
-      N.VariableDeclaration,
-      N.ConstantDeclaration,
-      N.DependentDeclaration,
-      N.Parameter,
-    ], true, true);
-    if (decls.some(v => isMatrix(v.type))) {
-      inUse['MatrixCalcResult'] = true;
-      inUse['matrixCalc'] = true;
-    }
-
-    let count = 0
-    if (inUse.outCoord) {
-      this.add(``);
-      this.add(`
-        // built-in Pixel Bender functions
-        fn outCoord(self: *@This()) @Vector(2, f32) {
-          const x = self.outputCoord[0];
-          const y = self.outputCoord[1];
-          return .{ @floatFromInt(x), @floatFromInt(y) };
-        }
-      `);
-      count++;
-    }
-
-    // get functions from file
-    const codeURL = new URL('../zig/functions.zig', import.meta.url);
-    const code = readFileSync(fileURLToPath(codeURL), 'utf-8');
-    const regExp = /pub (fn (\w+)[\s\S]*?\n})/g;
-    let m;
-    while (m = regExp.exec(code)) {
-      // excluding "pub"
-      const func = m[1], name = m[2];
-      if (inUse[name]) {
-        this.add(``);
-        if (count === 0) {
-          this.add(`// built-in Pixel Bender functions`);
-        }
-        this.add(func);
-        count++;
-      }
-    }
-  }
-
-  findExternalReferences(args, statements) {
-    const referenced = {};
-    let variables = { ...this.variables };
-    for (const { name, type, direction } of args) {
-      const pointer = direction.includes('out');
-      variables[name] = { name, type, scope: 'local', mutable: !pointer, pointer, unused: true };
-    }
-    const scopeStack = [];
-    const cb = (node) => {
-      if (node instanceof N.VariableAccess) {
-        const expanded = this.expandMacro(node.name);
-        if (expanded) {
-          this.walk(expanded, cb);
-        } else {
-          if (variables[node.name]?.scope !== 'local') {
-            referenced[node.name] = true;
-          }
-        }
-      } else if (node.statements) {
-        scopeStack.push(variables);
-        variables = { ...variables };
-      } else if (node instanceof N.VariableDeclaration) {
-        const { name, type } = node;
-        variables[name] = { name, type, scope: 'local', mutable: true, pointer: false, unused: true };
-      } else if (node instanceof N.FunctionCall) {
-        const { name, args } = node;
-        const expanded = this.expandMacro(name, args);
-        if (expanded) {
-          this.walk(expanded, cb);
-        }
-      }
-    };
-    const cbExit = (node) => {
-      if (node.statements) {
-        variables = scopeStack.pop();
-      }
-    };
-    this.walk(statements, cb, cbExit);
-    return Object.keys(referenced);
-  }
-
-  addExternalReferences(names) {
-    let count = 0;
-    for (const name of names) {
-      // variables outside a function's scope are either parameters,
-      // global constants, or dependent variables
-      const variable = this.variables[name];
-      if (!variable) {
-        // throw error elsewhere
-        continue;
-      }
-      const { scope, type } = variable;
-      if (scope === 'params') {
-        // shorten references to parameters
-        this.add(`const ${name} = self.params.${name};`);
-        this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false, unused: true };
-        count++;
-      } else if (scope === 'input') {
-        // shorten references to input images
-        this.add(`const ${name} = self.input.${name};`);
-        this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false, unused: true };
-        count++;
-      } else if (scope === 'kernel') {
-        if (this.currentFunctionName !== 'evaluateDependents') {
-          // place value in a const or it cannot be unintentionally changed
-          this.add(`const ${name} = self.${name};`);
-          this.variables[name] = { name, type, scope: 'local', mutable: false, pointer: false, unused: true };
-          count++;
-        } else {
-          // resolveVariable() should return self.[name] so the variable can be modified
-        }
-      } else {
-        // the variable is either a reference to an input/output image or undefined
-        // in any event, we don't need to deal with it here
-      }
-    }
-    if (count > 0) {
-      this.add(``);
-    }
-  }
-
-  findFunctionCalls(statements) {
-    const called = {};
-    this.walk(statements, (node) => {
-      if (node instanceof N.FunctionCall) {
-        called[node.name] = true;
-
-      }
-    })
-    return Object.keys(called);
-  }
-
-  addDefinedFunctions() {
-    const defs = this.find(N.FunctionDefinition);
-    // set the function prototype first
-    const calledBy = {};
-    const publicMethods = [
-      'evaluateDependents',
-      'evaluatePixel',
-    ];
-    for (const { name, type, args, statements } of defs) {
-      if (isUnsupported(type) || args.some(a => isUnsupported(a.type))) {
-        continue;
-      }
-      const external = this.findExternalReferences(args, statements);
-      const f = this.functions[name] = {
-        type: 'user',
-        returnType: type,
-        argTypes: args.map(a => a.type),
-        argPointers: args.map(a => a.direction.includes('out')),
-        overloaded: false,
-        receiver: (external.length > 0 || publicMethods.includes(name)) ? 'self' : null,
-        external,
-      };
-      // note that this function is calling the other function
-      for (const fname of this.findFunctionCalls(statements)) {
-        const f = this.functions[fname];
-        if (f?.type === 'user') {
-          let list = calledBy[fname];
-          if (!list) {
-            list = calledBy[fname] = [];
-          }
-          list.push(name);
-        } else if (f?.type === 'builtin') {
-          // image functions requires self
-          if (imageFunctions.includes(fname)) {
-            f.receiver = 'self';
-          }
-        }
-      }
-    }
-    // make sure calling functions have the self variable as well
-    for (const { name } of defs) {
-      const f = this.functions[name];
-      if (f?.receiver === 'self') {
-        const list = calledBy[name];
-        if (list) {
-          for (const fname of list) {
-            const f2 = this.functions[name];
-            f2.receiver = 'self';
-          }
-        }
-      }
-    }
-    // add the actual code
-    let count = 0;
-    for (const { name, type, args, statements } of defs) {
-      const f = this.functions[name];
-      if (!f) {
-        continue;
-      }
-      if (count++ === 0) {
-        this.add(`// functions defined in kernel`);
-      } else {
-        this.add(``);
-      }
-      this.startScope();
-      this.currentFunctionName = name;
-      // add arguments to scope
-      for (const { name, type, direction } of args) {
-        const pointer = direction.includes('out');
-        this.variables[name] = { name, type, scope: 'local', mutable: !pointer, pointer, unused: true };
-      }
-      const argList = args.map((a) => {
-        let type = getZigType(a.type);
-        if (this.variables[a.name].pointer) {
-          type = `*${type}`;
-        }
-        return `${a.name}: ${type}`;
-      });
-      if (f.receiver === 'self') {
-        // need self if the function access non-local variables
-        argList.unshift(`self: *@This()`);
-      }
-      const prefix = publicMethods.includes(name) ? 'pub ' : '';
-      this.add(`${prefix}fn ${name}(${argList.join(', ')}) ${getZigType(type)} {`);
-      if (name === 'evaluatePixel') {
-        for (const [ name, { scope } ] of Object.entries(this.variables)) {
-          if (scope === 'output') {
-            // clear output pixel
-            this.add(`self.${name} = @splat(0);`);
-          }
-        }
-      }
-      this.addExternalReferences(f.external);
-      this.addStatements(statements);
-      if (name === 'evaluatePixel') {
-        this.add(``);
-        for (const [ name, { scope } ] of Object.entries(this.variables)) {
-          if (scope === 'output') {
-            // write output pixel
-            this.add(`self.output.${name}.setPixel(self.outputCoord[0], self.outputCoord[1], self.${name});`);
-          }
-        }
-      }
-      this.endScope();
-      this.add('}');
-    }
-  }
-
-  addMacroFunctions() {
-    let count = 0;
-    for (const [ name, f ] of Object.entries(this.functions)) {
-      if (f.type !== 'macro') {
-        continue;
-      }
-      const { lines } = f;
-      this.add(``);
-      if (count === 0) {
-        this.add(`// macros`);
-      }
-      for (const line of lines) {
-        this.add(line);
-      }
-      count++;
-    }
-  }
-
-  addStatements(statements) {
-    for (const statement of statements) {
-      this.addStatement(statement);
-    }
-  }
-
-  addStatement(statement) {
-    const fname = `add${statement.constructor.name}`;
-    const f = this[fname];
-    if (f) {
-      f.call(this, statement);
+        ZIG.FunctionCall.create({ name: '@splat', args: [
+          expression,
+        ], type }),
+      ], type });
     } else {
-      this.add(`[TODO: ${fname}];`);
-      console.log(statement);
-    }
-    this.variableAliases = [];
-  }
-
-  addVariableDeclaration({ type, name, initializer }) {
-    const valueR = (initializer) ? this.translateExpression(initializer, type) : 'undefined';
-    this.add(`var ${name}: ${getZigType(type)} = ${valueR};`);
-    this.variables[name] = { name, type, scope: 'local', mutable: true, pointer: false, unused: true };
-  }
-
-  addConstantDeclaration({ type, name, initializer }) {
-    const valueR = this.translateExpression(initializer, type);
-    this.add(`const ${name}: ${getZigType(type)} = ${valueR};`);
-    this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false, unused: false };
-  }
-
-  addDependentDeclaration({ type, name, width }) {
-    let typeZ = getZigType(type);
-    if (width) {
-      const dim = this.translateExpression(width, 'int');
-      typeZ = `[${dim}]${typeZ}`;
-      type = `${type}[]`;
-    }
-    this.add(`${name}: ${typeZ} = undefined,`)
-    this.variables[name] = { name, type, scope: 'kernel', mutable: true, pointer: false, unused: false };
-  }
-
-  addExpressionStatement({ expression }) {
-    const op = this.translateExpression(expression, 'void');
-    if (op !== null) {
-      this.add(`${op};`);
+      throw new Error(`Cannot convert ${this.type} to ${type}`);
     }
   }
 
-  addIfStatement(stmt) {
-    let elsePrefix = '';
-    do {
-      const { condition, statements, elseClause } = stmt;
-      const line = (condition) ? `if (${this.translateExpression(condition)}) {` : `{`;
-      this.add(elsePrefix + line);
-      this.startScope();
-      this.addStatements(statements);
-      this.endScope();
-      if (elseClause) {
-        stmt = elseClause;
-        elsePrefix = `} else `;
-      } else {
-        elsePrefix = ``;
-      }
-    } while (elsePrefix);
-    this.add(`}`);
-  }
-
-  addForStatement({ initializers, condition, incrementals, statements }) {
-    const hasDecl = !!initializers.find(i => i instanceof N.VariableDeclaration);
-    if (hasDecl) {
-      // need to start a new code block
-      this.add('{');
-      this.startScope();
-    }
-    this.addStatements(initializers);
-    const c = this.translateExpression(condition);
-    this.add(`while (${c}) {`)
-    this.startScope();
-    this.addStatements(statements);
-    this.addStatements(incrementals);
-    this.endScope();
-    this.add('}');
-    if (hasDecl) {
-      this.endScope();
-      this.add('}');
-    }
-  }
-
-  addWhileStatement({ condition, statements }) {
-    const c = this.translateExpression(condition);
-    this.add(`while (${c}) {`)
-    this.startScope();
-    this.addStatements(statements);
-    this.endScope();
-    this.add('}');
-  }
-
-  addDoWhileStatement({ condition, statements }) {
-    const c = this.translateExpression(condition);
-    this.add(`while (true) {`)
-    this.startScope();
-    this.addStatements(statements);
-    this.add(`if (${c}) continue else break;`);
-    this.endScope();
-    this.add('}');
-  }
-
-  addBreakStatement() {
-    this.add(`break;`);
-  }
-
-  addContinueStatement() {
-    this.add(`continue;`);
-  }
-
-  addReturnStatement({ expression }) {
-    const expr = this.translateExpression(expression);
-    this.add(`return ${expr};`);
-  }
-
-  addEmptyStatement() {
-  }
-
-  createExpression(c, props) {
-    const obj = new c;
-    for (const [ name, value ] of Object.entries(props)) {
-      obj[name] = value;
-    }
-    return obj;
+  createIgnoreStatement(expression) {
+    return ZIG.AssignmentStatement.create({
+      lvalue: '_',
+      operator: '=',
+      rvalue: expression,
+    });
   }
 
   translateExpression(expression, typeExpected) {
@@ -946,16 +86,14 @@ export class PixelBenderToZigTranslator {
       if (expression.constructor.name === 'ZigExpr') {
         throw new Error('Already translated');
       }
+      console.log(`TODO: ${fname}`);
       console.log(expression);
-      return new ZigExpr(`[TODO: ${fname}]`, 'bool');
     }
   }
 
-  translateLiteral({ type, value }, typeExpected) {
-    if (type == 'int' && typeExpected?.startsWith('float')) {
-      type = getChildType(typeExpected);
-    }
-    return new ZigExpr(getZigLiteral(value, type), type);
+  translateLiteral(pb) {
+    const type = this.translateType(pb.type);
+    return ZIG.Literal.create({ value: pb.value, type });
   }
 
   resolveVariable(name, typeExpected = undefined) {
@@ -971,261 +109,244 @@ export class PixelBenderToZigTranslator {
       }
     }
     const { type, scope, pointer } = variable;
-    let code;
     if (scope === 'global') {
-      code = name;
+      // global constants can be accesse
     } if (scope === 'local') {
       if (pointer) {
-        code = `${name}.*`;
-      } else {
-        code = name;
+        name = `${name}.*`;
       }
       variable.unused = false;
     } else if (scope === 'kernel') {
-      code = `self.${name}`;
+      name = `self.${name}`;
     } else if (scope === 'input') {
-      code = `self.input.${name}`;
+      name = `self.input.${name}`;
     } else if (scope === 'output') {
       if (typeExpected === 'image') {
         // the image itself
-        code = `self.output.${name}`;
+        name = `self.output.${name}`;
       } else {
         // the active pixel
-        code = `self.${name}`;
+        name = `self.${name}`;
       }
     }
-    return new ZigExpr(code, type);
+    return ZIG.VariableAccess({ name, type });
   }
 
-  translateIndex(element) {
-    const expr = this.translateExpression(element);
-    if (element instanceof N.Literal) {
+  translateIndex(pb) {
+    const expression = this.translateExpression(pb);
+    if (expression instanceof ZIG.Literal) {
       // a number
       return expr;
     }
-    if (element instanceof N.VariableAccess) {
-      const variable = this.variables[element.name];
+    if (expression instanceof N.VariableAccess) {
+      const variable = this.variables[expression.name];
       if (variable.scope === 'global') {
         // a constant
-        return expr;
+        return expression;
       }
     }
     // need to use @intCast() on int
-    return new ZigExpr(`@intCast(${expr})`, expr.value);
+    return ZIG.FunctionCall.create({ name: '@intCast', args: [ expression ], type: 'u32' });
   }
 
-  translateVariableAccess(expression, typeExpected) {
+  translateVariableAccess(pb, typeExpected) {
     if (typeExpected !== 'void') {
-      const tmp = this.findTempVariable(expression);
+      const tmp = this.findTempVariable(pb);
       if (tmp) {
         return tmp;
       }
     }
-    const { name, property, element } = expression;
-    let value = this.resolveVariable(name, typeExpected);
-    if (property) {
-      const indices = getSwizzleIndices(property);
-      const typeS = getSwizzleType(value.type, indices);
+    const value = this.resolveVariable(pb.name, typeExpected);
+    if (pb.property) {
+      const indices = PB.getSwizzleIndices(property);
       if (indices.length > 1) {
-        const typeCZ = getChildZigType(typeS);
-        const mask = `@Vector(${indices.length}, i32){ ${indices.join(', ') } }`;
-        value = new ZigExpr(`@shuffle(${typeCZ}, ${value}, undefined, ${mask})`, typeS);
+        const type = ZIG.changeVectorWidth(value.type, indices.length);
+        const mask = ZIG.TupleLiteral({
+          type: `@Vector(${indices.length}, i32)`,
+          initializers: indices.map(i => ZIG.Literal.create({ value: i, type: 'i32' })),
+        });
+        return ZIG.FunctionCall.create({ name: '@shuffle', args: [
+          ZIG.getChildType(value.type),
+          value,
+          'undefined',
+          mask,
+        ], type });
       } else {
-        const [ index ] = indices;
-        value = new ZigExpr(`${value}[${index}]`, typeS);
+        const index = ZIG.Literal.create({ value: indices[0], type: 'u32' });
+        const type = ZIG.getChildType(value.type);
+        return ZIG.ElementAccess({ expression: value, index, type });
       }
-    } else if (element) {
-      const index = this.translateIndex(element);
+    } else if (pb.index) {
+      const index = this.translateIndex(pb.index);
       const typeC = getChildType(value.type);
-      value = new ZigExpr(`${value}[${index}]`, typeC);
+      return ZIG.ElementAccess({ expression: value, index, type });
+    } else {
+      return value;
     }
-    return value;
   }
 
-  translateElementAccess({ expression, property, element }) {
-    const value = this.translateExpression(expression);
-    const { type } = value;
-    if (property) {
-      const indices = getSwizzleIndices(property);
-      const typeS = getSwizzleType(type, indices);
+  translateElementAccess(pb) {
+    const expression = this.translateExpression(pb.expression);
+    if (pb.property) {
+      const indices = PB.getSwizzleIndices(pb.property);
       if (indices.length > 1) {
-        const typeCZ = getChildZigType(typeS);
-        const mask = `@Vector(${indices.length}, i32){ ${indices.join(', ') } }`;
-        return new ZigExpr(`@shuffle(${typeCZ}, ${value}, undefined, ${mask})`, typeS);
+        const type = ZIG.changeVectorWidth(expression, indices.length);
+        const mask = ZIG.TupleLiteral({
+          type: `@Vector(${indices.length}, i32)`,
+          initializers: indices.map(i => ZIG.Literal.create({ value: i, type: 'i32' })),
+        });
+        return ZIG.FunctionCall({ name: '@shuffle', args: [
+          ZIG.getChildType(expression.type),
+          expression,
+          'undefined',
+          mask,
+        ], type });
       } else {
-        const [ index ] = indices;
-        return new ZigExpr(`${value}[${index}]`, typeS);
+        const index = ZIG.Literal.create({ value: indices[0], type: 'u32' });
+        const type = ZIG.getChildType(expression.type);
+        return ZIG.ElementAccess.create({ expression, index, type });
       }
     } else {
       const index = this.translateIndex(element);
-      const typeC = getChildType(type);
-      return new ZigExpr(`${value}[${index}]`, typeC);
+      const type = ZIG.getChildType(expression.type);
+      return ZIG.ElementAccess.create({ expression, index, type });
     }
   }
 
-  translateIncrementOperation({ operator, lvalue, post }, typeExpected) {
+  translateIncrementOperation(pb, typeExpected) {
     let tmp;
-    const value = this.translateExpression(lvalue, typeExpected);
-    if (typeExpected !== 'void' && post) {
+    const lvalue = this.translateExpression(pb.lvalue, typeExpected);
+    if (typeExpected !== 'void' && pb.post) {
       // save copy of variable when it's postfix
-      tmp = this.addTempVariable(lvalue, value);
+      tmp = this.createTempVariable(pb.lvalue, lvalue);
     }
-    const assignment = this.createExpression(N.AssignmentOperation, {
-      lvalue,
+    const assignment = PB.AssignmentOperation.create({
+      lvalue: pb.lvalue,
       operator: operator.charAt(0) + '=',
-      rvalue: this.createExpression(N.Literal, { value: 1, type: 'int' })
+      rvalue: PB.Literal.create({ value: 1, type: 'int' })
     });
     // don't use value from assignment operation
-    this.translateExpression(assignment, 'void');
+    const expression = this.translateExpression(assignment, 'void');
     if (typeExpected === 'void') {
-      return null;
+      return expression;
     }
-    return tmp ?? value;
+    return tmp ?? lvalue;
   }
 
-  translateFunctionCall({ name, args }, typeExpected) {
-    let argList = args.map(a => this.translateExpression(a));
-    if (!this.functions[name]) {
-      // try converting macro to a global function
-      if (!this.convertMacro(name, argList)) {
-        // probably 'cause it has local dependents--expand and evaluate instead
-        const expanded = this.expandMacro(name, args);
+  translateFunctionCall(pb, typeExpected) {
+    let args = pb.args.map(a => this.translateExpression(a));
+    let { name } = pb;
+    const f = this.functions[name];
+    if (f.type === 'macro') {
+      if (f.argTypes === undefined) {
+        // use the arguments to set the converted function's argument types
+        this.convertMacro(name, args);
+      }
+      if (f.argTypes === false) {
+        // macro cannot be converted to a function, probably
+        // 'cause it has local dependents--expand and evaluate instead
+        const expanded = this.expandMacro(name, pb.args);
         if (expanded) {
           return this.translateExpression(expanded);
         }
       }
     }
-    if (name === 'outCoord') {
-      return new ZigExpr(`self.outCoord()`, 'float2');
-    } else if (name === 'sample') {
+    if (name === 'sample') {
       name = 'sampleNearest';
-    } else if (name === 'atan') {
-      if (args.length === 2) {
-        name = 'atan2';
-      }
+    } else if (name === 'atan' && args.length === 2) {
+      name = 'atan2';
     }
-    const type = this.getReturnType(name, argList);
-    const f = this.functions[name];
+    const type = this.getReturnType(name, args);
     if (f.overloaded) {
       // ensure that we don't pass a comptime_int or comptime_float as the
       // argument from which the return type is obtained
       if (f.returnTypeSource !== undefined) {
-        argList[f.returnTypeSource].decomptime();
+        argList[f.returnTypeSource] = this.ensureType(argList[f.returnTypeSource]);
       }
     }
-    let recv = f.receiver;
-    switch (name) {
-      case 'sampleNearest':
-      case 'sampleLinear':
-      case 'pixelSize':
-      case 'pixelAspectRatio':
-        // functions called on images are translated as method calls
-        // if it's an output image, make sure we get the reference to the image and not the pixel
-        recv = this.translateExpression(args[0], 'image');
-        argList = argList.slice(1);
-        break;
+    let receiver;
+    if (imageFunctions.includes(name)) {
+      // functions called on images are translated as method calls
+      // if it's an output image, make sure we get the reference to the image and not the pixel
+      receiver = this.translateExpression(pb.args[0], 'image');
+      args = args.slice(1);
     }
-    if (recv) {
-      name = `${recv}.${name}`;
+    // pass pointers when arguments are out or inout
+    args = args.map((arg, index) => (f.argPointers[index]) ? ZIG.AddressOf.create({ variable: arg }) : arg);
+    const call = ZIG.FunctionCall.create({ receiver, name, args, type });
+    if (type !== 'void' && typeExpected === 'void') {
+      // can't ignore return value--assign it to _
+      const ignore = this.createIgnoreStatement(call);
+      return ZIG.SideEffectExpression.create({ statements: [ ignore ], type });
     }
-    const argListWithPtr = argList.map((arg, index) => {
-      if (f.argPointers[index]) {
-        arg = new ZigExpr(`&${arg}`, arg.type);
-      }
-      return arg;
-    });
-    const expr = new ZigExpr(`${name}(${argListWithPtr.join(', ')})`, type);
-    if (typeExpected === 'void') {
-      this.add(`_ = ${expr};`);
-      return null;
-    }
-    return expr;
+    return call;
   }
 
-  translateConstructorCall({ type, args }, typeExpected) {
-    const argList = args.map(a => this.translateExpression(a));
-    if (isMatrix(type)) {
-      const typeV = getChildType(type);
-      const width = getVectorWidth(typeV);
+  translateConstructorCall(pb, typeExpected) {
+    const args = pb.args.map(a => this.translateExpression(a));
+    const type = this.translateType(pb.type);
+    if (ZIG.isMatrix(type)) {
+      const typeV = ZIG.getChildType(type);
+      const width = ZIG.getVectorWidth(typeV);
       const initializers = [];
-      if (isVector(argList[0]?.type))  {
+      if (args[0].isVector())  {
         initializers.push(...argList);
-      } else if (argList.length === 1) {
-        const arg = argList[0];
-        arg.promote(typeV);
+      } else if (args.length === 1) {
+        let arg = args[0];
+        arg = this.promoteExpression(arg, typeV);
         for (let i = 0; i < width; i++) {
           initializers.push(arg);
         }
       } else {
         for (let i = 0, j = 0; i < width; i++, j += width) {
-          const slice = argList.slice(j, j + width);
+          const slice = args.slice(j, j + width);
           initializers.push(`.{ ${slice.join(', ')} }`);
         }
       }
-      const typeZ = getZigType(type);
-      return new ZigExpr(`${typeZ}{\n${initializers.join(',\n')}\n}`, type);
+      return ZIG.TupleLiteral({ initializers, type });
     } else if (isVector(type)) {
-      const typeC = getChildType(type);
-      const width = getVectorWidth(type);
-      argList.forEach(a => a.convert(typeC));
-      if (typeExpected === 'comptime') {
-        if (argList.length === 1) {
-          while (argList.length < width) {
-            argList.push(argList[0]);
-          }
-        }
-        return new ZigExpr(`.{ ${argList.join(', ')} }`, type);
+      if (argList.length === 1) {
+        return this.promoteExpression(args[0], typeV);
       } else {
-        if (argList.length === 1) {
-          const arg = argList[0];
-          arg.promote(type);
-          return arg;
-        } else {
-          const typeZ = getZigType(type);
-          return new ZigExpr(`${typeZ}{ ${argList.join(', ')} }`, type);
-        }
+        const anonymous = typeExpected === 'comptime';
+        return ZIG.TupleLiteral({ anonymous, initializers, type })
       }
     } else {
-      const arg = argList[0];
-      arg.convert(type);
-      return arg;
+      return args[0];
     }
   }
 
-  translateArithmeticOperation({ operator, operand1, operand2 }) {
-    const opL = this.translateExpression(operand1);
-    const opR = this.translateExpression(operand2);
-    if (isMatrix(opL.type) || isMatrix(opR.type)) {
+  translateArithmeticOperation(pb) {
+    let operand1 = this.translateExpression(pb.operand1);
+    let operand2 = this.translateExpression(pb.operand2);
+    if (operand1.isMatrix() || operand2.isMatrix()) {
       // matrix math requires function calls
-      let returnType;
-      switch (operator) {
-        case '+':
-        case '-':
-        case '/':
-          returnType = opL.isMatrix() ? opL.type : opR.type;
-          break;
-        case '*':
-          if (opL.isVector()) {
-            returnType = opL.type;
-          } else if (opR.isVector()) {
-            returnType = opR.type;
-          } else {
-            returnType = opL.isMatrix() ? opL.type : opR.type;
-          }
-          break;
-      }
-      return new ZigExpr(`matrixCalc("${operator}", ${opL}, ${opR})`, returnType);
+      const symbols = [ operand1, operand2 ].map((operand) => {
+        if (operand.isMatrix()) {
+          return 'M';
+        } else if (operand.isVector()) {
+          return 'V';
+        } else if (operand.isScalar()) {
+          return 'S';
+        }
+      });
+      const name = `@"${symbols.join(` ${operator} `)}"`;
+      const args = [ operand1, operand2 ];
+      const type = this.getReturnType(name, args);
+      return ZIG.FunctionCall.create({ name, args, type });
     }
     // promote scalar to vector
-    if (opL.isScalar() && opR.isVector()) {
-      opL.promote(opR.type);
-    } else if (opL.isVector() && opR.isScalar()) {
-      opR.promote(opL.type);
+    if (operand1.isScalar() && operand2.isVector()) {
+      operand1 = this.promoteExpression(operand1, operand2.type);
+    } else if (operand1.isVector() && operand2.isScalar()) {
+      operand2 = this.promoteExpression(operand2, operand1.type);
     }
-    return new ZigExpr(`${opL} ${operator} ${opR}`, opL.type);
+    const { type } = operand1;
+    return ZIG.ArithmeticOperation.create({ operand1, operator, operand2, type });
   }
 
-  translateComparisonOperation({ operator, operand1, operand2 }) {
+  translateComparisonOperation(pb) {
+    let { operator } = pb;
     switch (operator) {
       case '&&':
         operator = 'and';
@@ -1237,53 +358,69 @@ export class PixelBenderToZigTranslator {
         operator = '!=';
         break;
     };
-    const opL = this.translateExpression(operand1);
-    const opR = this.translateExpression(operand2);
-    if (isMatrix(opL.type)) {
+    const operand1 = this.translateExpression(pb.operand1);
+    const operand2 = this.translateExpression(pb.operand2);
+    if (operand1.isMatrix()) {
+      if (!operand2.isMatrix()) {
+        throw new Error('Invalid matrix comparison');
+      }
       // matrix comparison requires function calls
-      return new ZigExpr(`matrixCalc("${operator}", ${opL}, ${opR})`, 'bool');
-    } else if (isVector(opL.type)) {
-      return new ZigExpr(`@reduce(.And, ${opL} ${operator} ${opR})`, 'bool');
+      return ZIG.FunctionCall({ name: `@"M ${operator} M"`, args: [
+        operand1,
+        operand2,
+        'bool',
+      ]});
+    } else if (operand1.isVector()) {
+      if (!operand1.isVector()) {
+        throw new Error('Invalid vector comparison');
+      }
+      // vector comparisons yield vector of bool, need to reduce them
+      return ZIG.FunctionCall({ name: `@reduce`, args: [
+        '.And',
+        ZIG.ComparisonOperation.create({ operand1, operator, operand2 }),
+      ]});
     } else {
-      return new ZigExpr(`${opL} ${operator} ${opR}`, 'bool');
+      return ZIG.ComparisonOperation.create({ operand1, operator, operand2 });
     }
   }
 
-  translateAssignmentOperation({ lvalue, operator, rvalue }, typeExpected) {
+  translateAssignmentOperation(pb, typeExpected) {
     // pass 'void' so that we don't get a tmp variable
-    const valueL = this.translateExpression(lvalue, 'void');
-    const valueR = this.translateExpression(rvalue, valueL.type);
-    if (operator.length === 2 && (valueL.isMatrix() || valueR.isMatrix())) {
+    let lvalue = this.translateExpression(pb.lvalue, 'void');
+    let rvalue = this.translateExpression(pb.rvalue, lvalue.type);
+    const { operator } = pb;
+    if (operator.length === 2 && (lvalue.isMatrix() || rvalue.isMatrix())) {
       // matrix operation need to be expanded
-      const assignment = this.expandAssignmentOp({ lvalue, operator, rvalue });
-      return this.translateExpression(assignment, typeExpected);
+      const assignment = this.expandAssignmentOperation(pb);
+      return this.translateAssignmentOperation(assignment, typeExpected);
     }
-    valueR.promote(valueL.type);
-    if (/@shuffle/.test(valueL)) {
+    rvalue = this.promoteExpression(rvalue, lvalue.type);
+    let sideEffects;
+    if (lvalue instanceof ZIG.FunctionCall) {
       // valueL is not a valid lvalue, need to handle this separately
       if (operator.length === 2) {
         // += and friends--handle it as lvalue = lvalue + rvalue
-        const assignment = this.expandAssignmentOp({ lvalue, operator, rvalue });
+        const assignment = this.expandAssignmentOperation(pb);
         return this.translateAssignmentOperation(assignment, typeExpected);
       }
       // need to assign to the full vector with a write mask, to keep the
       // unselected elements unchanged
-      const variableL = this.resolveVariable(lvalue.name);
+      const variableL = this.resolveVariable(pb.lvalue.name);
       // get the indices of the selected elements
-      const indicesL = getSwizzleIndices(lvalue.property);
+      const indicesL = PB.getSwizzleIndices(pb.lvalue.property);
       let sourceR, indicesR;
-      if (rvalue instanceof N.VariableAccess && rvalue.property) {
+      if (pb.rvalue instanceof N.VariableAccess && pb.rvalue.property) {
         // the right size is a property too, get the indices of its elements
-        sourceR = this.resolveVariable(rvalue.name);
-        indicesR = getSwizzleIndices(rvalue.property);
+        sourceR = this.resolveVariable(pb.rvalue.name);
+        indicesR = PB.getSwizzleIndices(pb.rvalue.property);
       } else {
         // use a list of sequential indices
-        sourceR = valueR;
-        indicesR = getVectorIndices(valueR.type);
+        sourceR = rvalue;
+        indicesR = ZIG.getVectorIndices(rvalue.type);
       }
       // build the mask for @shuffle()
       const indicesM = [];
-      const widthL = getVectorWidth(variableL.type);
+      const widthL = ZIG.getVectorWidth(variableL.type);
       for (let i = 0; i < widthL; i++) {
         const j = indicesL.indexOf(i);
         if (j !== -1) {
@@ -1294,241 +431,60 @@ export class PixelBenderToZigTranslator {
           indicesM.push(i);
         }
       }
-      const mask = `@Vector(${indicesM.length}, i32){ ${indicesM.join(', ') } }`;
-      const typeCZ = getChildZigType(variableL.type);
+      const mask = ZIG.StructLiteral({
+        type: `@Vector(${indicesM.length}, i32)`,
+        initializers: indicesM.map(i => ZIG.Literal.create({ value: i, type: 'i32' })),
+      });
+      const shuffleCall = ZIG.FunctionCall.create({ name: '@shuffle', args: [
+        variableL.type,
+        variableL,
+        sourceR,
+        mask,
+      ]})
       // make the change (to the whole vector)
-      this.add(`${variableL} = @shuffle(${typeCZ}, ${variableL}, ${sourceR}, ${mask});`);
+      sideEffects.push(ZIG.AssignmentState({ lvalue: variableL, operator, rvalue: shuffleCall }));
     } else {
       // perform normally
-      this.add(`${valueL} ${operator} ${valueR};`);
+      sideEffects.push(ZIG.AssignmentStatement({ lvalue, operator, rvalue }));
     }
-    if (typeExpected === 'void') {
-      // the expression's value is not being used
-      return null;
+    if (typeExpected !== 'void') {
+      // the expression's value is being used--need to save the value to a temporary variable
+      // since the lvalue can get modified again prior to the expression being used
+      sideEffects.push(this.createTempVariable(pb.lvalue, valueL, true));
     }
-    // need to save the value to a temporary variable, since the lvalue
-    // can get modified again
-    return this.addTempVariable(lvalue, valueL, true);
+    const { type } = lvalue;
+    return ZIG.SideEffectExpression({ sideEffects, type });
   }
 
-  translateSignOperation({ sign, operand }) {
-    const op = this.translateExpression(operand);
-    return (sign === '+') ? op : new ZigExpr(`-${op}`, op.type);
+  translateSignOperation(pb) {
+    const operand = this.translateExpression(pb.operand);
+    const { sign } = pb;
+    const { type } = operand;
+    return (sign === '+') ? op : ZIG.SignOperation({ sign, operand, type });
   }
 
-  translateNotOperation({ operand }) {
-    const op = this.translateExpression(operand);
-    return new ZigExpr(`!${op}`, 'bool');
+  translateNotOperation(pb) {
+    const operand = this.translateExpression(ob.operand);
+    const { type } = operand;
+    return ZIG.NotOperation.create({ operand, type });
   }
 
-  translateParentheses({ expression }) {
-    const expr = this.translateExpression(expression);
-    if (/^\w+$/.test(expr) || /^@as\([^)]*\)$/.test(expr)) {
+  translateParentheses(pb) {
+    const expression = this.translateExpression(pb.expression);
+    if (expression instanceof ZIG.FunctionCall) {
       // don't need the parentheses
-      return expr;
+      return expression;
     }
-    return new ZigExpr(`(${expr})`, expr.type);
+    const { type } = expression;
+    return ZIG.Parenthese.create({ expression, type });
   }
 
-  translateConditional({ condition, onTrue, onFalse }) {
-    const c = this.translateExpression(condition);
-    const t = this.translateExpression(onTrue);
-    const f = this.translateExpression(onFalse);
-    const typeZ = getZigType(t.type);
-    return new ZigExpr(`@as(${typeZ}, if (${c}) ${t} else ${f})`, t.type);
-  }
-}
-
-
-export function translate(ast, macroASTs, options) {
-  const translater = new PixelBenderToZigTranslator();
-  return translater.translate(ast, macroASTs, options);
-}
-
-class ZigExpr {
-  constructor(text, type) {
-    this.text = text;
-    this.type = type;
-  }
-
-  isVector() {
-    return isVector(this.type);
-  }
-
-  isMatrix() {
-    return isMatrix(this.type);
-  }
-
-  isScalar() {
-    return !this.isMatrix() && !this.isVector();
-  }
-
-  promote(type) {
-    if (this.type === type) {
-      return;
-    }
-    if (isVector(type) && this.isScalar()) {
-      this.convert(getChildType(type));
-      const typeZ = getZigType(type);
-      this.text = `@as(${typeZ}, @splat(${this.text}))`;
-      this.type = type;
-      return;
-    } else {
-      throw new Error(`Cannot convert ${this.type} to ${type}`);
-    }
-  }
-
-  convert(type) {
-    if (this.type !== type) {
-      if (type === 'bool') {
-        this.text = `(${this.text} != 0)`;
-      } else if (this.type === 'bool') {
-        this.text = `(if (${this.text}) 1 else 0)`;
-      } else if (type === 'float') {
-        const value = parseFloat(this.text);
-        if (isNumber(this.text)) {
-          this.text = getZigLiteral(parseFloat(this.text), type);
-        } else {
-          const typeZ = getZigType(type);
-          this.text = `@as(${typeZ}, @floatFromInt(${this.text}))`;
-        }
-      } else if (type === 'int') {
-        if (isNumber(this.text)) {
-          this.text = getZigLiteral(parseInt(this.text), type);
-        } else {
-          const typeZ = getZigType(type);
-          this.text = `@as(${typeZ}, @intFromFloat(${this.text}))`;
-        }
-      }
-    }
-    this.type = type;
-  }
-
-  decomptime() {
-    if (isNumber(this.text)) {
-      if (this.type === 'float' || this.type === 'int') {
-       const typeZ = getZigType(this.type);
-       this.text = `@as(${typeZ}, ${this.text})`;
-      }
-    }
-  }
-
-  toString() {
-    return this.text;
-  }
-}
-
-function getZigType(type) {
-  if (type === undefined) {
-    return undefined;
-  }
-  if (type.startsWith('image')) {
-    return 'Image';
-  }
-  const table = {
-    bool: 'bool',
-    bool2: 'bool[2]',
-    bool3: 'bool[3]',
-    bool4: 'bool[4]',
-
-    int: 'i32',
-    int2: '@Vector(2, i32)',
-    int3: '@Vector(3, i32)',
-    int4: '@Vector(4, i32)',
-
-    float: 'f32',
-    float2: '@Vector(2, f32)',
-    float3: '@Vector(3, f32)',
-    float4: '@Vector(4, f32)',
-
-    float2x2: '[2]@Vector(2, f32)',
-    float3x3: '[3]@Vector(3, f32)',
-    float4x4: '[4]@Vector(4, f32)',
-
-    void: 'void',
-  };
-  const zigType = table[type];
-  if (!zigType) {
-    throw new Error(`Unknown type: ${type}`);
-  }
-  return zigType;
-}
-
-function getChildZigType(type) {
-  return getZigType(getChildType(type));
-}
-
-function getChildType(type) {
-  if (isMatrix(type)) {
-    return type.slice(0, -2);
-  } else if (isVector(type)) {
-    return type.slice(0, -1);
-  } else if (isArray(type)) {
-    return type.slice(0, -2);
-  } else {
-    return type;
-  }
-}
-
-function isVector(type) {
-  return /^[_a-z]+\d$/i.test(type);
-}
-
-function isMatrix(type) {
-  return /^[_a-z]+\dx\d$/i.test(type);
-}
-
-function isArray(type) {
-  return /^[_a-z]+\[\]$/i.test(type);
-}
-
-function isUnsupported(type) {
-  return [ 'region', 'imageRef' ].includes(type);
-}
-
-function isNumber(text) {
-  return /^[-+]?([0-9]*[.])?[0-9]+([eE][-+]?\d+)?$/.test(text);
-}
-
-function getVectorWidth(type) {
-  if (!isVector(type)) {
-    throw new Error(`Not a vector: ${type}`);
-  }
-  return parseInt(type.slice(-1), '') || 1;
-}
-
-function getVectorIndices(type) {
-  const width = getVectorWidth(type);
-  const indices = [];
-  for (let i = 0; i < width; i++) {
-    indices.push(i);
-  }
-  return indices;
-}
-
-function getSwizzleIndices(prop) {
-  const map = {
-    r: 0, g: 1, b: 2, a: 3,
-    x: 0, y: 1, z: 2, w: 3,
-    s: 0, t: 1, p: 2, q: 3,
-  };
-  return [ ...prop ].map(c => map[c]);
-}
-
-function getSwizzleType(type, indices) {
-  const typeE = type.slice(0, -1);
-  return (indices.length === 1) ? typeE : typeE + indices.length;
-}
-
-function getZigLiteral(value, type) {
-  if (type === 'float') {
-    let s = value.toString();
-    if (s.indexOf('.') === -1) {
-      s = value.toFixed(1);
-    }
-    return s;
-  } else {
-    return JSON.stringify(value);
+  translateConditional(pb) {
+    const condition = this.translateExpression(pb.condition);
+    const onTrue = this.translateExpression(pb.onTrue);
+    const onFalse = this.translateExpression(pb.onFalse);
+    const { type } = onTrue;
+    return ZIG.Conditional.create({ condition, onTrue, onFalse, type });
   }
 }
 

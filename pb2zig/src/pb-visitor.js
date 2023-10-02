@@ -361,14 +361,14 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   nullaryOperation(ctx) {
     const expr = this.visitAny(ctx);
-    let property, element;
+    let property, index;
     if (ctx.property) {
       property = this.visit(ctx.property);
     } else if (ctx.element) {
-      element = this.visit(ctx.element);
+      index = this.visit(ctx.element);
     }
-    if (property || element) {
-      return PB.ElementAccess.create({ expression: expr, property, element })
+    if (property || index) {
+      return PB.ElementAccess.create({ expression: expr, property, index })
     } else {
       return expr;
     }

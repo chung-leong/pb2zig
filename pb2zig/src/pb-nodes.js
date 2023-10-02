@@ -19,10 +19,6 @@ export class Meta extends PBNode {
   category;
 }
 
-export class Comment extends PBNode {
-  text;
-}
-
 export class Parameter extends PBNode {
   name;
   type;
@@ -101,13 +97,13 @@ export class ConstructorCall extends PBNode {
 export class VariableAccess extends PBNode {
   name;
   property;
-  element;
+  index;
 }
 
 export class ElementAccess extends PBNode {
   expression;
   property;
-  element;
+  index;
 }
 
 export class IncrementOperation extends PBNode {
@@ -196,4 +192,20 @@ export class ExpressionStatement extends PBNode {
 }
 
 export class EmptyStatement extends PBNode {
+}
+
+export function isVector(type) {
+  return /^[_a-z]+\d$/.test(type);
+}
+
+export function isMatrix(type) {
+  return /^[_a-z]+\dx\d$/.test(type);
+}
+
+export function isArray(type) {
+  return /^[_a-z]+\[\]$/.test(type);
+}
+
+export function isUnsupported(type) {
+  return [ 'region', 'imageRef' ].includes(type);
 }
