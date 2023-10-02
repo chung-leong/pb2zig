@@ -685,15 +685,7 @@ test "matrixCompMult" {
     assert(all(result[1] == @Vector(2, f32){ 9, 16 }));
 }
 
-pub fn @"V * M"(v1: anytype, m2: anytype) @TypeOf(v1) {
-    var result: @TypeOf(v1) = undefined;
-    inline for (m2, 0..) |column, c| {
-        result[c] = @reduce(.Add, column * v1);
-    }
-    return result;
-}
-
-pub fn @"M * M"(m1: anytype, m2: anytype) @TypeOf(m2) {
+pub fn @"M * M"(m1: anytype, m2: anytype) @TypeOf(m1) {
     const ar = @typeInfo(@TypeOf(m2)).Array;
     var result: @TypeOf(m2) = undefined;
     comptime var r = 0;
@@ -705,6 +697,14 @@ pub fn @"M * M"(m1: anytype, m2: anytype) @TypeOf(m2) {
         inline for (m2, 0..) |column, c| {
             result[c][r] = @reduce(.Add, row * column);
         }
+    }
+    return result;
+}
+
+pub fn @"V * M"(v1: anytype, m2: anytype) @TypeOf(v1) {
+    var result: @TypeOf(v1) = undefined;
+    inline for (m2, 0..) |column, c| {
+        result[c] = @reduce(.Add, column * v1);
     }
     return result;
 }
@@ -741,7 +741,7 @@ pub fn @"S * M"(s1: anytype, m2: anytype) @TypeOf(m2) {
     return result;
 }
 
-pub fn @"M + M"(m1: anytype, m2: anytype) @TypeOf(m2) {
+pub fn @"M + M"(m1: anytype, m2: anytype) @TypeOf(m1) {
     var result: @TypeOf(m2) = undefined;
     inline for (m1, 0..) |column, c| {
         result[c] = column + m2[c];
@@ -765,7 +765,7 @@ pub fn @"S + M"(s1: anytype, m2: anytype) @TypeOf(m2) {
     return result;
 }
 
-pub fn @"M - M"(m1: anytype, m2: anytype) @TypeOf(m2) {
+pub fn @"M - M"(m1: anytype, m2: anytype) @TypeOf(m1) {
     var result: @TypeOf(m2) = undefined;
     inline for (m1, 0..) |column, c| {
         result[c] = column - m2[c];
@@ -789,7 +789,7 @@ pub fn @"S - M"(s1: anytype, m2: anytype) @TypeOf(m2) {
     return result;
 }
 
-pub fn @"M / M"(m1: anytype, m2: anytype) @TypeOf(m2) {
+pub fn @"M / M"(m1: anytype, m2: anytype) @TypeOf(m1) {
     var result: @TypeOf(m2) = undefined;
     inline for (m1, 0..) |column, c| {
         result[c] = column / m2[c];

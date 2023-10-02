@@ -1,6 +1,7 @@
 import { parse } from './pb-parser.js';
 import { process } from './pb-visitor.js';
 import { translate } from './translator.js';
+import { serialize } from './zig-serializer.js';
 
 export function convertPixelBender(code, options) {
   const { cst, macroCSTs, lexErrors, parseErrors } = parse(code);
@@ -19,5 +20,6 @@ export function convertPixelBender(code, options) {
     throw new Error(`${errCount} error${s} encountered parsing Pixel Bender code:\n\n${msgs.join('\n')}`);
   }
   const { ast, macroASTs } = process(cst, macroCSTs);
-  return translate(ast, macroASTs, options);
+  const zigAST = translate(ast, macroASTs, options);
+  return serialize(zigAST);
 }

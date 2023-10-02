@@ -148,6 +148,14 @@ export class ZigSerializer {
     this.add(`return ${this.serializeExpression(expression)};`);
   }
 
+  addEmptyStatement() {
+    this.add(`;`);
+  }
+
+  addBlankLine() {
+    this.add(``);
+  }
+
   addExpressionStatement({ expression }) {
     if (expression instanceof ZIG.SideEffectExpression) {
       this.addStatements(expression.statements);
@@ -157,6 +165,9 @@ export class ZigSerializer {
   }
 
   serializeExpression(expression) {
+    if (typeof(expression) === 'string') {
+      return expression;
+    }
     const fname = `serialize${expression.constructor.name}`;
     const f = this[fname];
     if (f) {

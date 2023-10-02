@@ -54,6 +54,19 @@ export class WhileStatement extends Node {
   statements;
 }
 
+export class DoWhileStatement extends Node {
+  condition;
+  statements;
+}
+
+export class ForStatement extends Node {
+  initializers;
+  condition;
+  increments;
+  statements;
+  hasDeclarations;
+}
+
 export class BreakStatement extends Node {
 }
 
@@ -66,6 +79,12 @@ export class ReturnStatement extends Node {
 
 export class ExpressionStatement extends Node {
   expression;
+}
+
+export class EmptyStatement extends Node {
+}
+
+export class BlankLine extends Node {
 }
 
 export class Expression extends Node {

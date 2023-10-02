@@ -158,11 +158,10 @@ export class PixelBenderToZigTranslator {
   }
 
   translateIfStatement(pb) {
-    let elsePrefix = '';
     const condition = this.translateExpression(pb.condition);
     const statements = this.translateStatements(pb.statements);
     const elseClause = (pb.elseClause) ? this.translateIfStatement(pb.elseClause) : null;
-    return ZIG.IfStatement.create({ condition, statements, elseCaluse });
+    return ZIG.IfStatement.create({ condition, statements, elseClause });
   }
 
   translateForStatement(pb) {
@@ -550,7 +549,7 @@ export class PixelBenderToZigTranslator {
       } else {
         // use a list of sequential indices
         sourceR = rvalue;
-        indicesR = ZIG.getVectorIndices(rvalue.type);
+        indicesR = rvalue.getVectorIndices();
       }
       // build the mask for @shuffle()
       const indicesM = [];
@@ -631,24 +630,24 @@ const imageFunctions = [
 ];
 const builtInFunctions = (() => {
   const bool = 'bool';
-  const bool2 = 'bool2';
-  const bool3 = 'bool3';
-  const bool4 = 'bool4';
-  const int = 'int';
-  const int2 = 'int2';
-  const int3 = 'int3';
-  const int4 = 'int4';
-  const float = 'float';
-  const float2 = 'float2';
-  const float3 = 'float3';
-  const float4 = 'float4';
-  const float2x2 = 'float2x2';
-  const float3x3 = 'float3x3';
-  const float4x4 = 'float4x4';
-  const image1 = 'image1';
-  const image2 = 'image2';
-  const image3 = 'image3';
-  const image4 = 'image4';
+  const bool2 = '@Vector(2, bool)';
+  const bool3 = '@Vector(3, bool)';
+  const bool4 = '@Vector(4, bool)';
+  const int = 'i32';
+  const int2 = '@Vector(2, i32)';
+  const int3 = '@Vector(3, i32)';
+  const int4 = '@Vector(4, i32)';
+  const float = 'f32';
+  const float2 = '@Vector(2, f32)';
+  const float3 = '@Vector(3, f32)';
+  const float4 = '@Vector(4, f32)';
+  const float2x2 = '[2]@Vector(2, f32)';
+  const float3x3 = '[3]@Vector(3, f32)';
+  const float4x4 = '[4]@Vector(4, f32)';
+  const image1 = 'Image';
+  const image2 = 'Image';
+  const image3 = 'Image';
+  const image4 = 'Image';
 
   const fx__fx = [
     [ float, float ],
@@ -808,10 +807,97 @@ const builtInFunctions = (() => {
       [ float, float3 ],
       [ float, float4 ],
     ],
+    // matrix functions
+    '@"M * M"': [
+      [ float2x2, float2x2, float2x2 ],
+      [ float3x3, float3x3, float3x3 ],
+      [ float4x4, float4x4, float4x4 ],
+    ],
+    '@"V * M"': [
+      [ float2, float2, float2x2 ],
+      [ float3, float3, float3x3 ],
+      [ float4, float4, float4x4 ],
+    ],
+    '@"M * V"': [
+      [ float2, float2x2, float2 ],
+      [ float3, float3x3, float3 ],
+      [ float4, float4x4, float ],
+    ],
+    '@"M * S"': [
+      [ float2x2, float2x2, float ],
+      [ float3x3, float3x3, float ],
+      [ float4x4, float4x4, float ],
+    ],
+    '@"S * M"': [
+      [ float2x2, float, float2x2 ],
+      [ float3x3, float, float3x3 ],
+      [ float4x4, float, float4x4 ],
+    ],
+    '@"M + M"': [
+      [ float2x2, float2x2, float2x2 ],
+      [ float3x3, float3x3, float3x3 ],
+      [ float4x4, float4x4, float4x4 ],
+    ],
+    '@"M + S"': [
+      [ float2x2, float2x2, float ],
+      [ float3x3, float3x3, float ],
+      [ float4x4, float4x4, float ],
+    ],
+    '@"M + M"': [
+      [ float2x2, float, float2x2 ],
+      [ float3x3, float, float3x3 ],
+      [ float4x4, float, float4x4 ],
+    ],
+    '@"M - M"': [
+      [ float2x2, float2x2, float2x2 ],
+      [ float3x3, float3x3, float3x3 ],
+      [ float4x4, float4x4, float4x4 ],
+    ],
+    '@"M - S"': [
+      [ float2x2, float2x2, float ],
+      [ float3x3, float3x3, float ],
+      [ float4x4, float4x4, float ],
+    ],
+    '@"S - M"': [
+      [ float2x2, float, float2x2 ],
+      [ float3x3, float, float3x3 ],
+      [ float4x4, float, float4x4 ],
+    ],
+    '@"M / M"': [
+      [ float2x2, float2x2, float2x2 ],
+      [ float3x3, float3x3, float3x3 ],
+      [ float4x4, float4x4, float4x4 ],
+    ],
+    '@"M / S"': [
+      [ float2x2, float2x2, float ],
+      [ float3x3, float3x3, float ],
+      [ float4x4, float4x4, float ],
+    ],
+    '@"S / M"': [
+      [ float2x2, float, float2x2 ],
+      [ float3x3, float, float3x3 ],
+      [ float4x4, float, float4x4 ],
+    ],
+    '@"M == M"': [
+      [ bool, float2x2, float2x2 ],
+      [ bool, float3x3, float3x3 ],
+      [ bool, float4x4, float4x4 ],
+    ],
+    '@"M != M"': [
+      [ bool, float2x2, float2x2 ],
+      [ bool, float3x3, float3x3 ],
+      [ bool, float4x4, float4x4 ],
+    ],
   };
   const returnTypeSources = {
     // most overloaded functions get the return type from the first argument
+    // only the ones below get it from the second argument
     step: 1,
+    '@"M * V"': 1,
+    '@"S * M"': 1,
+    '@"S + M"': 1,
+    '@"S - M"': 1,
+    '@"S / M"': 1,
   };
   const functions = {};
   for (const [ name, signature ] of Object.entries(signatures)) {
@@ -826,7 +912,7 @@ const builtInFunctions = (() => {
       argTypes,
       argPointers,
       overloaded,
-      receiver: null,
+      receiver: (name === 'outCoord') ? 'self' : null,
     };
   }
   return functions;
