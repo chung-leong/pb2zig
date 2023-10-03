@@ -1,8 +1,7 @@
 import * as ZIG from './zig-nodes.js';
+import { walk, find } from './utils.js';
 
 export class ZigSerializer {
-  lines = [];
-  indent = 0;
   ast;
   macroASTs;
 
@@ -11,170 +10,233 @@ export class ZigSerializer {
   }
 
   serialize() {
-    this.addStatements(this.ast);
-    return this.lines.join('\n');
-  }
-
-  add(text) {
-    const newLines = text.trim().split('\n').map(l => l.trim());
-    for (const line of newLines) {
-      let indent = this.indent;
-      if (line.startsWith('}')) {
-        indent--;
+    let indent = 0;
+    const text = this.serializeStatements(this.ast.statements);
+    const lines = text.split('\n').map((line) => {
+      line = line.trim();
+      if (!line) {
+        return line;
       }
-      const spaces = ' '.repeat(Math.max(0, indent) * 4);
-      this.lines.push(spaces + line);
-      //console.log(spaces + line);
+      let indentForLine = indent;
+      if (line.startsWith('}')) {
+        indentForLine--;
+      }
       for (const c of line) {
         if (c === '{') {
-          this.indent++;
+          indent++;
         } else if (c === '}') {
-          this.indent--;
+          indent--;
         }
       }
-    }
+      const spaces = ' '.repeat(Math.max(0, indentForLine * 4));
+      return spaces + line;
+    });
+    console.log(lines.join('\n'));
+    return lines.join('\n');
   }
 
-  addStatements(statements) {
-    for (const statement of statements) {
-      this.addStatement(statement);
+  serializeList(open, items, close) {
+    if (items.length === 0) {
+      return `${open}${close}`;
     }
+    const line = `${open} ${items.join(', ')} ${close}`;
+    if (line.length <= 24) {
+      return line;
+    }
+    return [
+      open,
+      ...items.map(i => `${i},`),
+      close,
+    ].join('\n');
   }
 
-  addStatement(statement) {
-    const fname = `add${statement.constructor.name}`;
+  serializeStatements(statements) {
+    return statements.map(s => this.serializeStatement(s)).join('\n');
+  }
+
+  serializeStatement(statement) {
+    const fname = `serialize${statement.constructor.name}`;
     const f = this[fname];
     if (f) {
-      f.call(this, statement);
+      return f.call(this, statement);
     } else {
-      this.add(`[TODO: ${fname}];`);
       console.log(statement);
+      throw new Error(`TODO: ${fname}`);
     }
-    this.variableAliases = [];
   }
 
-  addVariableDeclaration({ type, isConstant, name, initializer }) {
+  serializeVariableDeclaration({ type, isPublic, isConstant, name, initializer }) {
     const valueR = (initializer) ? this.serializeExpression(initializer, type) : 'undefined';
-    const prefix = (isConstant) ? 'const' : 'var';
-    this.add(`${prefix} ${name}: ${type} = ${valueR};`);
-  }
-
-  addFieldDeclaration({ type, name, defaultValue }) {
-    const valueR = (initializer) ? this.serializeExpression(defaultValue, type) : 'undefined';
-    if (valueR) {
-      this.add(`${name}: ${type} = ${valueR},`);
+    const prefixes = [];
+    if (isPublic) {
+      prefixes.push('pub');
+    }
+    prefixes.push(isConstant ? 'const' : 'var');
+    if (type) {
+      return `${prefixes.join(' ')} ${name}: ${type} = ${valueR};`;
     } else {
-      this.add(`${name}: ${type},`);
+      return `${prefixes.join(' ')} ${name} = ${valueR};`;
     }
   }
 
-  addStructDefinition({ name, statements }) {
-    this.add(`const ${name} = struct {`);
-    this.addStatements(statements);
-    this.add(`};`)
+  serializeFieldDeclaration({ type, name, defaultValue }) {
+    const valueR = (defaultValue) ? this.serializeExpression(defaultValue, type) : undefined;
+    if (valueR) {
+      return `${name}: ${type} = ${valueR},`;
+    } else {
+      return `${name}: ${type},`;
+    }
   }
 
-  addFunctionDefinition({ name, isPublic, isMethod, args, type, statements }) {
+  serializeStructDefinition({ name, isPublic, statements }) {
+    return [
+      `struct {`,
+      this.serializeStatements(statements),
+      `}`
+    ].join('\n');
+  }
+
+  serializeFunctionDefinition({ name, isPublic, isMethod, args, type, statements }) {
     const prefix = (isPublic) ? 'pub ' : '';
     const argList = args.map(a => this.serializeExpression(a));
     if (isMethod) {
       argList.unshift(`self: @This()`);
     }
-    this.add(`${prefix}fn ${name}(${argList.join(', ')}) ${type} {`);
-    this.addStatements(statements);
-    this.add(`}`);
+    return [
+      `${prefix}fn ${name}(${argList.join(', ')}) ${type} {`,
+      this.serializeStatements(statements),
+      `}`
+    ].join('\n');
   }
 
-  addComment({ lines }) {
-    for (const line of lines) {
-      this.add(`// ${line}`);
-    }
+  serializeFunctionArgument({ isComptime, name, type }) {
+    return (isComptime ? 'comptime ' : '') + `${name}: ${type}`;
   }
 
-  addCodeBlock({ code }) {
-    for (const line of code.split('\n')) {
-      this.add(line);
-    }
+  serializeComment({ text }) {
+    return text.split('\n').map(line => `// ${line}`).join('\n');
   }
 
-  addAssignmentStatement({ lvalue, operator, rvalue }) {
+  serializeRawCode({ code }) {
+    return code;
+  }
+
+  serializeAssignmentStatement({ lvalue, operator, rvalue }) {
     const l = this.serializeExpression(lvalue);
     const r = this.serializeExpression(rvalue);
-    this.add(`${l} ${operator} ${r};`);
+    return `${l} ${operator} ${r};`;
   }
 
-  addIfStatement({ condition, statements, elseClause }) {
+  serializeIfStatement({ condition, statements, elseClause }) {
     let count = 0;
+    const lines = [];
     while (statements) {
       if (condition) {
         if (count === 0) {
-          this.add(`if (${this.serializeExpression(condition)}) {`)
+          lines.push(`if (${this.serializeExpression(condition)}) {`)
         } else {
-          this.add(`} else if (${this.serializeExpression(condition)}) {`)
+          lines.push(`} else if (${this.serializeExpression(condition)}) {`)
         }
       } else {
-        this.add(`} else {`)
+        lines.push(`} else {`)
       }
-      this.addStatements(statements);
+      lines.push(this.serializeStatements(statements));
       condition = elseClause?.condition;
       statements = elseClause?.statements;
       needElse = true;
       count++;
     }
-    this.add(`}`);
+    lines.push(`}`);
+    return lines.join('\n');
   }
 
-  addWhileStatement({ condition, statements }) {
-    this.add(`while (${this.serializeExpression(condition)}) {`)
-    this.addStatements(statements);
-    this.add(`}`);
+  serializeWhileStatement({ condition, statements }) {
+    return [
+      `while (${this.serializeExpression(condition)}) {`,
+      this.serializeStatements(statements),
+      '}',
+    ].join('\n');
   }
 
-  addWhileStatement({ condition, statements }) {
-    this.add(`while (${this.serializeExpression(condition)}) {`)
-    this.addStatements(statements);
-    this.add(`}`);
+  serializeDoWhileStatement({ condition, statements }) {
+    return [
+      `while (true) {`,
+      this.serializeStatements(statements),
+      `if (${this.serializeExpression(condition)}) continue else break;`,
+      `}`,
+    ].join('\n');
   }
 
-  addBreakStatement() {
-    this.add(`break;`);
+  serializeBreakStatement() {
+    return `break;`;
   }
 
-  addContinueStatement() {
-    this.add(`continue;`);
+  serializeContinueStatement() {
+    return `continue;`;
   }
 
-  addReturnStatement({ expression }) {
-    this.add(`return ${this.serializeExpression(expression)};`);
+  serializeReturnStatement({ expression }) {
+    return `return ${this.serializeExpression(expression)};`;
   }
 
-  addEmptyStatement() {
-    this.add(`;`);
+  serializeEmptyStatement() {
+    return `;`;
   }
 
-  addBlankLine() {
-    this.add(``);
+  serializeBlankLine() {
+    return ``;
   }
 
-  addExpressionStatement({ expression }) {
-    if (expression instanceof ZIG.SideEffectExpression) {
-      this.addStatements(expression.statements);
-    } else {
-      this.add(`${this.serializeExpression(expression)};`);
-    }
+  serializeExpressionStatement({ expression }) {
+    return `${this.serializeExpression(expression)};`;
   }
 
   serializeExpression(expression) {
     if (typeof(expression) === 'string') {
       return expression;
     }
+    const sideEffects = find(expression, ZIG.SideEffectExpression);
     const fname = `serialize${expression.constructor.name}`;
     const f = this[fname];
     if (f) {
-      return f.call(this, expression, typeExpected);
+      const result = f.call(this, expression);
+      if (sideEffects.length > 0) {
+        return [
+          ...sideEffects.map(({ statements }) => this.serializeStatements(statements)),
+          result
+        ].join('\n');
+      } else {
+        return result;
+      }
     } else {
       console.log(expression);
-      return new ZigExpr(`[TODO: ${fname}]`, 'bool');
+      throw new Error(`TODO: ${fname}`);
+    }
+  }
+
+  serializeTupleLiteral({ type, initializers }) {
+    const items = initializers.map(i => this.serializeExpression(i));
+    return this.serializeList(`${type}{`, items, `}`);
+  }
+
+  serializeStructLiteral({ type, initializers }) {
+    const pairs = Object.entries(initializers).map(([ name, item ]) => {
+      return `.${name} = ${this.serializeExpression(item)}`;
+    });
+    return this.serializeList(`${type}{`, pairs, `}`);
+  }
+
+  serializeLiteral({ value, type }) {
+    if (/^f\d+$/.test(type)) {
+      let s = value.toString();
+      if (s.indexOf('.') === -1) {
+        s = value.toFixed(1);
+      }
+      return s;
+    } else if (/^[iu]\d+$/.test(type)) {
+      return value;
+    } else {
+      return JSON.stringify(value);
     }
   }
 
@@ -221,6 +283,6 @@ export class ZigSerializer {
 }
 
 export function serialize(ast) {
-  const translater = new ZigSerializer(ast);
-  return translater.translate();
+  const serializez = new ZigSerializer(ast);
+  return serializez.serialize();
 }

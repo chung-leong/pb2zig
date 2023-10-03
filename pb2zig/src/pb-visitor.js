@@ -131,7 +131,11 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   type(ctx) {
     let type = this.anyName(ctx);
     if (type.startsWith('pixel')) {
-      type = 'float' + type.slice(-1);
+      type = 'float';
+      const width = type.slice(-1);
+      if (width > 1) {
+        type += width;
+      }
     }
     return type;
   }
@@ -147,7 +151,11 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     if (ctx.FloatVector) {
       type = this.name(ctx.FloatVector);
     } else {
-      type = 'float' + this.name(ctx.Pixel).slice(-1)
+      type = 'float';
+      const width = this.name(ctx.Pixel).slice(-1);
+      if (width > 1)  {
+        type += width;
+      }
     }
     const name = this.name(ctx.Identifier);
     return PB.OutputDeclaration.create({ type, name });

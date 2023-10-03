@@ -4,6 +4,10 @@ export class Node {
   }
 }
 
+export class ModuleDefinition extends Node {
+  statements;
+}
+
 export class FieldDeclaration extends Node {
   type;
   name;
@@ -11,6 +15,7 @@ export class FieldDeclaration extends Node {
 }
 
 export class VariableDeclaration extends Node {
+  isPublic = false;
   isConstant = true;
   type;
   name;
@@ -23,16 +28,23 @@ export class ConstantDeclaration extends Node {
   initializer;
 }
 
+export class StructDefinition extends Node {
+  isPublic = true;
+  name;
+  statements;
+}
+
 export class FunctionDefinition extends Node {
+  isPublic = false;
+  isMethod = false;
   type;
   name;
   args;
-  isPublic;
-  isMethod;
   statements;
 }
 
 export class FunctionArgument extends Node {
+  isComptime = false;
   type;
   name;
 }
@@ -98,6 +110,14 @@ export class Expression extends Node {
   getChildType() { return getChildType(this.type) }
 }
 
+export class TupleLiteral extends Expression {
+  initializers;
+}
+
+export class StructLiteral extends Expression {
+  initializers;
+}
+
 export class Literal extends Expression {
   value;
 }
@@ -143,12 +163,16 @@ export class SideEffectExpression extends Expression {
   expression;
 }
 
+export class Comment extends Node {
+  text;
+}
+
 export function isVector(type) {
   return /^@Vector\(/.test(type);
 }
 
 export function isMatrix(type) {
-  return /^\[\d+\]@Vector\($/.test(type);
+  return /^\[\d+\]@Vector\(/.test(type);
 }
 
 export function isArray(type) {
@@ -156,10 +180,15 @@ export function isArray(type) {
 }
 
 export function getVectorWidth(type) {
-  const m = /^@Vector\((\d+)/.exec(type);
-  if (m) {
-    return parseInt(m[1]);
+  const m1 = /^@Vector\((\d+)/.exec(type);
+  if (m1) {
+    return parseInt(m1[1]);
   }
+  const m2 = /^Image(\d+)$/.exec(type);
+  if (m2) {
+    return parseInt(m2[1]);
+  }
+  return 1;
 }
 
 export function getVectorIndices(type) {

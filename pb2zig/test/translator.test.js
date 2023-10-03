@@ -65,6 +65,31 @@ describe('Translator tests', function() {
       expect(result).to.contain('.minValue = [3]@Vector(3, f32){');
       expect(result).to.contain('.{ -1.0, -1.0, -1.0 },');
     })
+    it('should correctly translate inputs and outputs', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        input image4 src1;
+        input image3 src2;
+        output pixel4 dst1;
+        output pixel1 dst2;
+
+        void
+        evaluatePixel()
+        {
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('pub const inputImages = .{');
+      expect(result).to.contain('.src1 = .{ .channels = 4 },');
+      expect(result).to.contain('.src2 = .{ .channels = 3 },');
+      expect(result).to.contain('pub const outputImages = .{');
+      expect(result).to.contain('.dst1 = .{ .channels = 4 },');
+      expect(result).to.contain('.dst2 = .{ .channels = 1 },');
+    })
   })
   describe('Swizzling operations', function() {
     it('should correctly translate V.[property]', function() {
