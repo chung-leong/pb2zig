@@ -16,7 +16,7 @@ export class FieldDeclaration extends Node {
 
 export class VariableDeclaration extends Node {
   isPublic = false;
-  isConstant = true;
+  isConstant = false;
   type;
   name;
   initializer;
@@ -177,6 +177,10 @@ export function isMatrix(type) {
 
 export function isArray(type) {
   return /^\[.*\]/i.test(type);
+}
+
+export function isScalar(type) {
+  return /^\w+$/.test(type);
 }
 
 export function getVectorWidth(type) {

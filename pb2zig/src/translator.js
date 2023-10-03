@@ -73,17 +73,18 @@ export class PixelBenderToZigTranslator {
     });
   }
 
-  promoteExpression(expression, type) {
+  forceType(expression) {
+    const { type } = expression;
+    return ZIG.FunctionCall.create({ name: '@as', args: [ expression ], type });
+  }
+
+  promoteExpression(expression, type, forceType = true) {
     if (expression.type === type) {
       return expression;
     }
     if (ZIG.isVector(type) && expression.isScalar()) {
-      return ZIG.FunctionCall.create({ name: '@as', args: [
-        type,
-        ZIG.FunctionCall.create({ name: '@splat', args: [
-          expression,
-        ], type }),
-      ], type });
+      const splatCall = ZIG.FunctionCall.create({ name: '@splat', args: [ expression ], type });
+      return (forceType) ? this.forceType(splatCall) : splatCall;
     } else {
       throw new Error(`Cannot convert ${this.type} to ${type}`);
     }
@@ -293,9 +294,7 @@ export class PixelBenderToZigTranslator {
       ZIG.FieldDeclaration.create({
         name: 'outputCoord',
         type: '@Vector(2, u32)',
-        defaultValue: ZIG.FunctionCall.create({ name: '@splat', args: [
-          ZIG.Literal.create({ value: 0, type: 'u32' })
-        ]}),
+        defaultValue: this.promoteExpression(ZIG.Literal.create({ value: 0, type: 'u32' }), '@Vector(2, u32)', false),
       }),
       this.createBlankLine(),
     ];
@@ -334,7 +333,7 @@ export class PixelBenderToZigTranslator {
     if (decls.length === 0) {
       return [];
     }
-    for (const pb of constDecls) {
+    for (const pb of decls) {
       const { name } = pb;
       const type = this.translateType(pb.type);
       this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false, unused: false };
@@ -398,12 +397,12 @@ export class PixelBenderToZigTranslator {
             operator: 0,
             rvalue: PB.Literal.create({ value: 0, type: 'float' }),
           });
+          const width = ZIG.getVectorWidth(type);
+          const defaultValue =
           statements.push(ZIG.AssignmentStatement.create({
             lvalue: ZIG.VariableAccess.create({ name: `self.${name}` }),
             operator: '=',
-            rvalue: ZIG.FunctionCall.create({ name: '@splat', args: [
-              ZIG.Literal.create({ value: 0, type: 'f32' }),
-            ], type }),
+            rvalue: this.promoteExpression(ZIG.Literal.create({ value: 0, type: 'f32' }), type, false),
           }));
         }
       }
@@ -418,14 +417,10 @@ export class PixelBenderToZigTranslator {
             receiver: ZIG.VariableAccess.create({ name: `self.output.${name}` }),
             name: 'setPixel',
             args: [
-              ZIG.ElementAccess.create({
+              ...[ 0, 1 ].map(value => ZIG.ElementAccess.create({
                 expression: ZIG.VariableAccess.create({ name: `self.output.${name}` }),
-                index: ZIG.Literal.create({ value: 0, type: 'u32 '})
-              }),
-              ZIG.ElementAccess.create({
-                expression: ZIG.VariableAccess.create({ name: `self.output.${name}` }),
-                index: ZIG.Literal.create({ value: 1, type: 'u32 '})
-              }),
+                index: ZIG.Literal.create({ value, type: 'u32 '})
+              })),
               ZIG.VariableAccess.create({ name: `self.${name}` }),
             ]
           }))
@@ -447,6 +442,7 @@ export class PixelBenderToZigTranslator {
 
   translateConstantDeclaration(pb) {
     const { name } = pb;
+    const type = this.translateType(pb.type);
     const initializer = this.translateExpression(pb.initializer);
     const scope = (this.currentContext) ? 'local' : 'global';
     this.variables[name] = { name, type, scope, mutable: false, pointer: false, unused: false };
@@ -466,7 +462,7 @@ export class PixelBenderToZigTranslator {
 
   translateExpressionStatement(pb) {
     const expression = this.translateExpression(pb.expression, 'void');
-    return ZIG.ExpressionStatement({ expression });
+    return ZIG.ExpressionStatement.create({ expression });
   }
 
   translateIfStatement(pb) {
@@ -482,7 +478,7 @@ export class PixelBenderToZigTranslator {
       // need to start a new code block
       this.startScope();
     }
-    const initializers = this.translateStatement(pb.initializers);
+    const initializers = this.translateStatements(pb.initializers);
     const condition = this.translateExpression(pb.condition);
     const statements = this.translateStatements(pb.statements);
     const increments = this.translateStatements(pb.incrementals);
@@ -502,7 +498,7 @@ export class PixelBenderToZigTranslator {
 
   translateDoWhileStatement(pb) {
     this.startScope();
-    const condition = ZIG.Literal.create({ value: true, type: 'bool' });
+    const condition = this.translateExpression(pb.condition);
     const statements = this.translateStatements(pb.statements);
     this.endScope();
     return ZIG.DoWhileStatement.create({ condition, statements })
@@ -574,7 +570,7 @@ export class PixelBenderToZigTranslator {
         name = `self.${name}`;
       }
     }
-    return ZIG.VariableAccess({ name, type });
+    return ZIG.VariableAccess.create({ name, type });
   }
 
   translateIndex(pb) {
@@ -603,7 +599,7 @@ export class PixelBenderToZigTranslator {
     }
     const value = this.resolveVariable(pb.name, typeExpected);
     if (pb.property) {
-      const indices = PB.getSwizzleIndices(property);
+      const indices = PB.getSwizzleIndices(pb.property);
       if (indices.length > 1) {
         const type = ZIG.changeVectorWidth(value.type, indices.length);
         const mask = ZIG.TupleLiteral({
@@ -667,7 +663,7 @@ export class PixelBenderToZigTranslator {
     }
     const assignment = PB.AssignmentOperation.create({
       lvalue: pb.lvalue,
-      operator: operator.charAt(0) + '=',
+      operator: pb.operator.charAt(0) + '=',
       rvalue: PB.Literal.create({ value: 1, type: 'int' })
     });
     // don't use value from assignment operation
@@ -682,7 +678,7 @@ export class PixelBenderToZigTranslator {
     let args = pb.args.map(a => this.translateExpression(a));
     let { name } = pb;
     const f = this.functions[name];
-    if (f.type === 'macro') {
+    if (f?.type === 'macro') {
       if (f.argTypes === undefined) {
         // use the arguments to set the converted function's argument types
         this.convertMacro(name, args);
@@ -750,11 +746,11 @@ export class PixelBenderToZigTranslator {
       }
       return ZIG.TupleLiteral.create({ initializers, type });
     } else if (ZIG.isVector(type)) {
-      if (argList.length === 1) {
+      if (args.length === 1) {
         return this.promoteExpression(args[0], typeV);
       } else {
         return ZIG.TupleLiteral.create({
-          initializers,
+          initializers: args,
           type: (typeExpected === 'comptime') ? '.' : type
         });
       }
@@ -842,7 +838,7 @@ export class PixelBenderToZigTranslator {
       return this.translateAssignmentOperation(assignment, typeExpected);
     }
     rvalue = this.promoteExpression(rvalue, lvalue.type);
-    let sideEffects;
+    let sideEffects = [];
     if (lvalue instanceof ZIG.FunctionCall) {
       // valueL is not a valid lvalue, need to handle this separately
       if (operator.length === 2) {
@@ -889,10 +885,10 @@ export class PixelBenderToZigTranslator {
         mask,
       ]})
       // make the change (to the whole vector)
-      sideEffects.push(ZIG.AssignmentState({ lvalue: variableL, operator, rvalue: shuffleCall }));
+      sideEffects.push(ZIG.AssignmentStatement.create({ lvalue: variableL, operator, rvalue: shuffleCall }));
     } else {
       // perform normally
-      sideEffects.push(ZIG.AssignmentStatement({ lvalue, operator, rvalue }));
+      sideEffects.push(ZIG.AssignmentStatement.create({ lvalue, operator, rvalue }));
     }
     if (typeExpected !== 'void') {
       // the expression's value is being used--need to save the value to a temporary variable
@@ -900,7 +896,7 @@ export class PixelBenderToZigTranslator {
       sideEffects.push(this.createTempVariable(pb.lvalue, valueL, true));
     }
     const { type } = lvalue;
-    return ZIG.SideEffectExpression({ sideEffects, type });
+    return ZIG.SideEffectExpression.create({ statements: sideEffects, type });
   }
 
   translateSignOperation(pb) {
