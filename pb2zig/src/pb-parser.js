@@ -587,6 +587,8 @@ function parseMacro(text, { offset, lineOffset, columnOffset }) {
   const lexErrors = lex.errors;
   let parseErrors = parser.errors;
   if (parseErrors.length > 0) {
+    // setting property again to reset parser state
+    parser.input = lex.tokens;
     cst = parser.statementMacroDeclaration();
     if (parser.errors.length === 0) {
       parseErrors = parser.errors;

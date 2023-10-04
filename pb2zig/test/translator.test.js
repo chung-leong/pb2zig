@@ -465,7 +465,6 @@ describe('Translator tests', function() {
       expect(result).to.contain('fn add(a: *f32, b: f32, c: f32) void {');
       expect(result).to.contain('add(&a, 2.2, 3.0);');
     })
-
     it('should expand a macro with local dependents', function() {
       const pbkCode = addPBKWrapper(`
         #define addMul(a, c) (a * b + c)
@@ -537,6 +536,18 @@ describe('Translator tests', function() {
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('fn min(v1: anytype, v2: anytype) @TypeOf(v1) {');
+    })
+    it('should correctly translate a macro contains multiple statements', function() {
+      const pbkCode = addPBKWrapper(`
+        #define clear(a, b) { a = 0.0; b = 0.0; }
+
+        float a = 0.0, b = 1.0;
+        clear(a, b);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('fn clear(a: *f32, b: *f32) void {');
+      expect(result).to.contain('a.* = 0.0;');
+      expect(result).to.contain('b.* = 0.0;');
     })
   })
   describe('Error handling', function() {
