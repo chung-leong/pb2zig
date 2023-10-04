@@ -40,6 +40,11 @@ kernel CirclePixels
         float xPos = (floor((inP.x)/dist)*dist);
         float yPos = (floor((inP.y)/dist)*dist);
 
+        float difX = inP.x -xPos;
+        float difY = inP.y -yPos;
+
+
+
         float2 newP;
         newP.x =xPos;
         newP.y = yPos;

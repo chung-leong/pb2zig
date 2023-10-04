@@ -61,6 +61,7 @@ kernel ZoomBlurFocus
 
     void evaluatePixel() {
 
+        float str = 1.0 - vignette;
         float2 coord = outCoord();
         float cur_radius = length(coord - center);
         pixel4 color = sampleNearest(src, coord);

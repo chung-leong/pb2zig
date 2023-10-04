@@ -59,7 +59,7 @@ kernel sphereSection
         p += (plunge - plungeMore) * perp;
 
 
-        //float3 pCell = floor(p);
+        float3 pCell = floor(p);
 
 
         p = mod(p,1.0);

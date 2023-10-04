@@ -140,7 +140,7 @@ void evaluatePixel() {
     float tmp;
     float alf=0.0;
     //float radius=fill;
-    //float sqr3 = 1.732;
+    float sqr3 = 1.732;
 
     po = (distort*po);
     float2 z=fract(po);

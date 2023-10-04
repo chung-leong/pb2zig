@@ -89,6 +89,7 @@ kernel cassini
         // calculate
         ///////////////////////////////////
 
+        float radius  = sqrt( po.x * po.x + po.y * po.y );  //r
         float zm      = 10.0 / zoom;
         float l1      = lambda;
         float xx      = zm * (po.x) / ( imageWH.x / 2.0) * (PI);
