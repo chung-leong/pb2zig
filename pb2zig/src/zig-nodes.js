@@ -163,6 +163,12 @@ export class SideEffectExpression extends Expression {
   expression;
 }
 
+export class ArrayType extends Expression {
+  type = 'type';
+  index;
+  childType;
+};
+
 export class Comment extends Node {
   text;
 }
@@ -205,6 +211,9 @@ export function getVectorIndices(type) {
 }
 
 export function getChildType(type) {
+  if (typeof(type) === 'object') {
+    return type.childType;
+  }
   const m1 = /^\[.*?\](.*)/.exec(type);
   if (m1) {
     return m1[1];
@@ -217,5 +226,5 @@ export function getChildType(type) {
 
 export function changeVectorWidth(type, width) {
   const typeC = getChildType(type);
-  return `@Vector(width, ${typeC})`;
+  return `@Vector(${width}, ${typeC})`;
 }

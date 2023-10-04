@@ -361,7 +361,7 @@ describe('Translator tests', function() {
         void
         evaluateDependents()
         {
-          array[1] = 1;
+          array[1] = 1.0;
         }
 
         void

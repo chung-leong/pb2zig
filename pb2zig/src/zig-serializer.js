@@ -39,9 +39,9 @@ export class ZigSerializer {
     if (items.length === 0) {
       return `${open}${close}`;
     }
-    const line = `${open} ${items.join(', ')} ${close}`;
-    if (line.length <= 24) {
-      return line;
+    const list = items.join(', ');
+    if (list.length <= 20) {
+      return `${open} ${list} ${close}`;
     }
     return [
       open,
@@ -100,11 +100,18 @@ export class ZigSerializer {
 
   serializeFieldDeclaration({ type, name, defaultValue }) {
     const valueR = (defaultValue) ? this.serializeExpression(defaultValue, type) : undefined;
+    if (typeof(type) === 'object') {
+      type = this.serializeExpression(type);
+    }
     if (valueR) {
       return `${name}: ${type} = ${valueR},`;
     } else {
       return `${name}: ${type},`;
     }
+  }
+
+  serializeArrayType({ width, childType }) {
+    return `[${this.serializeExpression(width)}]${childType}`;
   }
 
   serializeStructDefinition({ name, isPublic, statements }) {
@@ -162,7 +169,6 @@ export class ZigSerializer {
       lines.push(this.serializeStatements(statements));
       condition = elseClause?.condition;
       statements = elseClause?.statements;
-      needElse = true;
       count++;
     }
     lines.push(`}`);
@@ -270,7 +276,7 @@ export class ZigSerializer {
   serializeFunctionCall({ receiver, name, args }) {
     let n = name;
     if (receiver) {
-      n = `${this.serializeExpression(receiver)}.name`;
+      n = `${this.serializeExpression(receiver)}.${name}`;
     }
     const a = args.map(a => this.serializeExpression(a));
     return `${n}(${a.join(', ')})`;
