@@ -166,7 +166,7 @@ describe('Translator tests', function() {
         float2 v2 = m * v1;
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('matrixCalc("*", m, v1)');
+      expect(result).to.contain('@"M * V"(m, v1)');
     })
     it('should correctly translate V * M', function() {
       const pbkCode = addPBKWrapper(`
@@ -175,7 +175,7 @@ describe('Translator tests', function() {
         float2 v2 = v1 * m;
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('matrixCalc("*", v1, m)');
+      expect(result).to.contain('@"V * M"(v1, m)');
     })
     it('should correctly translate M * M', function() {
       const pbkCode = addPBKWrapper(`
@@ -184,7 +184,7 @@ describe('Translator tests', function() {
         float2x2 m3 = m1 * m2;
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('matrixCalc("*", m1, m2)');
+      expect(result).to.contain('@"M * M"(m1, m2)');
     })
     it('should correctly translate V *= M', function() {
       const pbkCode = addPBKWrapper(`
@@ -193,7 +193,7 @@ describe('Translator tests', function() {
         v *= m;
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('v = matrixCalc("*", v, m)');
+      expect(result).to.contain('v = @"V * M"(v, m)');
     })
     it('should correctly translate M == M', function() {
       const pbkCode = addPBKWrapper(`
@@ -204,7 +204,7 @@ describe('Translator tests', function() {
         }
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('matrixCalc("==", m1, m2)');
+      expect(result).to.contain('@"M == M"(m1, m2)');
     })
     it('should correctly translate V == V', function() {
       const pbkCode = addPBKWrapper(`
@@ -223,7 +223,7 @@ describe('Translator tests', function() {
         float2x2 m2 = m1 * 2;
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('matrixCalc("*", m1, 2)');
+      expect(result).to.contain('@"M * S"(m1, 2)');
     })
     it('should correctly translate ++M', function() {
       const pbkCode = addPBKWrapper(`
@@ -231,9 +231,9 @@ describe('Translator tests', function() {
         float2x2 m2 = ++m1;
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.not.contain('const tmp1 = m1;')
-      expect(result).to.contain('matrixCalc("+", m1, 1)');
-      expect(result).to.contain('var m2: [2]@Vector(2, f32) = m1;')
+      expect(result).to.contain('const tmp1 = m1;')
+      expect(result).to.contain('@"M + S"(m1, 1.0)');
+      expect(result).to.contain('var m2: [2]@Vector(2, f32) = tmp1;')
     })
     it('should correctly translate M++', function() {
       const pbkCode = addPBKWrapper(`
@@ -242,7 +242,7 @@ describe('Translator tests', function() {
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('const tmp1 = m1;')
-      expect(result).to.contain('matrixCalc("+", m1, 1)');
+      expect(result).to.contain('@"M + S"(m1, 1.0)');
       expect(result).to.contain('var m2: [2]@Vector(2, f32) = tmp1;')
     })
     it('should correctly translate M[#] = V', function() {

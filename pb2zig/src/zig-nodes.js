@@ -104,10 +104,11 @@ export class Expression extends Node {
 
   isScalar() { return isScalar(this.type ) }
   isVector() { return isVector(this.type ) }
-  isMatrix() { return isVector(this.type ) }
+  isMatrix() { return isMatrix(this.type ) }
   getVectorWidth() { return getVectorWidth(this.type) }
   getVectorIndices() { return getVectorIndices(this.type) }
   getChildType() { return getChildType(this.type) }
+  getScalarType() { return getScalarType(this.type) }
 }
 
 export class TupleLiteral extends Expression {
@@ -173,6 +174,7 @@ export function isVector(type) {
 }
 
 export function isMatrix(type) {
+  console.log({ type, t: /^\[\d+\]@Vector\(/.test(type) })
   return /^\[\d+\]@Vector\(/.test(type);
 }
 
@@ -194,6 +196,16 @@ export function getVectorWidth(type) {
     return parseInt(m2[1]);
   }
   return 1;
+}
+
+export function getScalarType(type) {
+  if (isVector(type)) {
+    return getChildType(type);
+  } else if (isMatrix(type)) {
+    return getChildType(getChildType(type));
+  } else {
+    return type;
+  }
 }
 
 export function getVectorIndices(type) {

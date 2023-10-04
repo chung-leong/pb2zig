@@ -73,6 +73,15 @@ export class PixelBenderToZigTranslator {
     return set;
   }
 
+  expandAssignmentOperation({ lvalue, operator, rvalue }) {
+    const expression = PB.ArithmeticOperation.create({
+      operator: operator.charAt(0),
+      operand1: lvalue,
+      operand2: rvalue,
+    });
+    return PB.AssignmentOperation.create({ operator: '=', lvalue, rvalue: expression });
+  }
+
   createTempVariable(pb, initializer, aliasing = false) {
     let count = 1;
     let name;
@@ -166,6 +175,9 @@ export class PixelBenderToZigTranslator {
 
   getReturnType(name, args) {
     const f = this.functions[name];
+    if (!f) {
+      throw new Error(`No function by that name: ${name}`);
+    }
     const { argTypes, returnType, overloaded } = f;
     const types = args.map(a => a?.type);
     const findMismatch = (list) => {
@@ -991,7 +1003,7 @@ export class PixelBenderToZigTranslator {
 
   translateIncrementOperation(pb, typeExpected) {
     const lvalue = this.translateExpression(pb.lvalue, typeExpected);
-    const typeP = this.translateType(lvalue.type, 'zig');
+    const typeP = this.translateType(lvalue.getScalarType(), 'zig');
     const assignment = PB.AssignmentOperation.create({
       lvalue: pb.lvalue,
       operator: pb.operator.charAt(0) + '=',
@@ -1150,11 +1162,7 @@ export class PixelBenderToZigTranslator {
         throw new Error('Invalid matrix comparison');
       }
       // matrix comparison requires function calls
-      return ZIG.FunctionCall.create({ name: `@"M ${operator} M"`, args: [
-        operand1,
-        operand2,
-        'bool',
-      ]});
+      return ZIG.FunctionCall.create({ name: `@"M ${operator} M"`, args: [ operand1, operand2 ]});
     } else if (operand1.isVector()) {
       if (!operand1.isVector()) {
         throw new Error('Invalid vector comparison');
