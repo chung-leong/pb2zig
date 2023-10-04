@@ -71,6 +71,7 @@ export class MacroDefinition extends PBNode {
   name;
   args;
   expression;
+  statements;
 }
 
 export class Literal extends PBNode {

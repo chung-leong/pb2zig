@@ -210,7 +210,7 @@ export class PixelBenderParser extends CstParser {
       $.CONSUME(T.RParen)
       $.SUBRULE($.statementBlock)
     })
-    $.RULE('macroDeclaration', () => {
+    $.RULE('expressionMacroDeclaration', () => {
       $.CONSUME(T.Identifier)
       $.OPTION(() => {
         $.CONSUME(T.LParen)
@@ -221,6 +221,18 @@ export class PixelBenderParser extends CstParser {
         $.CONSUME(T.RParen)
       })
       $.SUBRULE($.expression)
+    })
+    $.RULE('statementMacroDeclaration', () => {
+      $.CONSUME(T.Identifier)
+      $.OPTION(() => {
+        $.CONSUME(T.LParen)
+        $.MANY_SEP({
+          SEP: T.Comma,
+          DEF: () => $.SUBRULE($.typelessArgumentDeclaration),
+        })
+        $.CONSUME(T.RParen)
+      })
+      $.MANY(() => $.SUBRULE($.statement))
     })
     $.RULE('returnType', () => {
       $.OR([
@@ -571,9 +583,15 @@ export function parse(code) {
 function parseMacro(text, { offset, lineOffset, columnOffset }) {
   const lex = lexer.tokenize(text);
   parser.input = lex.tokens;
-  const cst = parser.macroDeclaration();
+  let cst = parser.expressionMacroDeclaration();
   const lexErrors = lex.errors;
-  const parseErrors = parser.errors;
+  let parseErrors = parser.errors;
+  if (parseErrors.length > 0) {
+    cst = parser.statementMacroDeclaration();
+    if (parser.errors.length === 0) {
+      parseErrors = parser.errors;
+    }
+  }
   // adjust position reported position of errors
   // there ought to be a better way than this...
   for (const err of lexErrors) {

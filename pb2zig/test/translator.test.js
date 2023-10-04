@@ -454,6 +454,18 @@ describe('Translator tests', function() {
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('fn addMul(a: f32, b: f32, c: f32) f32 {');
     })
+    it('should correctly translate a macro that writes to its argument', function() {
+      const pbkCode = addPBKWrapper(`
+        #define add(a, b, c) a = b + c
+
+        float a = 0.0;
+        add(a, 2.2, 3.0);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('fn add(a: *f32, b: f32, c: f32) void {');
+      expect(result).to.contain('add(&a, 2.2, 3.0);');
+    })
+
     it('should expand a macro with local dependents', function() {
       const pbkCode = addPBKWrapper(`
         #define addMul(a, c) (a * b + c)

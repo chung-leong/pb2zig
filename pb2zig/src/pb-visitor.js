@@ -88,13 +88,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   literalList(ctx) {
-    const args = [];
-    if (ctx.literalValue) {
-      for (const node of ctx.literalValue) {
-        args.push(this.visit(node));
-      }
-    }
-    return args;
+    return ctx.literalValue?.map(v => this.visit(v)) ?? [];
   }
 
   kernel(ctx) {
@@ -105,16 +99,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   kernelBody(ctx) {
-    const statements = [];
-    if (ctx.kernelStatement) {
-      for (const node of ctx.kernelStatement) {
-        const s = this.visit(node);
-        if (s) {
-          statements.push(s);
-        }
-      }
-    }
-    return statements;
+    return ctx.kernelStatement?.map(s => this.visit(s));
   }
 
   kernelStatement(ctx) {
@@ -164,27 +149,23 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   functionDeclaration(ctx) {
     const type = this.visit(ctx.returnType);
     const name = this.name(ctx.Identifier);
-    const args = [];
-    if (ctx.argumentDeclaration) {
-      for (const a of ctx.argumentDeclaration) {
-        args.push(this.visit(a));
-      }
-    }
+    const args = ctx.argumentDeclaration?.map(a => this.visit(a)) ?? [];
     const statements = this.visit(ctx.statementBlock);
     return PB.FunctionDefinition.create({ type, name, args, statements });
   }
 
-  macroDeclaration(ctx) {
+  expressionMacroDeclaration(ctx) {
     const name = this.name(ctx.Identifier);
-    let args = null;
-    if (ctx.typelessArgumentDeclaration) {
-      args = [];
-      for (const a of ctx.typelessArgumentDeclaration) {
-        args.push(this.visit(a));
-      }
-    }
+    const args = ctx.typelessArgumentDeclaration?.map(a => this.visit(a)) ?? null;
     const expression = this.visit(ctx.expression);
     return PB.MacroDefinition.create({ name, args, expression });
+  }
+
+  statementMacroDeclaration(ctx) {
+    const name = this.name(ctx.Identifier);
+    const args = ctx.typelessArgumentDeclaration?.map(a => this.visit(a)) ?? null;
+    const statements = ctx.statement?.map(s => this.visit(s)).flat() ?? [];
+    return PB.MacroDefinition.create({ name, args, statements });
   }
 
   returnType(ctx) {
@@ -212,20 +193,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   statementBlock(ctx) {
-    const statements = [];
-    if (ctx.statement) {
-      for (const node of ctx.statement) {
-        const s = this.visit(node);
-        if (s instanceof Array) {
-          for (const i of s) {
-            statements.push(i);
-          }
-        } else {
-          statements.push(s);
-        }
-      }
-    }
-    return statements;
+    return ctx.statement?.map(s => this.visit(s)).flat() ?? [];
   }
 
   statement(ctx) {
@@ -234,35 +202,29 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   variableDeclaration(ctx) {
     const type = this.visit(ctx.type);
-    const list = [];
-    for (const node of ctx.identifierWithInit) {
-      const decl = this.visit(node);
+    return ctx.identifierWithInit.map((i) => {
+      const decl = this.visit(i);
       decl.type = type;
-      list.push(decl);
-    }
-    return list;
+      return decl;
+    });
   }
 
   constantDeclaration(ctx) {
     const type = this.visit(ctx.type);
-    const list = [];
-    for (const node of ctx.identifierWithMandatoryInit) {
-      const decl = this.visit(node);
+    return ctx.identifierWithMandatoryInit.map((i) => {
+      const decl = this.visit(i);
       decl.type = type;
-      list.push(decl);
-    }
-    return list;
+      return decl;
+    });
   }
 
   dependentDeclaration(ctx) {
     const type = this.visit(ctx.type);
-    const list = [];
-    for (const node of ctx.identifierWithArrayLength) {
-      const decl = this.visit(node);
+    return ctx.identifierWithArrayLength.map((i) => {
+      const decl = this.visit(i);
       decl.type = type;
-      list.push(decl);
-    }
-    return list;
+      return decl;
+    });
   }
 
   identifierWithArrayLength(ctx) {
@@ -486,23 +448,18 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   forIncremental(ctx) {
-    const stmts = [];
-    for (const node of ctx.expression) {
-      const expression = this.visit(node);
-      stmts.push(PB.ExpressionStatement.create({ expression }));
-    }
-    return stmts;
+    return ctx.expression?.map(e => PB.ExpressionStatement.create({ expression: this.visit(e) })) ?? [];
   }
 
   whileStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statements = arrayOf(this.visit(ctx.statement));
+    const statements = ctx.statement?.map(s => this.visit(s)) ?? [];
     return PB.WhileStatement.create({ condition, statements });
   }
 
   doWhileStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statements = arrayOf(this.visit(ctx.statement));
+    const statements = ctx.statement?.map(s => this.visit(s)) ?? [];
     return PB.DoWhileStatement.create({ condition, statements });
   }
 

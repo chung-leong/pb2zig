@@ -48,7 +48,7 @@ export class ZigSerializer {
   }
 
   serializeStatements(statements) {
-    return statements.map(s => this.serializeStatement(s)).join('\n');
+    return statements.map(s => this.serializeStatement(s)).filter(s => s !== undefined).join('\n');
   }
 
   serializeStatement(statement) {
@@ -193,7 +193,7 @@ export class ZigSerializer {
   serializeExpressionStatement({ expression }) {
     const code = this.serializeExpression(expression);
     if (!code) {
-      return code;
+      return undefined;
     }
     return `${code};`;
   }
