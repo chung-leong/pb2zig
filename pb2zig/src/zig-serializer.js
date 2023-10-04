@@ -1,6 +1,3 @@
-import * as ZIG from './zig-nodes.js';
-import { walk, find } from './utils.js';
-
 export class ZigSerializer {
   ast;
   macroASTs;
@@ -103,12 +100,12 @@ export class ZigSerializer {
     ].join('\n');
   }
 
-  serializeFunctionDefinition({ name, isPublic, isMethod, args, type, statements }) {
+  serializeFunctionDefinition({ name, isPublic, receiver, args, type, statements }) {
     const prefix = (isPublic) ? 'pub ' : '';
-    const argList = args.map(a => this.serializeExpression(a));
-    if (isMethod) {
-      argList.unshift(`self: @This()`);
+    if (receiver) {
+      args.push(receiver);
     }
+    const argList = args.map(a => this.serializeExpression(a));
     return [
       `${prefix}fn ${name}(${argList.join(', ')}) ${type} {`,
       this.serializeStatements(statements),

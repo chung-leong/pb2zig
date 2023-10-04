@@ -36,9 +36,9 @@ export class StructDefinition extends Node {
 
 export class FunctionDefinition extends Node {
   isPublic = false;
-  isMethod = false;
   type;
   name;
+  receiver;
   args;
   statements;
 }

@@ -361,6 +361,63 @@ describe('Translator tests', function() {
       expect(result).to.contain('_ = atan2(x, y);')
       expect(result).to.contain('_ = 5;')
     })
+    it('should attach receiver to functions using kernel variables indirectly', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        parameter float number
+        <
+            minValue: -1.0;
+            maxValue: 1.0;
+            defaultValue: 0.0;
+        >;
+
+        input image4 src;
+        output pixel4 dst;
+
+        const int COUNT1 = 5;
+        const int COUNT2 = 4;
+        dependent float number;
+        dependent float array[COUNT1*COUNT2];
+
+        float2 coord() {
+          return outCoord();
+        }
+
+        float getX() {
+          return coord().x;
+        }
+
+        float getY() {
+          return coord().y;
+        }
+
+        float getN() {
+          return number;
+        }
+
+        float getPI() {
+          return 3.14;
+        }
+
+        void
+        evaluatePixel()
+        {
+          float v1 = getY();
+          float v2 = getPI();
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('fn getX(self: *This()) f32 {');
+      expect(result).to.contain('fn getY(self: *This()) f32 {');
+      expect(result).to.contain('var v1: f32 = self.getY();');
+      expect(result).to.contain('fn getN(self: *This()) f32 {');
+      expect(result).to.contain('fn getPI() f32 {');
+      expect(result).to.contain('var v2: f32 = getPI();');
+    })
   })
   describe('Function calls', function() {
     it('should import built-in functions', function() {

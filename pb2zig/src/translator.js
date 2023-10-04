@@ -29,14 +29,16 @@ export class PixelBenderToZigTranslator {
   }
 
   startScope() {
-    const { variables, currentFunctionName } = this;
-    this.scopeStack.push({ variables, currentFunctionName });
+    const { variables, functions, currentFunctionName } = this;
+    this.scopeStack.push({ variables, functions, currentFunctionName });
     this.variables = map(variables, (v) => { return { ...v, used: false } });
+    this.functions = map(functions, (f) => { return { ...f, called: false } });
   }
 
   endScope() {
-    const { variables, currentFunctionName } = this.scopeStack.pop();
+    const { variables, functions, currentFunctionName } = this.scopeStack.pop();
     this.variables = variables;
+    this.functions = functions;
     this.currentFunctionName = currentFunctionName;
   }
 
@@ -56,6 +58,16 @@ export class PixelBenderToZigTranslator {
     for (const [ name, variable ] of Object.entries(this.variables)) {
       if (variable.scope !== 'local' && variable.scope !== 'global') {
         set[name] = variable;
+      }
+    }
+    return set;
+  }
+
+  getCalledFunctions() {
+    const set = {};
+    for (const [ name, fn ] of Object.entries(this.functions)) {
+      if (fn.called) {
+        set[name] = fn;
       }
     }
     return set;
@@ -454,10 +466,49 @@ export class PixelBenderToZigTranslator {
       return [];
     }
     // set the function prototype first
-    const statements = [];
-    let count = 0;
     for (const pb of defs) {
       if (PB.isUnsupported(pb.type) || pb.args.some(pb => PB.isUnsupported(pb.type))) {
+        continue;
+      }
+      const type = this.translateType(pb.type);
+      const argTypes = pb.args.map(pba => this.translateType(pba.type));
+      const argPointers = pb.args.map(pba => pba.direction.includes('out'));
+      this.functions[pb.name] = {
+        type: 'user',
+        returnType: type,
+        argTypes,
+        argPointers,
+        overloaded: false,
+        receiver: undefined,  // don't know yet
+        called: false,
+        callees: [],
+      };
+    }
+    // assume that we can convert macros to functions
+    for (const macroAST of this.pbMacroASTs) {
+      if (this.variables[pb.name]) {
+        // converted to a constant
+        continue;
+      }
+      this.functions[pb.name] = {
+        type: 'macro',
+        returnType: undefined,
+        argTypes: undefined,   // don't know yet--wait for call
+        argPointers: undefined,
+        overloaded: false,
+        receiver: undefined,
+        called: false,
+        callees: [],
+      };
+    }
+    // translate the functions
+    const definitions = {};
+    const statements = [];
+    const callerLists = {};
+    let count = 0;
+    for (const pb of defs) {
+      const f = this.functions[pb.name];
+      if (!f) {
         continue;
       }
       if (count++ === 0) {
@@ -465,7 +516,52 @@ export class PixelBenderToZigTranslator {
       } else {
         statements.push(this.createBlankLine());
       }
-      statements.push(this.translateDefinedFunction(pb))
+      const definition = this.translateDefinedFunction(pb);
+      statements.push(definition);
+      definitions[pb.name] = definition;
+      for (const cname of f.callees) {
+        let list = callerLists[cname];
+        if (!list) {
+          list = callerLists[cname] = [];
+        }
+        list.push(pb.name);
+      }
+    }
+    // at this point only the functions that use kernel variables have self as the receiver
+    const selfArg = ZIG.FunctionArgument.create({ name: 'self', type: '*This()' });
+    const set = {};
+    const setReceiver = (name) => {
+      if (set[name]) {
+         return;
+      }
+      const f = this.functions[name];
+      if (!f.receiver) {
+        definitions[name].receiver = selfArg;
+        f.receiver = 'self';
+      }
+      set[name] = true;
+      // make sure that functions calling this one receive self too
+      const callers = callerLists[name];
+      if (callers) {
+        for (const cname of callers) {
+          setReceiver(cname);
+        }
+      }
+    };
+    const names = Object.keys(callerLists).filter(n => !!this.functions[n].receiver);
+    for (const name of names) {
+      setReceiver(name);
+    }
+    // fix all call sites
+    const calls = find(statements, ZIG.FunctionCall);
+    const self = ZIG.VariableAccess.create({ name: 'self', type: '*This()' });
+    for (const call of calls) {
+      if (!call.receiver) {
+        const f = this.functions[call.name];
+        if (f?.receiver === 'self') {
+          call.receiver = self;
+        }
+      }
     }
     return statements;
   }
@@ -473,6 +569,7 @@ export class PixelBenderToZigTranslator {
   translateDefinedFunction(pb) {
     const { name } = pb;
     const type = this.translateType(pb.type);
+    const f = this.functions[name];
     this.startScope();
     this.currentFunctionName = name;
     // add arguments to scope
@@ -532,7 +629,7 @@ export class PixelBenderToZigTranslator {
       }
     }
     // add references to fields in kernel instance
-    const kernelVariables = this.getKernelVariables()
+    const kernelVariables = this.getKernelVariables();
     let offset = 0, receiver;
     for (const [ name, { scope, used } ] of Object.entries(kernelVariables)) {
       if (used) {
@@ -553,12 +650,18 @@ export class PixelBenderToZigTranslator {
         const assignment = ZIG.VariableDeclaration.create({ name, initializer, isConstant: true });
         statements.splice(offset, 0, assignment);
         if (!receiver) {
-          receiver = ZIG.VariableAccess.create({ name: 'self', type: '*This()' });
+          receiver = ZIG.FunctionArgument.create({ name: 'self', type: '*This()' });
+          f.receiver = 'self';
         }
       }
     }
     this.insertIgnoreStatements(statements);
+    const calledFunctions = this.getCalledFunctions();
     this.endScope();
+    for (const name of Object.keys(calledFunctions)) {
+      this.functions[name].called = true;
+      f.callees.push(name);
+    }
     const isPublic = publicMethods.includes(name);
     return ZIG.FunctionDefinition.create({ receiver, name, args, type, isPublic, statements });
   }
@@ -839,7 +942,7 @@ export class PixelBenderToZigTranslator {
         args[f.returnTypeSource] = this.forceType(args[f.returnTypeSource]);
       }
     }
-    let { receiver } = f;
+    let receiver;
     if (imageFunctions.includes(name)) {
       // functions called on images are translated as method calls
       receiver = args[0];
