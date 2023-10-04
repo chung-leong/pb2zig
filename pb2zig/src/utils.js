@@ -35,3 +35,11 @@ export function find(tree, classes, recursive = false) {
   });
   return list;
 }
+
+export function map(object, cb) {
+  const result = {};
+  for (const [ name, value ] of Object.entries(object)) {
+    result[name] = cb(value, name);
+  }
+  return result;
+}

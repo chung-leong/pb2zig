@@ -91,6 +91,30 @@ describe('Translator tests', function() {
       expect(result).to.contain('.dst2 = .{ .channels = 1 },');
     })
   })
+  describe('Assignment', function() {
+    it('should correctly translate expression involving assignments', function() {
+      const pbkCode = addPBKWrapper(`
+        float a = 0.0;
+        float b = (a = 3.0) * (a = 4.0);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('const tmp1 = a;');
+      expect(result).to.contain('const tmp2 = a;');
+      expect(result).to.contain('var b: f32 = (tmp1) * (tmp2);');
+    })
+    it('should correctly translate expression involving increments', function() {
+      const pbkCode = addPBKWrapper(`
+        float a = 0.0;
+        float b = (a++) * (++a);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('const tmp1 = a;');
+      expect(result).to.contain('const tmp2 = a;');
+      // increments occur one after the other
+      expect(result).to.match(/a \+= 1\.0;\s+a \+= 1\.0;/);
+      expect(result).to.contain('var b: f32 = (tmp1) * (tmp2);');
+    })
+  })
   describe('Swizzling operations', function() {
     it('should correctly translate V.[property]', function() {
       const pbkCode = addPBKWrapper(`
@@ -269,13 +293,73 @@ describe('Translator tests', function() {
     })
   })
   describe('Function definition', function() {
-    it('should transfer input image into the scope of function', function() {
+    it('should transfer input and output images into the scope of function', function() {
       const pbkCode = addPBKWrapper(`
-        float4 p = sampleLinear(src, float2(1, 2));
+        float4 p = sampleLinear(src, float2(1.0, 2.0));
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('const src = self.input.src;')
       expect(result).to.contain(' = src.sampleLinear(@Vector(2, f32){ 1.0, 2.0 })');
+      expect(result).to.contain('const dst = self.output.dst;')
+    })
+    it('should transfer parameters into the scope of function', function() {
+      const pbkCode = addPBKWrapper(`
+        float4 p = sampleLinear(src, float2(1.0, number));
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('const number = self.params.number')
+      expect(result).to.contain(' = src.sampleLinear(@Vector(2, f32){ 1.0, number })');
+    })
+    it('should transfer dependents into the scope of function', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        input image4 src;
+        output pixel4 dst;
+
+        const int COUNT1 = 5;
+        const int COUNT2 = 4;
+        dependent float number;
+        dependent float array[COUNT1*COUNT2];
+
+        void
+        evaluateDependents()
+        {
+          array[1] = 1.0;
+        }
+
+        void
+        evaluatePixel()
+        {
+          float value = array[1];
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('const array = self.array;');
+      expect(result).to.not.contain('const number = self.array;');
+      expect(result).to.contain('self.array[1] = 1.0;');
+    })
+    it('should add dummy assignment beneath unused variables', function() {
+      const pbkCode = addPBKWrapper(`
+        float x = 5.0, y = 1.0;
+        float4 p = sampleLinear(src, float2(1.0, y));
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('_ = x;')
+      expect(result).to.contain('_ = p;')
+    })
+    it('should add dummy assignment to uncaptured return value', function() {
+      const pbkCode = addPBKWrapper(`
+        float x = 5.0, y = 1.0;
+        atan(x, y);
+        5;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('_ = atan2(x, y);')
+      expect(result).to.contain('_ = 5;')
     })
   })
   describe('Function calls', function() {
@@ -435,6 +519,13 @@ function addPBKWrapper(statements) {
 kernel test
 <namespace : "Test"; vendor : "Vendor"; version : 1;>
 {
+  parameter float number
+  <
+      minValue: -1.0;
+      maxValue: 1.0;
+      defaultValue: 0.0;
+  >;
+
   input image4 src;
   output pixel4 dst;
 

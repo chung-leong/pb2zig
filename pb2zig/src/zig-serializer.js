@@ -58,26 +58,7 @@ export class ZigSerializer {
     const fname = `serialize${statement.constructor.name}`;
     const f = this[fname];
     if (f) {
-      const result = f.call(this, statement);
-      const sideEffects = [];
-      walk(statement, (node) => {
-        if (node instanceof ZIG.SideEffectExpression) {
-          sideEffects.push(node.statements);
-        } else if (node.statements) {
-          return false;
-        }
-      });
-      if (sideEffects.length > 0) {
-        // apply side-effects first
-        const sideEffectsResults = sideEffects.map(statements => this.serializeStatements(statements));
-        if (result) {
-          return [ ...sideEffectsResults, result ].join('\n');
-        } else {
-          return sideEffectsResults.join('\n');
-        }
-      } else {
-        return result;
-      }
+      return f.call(this, statement);
     } else {
       console.log(statement);
       throw new Error(`TODO: ${fname}`);
@@ -233,6 +214,7 @@ export class ZigSerializer {
       return f.call(this, expression);
     } else {
       console.log(expression);
+      console.log('WTF?');
       throw new Error(`TODO: ${fname}`);
     }
   }
@@ -302,13 +284,6 @@ export class ZigSerializer {
   serializeUnaryOperation({ operator, operand }) {
     const op = this.serializeExpression(operand);
     return `${operator}${op}`;
-  }
-
-  serializeSideEffectExpression({ expression }) {
-    // statements should have been applied already
-    if (expression) {
-      return this.serializeExpression(expression);
-    }
   }
 }
 

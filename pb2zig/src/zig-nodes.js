@@ -158,11 +158,6 @@ export class Parentheses extends Expression {
   expression;
 }
 
-export class SideEffectExpression extends Expression {
-  statements;
-  expression;
-}
-
 export class ArrayType extends Expression {
   type = 'type';
   index;
