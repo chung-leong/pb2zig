@@ -293,9 +293,6 @@ export class PixelBenderToZigTranslator {
 
   expandMacro(name, argsGiven, typeExpected = undefined) {
     const macro = this.pbMacroASTs.find(m => m.name === name);
-    if (!macro || !macro.args !== !argsGiven) {
-      return null;
-    }
     const { args = [], expression, statements } = macro;
     const argsByName = {};
     if (args.length !== argsGiven.length) {
@@ -673,13 +670,14 @@ export class PixelBenderToZigTranslator {
       }
       this.functions[pb.name] = {
         type: 'macro',
-        returnType: undefined,
-        argTypes: undefined,   // don't know yet--wait for call
+        returnType: undefined,  // don't know yet--wait for call
+        argTypes: (pb.args) ? undefined : false,
         argPointers: undefined,
         overloaded: false,
         receiver: undefined,
         called: false,
         callees: [],
+        definition: null,
       };
     }
     // translate the functions
@@ -968,10 +966,10 @@ export class PixelBenderToZigTranslator {
   resolveVariable(name, typeExpected = undefined) {
     const variable = this.variables[name];
     if (!variable) {
-      // maybe it's a macro--expand it and translate its expression
-      // if it were possible to convert it to a variable, we would have found it
-      const expanded = this.expandMacro(name, [], typeExpected);
-      if (expanded) {
+      // maybe it's a macro that couldn't be converted to a constant
+      const m = this.functions[name];
+      if (m?.type === 'macro') {
+        const expanded = this.expandMacro(name, [], typeExpected);
         return this.translateExpression(expanded);
       } else {
         throw new Error(`Undefined variable: ${name}`);
