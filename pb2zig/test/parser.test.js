@@ -54,9 +54,9 @@ describe('Parser tests', function() {
     expect(ast).to.be.instanceOf(PB.IfStatement);
     expect(ast.condition).to.be.instanceOf(PB.ComparisonOperation);
     expect(ast.condition.operator).to.equal('<');
-    expect(ast.statements).to.have.lengthOf(1);
-    expect(ast.statements[0]).to.be.instanceOf(PB.ExpressionStatement);
-    expect(ast.statements[0].expression).to.be.instanceOf(PB.IncrementOperation);
+    expect(ast.statement).to.be.instanceOf(PB.StatementBlock);
+    expect(ast.statement.statements[0]).to.be.instanceOf(PB.ExpressionStatement);
+    expect(ast.statement.statements[0].expression).to.be.instanceOf(PB.IncrementOperation);
   })
   it('should parse a while loop', function() {
     const code = `
@@ -68,9 +68,9 @@ describe('Parser tests', function() {
     expect(ast).to.be.instanceOf(PB.WhileStatement);
     expect(ast.condition).to.be.instanceOf(PB.ComparisonOperation);
     expect(ast.condition.operator).to.equal('<');
-    expect(ast.statements).to.have.lengthOf(1);
-    expect(ast.statements[0]).to.be.instanceOf(PB.ExpressionStatement);
-    expect(ast.statements[0].expression).to.be.instanceOf(PB.IncrementOperation);
+    expect(ast.statement).to.be.instanceOf(PB.StatementBlock);
+    expect(ast.statement.statements[0]).to.be.instanceOf(PB.ExpressionStatement);
+    expect(ast.statement.statements[0].expression).to.be.instanceOf(PB.IncrementOperation);
   })
   it('should parse a while loop with break', function() {
     const code = `
@@ -83,9 +83,10 @@ describe('Parser tests', function() {
     expect(ast).to.be.instanceOf(PB.WhileStatement);
     expect(ast.condition).to.be.instanceOf(PB.Literal);
     expect(ast.condition.value).to.be.true;
-    expect(ast.statements).to.have.lengthOf(2);
-    expect(ast.statements[0]).to.be.instanceOf(PB.IfStatement);
-    expect(ast.statements[0].statements[0]).to.be.instanceOf(PB.BreakStatement);
+    expect(ast.statement).to.be.instanceOf(PB.StatementBlock);
+    expect(ast.statement.statements).to.have.lengthOf(2);
+    expect(ast.statement.statements[0]).to.be.instanceOf(PB.IfStatement);
+    expect(ast.statement.statements[0].statement).to.be.instanceOf(PB.BreakStatement);
   })
   it('should parse a for loop', function() {
     const code = `
@@ -100,9 +101,10 @@ describe('Parser tests', function() {
     expect(ast.initializers[0]).to.be.an.instanceOf(PB.VariableDeclaration);
     expect(ast.condition).to.be.instanceOf(PB.ComparisonOperation);
     expect(ast.condition.operator).to.equal('<');
-    expect(ast.statements).to.have.lengthOf(2);
-    expect(ast.statements[0].expression).to.be.instanceOf(PB.FunctionCall);
-    expect(ast.statements[1].expression).to.be.instanceOf(PB.FunctionCall);
+    expect(ast.statement).to.be.instanceOf(PB.StatementBlock);
+    expect(ast.statement.statements).to.have.lengthOf(2);
+    expect(ast.statement.statements[0].expression).to.be.instanceOf(PB.FunctionCall);
+    expect(ast.statement.statements[1].expression).to.be.instanceOf(PB.FunctionCall);
     expect(ast.incrementals).to.have.lengthOf(1);
     expect(ast.incrementals[0]).to.be.an.instanceOf(PB.ExpressionStatement);
     expect(ast.incrementals[0].expression).to.be.an.instanceOf(PB.IncrementOperation);

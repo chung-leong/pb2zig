@@ -278,12 +278,12 @@ export class PixelBenderToZigTranslator {
         return object.map(clone);
       } else if (object && typeof(object) === 'object') {
         if (object instanceof PB.VariableAccess) {
-          const { name, property } = object;
+          const { name, property, index } = object;
           const arg = argsByName[name];
           if (arg) {
-            if (property) {
+            if (property, index) {
               // access the prop of the argument
-              return this.createExpression(N.VariableAccess, { name: arg.name, property });
+              return PB.VariableAccess.create({ name: arg.name, property, index });
             } else {
               return arg;
             }
@@ -1111,11 +1111,11 @@ export class PixelBenderToZigTranslator {
       const indices = PB.getSwizzleIndices(pb.property);
       if (indices.length > 1) {
         const type = ZIG.changeVectorWidth(expression, indices.length);
-        const mask = ZIG.TupleLiteral({
+        const mask = ZIG.TupleLiteral.create({
           type: `@Vector(${indices.length}, i32)`,
           initializers: indices.map(i => ZIG.Literal.create({ value: i, type: 'i32' })),
         });
-        return ZIG.FunctionCall({ name: '@shuffle', args: [
+        return ZIG.FunctionCall.create({ name: '@shuffle', args: [
           expression.getChildType(),
           expression,
           'undefined',
@@ -1236,7 +1236,7 @@ export class PixelBenderToZigTranslator {
       return ZIG.TupleLiteral.create({ initializers, type });
     } else if (ZIG.isVector(type)) {
       if (args.length === 1) {
-        return this.promoteExpression(args[0], typeV);
+        return this.promoteExpression(args[0], type);
       } else {
         return ZIG.TupleLiteral.create({
           initializers: args,
@@ -1405,11 +1405,11 @@ export class PixelBenderToZigTranslator {
     const operand = this.translateExpression(pb.operand);
     const { sign } = pb;
     const { type } = operand;
-    return (sign === '+') ? op : ZIG.UnaryOperation.create({ operator: sign, operand, type });
+    return (sign === '+') ? operand : ZIG.UnaryOperation.create({ operator: sign, operand, type });
   }
 
   translateNotOperation(pb) {
-    const operand = this.translateExpression(ob.operand);
+    const operand = this.translateExpression(pb.operand);
     const { type } = operand;
     return ZIG.UnaryOperation.create({ operator: '!', operand, type });
   }
@@ -1634,7 +1634,7 @@ const builtInFunctions = (() => {
     '@"M * V"': [
       [ float2, float2x2, float2 ],
       [ float3, float3x3, float3 ],
-      [ float4, float4x4, float ],
+      [ float4, float4x4, float4 ],
     ],
     '@"M * S"': [
       [ float2x2, float2x2, float ],
