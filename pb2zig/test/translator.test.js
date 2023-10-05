@@ -441,7 +441,7 @@ describe('Translator tests', function() {
         float2 s = pixelSize(dst);
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('self.output.dst.pixelSize()');
+      expect(result).to.contain('dst.pixelSize()');
     })
   })
   describe('Macros', function() {

@@ -89,7 +89,7 @@ export class PixelBenderToZigTranslator {
       name = `tmp${count++}`;
     } while(this.variables[name]);
     const { type } = initializer;
-    this.variables[name] = { type, scope: 'temp', mutable: false, pointer: false, used: true };
+    this.variables[name] = { type, scope: 'temp', mutable: false, pointer: false, used: false };
     this.sideEffects.push(ZIG.VariableDeclaration.create({ name, initializer, isConstant: true }));
     const tmp = ZIG.VariableAccess.create({ name, type });
     if (aliasing) {
@@ -101,7 +101,11 @@ export class PixelBenderToZigTranslator {
   findTempVariable(pb) {
     const json = JSON.stringify(pb);
     const entry = this.variableAliases.find(e => json === JSON.stringify(e.pb));
-    return entry?.tmp;
+    if (entry) {
+      const { tmp } = entry;
+      tmp.used = true;
+      return tmp;
+    }
   }
 
   createComment(text) {
@@ -147,7 +151,6 @@ export class PixelBenderToZigTranslator {
         if (expression.type !== 'void') {
           const ignore = this.createIgnoreStatement(expression);
           statements[index] = ignore;
-          console.log('ignore');
         }
       }
     }
@@ -155,10 +158,7 @@ export class PixelBenderToZigTranslator {
 
   forceType(expression) {
     const { type } = expression;
-    if (expression instanceof ZIG.Literal && expression.isScalar()) {
-      return ZIG.FunctionCall.create({ name: '@as', args: [ type, expression ], type });
-    }
-    return expression;
+    return ZIG.FunctionCall.create({ name: '@as', args: [ type, expression ], type });
   }
 
   promoteExpression(expression, type, forceType = true) {
@@ -275,7 +275,6 @@ export class PixelBenderToZigTranslator {
     } catch (err) {
       // can't be converted, probably due to references to undefined variables
       f.argTypes = false;
-      console.log('ERROR');
       return false;
     } finally {
       // update entries in all scopes
@@ -449,7 +448,7 @@ export class PixelBenderToZigTranslator {
           }
           statements.push(ZIG.VariableDeclaration.create({ name, initializer, isConstant: true }));
           const { type } = initializer;
-          this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false, unused: false };
+          this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false, used: false };
         } catch (err) {
           // if the expression uses variables not defined in the global
           // scope, it will fail and land here
@@ -769,7 +768,7 @@ export class PixelBenderToZigTranslator {
       const { name } = pba;
       const pointer = pba.direction.includes('out');
       const type = this.translateType(pba.type);
-      this.variables[name] = { type, scope: 'local', mutable: !pointer, pointer, used: true };
+      this.variables[name] = { type, scope: 'local', mutable: !pointer, pointer, used: false };
     }
     const args = pb.args.map((pba) => {
       const { name } = pba;
@@ -862,7 +861,7 @@ export class PixelBenderToZigTranslator {
     const { name } = pb;
     const type = this.translateType(pb.type);
     const initializer = this.translateExpression(pb.initializer, 'comptime');
-    this.variables[name] = { type, scope: 'local', mutable: true, pointer: false, used: true };
+    this.variables[name] = { type, scope: 'local', mutable: true, pointer: false, used: false };
     return ZIG.VariableDeclaration.create({ name, type, initializer });
   }
 
@@ -919,6 +918,7 @@ export class PixelBenderToZigTranslator {
     const condition = this.translateExpression(pb.condition);
     const statements = this.translateStatements(pb.statements);
     this.endScope();
+    console.log({ statements });
     return ZIG.WhileStatement.create({ condition, statements })
   }
 
@@ -1131,7 +1131,10 @@ export class PixelBenderToZigTranslator {
       // ensure that we don't pass a comptime_int or comptime_float as the
       // argument from which the return type is obtained
       if (f.returnTypeSource !== undefined) {
-        args[f.returnTypeSource] = this.forceType(args[f.returnTypeSource]);
+        const argRTS = args[f.returnTypeSource];
+        if (argRTS instanceof ZIG.Literal && argRTS.isScalar()) {
+          args[f.returnTypeSource] = this.forceType();
+        }
       }
     }
     let receiver;

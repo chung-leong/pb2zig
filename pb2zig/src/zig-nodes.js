@@ -174,7 +174,6 @@ export function isVector(type) {
 }
 
 export function isMatrix(type) {
-  console.log({ type, t: /^\[\d+\]@Vector\(/.test(type) })
   return /^\[\d+\]@Vector\(/.test(type);
 }
 

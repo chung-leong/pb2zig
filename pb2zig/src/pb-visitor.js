@@ -197,7 +197,8 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   statement(ctx) {
-    return this.visitAny(ctx);
+    const a = this.visitAny(ctx);
+    return Array.isArray(a) ? a : [ a ];
   }
 
   variableDeclaration(ctx) {
@@ -412,13 +413,13 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   ifStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statements = arrayOf(this.visit(ctx.statement));
+    const statements = this.visit(ctx.statement);
     const elseClause = (ctx.elseClause) ? this.visit(ctx.elseClause) : undefined;
     return PB.IfStatement.create({ condition, statements, elseClause });
   }
 
   elseClause(ctx) {
-    const statements = arrayOf(this.visit(ctx.statement));
+    const statements = this.visit(ctx.statement);
     return PB.IfStatement.create({ statements });
   }
 
@@ -426,7 +427,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const initializers = this.visit(ctx.forInitializer);
     const condition = this.visit(ctx.forCondition);
     const incrementals = this.visit(ctx.forIncremental);
-    const statements = arrayOf(this.visit(ctx.statement));
+    const statements = this.visit(ctx.statement);
     return PB.ForStatement.create({ initializers, condition, incrementals, statements });
   }
 
@@ -453,13 +454,14 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   whileStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statements = ctx.statement?.map(s => this.visit(s)) ?? [];
+    debugger;
+    const statements = this.visit(ctx.statement) ?? [];
     return PB.WhileStatement.create({ condition, statements });
   }
 
   doWhileStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statements = ctx.statement?.map(s => this.visit(s)) ?? [];
+    const statements = this.visit(ctx.statement) ?? [];
     return PB.DoWhileStatement.create({ condition, statements });
   }
 
@@ -492,10 +494,6 @@ export function process(cst, macroCSTs) {
   const ast = visitor.visit(cst);
   const macroASTs = macroCSTs.map(cst => visitor.visit(cst));
   return { ast, macroASTs };
-}
-
-function arrayOf(a) {
-  return Array.isArray(a) ? a : [ a ];
 }
 
 function getPrecedence(operator) {

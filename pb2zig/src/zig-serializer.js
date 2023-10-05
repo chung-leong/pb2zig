@@ -154,6 +154,7 @@ export class ZigSerializer {
   }
 
   serializeWhileStatement({ condition, statements }) {
+    console.log({ condition, statements })
     return [
       `while (${this.serializeExpression(condition)}) {`,
       this.serializeStatements(statements),
@@ -168,6 +169,23 @@ export class ZigSerializer {
       `if (${this.serializeExpression(condition)}) continue else break;`,
       `}`,
     ].join('\n');
+  }
+
+  serializeForStatement({ initializers, condition, increments, statements, hasDeclarations }) {
+    const lines = [];
+    if (hasDeclarations) {
+      lines.push('{')
+    }
+    lines.push(
+      this.serializeStatements(initializers),
+      `while (${this.serializeExpression(condition)}) {`,
+      this.serializeStatements(increments),
+      '}',
+    );
+    if (hasDeclarations) {
+      lines.push('}')
+    }
+    return lines.join('\n');
   }
 
   serializeBreakStatement() {
