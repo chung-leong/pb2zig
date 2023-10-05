@@ -496,7 +496,7 @@ describe('Translator tests', function() {
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('fn addMul(a: f32, b: f32, c: f32) f32 {');
     })
-    it('should correctly translate dependent declaration', function() {
+    it('should convert argumentless macro into global constants', function() {
       const pbkCode = `
       <languageVersion : 1.0;>
       kernel test
@@ -505,8 +505,8 @@ describe('Translator tests', function() {
         input image4 src;
         output pixel4 dst;
 
-        const int COUNT1 = 5;
-        const int COUNT2 = 4;
+        #define COUNT1 5
+        #define COUNT2 4
         dependent float number;
         dependent float array[COUNT1*COUNT2];
 
@@ -537,7 +537,7 @@ describe('Translator tests', function() {
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('fn min(v1: anytype, v2: anytype) @TypeOf(v1) {');
     })
-    it('should correctly translate a macro contains multiple statements', function() {
+    it('should correctly translate a macro containing multiple statements', function() {
       const pbkCode = addPBKWrapper(`
         #define clear(a, b) { a = 0.0; b = 0.0; }
 
@@ -549,6 +549,29 @@ describe('Translator tests', function() {
       expect(result).to.contain('a.* = 0.0;');
       expect(result).to.contain('b.* = 0.0;');
     })
+    it('should expand a macro without arguments containing multiple statements', function() {
+      const pbkCode = addPBKWrapper(`
+        #define clear() { a = 0.0; b = 0.0; }
+
+        float a = 0.4, b = 1.0;
+        clear();
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('a = 0.0;');
+      expect(result).to.contain('b = 0.0;');
+    })
+    it('should expand a plain macro containing multiple statements', function() {
+      const pbkCode = addPBKWrapper(`
+        #define clear a = 0.0; b = 0.0;
+
+        float a = 0.4, b = 1.0;
+        clear;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('a = 0.0;');
+      expect(result).to.contain('b = 0.0;');
+    })
+
   })
   describe('Error handling', function() {
     it('should throw when lexer fails', function() {

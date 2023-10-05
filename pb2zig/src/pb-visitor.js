@@ -156,14 +156,14 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   expressionMacroDeclaration(ctx) {
     const name = this.name(ctx.Identifier);
-    const args = ctx.typelessArgumentDeclaration?.map(a => this.visit(a)) ?? null;
+    const args = (ctx.LParen) ? ctx.typelessArgumentDeclaration?.map(a => this.visit(a)) ?? [] : undefined;
     const expression = this.visit(ctx.expression);
     return PB.MacroDefinition.create({ name, args, expression });
   }
 
   statementMacroDeclaration(ctx) {
     const name = this.name(ctx.Identifier);
-    const args = ctx.typelessArgumentDeclaration?.map(a => this.visit(a)) ?? null;
+    const args = (ctx.LParen) ? ctx.typelessArgumentDeclaration?.map(a => this.visit(a)) ?? [] : undefined;
     const statements = ctx.statement?.map(s => this.visit(s)).flat() ?? [];
     return PB.MacroDefinition.create({ name, args, statements });
   }

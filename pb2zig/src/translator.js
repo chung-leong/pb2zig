@@ -179,6 +179,9 @@ export class PixelBenderToZigTranslator {
       throw new Error(`No function by that name: ${name}`);
     }
     const { argTypes, returnType, overloaded } = f;
+    if (!argTypes) {
+      throw new Error(`Not a function: ${name}`);
+    }
     const types = args.map(a => a?.type);
     const findMismatch = (list) => {
       return types.findIndex((type, i) => {
@@ -209,11 +212,8 @@ export class PixelBenderToZigTranslator {
     }
   }
 
-  convertMacro(name, argsGiven, typeExpected) {
+  convertMacro(name, argsGiven, typeExpected = undefined) {
     const macro = this.pbMacroASTs.find(m => m.name === name);
-    if (!macro) {
-      return false;
-    }
     const { args = [], expression, statements = [] } = macro;
     if (args.length !== argsGiven.length) {
       const s = (args.length > 1) ? 's' : '';
@@ -271,7 +271,13 @@ export class PixelBenderToZigTranslator {
         f.returnType = 'void';
       }
       f.argPointers = argTypes.map(t => t.startsWith('*'));
-      console.log({ argTypes, p: f.argPointers });
+      return true;
+    } catch (err) {
+      // can't be converted, probably due to references to undefined variables
+      f.argTypes = false;
+      console.log('ERROR');
+      return false;
+    } finally {
       // update entries in all scopes
       for (const { functions } of savedStack) {
         const g = functions[name];
@@ -280,14 +286,59 @@ export class PixelBenderToZigTranslator {
         g.returnType = f.returnType;
         g.definition = f.definition;
       }
-      return true;
-    } catch (err) {
-      // can't be converted, probably due to references to undefined variables
-      f.argTypes = false;
-      return false;
-    } finally {
       this.scopeStack = savedStack;
       this.endScope();
+    }
+  }
+
+  expandMacro(name, argsGiven, typeExpected = undefined) {
+    const macro = this.pbMacroASTs.find(m => m.name === name);
+    if (!macro || !macro.args !== !argsGiven) {
+      return null;
+    }
+    const { args = [], expression, statements } = macro;
+    const argsByName = {};
+    if (args.length !== argsGiven.length) {
+      const s = (args.length > 1) ? 's' : '';
+      throw new Error(`Macro ${name}() expects ${args.length} argument${s}, received ${argsGiven.length}`);
+    }
+    for (const [ index, argName ] of args.entries()) {
+      argsByName[argName] = argsGiven[index];
+    }
+    const clone = (object) => {
+      if (Array.isArray(object)) {
+        return object.map(clone);
+      } else if (object && typeof(object) === 'object') {
+        if (object instanceof PB.VariableAccess) {
+          const { name, property } = object;
+          const arg = argsByName[name];
+          if (arg) {
+            if (property) {
+              // access the prop of the argument
+              return this.createExpression(N.VariableAccess, { name: arg.name, property });
+            } else {
+              return arg;
+            }
+          }
+        }
+        const copy = new object.constructor();
+        for (const [ name, child ] of Object.entries(object)) {
+          copy[name] = clone(child);
+        }
+        return copy;
+      } else {
+        return object;
+      }
+    };
+    if (expression) {
+      return clone(expression);
+    } else {
+      if (typeExpected !== 'void') {
+        throw new Error(`Unable to expand macro: ${name}`);
+      }
+      // add statements as side effects of this expression and return nothing
+      this.sideEffects = this.translateStatements(clone(statements));
+      return PB.Literal.create({ value: undefined, type: 'void' });
     }
   }
 
@@ -370,6 +421,7 @@ export class PixelBenderToZigTranslator {
 
   translateKernel() {
     const statements = [
+      ...this.translateGlobalConstants(),
       this.createComment('kernel information'),
       ...this.translateMetadata(),
       this.translateParameters(),
@@ -385,6 +437,32 @@ export class PixelBenderToZigTranslator {
       isConstant: true,
       initializer: ZIG.StructDefinition.create({ statements }),
     });
+  }
+
+  translateGlobalConstants() {
+    // convert macros without dependencies on unknown variables into constants
+    const statements = [];
+    for (const pb of this.pbMacroASTs) {
+      if (!pb.args && pb.expression) {
+        try {
+          const initializer = this.translateExpression(pb.expression);
+          const { name } = pb;
+          if (statements.length === 0) {
+            statements.push(this.createComment('constants'));
+          }
+          statements.push(ZIG.VariableDeclaration.create({ name, initializer, isConstant: true }));
+          const { type } = initializer;
+          this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false, unused: false };
+        } catch (err) {
+          // if the expression uses variables not defined in the global
+          // scope, it will fail and land here
+        }
+      }
+    }
+    if (statements.length > 0) {
+      statements.push(this.createBlankLine());
+    }
+    return statements;
   }
 
   translateMetadata() {
@@ -517,16 +595,15 @@ export class PixelBenderToZigTranslator {
       }),
       this.createBlankLine(),
     ];
-    let count = 0;
     for (const [ name, { type, scope } ] of Object.entries(this.variables)) {
       if (scope === 'output') {
-        if (count++ === 0) {
+        if (statements.length === 0) {
           statements.push(this.createComment(`output pixel`));
         }
         statements.push(ZIG.FieldDeclaration.create({ name, type, defaultValue: 'undefined' }));
       }
     }
-    if (count > 0) {
+    if (statements.length > 0) {
       statements.push(this.createBlankLine());
     }
     return statements;
@@ -893,7 +970,7 @@ export class PixelBenderToZigTranslator {
     if (!variable) {
       // maybe it's a macro--expand it and translate its expression
       // if it were possible to convert it to a variable, we would have found it
-      const expanded = this.expandMacro(name);
+      const expanded = this.expandMacro(name, [], typeExpected);
       if (expanded) {
         return this.translateExpression(expanded);
       } else {
@@ -1036,7 +1113,7 @@ export class PixelBenderToZigTranslator {
       if (m.argTypes === false) {
         // macro cannot be converted to a function, probably
         // 'cause it has local dependents--expand and evaluate instead
-        const expanded = this.expandMacro(name, pb.args);
+        const expanded = this.expandMacro(name, pb.args, typeExpected);
         if (expanded) {
           return this.translateExpression(expanded);
         }
