@@ -150,7 +150,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     const type = this.visit(ctx.returnType);
     const name = this.name(ctx.Identifier);
     const args = ctx.argumentDeclaration?.map(a => this.visit(a)) ?? [];
-    const statements = this.visit(ctx.statementBlock);
+    const { statements } = this.visit(ctx.statementBlock);
     return PB.FunctionDefinition.create({ type, name, args, statements });
   }
 
@@ -193,12 +193,12 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   statementBlock(ctx) {
-    return ctx.statement?.map(s => this.visit(s)).flat() ?? [];
+    const statements = ctx.statement?.map(s => this.visit(s)).flat() ?? [];
+    return PB.StatementBlock.create({ statements });
   }
 
   statement(ctx) {
-    const a = this.visitAny(ctx);
-    return Array.isArray(a) ? a : [ a ];
+    return this.visitAny(ctx);
   }
 
   variableDeclaration(ctx) {
@@ -413,22 +413,22 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   ifStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statements = this.visit(ctx.statement);
+    const statement = this.visit(ctx.statement);
     const elseClause = (ctx.elseClause) ? this.visit(ctx.elseClause) : undefined;
-    return PB.IfStatement.create({ condition, statements, elseClause });
+    return PB.IfStatement.create({ condition, statement, elseClause });
   }
 
   elseClause(ctx) {
-    const statements = this.visit(ctx.statement);
-    return PB.IfStatement.create({ statements });
+    const statement = this.visit(ctx.statement);
+    return PB.IfStatement.create({ statement });
   }
 
   forStatement(ctx) {
     const initializers = this.visit(ctx.forInitializer);
     const condition = this.visit(ctx.forCondition);
     const incrementals = this.visit(ctx.forIncremental);
-    const statements = this.visit(ctx.statement);
-    return PB.ForStatement.create({ initializers, condition, incrementals, statements });
+    const statement = this.visit(ctx.statement);
+    return PB.ForStatement.create({ initializers, condition, incrementals, statement });
   }
 
   forInitializer(ctx) {
@@ -454,15 +454,14 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
 
   whileStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    debugger;
-    const statements = this.visit(ctx.statement) ?? [];
-    return PB.WhileStatement.create({ condition, statements });
+    const statement = this.visit(ctx.statement);
+    return PB.WhileStatement.create({ condition, statement });
   }
 
   doWhileStatement(ctx) {
     const condition = this.visit(ctx.expression);
-    const statements = this.visit(ctx.statement) ?? [];
-    return PB.DoWhileStatement.create({ condition, statements });
+    const statement = this.visit(ctx.statement);
+    return PB.DoWhileStatement.create({ condition, statement });
   }
 
   continueStatement(ctx) {

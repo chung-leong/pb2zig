@@ -220,10 +220,10 @@ describe('Translator tests', function() {
     it('should correctly translate M * S', function() {
       const pbkCode = addPBKWrapper(`
         float2x2 m1 = float2x2(1, 2, 3, 4);
-        float2x2 m2 = m1 * 2;
+        float2x2 m2 = m1 * 2.0;
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('@"M * S"(m1, 2)');
+      expect(result).to.contain('@"M * S"(m1, 2.0)');
     })
     it('should correctly translate ++M', function() {
       const pbkCode = addPBKWrapper(`
@@ -291,6 +291,39 @@ describe('Translator tests', function() {
       expect(result).to.contain('hello += 1;');
       expect(result).to.contain('if (hello < 10) continue else break;');
     })
+    it('should correctly translate a if-else statement', function() {
+      const pbkCode = addPBKWrapper(`
+        int value = 0;
+        if (value < 10) {
+          value += 10;
+        } else if (value < 20) {
+          value += 20;
+        } else {
+          value += 30;
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('');
+    })
+    it('should correctly translate a if-else statement with no curlies', function() {
+      const pbkCode = addPBKWrapper(`
+        int value = 0;
+        if (value < 10) value += 10; else if (value < 20) value += 20; else value += 30;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('');
+    })
+    it('should correctly translate a code block', function() {
+      const pbkCode = addPBKWrapper(`
+        {
+          int value = 0;
+          float n = float(value);
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('');
+    })
+
   })
   describe('Function definition', function() {
     it('should transfer input and output images into the scope of function', function() {
@@ -443,6 +476,13 @@ describe('Translator tests', function() {
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('dst.pixelSize()');
     })
+    it('should throw when arguments fail to match any signature', function() {
+      const pbkCode = addPBKWrapper(`
+        float c = min(1.0, 2);
+      `);
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error);
+    })
+
   })
   describe('Macros', function() {
     it('should correctly translate a macro', function() {
@@ -533,6 +573,7 @@ describe('Translator tests', function() {
     it('should import built-in functions used in macro', function() {
       const pbkCode = addPBKWrapper(`
         #define COW(a, b) min(a, b)
+        float a = COW(1.9, 2.0);
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('fn min(v1: anytype, v2: anytype) @TypeOf(v1) {');

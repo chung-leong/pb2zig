@@ -39,7 +39,10 @@ export function find(tree, classes, recursive = false) {
 export function map(object, cb) {
   const result = {};
   for (const [ name, value ] of Object.entries(object)) {
-    result[name] = cb(value, name);
+    const newValue = cb(value, name);
+    if (newValue !== undefined) {
+      result[name] = newValue;
+    }
   }
   return result;
 }

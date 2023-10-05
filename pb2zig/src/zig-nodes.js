@@ -55,28 +55,24 @@ export class AssignmentStatement extends Node {
   rvalue;
 }
 
+export class StatementBlock extends Node {
+  statements;
+}
+
 export class IfStatement extends Node {
   condition;
-  statements;
+  statement;
   elseClause;
 }
 
 export class WhileStatement extends Node {
   condition;
-  statements;
+  statement;
 }
 
 export class DoWhileStatement extends Node {
   condition;
-  statements;
-}
-
-export class ForStatement extends Node {
-  initializers;
-  condition;
-  increments;
-  statements;
-  hasDeclarations;
+  statement;
 }
 
 export class BreakStatement extends Node {

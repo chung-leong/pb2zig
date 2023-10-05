@@ -1,6 +1,12 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
+pub fn outCoord(self: *@This()) @Vector(2, f32) {
+    const x = self.outputCoord[0];
+    const y = self.outputCoord[1];
+    return .{ @floatFromInt(x), @floatFromInt(y) };
+}
+
 pub fn any(v: anytype) bool {
     return @reduce(.Or, v);
 }
@@ -108,17 +114,17 @@ test "greaterThan" {
     assert(any(greaterThan(vector3, vector2)) == true);
 }
 
-pub fn greatThanEqual(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
+pub fn greaterThanEqual(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
     return v1 >= v2;
 }
 
-test "greatThanEqual" {
+test "greaterThanEqual" {
     const vector1: @Vector(3, f32) = .{ 6, 6, 7 };
     const vector2: @Vector(3, f32) = .{ 1, 2, 3 };
     const vector3: @Vector(3, f32) = .{ 6, 0, 2 };
-    assert(all(greatThanEqual(vector1, vector2)) == true);
-    assert(all(greatThanEqual(vector3, vector2)) == false);
-    assert(any(greatThanEqual(vector3, vector2)) == true);
+    assert(all(greaterThanEqual(vector1, vector2)) == true);
+    assert(all(greaterThanEqual(vector3, vector2)) == false);
+    assert(any(greaterThanEqual(vector3, vector2)) == true);
 }
 
 pub fn radians(v: anytype) @TypeOf(v) {

@@ -71,7 +71,7 @@ export class MacroDefinition extends PBNode {
   name;
   args;
   expression;
-  statements;
+  statement;
 }
 
 export class Literal extends PBNode {
@@ -157,7 +157,7 @@ export class Parentheses extends PBNode {
 
 export class IfStatement extends PBNode {
   condition;
-  statements;
+  statement;
   elseClause;
 }
 
@@ -165,16 +165,20 @@ export class ForStatement extends PBNode {
   initializers;
   condition;
   incrementals;
-  statements;
+  statement;
 }
 
 export class WhileStatement extends PBNode {
   condition;
-  statements;
+  statement;
 }
 
 export class DoWhileStatement extends PBNode {
   condition;
+  statement;
+}
+
+export class StatementBlock extends PBNode {
   statements;
 }
 

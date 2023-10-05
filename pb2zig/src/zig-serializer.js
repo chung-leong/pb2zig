@@ -28,7 +28,6 @@ export class ZigSerializer {
       const spaces = ' '.repeat(Math.max(0, indentForLine * 4));
       return spaces + line;
     });
-    console.log(lines.join('\n'));
     return lines.join('\n');
   }
 
@@ -52,6 +51,9 @@ export class ZigSerializer {
   }
 
   serializeStatement(statement) {
+    if (typeof(statement) === 'string') {
+      return statement;
+    }
     const fname = `serialize${statement.constructor.name}`;
     const f = this[fname];
     if (f) {
@@ -121,71 +123,43 @@ export class ZigSerializer {
     return text.split('\n').map(line => `// ${line}`).join('\n');
   }
 
-  serializeRawCode({ code }) {
-    return code;
-  }
-
   serializeAssignmentStatement({ lvalue, operator, rvalue }) {
     const l = this.serializeExpression(lvalue);
     const r = this.serializeExpression(rvalue);
     return `${l} ${operator} ${r};`;
   }
 
-  serializeIfStatement({ condition, statements, elseClause }) {
-    let count = 0;
-    const lines = [];
-    while (statements) {
-      if (condition) {
-        if (count === 0) {
-          lines.push(`if (${this.serializeExpression(condition)}) {`)
-        } else {
-          lines.push(`} else if (${this.serializeExpression(condition)}) {`)
-        }
-      } else {
-        lines.push(`} else {`)
-      }
-      lines.push(this.serializeStatements(statements));
-      condition = elseClause?.condition;
-      statements = elseClause?.statements;
-      count++;
-    }
-    lines.push(`}`);
-    return lines.join('\n');
-  }
-
-  serializeWhileStatement({ condition, statements }) {
-    console.log({ condition, statements })
+  serializeStatementBlock({ statements }) {
     return [
-      `while (${this.serializeExpression(condition)}) {`,
+      `{`,
       this.serializeStatements(statements),
-      '}',
-    ].join('\n');
-  }
-
-  serializeDoWhileStatement({ condition, statements }) {
-    return [
-      `while (true) {`,
-      this.serializeStatements(statements),
-      `if (${this.serializeExpression(condition)}) continue else break;`,
       `}`,
     ].join('\n');
   }
 
-  serializeForStatement({ initializers, condition, increments, statements, hasDeclarations }) {
-    const lines = [];
-    if (hasDeclarations) {
-      lines.push('{')
+  serializeIfStatement({ condition, statement, elseClause }) {
+    let code;
+    const s = this.serializeStatement(statement);
+    if (condition) {
+      const c = this.serializeExpression(condition);
+      code = `if (${c}) ${s}`;
+    } else {
+      code = s;
     }
-    lines.push(
-      this.serializeStatements(initializers),
-      `while (${this.serializeExpression(condition)}) {`,
-      this.serializeStatements(increments),
-      '}',
-    );
-    if (hasDeclarations) {
-      lines.push('}')
+    if (elseClause) {
+      if (code.endsWith(';')) {
+        code = code.slice(0, -1);
+      }
+      const e = this.serializeStatement(elseClause);
+      code += ` else ${e}`;
     }
-    return lines.join('\n');
+    return code;
+  }
+
+  serializeWhileStatement({ condition, statement }) {
+    const c = this.serializeExpression(condition);
+    const s = this.serializeExpression(statement);
+    return `while (${c}) ${s}`;
   }
 
   serializeBreakStatement() {
