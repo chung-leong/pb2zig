@@ -122,7 +122,8 @@ pub const kernel = struct {
                 po = self.complexDiv(d, po2);
                 var tmp: f32 = undefined;
                 var alf: f32 = 0.0;
-                var sqr3: f32 = 1.732;
+                var radius: f32 = fill;
+                _ = radius;
                 po = (distort * po);
                 var z: @Vector(2, f32) = fract(po);
                 po = floor(po);
@@ -182,7 +183,7 @@ pub const kernel = struct {
                 };
             }
 
-            fn complexDiv(a: @Vector(2, f32), b: @Vector(2, f32), self: *@This()) @Vector(2, f32) {
+            fn complexDiv(self: *@This(), a: @Vector(2, f32), b: @Vector(2, f32)) @Vector(2, f32) {
                 const focus = self.params.focus;
                 return @Vector(2, f32){
                     a[0] * b[0] + a[1] * b[1],

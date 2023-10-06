@@ -107,7 +107,7 @@ export class ZigSerializer {
   serializeFunctionDefinition({ name, isPublic, receiver, args, type, statements }) {
     const prefix = (isPublic) ? 'pub ' : '';
     if (receiver) {
-      args.push(receiver);
+      args = [ receiver, ...args ];
     }
     const argList = args.map(a => this.serializeExpression(a));
     return [
@@ -177,7 +177,7 @@ export class ZigSerializer {
   }
 
   serializeEmptyStatement() {
-    return `;`;
+    return ``;
   }
 
   serializeBlankLine() {

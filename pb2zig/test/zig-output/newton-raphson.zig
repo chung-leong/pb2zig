@@ -138,7 +138,7 @@ pub const kernel = struct {
                 } / @as(@Vector(2, f32), @splat((b[0] * b[0] + b[1] * b[1])));
             }
 
-            fn f(z: @Vector(2, f32), fz: *@Vector(2, f32), self: *@This()) @Vector(2, f32) {
+            fn f(self: *@This(), z: @Vector(2, f32), fz: *@Vector(2, f32)) @Vector(2, f32) {
                 const c0 = self.params.c0;
                 const c1 = self.params.c1;
                 const c2 = self.params.c2;

@@ -581,18 +581,22 @@ export function parse(code) {
 }
 
 function parseMacro(text, { offset, lineOffset, columnOffset }) {
-  const lex = lexer.tokenize(text);
+  let lex = lexer.tokenize(text);
   parser.input = lex.tokens;
   let cst = parser.expressionMacroDeclaration();
   const lexErrors = lex.errors;
   let parseErrors = parser.errors;
   if (parseErrors.length > 0) {
-    // setting property again to reset parser state
+    // ensure there a semicolon at the end
+    if (!/;\s*$/.test(text)) {
+      lex = lexer.tokenize(text + ';');
+    }
     parser.input = lex.tokens;
     cst = parser.statementMacroDeclaration();
-    if (parser.errors.length === 0) {
-      parseErrors = parser.errors;
-    }
+    parseErrors = parser.errors;
+    // if (parser.errors.length === 0) {
+    //   parseErrors = parser.errors;
+    // }
   }
   // adjust position reported position of errors
   // there ought to be a better way than this...
@@ -604,12 +608,14 @@ function parseMacro(text, { offset, lineOffset, columnOffset }) {
     err.message = err.message.replace(oldOffset, err.offset);
   }
   for (const { token } of parseErrors) {
-    token.startOffset += offset;
-    token.endOffset += offset;
-    token.startLine += lineOffset;
-    token.endLine += lineOffset;
-    token.startColumn += columnOffset;
-    token.endColumn += columnOffset;
+    if (!isNaN(token.startOffset)) {
+      token.startOffset += offset;
+      token.endOffset += offset;
+      token.startLine += lineOffset;
+      token.endLine += lineOffset;
+      token.startColumn += columnOffset;
+      token.endColumn += columnOffset;
+    }
   }
   return { cst, lexErrors, parseErrors };
 }

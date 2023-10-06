@@ -123,7 +123,7 @@ pub const kernel = struct {
                 }
             }
 
-            fn shootRay(origin: @Vector(3, f32), dir: @Vector(3, f32), hit: *i32, pos: *@Vector(3, f32), t: *f32, sphereNum: *i32, self: *@This()) void {
+            fn shootRay(self: *@This(), origin: @Vector(3, f32), dir: @Vector(3, f32), hit: *i32, pos: *@Vector(3, f32), t: *f32, sphereNum: *i32) void {
                 const sphereArray = self.sphereArray;
                 var curT: f32 = undefined;
                 var B: f32 = undefined;
@@ -243,7 +243,7 @@ pub const kernel = struct {
                                 acos(dot(@Vector(3, f32){ 0.0, 0.0, 1.0 }, n) / sin(phi)) / (2.0 * PI),
                                 phi / PI,
                             };
-                            sphereColor *= @as(@Vector(3, f32), @splat(if ((mod(floor(uv[0] * 2000.0) + floor(uv[1] * 2000.0), 2.0) == 0.0)) 0.5 else 1.0));
+                            sphereColor *= @as(@Vector(3, f32), @splat(@as(f32, if ((mod(floor(uv[0] * 2000.0) + floor(uv[1] * 2000.0), 2.0) == 0.0)) 0.5 else 1.0)));
                         }
                         lightVal = (sphereMaterial[0] + @as(f32, @floatFromInt(shadowTest)) * (diffuse * sphereMaterial[1] + specular * sphereMaterial[2]));
                         var res: @Vector(3, f32) = colorScale * @as(@Vector(3, f32), @splat(lightVal)) * sphereColor;

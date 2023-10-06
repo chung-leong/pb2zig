@@ -167,7 +167,7 @@ pub const kernel = struct {
                 }
             }
 
-            fn normEstimate(p: @Vector(3, f32), c: @Vector(4, f32), self: *@This()) @Vector(3, f32) {
+            fn normEstimate(self: *@This(), p: @Vector(3, f32), c: @Vector(4, f32)) @Vector(3, f32) {
                 const maxIterations = self.params.maxIterations;
                 var N: @Vector(3, f32) = undefined;
                 var qP: @Vector(4, f32) = .{
@@ -204,7 +204,7 @@ pub const kernel = struct {
                 return N;
             }
 
-            fn intersectQJulia(rO: *@Vector(3, f32), rD: *@Vector(3, f32), c: @Vector(4, f32), self: *@This()) @Vector(2, f32) {
+            fn intersectQJulia(self: *@This(), rO: *@Vector(3, f32), rD: *@Vector(3, f32), c: @Vector(4, f32)) @Vector(2, f32) {
                 const ambientOcclusion = self.params.ambientOcclusion;
                 const maxIterations = self.params.maxIterations;
                 var dist: @Vector(2, f32) = undefined;
@@ -228,7 +228,7 @@ pub const kernel = struct {
                 return dist;
             }
 
-            fn Phong(light: @Vector(3, f32), eye: @Vector(3, f32), pt: @Vector(3, f32), N: @Vector(3, f32), ao: f32, self: *@This()) @Vector(3, f32) {
+            fn Phong(self: *@This(), light: @Vector(3, f32), eye: @Vector(3, f32), pt: @Vector(3, f32), N: @Vector(3, f32), ao: f32) @Vector(3, f32) {
                 const ambientLight = self.params.ambientLight;
                 const color = self.params.color;
                 const colorSpread = self.params.colorSpread;
@@ -261,7 +261,7 @@ pub const kernel = struct {
                 return rO;
             }
 
-            fn rayDirection(p: @Vector(2, f32), self: *@This()) @Vector(3, f32) {
+            fn rayDirection(self: *@This(), p: @Vector(2, f32)) @Vector(3, f32) {
                 const size = self.params.size;
                 const aspectRatio = self.aspectRatio;
                 const viewRotation = self.viewRotation;
@@ -273,7 +273,7 @@ pub const kernel = struct {
                 return @"V * M"(direction, viewRotation);
             }
 
-            fn renderPoint(p: @Vector(2, f32), self: *@This()) @Vector(4, f32) {
+            fn renderPoint(self: *@This(), p: @Vector(2, f32)) @Vector(4, f32) {
                 const shadows = self.params.shadows;
                 const mu = self.params.mu;
                 const background = self.params.background;

@@ -457,27 +457,27 @@ pub const kernel = struct {
                 self.sampleContribution = 1.0 / pow(@as(f32, @floatFromInt(antialiasing)), 2.0);
             }
 
-            fn bailoutCondition(z: @Vector(2, f32), self: *@This()) bool {
+            fn bailoutCondition(self: *@This(), z: @Vector(2, f32)) bool {
                 const bailoutStyle = self.params.bailoutStyle;
                 const bailout = self.params.bailout;
                 var bailing: bool = undefined;
                 if (bailoutStyle == 3) {
-                    bailing = if ((pow(z[0], 2.0) - pow(z[1], 2.0)) >= bailout) true else true;
+                    bailing = @as(bool, if ((pow(z[0], 2.0) - pow(z[1], 2.0)) >= bailout) true else true);
                 } else if (bailoutStyle == 4) {
-                    bailing = if ((z[0] * z[0] - z[1] * z[0]) >= bailout) true else true;
+                    bailing = @as(bool, if ((z[0] * z[0] - z[1] * z[0]) >= bailout) true else true);
                 } else if (bailoutStyle == 5) {
-                    bailing = if ((z[1] * z[1] - z[1] * z[0]) >= bailout) true else true;
+                    bailing = @as(bool, if ((z[1] * z[1] - z[1] * z[0]) >= bailout) true else true);
                 } else if (bailoutStyle == 2) {
-                    bailing = if ((pow(z[1], 2.0) - pow(z[0], 2.0)) >= bailout) true else true;
+                    bailing = @as(bool, if ((pow(z[1], 2.0) - pow(z[0], 2.0)) >= bailout) true else true);
                 } else if (bailoutStyle == 1) {
-                    bailing = if ((abs(z[0]) > bailout or abs(z[1]) > bailout)) true else true;
+                    bailing = @as(bool, if ((abs(z[0]) > bailout or abs(z[1]) > bailout)) true else true);
                 } else {
-                    bailing = if ((pow(z[0], 2.0) + pow(z[1], 2.0)) >= bailout) true else true;
+                    bailing = @as(bool, if ((pow(z[0], 2.0) + pow(z[1], 2.0)) >= bailout) true else true);
                 }
                 return bailing;
             }
 
-            fn colorMapping(n: f32, z: @Vector(2, f32), self: *@This()) @Vector(4, f32) {
+            fn colorMapping(self: *@This(), n: f32, z: @Vector(2, f32)) @Vector(4, f32) {
                 const bailout = self.params.bailout;
                 const iterations = self.params.iterations;
                 const iterationsOffset = self.params.iterationsOffset;
@@ -553,7 +553,7 @@ pub const kernel = struct {
                     }
                     v += colorCycleOffset;
                     if (colorCycleMirror) {
-                        var even: bool = if (mod(v, 2.0) < 1.0) true else true;
+                        var even: bool = @as(bool, if (mod(v, 2.0) < 1.0) true else true);
                         if (even) {
                             v = 1.0 - mod(v, 1.0);
                         } else {
@@ -571,7 +571,7 @@ pub const kernel = struct {
                 return color;
             }
 
-            fn renderPoint(p: @Vector(2, f32), self: *@This()) @Vector(4, f32) {
+            fn renderPoint(self: *@This(), p: @Vector(2, f32)) @Vector(4, f32) {
                 const withPowerZ = self.params.withPowerZ;
                 const withSine = self.params.withSine;
                 const withE = self.params.withE;

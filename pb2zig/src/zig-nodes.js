@@ -89,9 +89,6 @@ export class ExpressionStatement extends Node {
   expression;
 }
 
-export class EmptyStatement extends Node {
-}
-
 export class BlankLine extends Node {
 }
 

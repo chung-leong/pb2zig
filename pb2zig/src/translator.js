@@ -11,6 +11,7 @@ export class PixelBenderToZigTranslator {
   functions = map(builtInFunctions, (f) => { return { ...f } });
   variables = {};
   variableAliases = [];
+  constants = [];
   sideEffects;
   currentFunctionName;
   options;
@@ -307,7 +308,7 @@ export class PixelBenderToZigTranslator {
       }
       // add statements as side effects of this expression and return nothing
       this.sideEffects.push(...this.translateStatements(clone(statements)));
-      return PB.Literal.create({ value: undefined, type: 'void' });
+      return PB.Literal.create({ type: 'void' });
     }
   }
 
@@ -376,20 +377,21 @@ export class PixelBenderToZigTranslator {
       const { sideEffects: sePrev, variableAliases: vaPrev } = this;
       this.sideEffects = [];
       this.variableAliases = [];
-      const result = f.call(this, statement);
+      let result = f.call(this, statement);
       const { sideEffects } = this;
       this.sideEffects = sePrev;
       this.variableAliases = vaPrev;
-      if (sideEffects.length > 0) {
-        if (result instanceof ZIG.ExpressionStatement && result.expression.type === 'void') {
-          // no result, all side effects
-          return sideEffects;
-        } else {
-          // side effects come first
-          return [ ...sideEffects, result ];
+      if (result instanceof ZIG.ExpressionStatement) {
+        if (result.expression instanceof ZIG.Literal && result.expression.type === 'void') {
+          result = null;
         }
+      }
+      if (result) {
+        // side effects come first
+        return (sideEffects.length === 0) ? result : [ ...sideEffects, result ];
       } else {
-        return result;
+        // no result, all side effects
+        return sideEffects;
       }
     } else {
       console.log(statement);
@@ -574,6 +576,7 @@ export class PixelBenderToZigTranslator {
       ...this.translateDefinedFunctions(),
       ...this.includeCalledFunctions(),
     ];
+    this.initializeConstants();
     return ZIG.StructDefinition.create({ statements });
   }
 
@@ -885,15 +888,23 @@ export class PixelBenderToZigTranslator {
   }
 
   translateConstantDeclaration(pb) {
-    const { name } = pb;
+    const { name, initializer } = pb;
     const type = this.translateType(pb.type);
-    const initializer = this.translateExpression(pb.initializer);
     if (this.currentFunctionName) {
       this.variables[name] = { type, scope: 'local', mutable: false, pointer: false, used: false };
     } else {
       this.variables[name] = { type, scope: 'global', mutable: false, pointer: false };
     }
-    return ZIG.VariableDeclaration.create({ name, initializer, isConstant: true });
+    // omit the initializer for now, we'll add it after functions are defined
+    const decl = ZIG.VariableDeclaration.create({ name, isConstant: true });
+    this.constants.push({ decl, initializer });
+    return decl;
+  }
+
+  initializeConstants() {
+    for (const { decl, initializer } of this.constants) {
+      decl.initializer = this.translateExpression(initializer);
+    }
   }
 
   translateDependentDeclaration(pb) {
@@ -1001,7 +1012,8 @@ export class PixelBenderToZigTranslator {
   }
 
   translateEmptyStatement() {
-    return ZIG.EmptyStatement.create({});
+    const expression = ZIG.Literal.create({ type: 'void' });
+    return ZIG.ExpressionStatement.create({ expression });
   }
 
   translateExpression(expression, typeExpected) {
@@ -1169,9 +1181,6 @@ export class PixelBenderToZigTranslator {
       name = 'atan2';
     }
     const f = this.functions[name];
-    if (!f) {
-      throw new Error(`Undeclared function: ${name}()`);
-    }
     const type = this.getReturnType(name, args);
     if (f.overloaded) {
       // ensure that we don't pass a comptime_int or comptime_float as the
@@ -1197,6 +1206,7 @@ export class PixelBenderToZigTranslator {
       return arg;
     });
     f.called  = true;
+    debugger;
     return ZIG.FunctionCall.create({ receiver, name, args, type });
   }
 
@@ -1273,7 +1283,7 @@ export class PixelBenderToZigTranslator {
         } else if (value.type === 'bool') {
           const zero = ZIG.Literal.create({ value: 0, type });
           const one = ZIG.Literal.create({ value: 1, type });
-          return ZIG.Conditional.create({ condition: value, onTrue: one, onFalse: zero })
+          return this.forceType(ZIG.Conditional.create({ condition: value, onTrue: one, onFalse: zero, type }));
         }
       }
     } else if (type === 'i32') {
@@ -1285,7 +1295,7 @@ export class PixelBenderToZigTranslator {
         } else if (value.type === 'bool') {
           const zero = ZIG.Literal.create({ value: 0, type });
           const one = ZIG.Literal.create({ value: 1, type });
-          return ZIG.Conditional.create({ condition: value, onTrue: one, onFalse: zero })
+          return this.forceType(ZIG.Conditional.create({ condition: value, onTrue: one, onFalse: zero, type }));
         }
       }
     }
@@ -1473,7 +1483,11 @@ export class PixelBenderToZigTranslator {
     const onTrue = this.translateExpression(pb.onTrue);
     const onFalse = this.translateExpression(pb.onFalse);
     const { type } = onTrue;
-    return ZIG.Conditional.create({ condition, onTrue, onFalse, type });
+    let value = ZIG.Conditional.create({ condition, onTrue, onFalse, type });
+    if (onTrue instanceof ZIG.Literal && onFalse instanceof ZIG.Literal) {
+      value = this.forceType(value);
+    }
+    return value;
   }
 }
 
