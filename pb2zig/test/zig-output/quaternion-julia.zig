@@ -3,10 +3,10 @@ const std = @import("std");
 
 pub const kernel = struct {
     // constants
-    const BOUNDING_RADIUS_2 = 3.0;
-    const ESCAPE_THRESHOLD = 10.0;
-    const DEL = 0.0001;
-    const EPSILON = 0.001;
+    const BOUNDING_RADIUS_2: f32 = 3.0;
+    const ESCAPE_THRESHOLD: f32 = 10.0;
+    const DEL: f32 = 0.0001;
+    const EPSILON: f32 = 0.001;
 
     // kernel information
     pub const namespace = "com.subblue.filters";
@@ -539,6 +539,10 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
         };
     }
     var instance = kernel.create(input, output, params);
+    if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
+        instance.evaluateDependents();
+        std.debug.print("evaluateDependents()\n", .{});
+    }
     var y: u32 = 0;
     while (y < height) : (y += 1) {
         var x: u32 = 0;

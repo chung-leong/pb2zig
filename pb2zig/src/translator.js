@@ -433,8 +433,8 @@ export class PixelBenderToZigTranslator {
           if (statements.length === 0) {
             statements.push(this.createComment('constants'));
           }
-          statements.push(ZIG.VariableDeclaration.create({ name, initializer, isConstant: true }));
           const { type } = initializer;
+          statements.push(ZIG.VariableDeclaration.create({ name, type, initializer, isConstant: true }));
           this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false };
         } catch (err) {
           // if the expression uses variables not defined in the global
@@ -896,7 +896,7 @@ export class PixelBenderToZigTranslator {
       this.variables[name] = { type, scope: 'global', mutable: false, pointer: false };
     }
     // omit the initializer for now, we'll add it after functions are defined
-    const decl = ZIG.VariableDeclaration.create({ name, isConstant: true });
+    const decl = ZIG.VariableDeclaration.create({ name, type, isConstant: true });
     this.constants.push({ decl, initializer });
     return decl;
   }

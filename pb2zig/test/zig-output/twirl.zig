@@ -52,7 +52,7 @@ pub const kernel = struct {
             outputColor: @Vector(4, f32) = undefined,
 
             // constants
-            const PI = 3.14159265;
+            const PI: f32 = 3.14159265;
 
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
@@ -171,6 +171,10 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
         };
     }
     var instance = kernel.create(input, output, params);
+    if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
+        instance.evaluateDependents();
+        std.debug.print("evaluateDependents()\n", .{});
+    }
     var y: u32 = 0;
     while (y < height) : (y += 1) {
         var x: u32 = 0;

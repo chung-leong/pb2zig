@@ -3,9 +3,9 @@ const std = @import("std");
 
 pub const kernel = struct {
     // constants
-    const BAILOUT = 4.0;
-    const LOG2 = log(@as(f32, 2.0));
-    const I = @Vector(2, f32){ 0.0, 1.0 };
+    const BAILOUT: f32 = 4.0;
+    const LOG2: f32 = log(@as(f32, 2.0));
+    const I: @Vector(2, f32) = @Vector(2, f32){ 0.0, 1.0 };
 
     // kernel information
     pub const namespace = "com.subblue.filters";
@@ -894,6 +894,10 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
         };
     }
     var instance = kernel.create(input, output, params);
+    if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
+        instance.evaluateDependents();
+        std.debug.print("evaluateDependents()\n", .{});
+    }
     var y: u32 = 0;
     while (y < height) : (y += 1) {
         var x: u32 = 0;

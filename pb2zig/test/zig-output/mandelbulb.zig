@@ -3,8 +3,8 @@ const std = @import("std");
 
 pub const kernel = struct {
     // constants
-    const PI = 3.141592653;
-    const MIN_EPSILON = 0.0;
+    const PI: f32 = 3.141592653;
+    const MIN_EPSILON: f32 = 0.0;
 
     // kernel information
     pub const namespace = "com.subblue.filters";
@@ -802,6 +802,10 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
         };
     }
     var instance = kernel.create(input, output, params);
+    if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
+        instance.evaluateDependents();
+        std.debug.print("evaluateDependents()\n", .{});
+    }
     var y: u32 = 0;
     while (y < height) : (y += 1) {
         var x: u32 = 0;

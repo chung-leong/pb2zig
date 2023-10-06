@@ -35,24 +35,24 @@ pub const kernel = struct {
             dst: @Vector(4, f32) = undefined,
 
             // constants
-            const rot1 = [2]@Vector(2, f32){
+            const rot1: [2]@Vector(2, f32) = [2]@Vector(2, f32){
                 .{ 0.951, 0.309 },
                 .{ -0.309, 0.951 },
             };
-            const rot1r = [2]@Vector(2, f32){
+            const rot1r: [2]@Vector(2, f32) = [2]@Vector(2, f32){
                 .{ 0.951, -0.309 },
                 .{ 0.309, 0.951 },
             };
-            const base1 = @Vector(2, f32){ 2400, -100 };
-            const rot2 = [2]@Vector(2, f32){
+            const base1: @Vector(2, f32) = @Vector(2, f32){ 2400, -100 };
+            const rot2: [2]@Vector(2, f32) = [2]@Vector(2, f32){
                 .{ 0.866, 0.5 },
                 .{ -0.5, 0.866 },
             };
-            const rot2r = [2]@Vector(2, f32){
+            const rot2r: [2]@Vector(2, f32) = [2]@Vector(2, f32){
                 .{ 0.866, -0.5 },
                 .{ 0.5, 0.866 },
             };
-            const base2 = @Vector(2, f32){ -100, 2400 };
+            const base2: @Vector(2, f32) = @Vector(2, f32){ -100, 2400 };
 
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
@@ -152,6 +152,10 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
         };
     }
     var instance = kernel.create(input, output, params);
+    if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
+        instance.evaluateDependents();
+        std.debug.print("evaluateDependents()\n", .{});
+    }
     var y: u32 = 0;
     while (y < height) : (y += 1) {
         var x: u32 = 0;

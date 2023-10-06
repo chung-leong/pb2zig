@@ -64,8 +64,8 @@ pub const kernel = struct {
             dst: @Vector(4, f32) = undefined,
 
             // constants
-            const sqr3 = 1.7320508;
-            const halfPixel = @Vector(2, f32){ 0.5, 0.5 };
+            const sqr3: f32 = 1.7320508;
+            const halfPixel: @Vector(2, f32) = @Vector(2, f32){ 0.5, 0.5 };
 
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
@@ -230,6 +230,10 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
         };
     }
     var instance = kernel.create(input, output, params);
+    if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
+        instance.evaluateDependents();
+        std.debug.print("evaluateDependents()\n", .{});
+    }
     var y: u32 = 0;
     while (y < height) : (y += 1) {
         var x: u32 = 0;

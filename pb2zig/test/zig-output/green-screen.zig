@@ -34,7 +34,7 @@ pub const kernel = struct {
             dst: @Vector(4, f32) = undefined,
 
             // constants
-            const YIQMatrix = [4]@Vector(4, f32){
+            const YIQMatrix: [4]@Vector(4, f32) = [4]@Vector(4, f32){
                 .{
                     0.299,
                     0.596,
@@ -55,7 +55,7 @@ pub const kernel = struct {
                 },
                 .{ 0.0, 0.0, 0.0, 1.0 },
             };
-            const inverseYIQ = [4]@Vector(4, f32){
+            const inverseYIQ: [4]@Vector(4, f32) = [4]@Vector(4, f32){
                 .{ 1.0, 1.0, 1.0, 0.0 },
                 .{
                     0.956,
@@ -162,6 +162,10 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
         };
     }
     var instance = kernel.create(input, output, params);
+    if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
+        instance.evaluateDependents();
+        std.debug.print("evaluateDependents()\n", .{});
+    }
     var y: u32 = 0;
     while (y < height) : (y += 1) {
         var x: u32 = 0;

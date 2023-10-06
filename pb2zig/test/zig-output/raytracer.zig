@@ -3,7 +3,7 @@ const std = @import("std");
 
 pub const kernel = struct {
     // constants
-    const PI = 3.141592653589793;
+    const PI: f32 = 3.141592653589793;
 
     // kernel information
     pub const namespace = "Newgrounds";
@@ -68,12 +68,12 @@ pub const kernel = struct {
             sphereArray: [NUM_SPHERES * SPHERE_PARAMETER_COUNT]f32 = undefined,
 
             // constants
-            const RENDER_WIDTH = 512.0;
-            const RENDER_HEIGHT = 512.0;
-            const SPECULAR_EXPONENT = 50.0;
-            const MAX_RAY_SHOTS = 4;
-            const NUM_SPHERES = 35;
-            const SPHERE_PARAMETER_COUNT = 11;
+            const RENDER_WIDTH: f32 = 512.0;
+            const RENDER_HEIGHT: f32 = 512.0;
+            const SPECULAR_EXPONENT: f32 = 50.0;
+            const MAX_RAY_SHOTS: i32 = 4;
+            const NUM_SPHERES: i32 = 35;
+            const SPHERE_PARAMETER_COUNT: i32 = 11;
 
             // functions defined in kernel
             pub fn evaluateDependents(self: *@This()) void {
@@ -399,6 +399,10 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
         };
     }
     var instance = kernel.create(input, output, params);
+    if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
+        instance.evaluateDependents();
+        std.debug.print("evaluateDependents()\n", .{});
+    }
     var y: u32 = 0;
     while (y < height) : (y += 1) {
         var x: u32 = 0;
