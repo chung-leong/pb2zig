@@ -31,12 +31,15 @@ describe('Parser tests', function() {
     expect(ast.operand2.post).to.be.false;
   })
   it('should fix the order of binary operations', function() {
-    const code = '2 * 3 + 1';
-    const ast = parse(code);
-    expect(ast).to.be.instanceOf(PB.BinaryOperation);
-    expect(ast.operator).to.equal('+');
-    expect(ast.operand1).be.instanceOf(PB.BinaryOperation);
-    expect(ast.operand1.operator).to.equal('*');
+    const code = '2 * 3 + 1 - 7;';
+    // ordering is fixed at the statement level
+    const ast = parse(code, 'statement');
+    expect(ast).to.be.instanceOf(PB.ExpressionStatement);
+    const { expression } = ast;
+    expect(expression.operator).to.equal('-');
+    expect(expression.operand1).be.instanceOf(PB.BinaryOperation);
+    expect(expression.operand1.operator).to.equal('+');
+    expect(expression.operand1.operand1.operator).to.equal('*');
   })
   it('should parse a float without leading zero', function() {
     const code = '.123';

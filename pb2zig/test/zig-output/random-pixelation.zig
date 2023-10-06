@@ -77,7 +77,7 @@ pub const kernel = struct {
 
                 var p: @Vector(2, f32) = self.outCoord() + randomPoint;
                 p += mod(p, n4) - mod(p, n3);
-                var ds: @Vector(2, f32) = mod(p, n0) + mod(p, n1) + mod(p, n2) - @as(@Vector(2, f32), @splat(0.5)) * @as(@Vector(2, f32), @splat((n0 + n1 + n2)));
+                var ds: @Vector(2, f32) = mod(p, n0) + mod(p, n1) + mod(p, n2) - @as(@Vector(2, f32), @splat(0.5 * (n0 + n1 + n2)));
                 self.dst = src.sampleNearest(self.outCoord() - @as(@Vector(2, f32), @splat(0.333333)) * ds);
 
                 dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);

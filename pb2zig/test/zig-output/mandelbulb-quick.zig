@@ -1,11 +1,11 @@
-// Pixel Bender "MandelbulbQuick" (translated using pb2zig)
+// Pixel Bender kernel "MandelbulbQuick" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // constants
     const PI = 3.141592653;
     const MIN_EPSILON = 0.0;
-    
+
     // kernel information
     pub const namespace = "com.subblue.filters";
     pub const vendor = "Tom Beddard";
@@ -85,30 +85,30 @@ pub const kernel = struct {
         },
         .julia_c = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -2.0, -2.0, -2.0 },
-            .maxValue = .{ 2.0, 2.0, 2.0 },
+            .minValue = .{ -2, -2, -2 },
+            .maxValue = .{ 2, 2, 2 },
             .defaultValue = .{ 1.0, 0.0, 0.0 },
             .description = "The c constant for Julia set fractals",
         },
         .cameraPosition = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -4.0, -4.0, -4.0 },
-            .maxValue = .{ 4.0, 4.0, 4.0 },
-            .defaultValue = .{ 0.0, -2.6, 0.0 },
+            .minValue = .{ -4, -4, -4 },
+            .maxValue = .{ 4, 4, 4 },
+            .defaultValue = .{ 0, -2.6, 0 },
             .description = "Camera position.",
         },
         .cameraPositionFine = .{
             .type = @Vector(3, f32),
             .minValue = .{ -0.1, -0.1, -0.1 },
             .maxValue = .{ 0.1, 0.1, 0.1 },
-            .defaultValue = .{ 0.0, 0.0, 0.0 },
+            .defaultValue = .{ 0, 0.0, 0.0 },
             .description = "Fine tune position.",
         },
         .cameraRotation = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -180.0, -180.0, -180.0 },
-            .maxValue = .{ 180.0, 180.0, 180.0 },
-            .defaultValue = .{ 0.0, 0.0, -90.0 },
+            .minValue = .{ -180, -180, -180 },
+            .maxValue = .{ 180, 180, 180 },
+            .defaultValue = .{ 0, 0, -90 },
             .description = "Pointing angle in each axis of the camera.",
         },
         .cameraZoom = .{
@@ -120,15 +120,15 @@ pub const kernel = struct {
         },
         .light = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -50.0, -50.0, -50.0 },
-            .maxValue = .{ 50.0, 50.0, 50.0 },
-            .defaultValue = .{ 38.0, -42.0, 38.0 },
+            .minValue = .{ -50, -50, -50 },
+            .maxValue = .{ 50, 50, 50 },
+            .defaultValue = .{ 38, -42, 38 },
             .description = "Position of point light.",
         },
         .colorBackground = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0.0, 0.0, 0.0 },
-            .maxValue = .{ 1.0, 1.0, 1.0 },
+            .minValue = .{ 0, 0, 0 },
+            .maxValue = .{ 1, 1, 1 },
             .defaultValue = .{ 0.0, 0.0, 0.0 },
             .description = "Background colour.",
             .aeUIControl = "aeColor",
@@ -142,16 +142,16 @@ pub const kernel = struct {
         },
         .colorDiffuse = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0.0, 0.0, 0.0 },
-            .maxValue = .{ 1.0, 1.0, 1.0 },
+            .minValue = .{ 0, 0, 0 },
+            .maxValue = .{ 1, 1, 1 },
             .defaultValue = .{ 0.0, 0.85, 0.99 },
             .description = "Diffuse colour.",
             .aeUIControl = "aeColor",
         },
         .colorAmbient = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0.0, 0.0, 0.0 },
-            .maxValue = .{ 1.0, 1.0, 1.0 },
+            .minValue = .{ 0, 0, 0 },
+            .maxValue = .{ 1, 1, 1 },
             .defaultValue = .{ 0.67, 0.85, 1.0 },
             .description = "Ambient light colour.",
             .aeUIControl = "aeColor",
@@ -165,8 +165,8 @@ pub const kernel = struct {
         },
         .colorLight = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0.0, 0.0, 0.0 },
-            .maxValue = .{ 1.0, 1.0, 1.0 },
+            .minValue = .{ 0, 0, 0 },
+            .maxValue = .{ 1, 1, 1 },
             .defaultValue = .{ 0.48, 0.59, 0.66 },
             .description = "Light colour.",
             .aeUIControl = "aeColor",
@@ -201,9 +201,9 @@ pub const kernel = struct {
         },
         .rotation = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -180.0, -180.0, -180.0 },
-            .maxValue = .{ 180.0, 180.0, 180.0 },
-            .defaultValue = .{ 0.0, 36.0, 39.6 },
+            .minValue = .{ -180, -180, -180 },
+            .maxValue = .{ 180, 180, 180 },
+            .defaultValue = .{ 0, 36, 39.6 },
             .description = "Rotate the Mandelbulb in each axis.",
         },
         .maxIterations = .{
@@ -235,12 +235,11 @@ pub const kernel = struct {
             .description = "The output size in pixels.",
         },
     };
-    pub const inputImages = .{
-    };
+    pub const inputImages = .{};
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
     };
-    
+
     // generic kernel instance type
     fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {
         return struct {
@@ -248,10 +247,10 @@ pub const kernel = struct {
             input: InputStruct,
             output: OutputStruct,
             outputCoord: @Vector(2, u32) = @splat(0),
-            
+
             // output pixel
             dst: @Vector(4, f32) = undefined,
-            
+
             // dependent variables
             bailout_sr: f32 = undefined,
             aspectRatio: f32 = undefined,
@@ -262,11 +261,10 @@ pub const kernel = struct {
             eye: @Vector(3, f32) = undefined,
             viewRotation: [3]@Vector(3, f32) = undefined,
             objRotation: [3]@Vector(3, f32) = undefined,
-            
+
             // functions defined in kernel
             fn powN(self: *@This(), z: *@Vector(3, f32), zr0: f32, dr: *f32) void {
                 const power = self.params.power;
-                
                 var zo0: f32 = asin(z.*[2] / zr0);
                 var zi0: f32 = atan2(z.*[1], z.*[0]);
                 var zr: f32 = pow(zr0, power - 1.0);
@@ -275,18 +273,21 @@ pub const kernel = struct {
                 var czo: f32 = cos(zo);
                 dr.* = zr * dr.* * power + 1.0;
                 zr *= zr0;
-                z.* = @as(@Vector(3, f32), @splat(zr)) * @Vector(3, f32){ czo * cos(zi), czo * sin(zi), sin(zo) };
+                z.* = @as(@Vector(3, f32), @splat(zr)) * @Vector(3, f32){
+                    czo * cos(zi),
+                    czo * sin(zi),
+                    sin(zo),
+                };
             }
-            
+
             fn DE(self: *@This(), z0: @Vector(3, f32), min_dist: *f32) f32 {
                 const julia = self.params.julia;
-                const julia_c = self.params.julia_c;
-                const maxIterations = self.params.maxIterations;
                 const radiolaria = self.params.radiolaria;
                 const radiolariaFactor = self.params.radiolariaFactor;
                 const bailout = self.params.bailout;
-                
-                var c: @Vector(3, f32) = @as(@Vector(3, f32), if (julia) julia_c else z0);
+                const julia_c = self.params.julia_c;
+                const maxIterations = self.params.maxIterations;
+                var c: @Vector(3, f32) = if (julia) julia_c else z0;
                 var z: @Vector(3, f32) = z0;
                 var dr: f32 = 1.0;
                 var r: f32 = length(z);
@@ -296,7 +297,7 @@ pub const kernel = struct {
                 {
                     var n: i32 = 0;
                     while (n < maxIterations) {
-                        _ = self.powN(&z, r, &dr);
+                        self.powN(&z, r, &dr);
                         z += c;
                         if (radiolaria and z[1] > radiolariaFactor) {
                             z[1] = radiolariaFactor;
@@ -305,18 +306,15 @@ pub const kernel = struct {
                         if (r < min_dist.*) {
                             min_dist.* = r;
                         }
-                        if (r > bailout) {
-                            break;
-                        }
+                        if (r > bailout) break;
                         n += 1;
                     }
                 }
                 return 0.5 * log(r) * r / dr;
             }
-            
+
             fn intersectBoundingSphere(self: *@This(), origin: @Vector(3, f32), direction: @Vector(3, f32), tmin: *f32, tmax: *f32) bool {
                 const bounding = self.params.bounding;
-                
                 var hit: bool = true;
                 var b: f32 = dot(origin, direction);
                 var c: f32 = dot(origin, origin) - bounding;
@@ -333,50 +331,48 @@ pub const kernel = struct {
                         var z: @Vector(3, f32) = origin + @as(@Vector(3, f32), @splat(t0)) * direction;
                         tmin.* = self.DE(z, &min_dist);
                         tmax.* = t0 + t1;
-                    } else {
-                        if (t0 < 0.0) {
-                            var min_dist: f32 = undefined;
-                            var z: @Vector(3, f32) = origin;
-                            tmin.* = self.DE(z, &min_dist);
-                            tmax.* = t1;
-                        }
+                    } else if (t0 < 0.0) {
+                        var min_dist: f32 = undefined;
+                        var z: @Vector(3, f32) = origin;
+                        tmin.* = self.DE(z, &min_dist);
+                        tmax.* = t1;
                     }
                     hit = true;
                 }
                 return hit;
             }
-            
-            fn estimate_normal(z: @Vector(3, f32), e: f32) @Vector(3, f32) {
+
+            fn estimate_normal(self: *@This(), z: @Vector(3, f32), e: f32) @Vector(3, f32) {
                 var min_dst: f32 = undefined;
-                var z1: @Vector(3, f32) = z + @Vector(3, f32){ e, 0.0, 0.0 };
-                var z2: @Vector(3, f32) = z - @Vector(3, f32){ e, 0.0, 0.0 };
-                var z3: @Vector(3, f32) = z + @Vector(3, f32){ 0.0, e, 0.0 };
-                var z4: @Vector(3, f32) = z - @Vector(3, f32){ 0.0, e, 0.0 };
-                var z5: @Vector(3, f32) = z + @Vector(3, f32){ 0.0, 0.0, e };
-                var z6: @Vector(3, f32) = z - @Vector(3, f32){ 0.0, 0.0, e };
+                var z1: @Vector(3, f32) = z + @Vector(3, f32){ e, 0, 0 };
+                var z2: @Vector(3, f32) = z - @Vector(3, f32){ e, 0, 0 };
+                var z3: @Vector(3, f32) = z + @Vector(3, f32){ 0, e, 0 };
+                var z4: @Vector(3, f32) = z - @Vector(3, f32){ 0, e, 0 };
+                var z5: @Vector(3, f32) = z + @Vector(3, f32){ 0, 0, e };
+                var z6: @Vector(3, f32) = z - @Vector(3, f32){ 0, 0, e };
                 var dx: f32 = self.DE(z1, &min_dst) - self.DE(z2, &min_dst);
                 var dy: f32 = self.DE(z3, &min_dst) - self.DE(z4, &min_dst);
                 var dz: f32 = self.DE(z5, &min_dst) - self.DE(z6, &min_dst);
                 return normalize(@Vector(3, f32){ dx, dy, dz } / @as(@Vector(3, f32), @splat((2.0 * e))));
             }
-            
+
             fn Phong(self: *@This(), pt: @Vector(3, f32), N: @Vector(3, f32), specular: *f32) @Vector(3, f32) {
                 const light = self.params.light;
-                const objRotation = self.objRotation;
                 const colorDiffuse = self.params.colorDiffuse;
-                const colorSpread = self.params.colorSpread;
-                const colorLight = self.params.colorLight;
-                const eye = self.eye;
-                const specularity = self.params.specularity;
-                const specularExponent = self.params.specularExponent;
-                const rimLight = self.params.rimLight;
                 const colorAmbient = self.params.colorAmbient;
                 const colorAmbientIntensity = self.params.colorAmbientIntensity;
-                
-                var diffuse: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
-                var color: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
+                const colorLight = self.params.colorLight;
+                const colorSpread = self.params.colorSpread;
+                const rimLight = self.params.rimLight;
+                const specularity = self.params.specularity;
+                const specularExponent = self.params.specularExponent;
+                const eye = self.eye;
+                const objRotation = self.objRotation;
+                var diffuse: @Vector(3, f32) = .{ 0, 0, 0 };
+                var color: @Vector(3, f32) = .{ 0, 0, 0 };
+                _ = color;
                 specular.* = 0.0;
-                var L: @Vector(3, f32) = normalize(matrixCalc("*", light, matrixCalc("-", objRotation, pt)));
+                var L: @Vector(3, f32) = normalize(@"V * M"(light, objRotation) - pt);
                 var NdotL: f32 = dot(N, L);
                 if (NdotL > 0.0) {
                     diffuse = colorDiffuse + abs(N) * @as(@Vector(3, f32), @splat(colorSpread));
@@ -391,36 +387,37 @@ pub const kernel = struct {
                     diffuse = colorDiffuse * @as(@Vector(3, f32), @splat(abs(NdotL))) * @as(@Vector(3, f32), @splat(rimLight));
                 }
                 return (colorAmbient * @as(@Vector(3, f32), @splat(colorAmbientIntensity))) + diffuse;
-                _ = color;
             }
-            
+
             fn rayDirection(self: *@This(), p: @Vector(2, f32)) @Vector(3, f32) {
-                const aspectRatio = self.aspectRatio;
-                const size = self.params.size;
                 const cameraZoom = self.params.cameraZoom;
+                const size = self.params.size;
+                const aspectRatio = self.aspectRatio;
                 const viewRotation = self.viewRotation;
                 const objRotation = self.objRotation;
-                
-                var direction: @Vector(3, f32) = @Vector(3, f32){ 2.0 * aspectRatio * p[0] / @as(f32, @floatFromInt(size[0])) - aspectRatio, -2.0 * p[1] / @as(f32, @floatFromInt(size[1])) + 1.0, -2.0 * exp(cameraZoom) };
-                return normalize(matrixCalc("*", matrixCalc("*", direction, viewRotation), objRotation));
+                var direction: @Vector(3, f32) = .{
+                    2.0 * aspectRatio * p[0] / @as(f32, @floatFromInt(size[0])) - aspectRatio,
+                    -2.0 * p[1] / @as(f32, @floatFromInt(size[1])) + 1.0,
+                    -2.0 * exp(cameraZoom),
+                };
+                return normalize(@"V * M"(@"V * M"(direction, viewRotation), objRotation));
             }
-            
+
             fn renderPixel(self: *@This(), pixel: @Vector(2, f32)) @Vector(4, f32) {
+                const phong = self.params.phong;
+                const shadows = self.params.shadows;
+                const ambientOcclusion = self.params.ambientOcclusion;
+                const ambientOcclusionEmphasis = self.params.ambientOcclusionEmphasis;
+                const bounding = self.params.bounding;
+                const light = self.params.light;
                 const colorBackground = self.params.colorBackground;
                 const colorBackgroundTransparency = self.params.colorBackgroundTransparency;
-                const eye = self.eye;
+                const colorDiffuse = self.params.colorDiffuse;
                 const stepLimit = self.params.stepLimit;
                 const epsilonScale = self.params.epsilonScale;
                 const pixel_scale = self.pixel_scale;
-                const ambientOcclusion = self.params.ambientOcclusion;
-                const phong = self.params.phong;
-                const shadows = self.params.shadows;
-                const light = self.params.light;
+                const eye = self.eye;
                 const objRotation = self.objRotation;
-                const bounding = self.params.bounding;
-                const colorDiffuse = self.params.colorDiffuse;
-                const ambientOcclusionEmphasis = self.params.ambientOcclusionEmphasis;
-                
                 var tmin: f32 = undefined;
                 var tmax: f32 = undefined;
                 var ray_direction: @Vector(3, f32) = self.rayDirection(pixel);
@@ -437,26 +434,26 @@ pub const kernel = struct {
                     var max_steps: i32 = @as(i32, @intFromFloat(@as(f32, @floatFromInt(stepLimit)) / epsilonScale));
                     var i: i32 = undefined;
                     var f: f32 = undefined;
-                    i = 0;
-                    while (i < max_steps) {
-                        dist = self.DE(ray, &min_dist);
-                        f = epsilonScale * dist;
-                        ray += @as(@Vector(3, f32), @splat(f)) * ray_direction;
-                        ray_length += f * dist;
-                        if (dist < eps or ray_length > tmax) {
-                            break;
+                    {
+                        i = 0;
+                        while (i < max_steps) {
+                            dist = self.DE(ray, &min_dist);
+                            f = epsilonScale * dist;
+                            ray += @as(@Vector(3, f32), @splat(f)) * ray_direction;
+                            ray_length += f * dist;
+                            if (dist < eps or ray_length > tmax) break;
+                            eps = max(MIN_EPSILON, pixel_scale * ray_length);
+                            i += 1;
                         }
-                        eps = max(MIN_EPSILON, pixel_scale * ray_length);
-                        i += 1;
                     }
                     if (dist < eps) {
                         ao = 1.0 - clamp(1.0 - min_dist * min_dist, 0.0, 1.0) * ambientOcclusion;
                         if (phong) {
-                            var normal: @Vector(3, f32) = estimate_normal(ray, eps / 2.0);
+                            var normal: @Vector(3, f32) = self.estimate_normal(ray, eps / 2.0);
                             var specular: f32 = 0.0;
                             color = @shuffle(f32, color, self.Phong(ray, normal, &specular), @Vector(4, i32){ -1, -2, -3, 3 });
                             if (shadows > 0.0) {
-                                var light_direction: @Vector(3, f32) = normalize(matrixCalc("*", (light - ray), objRotation));
+                                var light_direction: @Vector(3, f32) = normalize(@"V * M"((light - ray), objRotation));
                                 ray += normal * @as(@Vector(3, f32), @splat(eps)) * @as(@Vector(3, f32), @splat(2.0));
                                 var min_dist2: f32 = undefined;
                                 dist = 4.0;
@@ -466,9 +463,7 @@ pub const kernel = struct {
                                         dist = self.DE(ray, &min_dist2);
                                         f = epsilonScale * dist;
                                         ray += @as(@Vector(3, f32), @splat(f)) * light_direction;
-                                        if (dist < eps or dot(ray, ray) > bounding * bounding) {
-                                            break;
-                                        }
+                                        if (dist < eps or dot(ray, ray) > bounding * bounding) break;
                                         j += 1;
                                     }
                                 }
@@ -490,87 +485,88 @@ pub const kernel = struct {
                 }
                 return clamp(color, 0.0, 1.0);
             }
-            
+
             pub fn evaluateDependents(self: *@This()) void {
-                const size = self.params.size;
-                const cameraRotation = self.params.cameraRotation;
-                const rotation = self.params.rotation;
+                const antialiasing = self.params.antialiasing;
                 const cameraPosition = self.params.cameraPosition;
                 const cameraPositionFine = self.params.cameraPositionFine;
-                const antialiasing = self.params.antialiasing;
-                
+                const cameraRotation = self.params.cameraRotation;
+                const rotation = self.params.rotation;
+                const size = self.params.size;
                 self.aspectRatio = @as(f32, @floatFromInt(size[0])) / @as(f32, @floatFromInt(size[1]));
                 var c1: f32 = cos(radians(-cameraRotation[0]));
                 var s1: f32 = sin(radians(-cameraRotation[0]));
                 var viewRotationY: [3]@Vector(3, f32) = [3]@Vector(3, f32){
                     .{ c1, 0, s1 },
                     .{ 0, 1, 0 },
-                    .{ -s1, 0, c1 }
+                    .{ -s1, 0, c1 },
                 };
                 var c2: f32 = cos(radians(-cameraRotation[1]));
                 var s2: f32 = sin(radians(-cameraRotation[1]));
                 var viewRotationZ: [3]@Vector(3, f32) = [3]@Vector(3, f32){
                     .{ c2, -s2, 0 },
                     .{ s2, c2, 0 },
-                    .{ 0, 0, 1 }
+                    .{ 0, 0, 1 },
                 };
                 var c3: f32 = cos(radians(-cameraRotation[2]));
                 var s3: f32 = sin(radians(-cameraRotation[2]));
                 var viewRotationX: [3]@Vector(3, f32) = [3]@Vector(3, f32){
                     .{ 1, 0, 0 },
                     .{ 0, c3, -s3 },
-                    .{ 0, s3, c3 }
+                    .{ 0, s3, c3 },
                 };
-                self.viewRotation = matrixCalc("*", matrixCalc("*", viewRotationX, viewRotationY), viewRotationZ);
+                self.viewRotation = @"M * M"(@"M * M"(viewRotationX, viewRotationY), viewRotationZ);
                 c1 = cos(radians(-rotation[0]));
                 s1 = sin(radians(-rotation[0]));
                 var objRotationY: [3]@Vector(3, f32) = [3]@Vector(3, f32){
                     .{ c1, 0, s1 },
                     .{ 0, 1, 0 },
-                    .{ -s1, 0, c1 }
+                    .{ -s1, 0, c1 },
                 };
                 c2 = cos(radians(-rotation[1]));
                 s2 = sin(radians(-rotation[1]));
                 var objRotationZ: [3]@Vector(3, f32) = [3]@Vector(3, f32){
                     .{ c2, -s2, 0 },
                     .{ s2, c2, 0 },
-                    .{ 0, 0, 1 }
+                    .{ 0, 0, 1 },
                 };
                 c3 = cos(radians(-rotation[2]));
                 s3 = sin(radians(-rotation[2]));
                 var objRotationX: [3]@Vector(3, f32) = [3]@Vector(3, f32){
                     .{ 1, 0, 0 },
                     .{ 0, c3, -s3 },
-                    .{ 0, s3, c3 }
+                    .{ 0, s3, c3 },
                 };
-                self.objRotation = matrixCalc("*", matrixCalc("*", objRotationX, objRotationY), objRotationZ);
+                self.objRotation = @"M * M"(@"M * M"(objRotationX, objRotationY), objRotationZ);
                 self.eye = (cameraPosition + cameraPositionFine);
-                if (@reduce(.And, self.eye == @Vector(3, f32){ 0.0, 0.0, 0.0 })) {
-                    self.eye = @Vector(3, f32){ 0.0, 0.0001, 0.0 };
+                if (@reduce(.And, self.eye == @Vector(3, f32){ 0, 0, 0 })) {
+                    self.eye = @Vector(3, f32){ 0, 0.0001, 0 };
                 }
-                self.eye = matrixCalc("*", self.eye, self.objRotation);
+                self.eye = @"V * M"(self.eye, self.objRotation);
                 self.sampleStep = 1.0 / @as(f32, @floatFromInt(antialiasing));
                 self.sampleContribution = 1.0 / pow(@as(f32, @floatFromInt(antialiasing)), 2.0);
                 self.pixel_scale = 1.0 / max(@as(f32, @floatFromInt(size[0])), @as(f32, @floatFromInt(size[1])));
             }
-            
+
             pub fn evaluatePixel(self: *@This()) void {
-                self.dst = @splat(0);
                 const antialiasing = self.params.antialiasing;
+                const dst = self.output.dst;
                 const sampleStep = self.sampleStep;
                 const sampleContribution = self.sampleContribution;
-                
-                var color: @Vector(4, f32) = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
+                self.dst = @splat(0.0);
+
+                var color: @Vector(4, f32) = .{ 0, 0, 0, 0 };
                 if (antialiasing > 1) {
                     {
                         var i: f32 = 0.0;
                         while (i < 1.0) {
-                            {
-                                var j: f32 = 0.0;
-                                while (j < 1.0) {
-                                    color += @as(@Vector(4, f32), @splat(sampleContribution)) * self.renderPixel(@Vector(2, f32){ self.outCoord()[0] + i, self.outCoord()[1] + j });
-                                    j += sampleStep;
-                                }
+                            var j: f32 = 0.0;
+                            while (j < 1.0) {
+                                color += @as(@Vector(4, f32), @splat(sampleContribution)) * self.renderPixel(@Vector(2, f32){
+                                    self.outCoord()[0] + i,
+                                    self.outCoord()[1] + j,
+                                });
+                                j += sampleStep;
                             }
                             i += sampleStep;
                         }
@@ -579,17 +575,17 @@ pub const kernel = struct {
                     color = self.renderPixel(self.outCoord());
                 }
                 self.dst = color;
-                
-                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+
+                dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
-            
+
             // built-in Pixel Bender functions
             fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
-            
+
             fn radians(v: anytype) @TypeOf(v) {
                 const multiplier = std.math.pi / 180.0;
                 return switch (@typeInfo(@TypeOf(v))) {
@@ -597,15 +593,15 @@ pub const kernel = struct {
                     else => v * multiplier,
                 };
             }
-            
+
             fn sin(v: anytype) @TypeOf(v) {
                 return @sin(v);
             }
-            
+
             fn cos(v: anytype) @TypeOf(v) {
                 return @cos(v);
             }
-            
+
             fn asin(v: anytype) @TypeOf(v) {
                 return switch (@typeInfo(@TypeOf(v))) {
                     .Vector => calc: {
@@ -619,7 +615,7 @@ pub const kernel = struct {
                     else => std.math.asin(v),
                 };
             }
-            
+
             fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => calc: {
@@ -633,7 +629,7 @@ pub const kernel = struct {
                     else => std.math.atan2(@TypeOf(v1), v1, v2),
                 };
             }
-            
+
             fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => calc: {
@@ -647,23 +643,23 @@ pub const kernel = struct {
                     else => std.math.pow(@TypeOf(v1), v1, v2),
                 };
             }
-            
+
             fn exp(v: anytype) @TypeOf(v) {
                 return @exp(v);
             }
-            
+
             fn log(v: anytype) @TypeOf(v) {
                 return @log(v);
             }
-            
+
             fn sqrt(v: anytype) @TypeOf(v) {
                 return @sqrt(v);
             }
-            
+
             fn abs(v: anytype) @TypeOf(v) {
                 return @fabs(v);
             }
-            
+
             fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @max(v1, v2),
@@ -673,7 +669,7 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
                 return switch (@typeInfo(@TypeOf(min_val))) {
                     .Vector => calc: {
@@ -696,198 +692,54 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn length(v: anytype) f32 {
                 const sum = @reduce(.Add, v * v);
                 return @sqrt(sum);
             }
-            
+
             fn dot(v1: anytype, v2: anytype) f32 {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => @reduce(.Add, v1 * v2),
                     else => v1 * v2,
                 };
             }
-            
+
             fn normalize(v: anytype) @TypeOf(v) {
                 return switch (@typeInfo(@TypeOf(v))) {
                     .Vector => v / @as(@TypeOf(v), @splat(@sqrt(@reduce(.Add, v * v)))),
                     else => if (v > 0) 1 else -1,
                 };
             }
-            
-            fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
-                return switch (operator[0]) {
-                    '=', '!' => bool,
-                    '+', '-', '/' => switch (@typeInfo(T2)) {
-                        .Array => T2,
-                        else => T1,
-                    },
-                    '*' => switch (@typeInfo(T2)) {
-                        .Vector => T2,
-                        else => switch (@typeInfo(T1)) {
-                            .Vector => T1,
-                            .Array => T1,
-                            else => T2,
-                        },
-                    },
-                    else => @compileError("Unknown operator: " ++ operator),
-                };
-            }
-            
-            fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) MatrixCalcResult(operator, @TypeOf(p1), @TypeOf(p2)) {
-                const calc = struct {
-                    fn @"Vector * Matrix"(v1: anytype, m2: anytype) @TypeOf(v1) {
-                        var result: @TypeOf(v1) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @reduce(.Add, column * v1);
-                        }
-                        return result;
+
+            fn @"M * M"(m1: anytype, m2: anytype) @TypeOf(m1) {
+                const ar = @typeInfo(@TypeOf(m2)).Array;
+                var result: @TypeOf(m2) = undefined;
+                comptime var r = 0;
+                inline while (r < ar.len) : (r += 1) {
+                    var row: ar.child = undefined;
+                    inline for (m1, 0..) |column, c| {
+                        row[c] = column[r];
                     }
-                    
-                    fn @"Matrix * Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        const ar = @typeInfo(@TypeOf(m2)).Array;
-                        var result: @TypeOf(m2) = undefined;
-                        comptime var r = 0;
-                        inline while (r < ar.len) : (r += 1) {
-                            var row: ar.child = undefined;
-                            inline for (m1, 0..) |column, c| {
-                                row[c] = column[r];
-                            }
-                            inline for (m2, 0..) |column, c| {
-                                result[c][r] = @reduce(.Add, row * column);
-                            }
-                        }
-                        return result;
+                    inline for (m2, 0..) |column, c| {
+                        result[c][r] = @reduce(.Add, row * column);
                     }
-                    
-                    fn @"Matrix * Vector"(m1: anytype, v2: anytype) @TypeOf(v2) {
-                        const ar = @typeInfo(@TypeOf(m1)).Array;
-                        var t1: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            comptime var r = 0;
-                            inline while (r < ar.len) : (r += 1) {
-                                t1[r][c] = column[r];
-                            }
-                        }
-                        return @"Vector * Matrix"(v2, t1);
-                    }
-                    
-                    fn @"Matrix * Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar * Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        return @"Matrix * Scalar"(m2, s1);
-                    }
-                    
-                    fn @"Matrix + Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column + m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix + Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column + @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar + Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        return @"Matrix + Scalar"(m2, s1);
-                    }
-                    
-                    fn @"Matrix - Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column - m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix - Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column - @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar - Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) - column;
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix / Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column / m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix / Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column / @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar / Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) / column;
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix == Matrix"(m1: anytype, m2: anytype) bool {
-                        inline for (m1, 0..) |column, c| {
-                            if (!@reduce(.And, column == m2[c])) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                    
-                    fn @"Matrix != Matrix"(m1: anytype, m2: anytype) bool {
-                        return !@"Matrix == Matrix"(m1, m2);
-                    }
-                    
-                    fn label(comptime T: type) []const u8 {
-                        return switch (@typeInfo(T)) {
-                            .Vector => "Vector",
-                            .Array => "Matrix",
-                            .Float, .ComptimeFloat, .Int, .ComptimeInt => "Scalar",
-                            else => @typeName(T),
-                        };
-                    }
-                };
-                const type1 = comptime calc.label(@TypeOf(p1));
-                const type2 = comptime calc.label(@TypeOf(p2));
-                const fname = type1 ++ " " ++ operator ++ " " ++ type2;
-                if (!@hasDecl(calc, fname)) {
-                    @compileError("Illegal operation: " ++ fname);
                 }
-                const f = @field(calc, fname);
-                return f(p1, p2);
+                return result;
+            }
+
+            fn @"V * M"(v1: anytype, m2: anytype) @TypeOf(v1) {
+                var result: @TypeOf(v1) = undefined;
+                inline for (m2, 0..) |column, c| {
+                    result[c] = @reduce(.Add, column * v1);
+                }
+                return result;
             }
         };
     }
-    
     // kernel instance creation function
+
+
     pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
@@ -895,44 +747,22 @@ pub const kernel = struct {
             .params = params,
         };
     }
+
 };
 
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
 
-pub fn createOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, 0, height, input, params);
 }
 
-pub fn createPartialOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createPartialOutput(allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, start, count, input, params);
 }
 
-fn createPartialOutputOf(
-comptime T: type,
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: KernelInput(T, kernel),
-params: Parameters,
-) !KernelOutput(u8, kernel) {
+fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: KernelInput(T, kernel), params: Parameters) !KernelOutput(u8, kernel) {
     var output: KernelOutput(u8, kernel) = undefined;
     inline for (std.meta.fields(Output)) |field| {
         const ImageT = @TypeOf(@field(output, field.name));
@@ -963,14 +793,14 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         pub const Pixel = @Vector(4, T);
         pub const FPixel = @Vector(len, f32);
         pub const channels = len;
-        
+
         data: if (writable) []Pixel else []const Pixel,
         width: u32,
         height: u32,
         colorSpace: ColorSpace = .srgb,
         premultiplied: bool = false,
         offset: usize = 0,
-        
+
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
             if (len == 4) {
                 return pixel;
@@ -983,7 +813,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(f32, pixel, undefined, mask);
         }
-        
+
         fn floatPixelFromPBPixel(pixel: FPixel) Pixel {
             if (len == 4) {
                 return pixel;
@@ -997,7 +827,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(T, pixel, alpha, mask);
         }
-        
+
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
             // https://github.com/ziglang/zig/issues/16267
             var numerator: FPixel = undefined;
@@ -1023,7 +853,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
-        
+
         fn contrain(pixel: FPixel, max: f32) FPixel {
             const lower: FPixel = @splat(0);
             const upper: FPixel = @splat(max);
@@ -1031,7 +861,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const pixel3 = @select(f32, pixel2 < upper, pixel2, upper);
             return pixel3;
         }
-        
+
         fn intPixelFromPBPixel(pixel: FPixel) Pixel {
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
@@ -1066,57 +896,59 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             }
             return result;
         }
-        
+
         inline fn unsign(value: i32) u32 {
             // allow negative values to be interpreted as large integers to simplify bound-checking
             @setRuntimeSafety(false);
             return @as(u32, @intCast(value));
         }
-        
-        pub fn getPixel(self: @This(), x: i32, y: i32) FPixel {
-            const ux = unsign(x);
-            const uy = unsign(y);
-            if (ux >= self.width or uy >= self.height) {
+
+        fn getPixel(self: @This(), ix: i32, iy: i32) FPixel {
+            const x = unsign(ix);
+            const y = unsign(iy);
+            if (x >= self.width or y >= self.height) {
                 return @as(FPixel, @splat(0));
             }
-            const index = (uy * self.width) + ux;
-            const pixel = self.data[index];
-            return switch (@typeInfo(T)) {
-                .Float => pbPixelFromFloatPixel(pixel),
-                .Int => pbPixelFromIntPixel(pixel),
+            const index = (y * self.width) + x - self.offset;
+            const src_pixel = self.data[index];
+            const pixel: FPixel = switch (@typeInfo(T)) {
+                .Float => pbPixelFromFloatPixel(src_pixel),
+                .Int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            return pixel;
         }
-        
-        pub fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
+
+        fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
             if (comptime !writable) {
                 return;
             }
             const index = (y * self.width) + x - self.offset;
-            self.data[index] = switch (@typeInfo(T)) {
+            const dst_pixel: Pixel = switch (@typeInfo(T)) {
                 .Float => floatPixelFromPBPixel(pixel),
                 .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            self.data[index] = dst_pixel;
         }
-        
-        pub fn pixelSize(self: @This()) @Vector(2, f32) {
+
+        fn pixelSize(self: @This()) @Vector(2, f32) {
             _ = self;
             return .{ 1, 1 };
         }
-        
-        pub fn pixelAspectRatio(self: @This()) f32 {
+
+        fn pixelAspectRatio(self: @This()) f32 {
             _ = self;
             return 1;
         }
-        
-        pub fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
             const x: i32 = @intFromFloat(coord[0]);
             const y: i32 = @intFromFloat(coord[1]);
             return self.getPixel(x, y);
         }
-        
-        pub fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
             const c = coord - @as(@Vector(2, f32), @splat(0.5));
             const x: i32 = @intFromFloat(c[0]);
             const y: i32 = @intFromFloat(c[1]);

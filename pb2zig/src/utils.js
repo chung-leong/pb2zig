@@ -1,20 +1,29 @@
 export function walk(tree, cb) {
-  const f = (node) => {
+  const f = (node, key, parent) => {
     if (Array.isArray(node)) {
-      for (const n of node) {
-        const res = f(n);
+      for (const [ key, child ] of node.entries()) {
+        const res = f(child, key, node);
         // end iteration if callback returns false
         if (res === false) {
           return false;
         }
       }
     } else if (node instanceof Object) {
-      const res = cb(node);
+      const res = cb(node, key, parent);
       if (res !== undefined) {
         return res;
       }
+      if (parent && node !== parent[key]) {
+        // object has been swapped out--scan the new object instead
+        return f(parent[key], key, parent);
+      }
       // scan sub-nodes if callback doesn't return anything
-      f(Object.values(node));
+      for (const [ key, child ] of Object.entries(node)) {
+        const res = f(child, key, node);
+        if (res === false) {
+          return false;
+        }
+      }
     }
   };
   f(tree);

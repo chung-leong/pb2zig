@@ -1,5 +1,6 @@
 import { BaseCstVisitor } from './pb-parser.js';
 import * as PB from './pb-nodes.js';
+import { walk } from './utils.js';
 
 export class PixelBenderAstVisitor extends BaseCstVisitor {
   constructor() {
@@ -198,7 +199,27 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   }
 
   statement(ctx) {
-    return this.visitAny(ctx);
+    const node = this.visitAny(ctx);
+    // fix order of binary operations
+    const fix = (node, key, parent) => {
+      if (node instanceof PB.BinaryOperation) {
+        if (node.operand2 instanceof PB.BinaryOperation) {
+          const exprL = node;
+          const exprR = node.operand2;
+          const precedenceL = getPrecedence(exprL.operator);
+          const precedenceR = getPrecedence(exprR.operator);
+          if (precedenceL <= precedenceR) {
+            // the left op has higher precedence (left-associtivity)
+            // steal the operand from the right op and place the left op in its place
+            exprL.operand2 = exprR.operand1;
+            exprR.operand1 = exprL;
+            parent[key] = exprR;
+          }
+        }
+      }
+    };
+    walk(node, fix);
+    return node;
   }
 
   variableDeclaration(ctx) {
@@ -291,20 +312,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     }
     const operand1 = expr;
     const operand2 = this.visit(ctx.binaryOperation);
-    const exprL = type.create({ operand1, operator, operand2 });
-    if (operand2 instanceof PB.BinaryOperation) {
-      const exprR = operand2;
-      const precedenceL = getPrecedence(exprL.operator);
-      const precedenceR = getPrecedence(exprR.operator);
-      if (precedenceL <= precedenceR) {
-        // the left op has higher precedence (left-associtivity)
-        // steal the operand from the right op and place the left op in its place
-        exprL.operand2 = exprR.operand1;
-        exprR.operand1 = exprL;
-        return exprR;
-      }
-    }
-    return exprL;
+    return type.create({ operand1, operator, operand2 });
   }
 
   arithmeticOperator(ctx) {
@@ -497,11 +505,6 @@ export function process(cst, macroCSTs) {
 
 function getPrecedence(operator) {
   switch (operator) {
-    case '.': return 1;
-    case '++':
-    case '--': return 2;
-    case '!':
-    case '-': return 3;
     case '*':
     case '/': return 4;
     case '+':
