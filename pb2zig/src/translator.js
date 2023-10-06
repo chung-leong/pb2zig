@@ -42,10 +42,13 @@ export class PixelBenderToZigTranslator {
     const { variables, currentFunctionName } = this;
     this.scopeStack.push({ variables, currentFunctionName });
     this.variables = map(variables, (v) => {
-      if (!v.shadow && v.scope !== 'local' && (v.scope !== 'dependent' || this.currentFunctionName !== 'evaluateDependents')) {
-        return { ...v, used: false, shadow: true };
+      if (v.shadow || v.scope === 'local' || v.scope === 'global') {
+        return v;
       }
-      return v;
+      if (v.scope === 'dependent' && this.currentFunctionName === 'evaluateDependents') {
+        return v;
+      }
+      return { ...v, used: false, shadow: true };
     });
   }
 
@@ -703,7 +706,7 @@ export class PixelBenderToZigTranslator {
       }
     }
     // at this point only the functions that use kernel variables have self as the receiver
-    const selfArg = ZIG.FunctionArgument.create({ name: 'self', type: '*This()' });
+    const selfArg = ZIG.FunctionArgument.create({ name: 'self', type: '*@This()' });
     const set = {};
     const setReceiver = (name) => {
       if (set[name]) {
@@ -728,8 +731,8 @@ export class PixelBenderToZigTranslator {
       setReceiver(name);
     }
     // fix all call sites
-    const calls = find(statements, ZIG.FunctionCall);
-    const self = ZIG.VariableAccess.create({ name: 'self', type: '*This()' });
+    const calls = find(statements, ZIG.FunctionCall, true);
+    const self = ZIG.VariableAccess.create({ name: 'self', type: '*@This()' });
     for (const call of calls) {
       if (!call.receiver) {
         const f = this.functions[call.name];
@@ -807,7 +810,8 @@ export class PixelBenderToZigTranslator {
           args: [
             ...[ 0, 1 ].map(value => ZIG.ElementAccess.create({
               expression: ZIG.VariableAccess.create({ name: `self.outputCoord` }),
-              index: ZIG.Literal.create({ value, type: 'u32 '})
+              index: ZIG.Literal.create({ value, type: 'u32 '}),
+              type: 'f32',
             })),
             ZIG.VariableAccess.create({ name: `self.${name}` }),
           ],
@@ -845,7 +849,7 @@ export class PixelBenderToZigTranslator {
     // get functions from file
     const codeURL = new URL('../zig/functions.zig', import.meta.url);
     const code = readFileSync(fileURLToPath(codeURL), 'utf-8');
-    const regExp = /pub (fn (\w+)[\s\S]*?\n})/g;
+    const regExp = /pub (fn ([^\(]+)[\s\S]*?\n})/g;
     let m;
     while (m = regExp.exec(code)) {
       // excluding "pub"
@@ -1127,7 +1131,7 @@ export class PixelBenderToZigTranslator {
         return ZIG.ElementAccess.create({ expression, index, type });
       }
     } else {
-      const index = this.translateIndex(element);
+      const index = this.translateIndex(pb.index);
       const type = expression.getChildType();
       return ZIG.ElementAccess.create({ expression, index, type });
     }
@@ -1248,14 +1252,30 @@ export class PixelBenderToZigTranslator {
       if (type !== value.type) {
         if (type === 'bool') {
           const zero = ZIG.Literal.create({ value: 0, type: value.type });
-          value = ZIG.ComparisonOperation.create({ operand1: value, operator: '!=', operand2: zero });
+          value = ZIG.BinaryOperation.create({ operand1: value, operator: '!=', operand2: zero });
         } else if (type === 'f32') {
-          if (value.type === 'i32') {
-            value = ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ value ], type });
-          } else if (value.type === 'bool') {
-            const zero = ZIG.Literal.create({ value: 0, type });
-            const one = ZIG.Literal.create({ value: 1, type });
-            value = ZIG.Conditional.create({ condition: value, onTrue: one, onFalse: zero })
+          if (value instanceof ZIG.Literal) {
+            value = ZIG.Literal.create({ value: Number(value.value), type })
+          } else {
+            if (value.type === 'i32') {
+              value = ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ value ], type });
+            } else if (value.type === 'bool') {
+              const zero = ZIG.Literal.create({ value: 0, type });
+              const one = ZIG.Literal.create({ value: 1, type });
+              value = ZIG.Conditional.create({ condition: value, onTrue: one, onFalse: zero })
+            }
+          }
+        } else if (type === 'i32') {
+          if (value instanceof ZIG.Literal) {
+            value = ZIG.Literal.create({ value: Number(value.value), type })
+          } else {
+            if (value.type === 'f32') {
+              value = ZIG.FunctionCall.create({ name: '@intFromFloat', args: [ value ], type });
+            } else if (value.type === 'bool') {
+              const zero = ZIG.Literal.create({ value: 0, type });
+              const one = ZIG.Literal.create({ value: 1, type });
+              value = ZIG.Conditional.create({ condition: value, onTrue: one, onFalse: zero })
+            }
           }
         }
       }
@@ -1281,6 +1301,7 @@ export class PixelBenderToZigTranslator {
       const name = `@"${symbols.join(` ${operator} `)}"`;
       const args = [ operand1, operand2 ];
       const type = this.getReturnType(name, args);
+      this.functions[name].called = true;
       return ZIG.FunctionCall.create({ name, args, type });
     }
     // promote scalar to vector
@@ -1655,6 +1676,11 @@ const builtInFunctions = (() => {
       [ float2x2, float2x2, float ],
       [ float3x3, float3x3, float ],
       [ float4x4, float4x4, float ],
+    ],
+    '@"S + M"': [
+      [ float2x2, float, float2x2 ],
+      [ float3x3, float, float3x3 ],
+      [ float4x4, float, float4x4 ],
     ],
     '@"M + M"': [
       [ float2x2, float, float2x2 ],

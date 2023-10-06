@@ -116,8 +116,8 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
   type(ctx) {
     let type = this.anyName(ctx);
     if (type.startsWith('pixel')) {
-      type = 'float';
       const width = type.slice(-1);
+      type = 'float';
       if (width > 1) {
         type += width;
       }

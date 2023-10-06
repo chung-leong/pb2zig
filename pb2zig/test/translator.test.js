@@ -444,10 +444,10 @@ describe('Translator tests', function() {
       }
       `;
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('fn getX(self: *This()) f32 {');
-      expect(result).to.contain('fn getY(self: *This()) f32 {');
+      expect(result).to.contain('fn getX(self: *@This()) f32 {');
+      expect(result).to.contain('fn getY(self: *@This()) f32 {');
       expect(result).to.contain('var v1: f32 = self.getY();');
-      expect(result).to.contain('fn getN(self: *This()) f32 {');
+      expect(result).to.contain('fn getN(self: *@This()) f32 {');
       expect(result).to.contain('fn getPI() f32 {');
       expect(result).to.contain('var v2: f32 = getPI();');
     })
