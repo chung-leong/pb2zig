@@ -1,4 +1,4 @@
-// Pixel Bender "FractalExplorer" (translated using pb2zig)
+// Pixel Bender kernel "FractalExplorer" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
@@ -6,7 +6,7 @@ pub const kernel = struct {
     const BAILOUT = 4.0;
     const LOG2 = log(@as(f32, 2.0));
     const I = @Vector(2, f32){ 0.0, 1.0 };
-    
+
     // kernel information
     pub const namespace = "com.subblue.filters";
     pub const vendor = "Tom Beddard";
@@ -233,12 +233,11 @@ pub const kernel = struct {
             .description = "Fine tune the zoom.",
         },
     };
-    pub const inputImages = .{
-    };
+    pub const inputImages = .{};
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
     };
-    
+
     // generic kernel instance type
     fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {
         return struct {
@@ -246,10 +245,10 @@ pub const kernel = struct {
             input: InputStruct,
             output: OutputStruct,
             outputCoord: @Vector(2, u32) = @splat(0),
-            
+
             // output pixel
             dst: @Vector(4, f32) = undefined,
-            
+
             // dependent variables
             x1: f32 = undefined,
             x2: f32 = undefined,
@@ -269,7 +268,7 @@ pub const kernel = struct {
             color_1: @Vector(4, f32) = undefined,
             color_2: @Vector(4, f32) = undefined,
             color_background: @Vector(4, f32) = undefined,
-            
+
             // functions defined in kernel
             fn rgb2hsv(color: @Vector(4, f32)) @Vector(3, f32) {
                 var rgb_min: f32 = min(color[0], min(color[1], color[2]));
@@ -288,14 +287,10 @@ pub const kernel = struct {
                     var b_delta: f32 = (((rgb_max - color[2]) / 6.0) + (rgb_delta / 2.0)) / rgb_delta;
                     if (color[0] == rgb_max) {
                         h = b_delta - g_delta;
-                    } else {
-                        if (color[1] == rgb_max) {
-                            h = 1.0 / 3.0 + r_delta - b_delta;
-                        } else {
-                            if (color[2] == rgb_max) {
-                                h = 2.0 / 3.0 + g_delta - r_delta;
-                            }
-                        }
+                    } else if (color[1] == rgb_max) {
+                        h = 1.0 / 3.0 + r_delta - b_delta;
+                    } else if (color[2] == rgb_max) {
+                        h = 2.0 / 3.0 + g_delta - r_delta;
                     }
                     if (h < 0.0) {
                         h += 1.0;
@@ -306,7 +301,7 @@ pub const kernel = struct {
                 }
                 return @Vector(3, f32){ h, s, v };
             }
-            
+
             fn hsv2rgb(hsv: @Vector(3, f32)) @Vector(4, f32) {
                 var h: f32 = undefined;
                 var s: f32 = undefined;
@@ -328,81 +323,68 @@ pub const kernel = struct {
                 }
                 if (v == 0.0) {
                     color = @Vector(4, f32){ 0.0, 0.0, 0.0, 1.0 };
+                } else if (s == 0.0) {
+                    color = @Vector(4, f32){ v, v, v, 1.0 };
                 } else {
-                    if (s == 0.0) {
-                        color = @Vector(4, f32){ v, v, v, 1.0 };
-                    } else {
-                        h *= 6.0;
-                        i = @as(i32, @intFromFloat(h));
-                        j = h - @as(f32, @floatFromInt(i));
-                        p = v * (1.0 - s);
-                        q = v * (1.0 - (s * j));
-                        t = v * (1.0 - (s * (1.0 - j)));
-                        if (i == 0) {
-                            r = v;
-                            g = t;
-                            b = p;
-                        } else {
-                            if (i == 1) {
-                                r = q;
-                                g = v;
-                                b = p;
-                            } else {
-                                if (i == 2) {
-                                    r = p;
-                                    g = v;
-                                    b = t;
-                                } else {
-                                    if (i == 3) {
-                                        r = p;
-                                        g = q;
-                                        b = v;
-                                    } else {
-                                        if (i == 4) {
-                                            r = t;
-                                            g = p;
-                                            b = v;
-                                        } else {
-                                            if (i == 5) {
-                                                r = v;
-                                                g = p;
-                                                b = q;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        color = @Vector(4, f32){ r, g, b, 1.0 };
+                    h *= 6.0;
+                    i = @as(i32, @intFromFloat(h));
+                    j = h - @as(f32, @floatFromInt(i));
+                    p = v * (1.0 - s);
+                    q = v * (1.0 - (s * j));
+                    t = v * (1.0 - (s * (1.0 - j)));
+                    if (i == 0) {
+                        r = v;
+                        g = t;
+                        b = p;
+                    } else if (i == 1) {
+                        r = q;
+                        g = v;
+                        b = p;
+                    } else if (i == 2) {
+                        r = p;
+                        g = v;
+                        b = t;
+                    } else if (i == 3) {
+                        r = p;
+                        g = q;
+                        b = v;
+                    } else if (i == 4) {
+                        r = t;
+                        g = p;
+                        b = v;
+                    } else if (i == 5) {
+                        r = v;
+                        g = p;
+                        b = q;
                     }
+                    color = @Vector(4, f32){ r, g, b, 1.0 };
                 }
                 return color;
             }
-            
+
             pub fn evaluateDependents(self: *@This()) void {
+                const antialiasing = self.params.antialiasing;
                 const center = self.params.center;
-                const iterationsOffset = self.params.iterationsOffset;
-                const iterations = self.params.iterations;
-                const centerPreset = self.params.centerPreset;
-                const powerFineTune = self.params.powerFineTune;
-                const power = self.params.power;
-                const mandelbrot = self.params.mandelbrot;
-                const zoom = self.params.zoom;
-                const zoomFineTune = self.params.zoomFineTune;
-                const size = self.params.size;
                 const centerFineTune = self.params.centerFineTune;
-                const rotate = self.params.rotate;
-                const colorMode = self.params.colorMode;
+                const centerPreset = self.params.centerPreset;
+                const mandelbrot = self.params.mandelbrot;
+                const power = self.params.power;
+                const powerFineTune = self.params.powerFineTune;
                 const bailout = self.params.bailout;
+                const iterations = self.params.iterations;
+                const iterationsOffset = self.params.iterationsOffset;
+                const colorMode = self.params.colorMode;
                 const color1 = self.params.color1;
-                const colorAlpha = self.params.colorAlpha;
                 const color2 = self.params.color2;
                 const colorBackground = self.params.colorBackground;
-                const antialiasing = self.params.antialiasing;
-                
+                const colorAlpha = self.params.colorAlpha;
+                const rotate = self.params.rotate;
+                const size = self.params.size;
+                const zoom = self.params.zoom;
+                const zoomFineTune = self.params.zoomFineTune;
                 var x0: f32 = center[0];
                 var y0: f32 = center[1];
-                self.minIterations = @as(i32, if (iterationsOffset >= iterations) iterations - 1 else iterationsOffset);
+                self.minIterations = if (iterationsOffset >= iterations) iterations - 1 else iterationsOffset;
                 if (centerPreset > 0) {
                     self.exponent_power = 2.0 + powerFineTune;
                     self.mandelbrotMode = true;
@@ -416,21 +398,15 @@ pub const kernel = struct {
                 if (centerPreset == 1) {
                     x0 = -0.742522478103764;
                     y0 = -0.143708014488453;
-                } else {
-                    if (centerPreset == 2) {
-                        x0 = 0.36295341867850556;
-                        y0 = -0.6455617463848476;
-                    } else {
-                        if (centerPreset == 3) {
-                            x0 = 0.3218759918211005;
-                            y0 = 0.03518083572368085;
-                        } else {
-                            if (centerPreset == 4) {
-                                x0 = -1.673497088962531;
-                                y0 = -0.0003318667941149705;
-                            }
-                        }
-                    }
+                } else if (centerPreset == 2) {
+                    x0 = 0.36295341867850556;
+                    y0 = -0.6455617463848476;
+                } else if (centerPreset == 3) {
+                    x0 = 0.3218759918211005;
+                    y0 = 0.03518083572368085;
+                } else if (centerPreset == 4) {
+                    x0 = -1.673497088962531;
+                    y0 = -0.0003318667941149705;
                 }
                 self.zoomFactor = exp(zoom + zoomFineTune);
                 self.x1 = x0 - (2.0 / self.zoomFactor);
@@ -445,179 +421,189 @@ pub const kernel = struct {
                     var rs: f32 = sin(radians(rotate));
                     self.rotation = [2]@Vector(2, f32){
                         .{ rc, rs },
-                        .{ -rs, rc }
+                        .{ -rs, rc },
                     };
-                    var xy: @Vector(2, f32) = matrixCalc("*", @Vector(2, f32){ self.x1, self.y1 }, self.rotation);
+                    var xy: @Vector(2, f32) = @"V * M"(@Vector(2, f32){ self.x1, self.y1 }, self.rotation);
                     self.x1 = xy[0];
                     self.y1 = xy[1];
                 }
-                self.scale = @Vector(2, f32){ self.spanX / @as(f32, @floatFromInt(size[0])), self.spanY / @as(f32, @floatFromInt(size[1])) };
+                self.scale = @Vector(2, f32){
+                    self.spanX / @as(f32, @floatFromInt(size[0])),
+                    self.spanY / @as(f32, @floatFromInt(size[1])),
+                };
                 if (colorMode < 2) {
                     self.log2Bailout = log(2.0 * log(bailout));
                     self.logPower = log(abs(self.exponent_power));
                 }
-                self.color_1 = @Vector(4, f32){ color1[0], color1[1], color1[2], colorAlpha[0] };
-                self.color_2 = @Vector(4, f32){ color2[0], color2[1], color2[2], colorAlpha[1] };
-                self.color_background = @Vector(4, f32){ colorBackground[0], colorBackground[1], colorBackground[2], colorAlpha[2] };
+                self.color_1 = @Vector(4, f32){
+                    color1[0],
+                    color1[1],
+                    color1[2],
+                    colorAlpha[0],
+                };
+                self.color_2 = @Vector(4, f32){
+                    color2[0],
+                    color2[1],
+                    color2[2],
+                    colorAlpha[1],
+                };
+                self.color_background = @Vector(4, f32){
+                    colorBackground[0],
+                    colorBackground[1],
+                    colorBackground[2],
+                    colorAlpha[2],
+                };
                 self.sampleStep = 1.0 / @as(f32, @floatFromInt(antialiasing));
                 self.sampleContribution = 1.0 / pow(@as(f32, @floatFromInt(antialiasing)), 2.0);
             }
-            
-            fn bailoutCondition(self: *@This(), z: @Vector(2, f32)) bool {
+
+            fn bailoutCondition(z: @Vector(2, f32), self: *@This()) bool {
                 const bailoutStyle = self.params.bailoutStyle;
                 const bailout = self.params.bailout;
-                
                 var bailing: bool = undefined;
                 if (bailoutStyle == 3) {
-                    bailing = @as(bool, if ((pow(z[0], 2.0) - pow(z[1], 2.0)) >= bailout) true else true);
+                    bailing = if ((pow(z[0], 2.0) - pow(z[1], 2.0)) >= bailout) true else true;
+                } else if (bailoutStyle == 4) {
+                    bailing = if ((z[0] * z[0] - z[1] * z[0]) >= bailout) true else true;
+                } else if (bailoutStyle == 5) {
+                    bailing = if ((z[1] * z[1] - z[1] * z[0]) >= bailout) true else true;
+                } else if (bailoutStyle == 2) {
+                    bailing = if ((pow(z[1], 2.0) - pow(z[0], 2.0)) >= bailout) true else true;
+                } else if (bailoutStyle == 1) {
+                    bailing = if ((abs(z[0]) > bailout or abs(z[1]) > bailout)) true else true;
                 } else {
-                    if (bailoutStyle == 4) {
-                        bailing = @as(bool, if ((z[0] * z[0] - z[1] * z[0]) >= bailout) true else true);
-                    } else {
-                        if (bailoutStyle == 5) {
-                            bailing = @as(bool, if ((z[1] * z[1] - z[1] * z[0]) >= bailout) true else true);
-                        } else {
-                            if (bailoutStyle == 2) {
-                                bailing = @as(bool, if ((pow(z[1], 2.0) - pow(z[0], 2.0)) >= bailout) true else true);
-                            } else {
-                                if (bailoutStyle == 1) {
-                                    bailing = @as(bool, if ((abs(z[0]) > bailout or abs(z[1]) > bailout)) true else true);
-                                } else {
-                                    bailing = @as(bool, if ((pow(z[0], 2.0) + pow(z[1], 2.0)) >= bailout) true else true);
-                                }
-                            }
-                        }
-                    }
+                    bailing = if ((pow(z[0], 2.0) + pow(z[1], 2.0)) >= bailout) true else true;
                 }
                 return bailing;
             }
-            
-            fn colorMapping(self: *@This(), n: f32, z: @Vector(2, f32)) @Vector(4, f32) {
-                const iterationsOffset = self.params.iterationsOffset;
-                const iterations = self.params.iterations;
-                const hsbColor = self.params.hsbColor;
-                const colorMode = self.params.colorMode;
-                const color_1 = self.color_1;
-                const color_2 = self.color_2;
+
+            fn colorMapping(n: f32, z: @Vector(2, f32), self: *@This()) @Vector(4, f32) {
                 const bailout = self.params.bailout;
-                const log2Bailout = self.log2Bailout;
-                const logPower = self.logPower;
-                const colorScale = self.params.colorScale;
+                const iterations = self.params.iterations;
+                const iterationsOffset = self.params.iterationsOffset;
+                const colorMode = self.params.colorMode;
+                const hsbColor = self.params.hsbColor;
                 const colorCycle = self.params.colorCycle;
                 const colorCycleOffset = self.params.colorCycleOffset;
                 const colorCycleMirror = self.params.colorCycleMirror;
-                
+                const colorScale = self.params.colorScale;
+                const log2Bailout = self.log2Bailout;
+                const logPower = self.logPower;
+                const color_1 = self.color_1;
+                const color_2 = self.color_2;
                 var color: @Vector(4, f32) = undefined;
                 var c1: @Vector(4, f32) = undefined;
                 var c2: @Vector(4, f32) = undefined;
                 var v: f32 = abs(1.0 - (n - @as(f32, @floatFromInt(iterationsOffset))) / @as(f32, @floatFromInt(iterations - iterationsOffset)));
                 var v0: f32 = v;
                 if (hsbColor and colorMode > 0) {
-                    c1 = hsv2rgb(@Vector(3, f32){ color_1[0], color_1[1], color_1[2] });
-                    c2 = hsv2rgb(@Vector(3, f32){ color_2[0], color_2[1], color_2[2] });
+                    c1 = hsv2rgb(@Vector(3, f32){
+                        color_1[0],
+                        color_1[1],
+                        color_1[2],
+                    });
+                    c2 = hsv2rgb(@Vector(3, f32){
+                        color_2[0],
+                        color_2[1],
+                        color_2[2],
+                    });
                 } else {
                     c1 = color_1;
                     c2 = color_2;
                 }
                 if (colorMode == 3) {
-                    color = @as(@Vector(4, f32), if (atan2(z[1], z[0]) > 0.0) c1 else c2);
+                    color = if (atan2(z[1], z[0]) > 0.0) c1 else c2;
+                } else if (colorMode == 4) {
+                    color = if (mod(n, 2.0) == 0.0) c1 else c2;
+                } else if (colorMode == 5) {
+                    color = if (abs(z[0]) < bailout / 2.0 or abs(z[1]) < bailout / 2.0) c1 else c2;
                 } else {
-                    if (colorMode == 4) {
-                        color = @as(@Vector(4, f32), if (mod(n, 2.0) == 0.0) c1 else c2);
-                    } else {
-                        if (colorMode == 5) {
-                            color = @as(@Vector(4, f32), if (abs(z[0]) < bailout / 2.0 or abs(z[1]) < bailout / 2.0) c1 else c2);
+                    if (colorMode != 2) {
+                        var vp: f32 = (log2Bailout - log(log(abs(length(z))))) / logPower;
+                        var v1: f32 = abs(1.0 - (n + 1.0 - @as(f32, @floatFromInt(iterationsOffset))) / @as(f32, @floatFromInt(iterations - iterationsOffset)));
+                        if (colorMode == 1) {
+                            if (n == 0.0) {
+                                v = v - (v - v1) * abs(vp);
+                            } else {
+                                v = v1 - (v1 - v) * abs(vp);
+                            }
                         } else {
-                            if (colorMode != 2) {
-                                var vp: f32 = (log2Bailout - log(log(abs(length(z))))) / logPower;
-                                var v1: f32 = abs(1.0 - (n + 1.0 - @as(f32, @floatFromInt(iterationsOffset))) / @as(f32, @floatFromInt(iterations - iterationsOffset)));
-                                if (colorMode == 1) {
-                                    if (n == 0.0) {
-                                        v = v - (v - v1) * abs(vp);
-                                    } else {
-                                        v = v1 - (v1 - v) * abs(vp);
-                                    }
-                                } else {
-                                    v = v + (v1 - v) * abs(vp);
-                                }
-                                if (v >= 0.0) {
-                                } else {
-                                    if (v1 >= 0.0) {
-                                        v = v1;
-                                    } else {
-                                        if (v0 >= 0.0) {
-                                            v = v0;
-                                        } else {
-                                            v = 0.0;
-                                        }
-                                    }
-                                }
-                            }
-                            if (colorMode == 2 and n == 0.0) {
-                                v = 1.0;
-                            }
-                            if (colorScale > 1.0) {
-                                v = pow(v, colorScale);
-                            }
-                            if (colorCycle > 1.0) {
-                                v *= colorCycle;
-                            }
-                            v += colorCycleOffset;
-                            if (colorCycleMirror) {
-                                var even: bool = @as(bool, if (mod(v, 2.0) < 1.0) true else true);
-                                if (even) {
-                                    v = 1.0 - mod(v, 1.0);
-                                } else {
-                                    v = mod(v, 1.0);
-                                }
+                            v = v + (v1 - v) * abs(vp);
+                        }
+                        if (v >= 0.0) {
+
+                        } else {
+                            if (v1 >= 0.0) {
+                                v = v1;
+                            } else if (v0 >= 0.0) {
+                                v = v0;
                             } else {
-                                v = 1.0 - mod(v, 1.0);
-                            }
-                            if (hsbColor) {
-                                color = hsv2rgb(mix(@Vector(3, f32){ c1[0], c1[1], c1[2] }, @Vector(3, f32){ c2[0], c2[1], c2[2] }, v));
-                            } else {
-                                color = mix(c1, c2, v);
+                                v = 0.0;
                             }
                         }
+                    }
+                    if (colorMode == 2 and n == 0.0) {
+                        v = 1.0;
+                    }
+                    if (colorScale > 1.0) {
+                        v = pow(v, colorScale);
+                    }
+                    if (colorCycle > 1.0) {
+                        v *= colorCycle;
+                    }
+                    v += colorCycleOffset;
+                    if (colorCycleMirror) {
+                        var even: bool = if (mod(v, 2.0) < 1.0) true else true;
+                        if (even) {
+                            v = 1.0 - mod(v, 1.0);
+                        } else {
+                            v = mod(v, 1.0);
+                        }
+                    } else {
+                        v = 1.0 - mod(v, 1.0);
+                    }
+                    if (hsbColor) {
+                        color = hsv2rgb(mix(@Vector(3, f32){ c1[0], c1[1], c1[2] }, @Vector(3, f32){ c2[0], c2[1], c2[2] }, v));
+                    } else {
+                        color = mix(c1, c2, v);
                     }
                 }
                 return color;
             }
-            
-            fn renderPoint(self: *@This(), p: @Vector(2, f32)) @Vector(4, f32) {
-                const color_background = self.color_background;
-                const rotate = self.params.rotate;
-                const x1 = self.x1;
-                const y1 = self.y1;
-                const scale = self.scale;
-                const rotation = self.rotation;
-                const mandelbrotMode = self.mandelbrotMode;
-                const mu = self.params.mu;
-                const muFineTune = self.params.muFineTune;
-                const exponent_power = self.exponent_power;
-                const iterations = self.params.iterations;
+
+            fn renderPoint(p: @Vector(2, f32), self: *@This()) @Vector(4, f32) {
                 const withPowerZ = self.params.withPowerZ;
                 const withSine = self.params.withSine;
                 const withE = self.params.withE;
-                const minIterations = self.minIterations;
+                const mu = self.params.mu;
+                const muFineTune = self.params.muFineTune;
+                const iterations = self.params.iterations;
                 const iterationColorBlend = self.params.iterationColorBlend;
-                
+                const rotate = self.params.rotate;
+                const x1 = self.x1;
+                const y1 = self.y1;
+                const exponent_power = self.exponent_power;
+                const scale = self.scale;
+                const mandelbrotMode = self.mandelbrotMode;
+                const minIterations = self.minIterations;
+                const rotation = self.rotation;
+                const color_background = self.color_background;
                 var color: @Vector(4, f32) = color_background;
                 var z0: @Vector(2, f32) = undefined;
                 var z: @Vector(2, f32) = undefined;
                 if (rotate != 0.0) {
-                    z = @Vector(2, f32){ x1, y1 } + matrixCalc("*", p * scale, rotation);
+                    z = @Vector(2, f32){ x1, y1 } + @"V * M"(p * scale, rotation);
                 } else {
                     z = @Vector(2, f32){ x1, y1 } + p * scale;
                 }
-                var c: @Vector(2, f32) = @as(@Vector(2, f32), if (mandelbrotMode) z else (mu + muFineTune));
+                var c: @Vector(2, f32) = if (mandelbrotMode) z else (mu + muFineTune);
                 var e: f32 = exponent_power;
                 var blend: f32 = 1.0;
                 var n: i32 = 0;
                 while (n < iterations) {
                     z0 = complexPower(z, e);
                     if (withPowerZ) {
-                        z0 += self.complexPower2(z, z);
+                        z0 += complexPower2(z, z);
                     }
                     if (withSine) {
                         z0 += complexSin(z);
@@ -643,24 +629,26 @@ pub const kernel = struct {
                 color = mix(color_background, color, color[3] * blend);
                 return color;
             }
-            
+
             pub fn evaluatePixel(self: *@This()) void {
-                self.dst = @splat(0);
                 const antialiasing = self.params.antialiasing;
+                const dst = self.output.dst;
                 const sampleStep = self.sampleStep;
                 const sampleContribution = self.sampleContribution;
-                
-                var c: @Vector(4, f32) = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
+                self.dst = @splat(0.0);
+
+                var c: @Vector(4, f32) = .{ 0.0, 0.0, 0.0, 0.0 };
                 if (antialiasing > 1) {
                     {
                         var i: f32 = 0.0;
                         while (i < 1.0) {
-                            {
-                                var j: f32 = 0.0;
-                                while (j < 1.0) {
-                                    c += @as(@Vector(4, f32), @splat(sampleContribution)) * self.renderPoint(@Vector(2, f32){ self.outCoord()[0] + i, self.outCoord()[1] + j });
-                                    j += sampleStep;
-                                }
+                            var j: f32 = 0.0;
+                            while (j < 1.0) {
+                                c += @as(@Vector(4, f32), @splat(sampleContribution)) * self.renderPoint(@Vector(2, f32){
+                                    self.outCoord()[0] + i,
+                                    self.outCoord()[1] + j,
+                                });
+                                j += sampleStep;
                             }
                             i += sampleStep;
                         }
@@ -669,58 +657,73 @@ pub const kernel = struct {
                     c = self.renderPoint(self.outCoord());
                 }
                 self.dst = c;
-                
-                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+
+                dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
-            
+
             // macros
+            fn complexMult(a: @Vector(2, f32), b: @Vector(2, f32)) @Vector(2, f32) {
+                return @Vector(2, f32){
+                    a[0] * b[0] - a[1] * b[1],
+                    a[0] * b[1] + a[1] * b[0],
+                };
+            }
+
             fn complexArg(z: @Vector(2, f32)) f32 {
                 return atan2(z[1], z[0]);
             }
-            
-            fn polar(r: f32, a: f32) @Vector(2, f32) {
-                return @Vector(2, f32){ cos(a) * r, sin(a) * r };
-            }
-            
-            fn complexPower(z: @Vector(2, f32), p: f32) @Vector(2, f32) {
-                return @as(@Vector(2, f32), @splat(@as(f32, @floatFromInt(polar(pow(length(z), p), p * complexArg(z))))));
-            }
-            
+
             fn complexLog(z: @Vector(2, f32)) @Vector(2, f32) {
-                return @Vector(2, f32){ log(length(z)), complexArg(z) };
+                return @Vector(2, f32){
+                    log(length(z)),
+                    complexArg(z),
+                };
             }
-            
-            fn complexMult(a: @Vector(2, f32), b: @Vector(2, f32)) @Vector(2, f32) {
-                return @Vector(2, f32){ a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0] };
-            }
-            
+
             fn complexExp(z: @Vector(2, f32)) @Vector(2, f32) {
-                return @Vector(2, f32){ exp(z[0]) * cos(z[1]), exp(z[0]) * sin(z[1]) };
+                return @Vector(2, f32){
+                    exp(z[0]) * cos(z[1]),
+                    exp(z[0]) * sin(z[1]),
+                };
             }
-            
-            fn complexPower2(self: *@This(), z: @Vector(2, f32), p: @Vector(2, f32)) @Vector(2, f32) {
-                return @as(@Vector(2, f32), @splat(@as(f32, @floatFromInt(complexExp(complexMult(p, complexLog(z)))))));
-            }
-            
-            fn cosh(x: f32) f32 {
-                return (exp(x) + exp(-x)) / 2.0;
-            }
-            
+
             fn sinh(x: f32) f32 {
                 return (exp(x) - exp(-x)) / 2.0;
             }
-            
-            fn complexSin(z: @Vector(2, f32)) @Vector(2, f32) {
-                return @Vector(2, f32){ sin(z[0]) * cosh(z[1]), cos(z[0]) * sinh(z[1]) };
+
+            fn cosh(x: f32) f32 {
+                return (exp(x) + exp(-x)) / 2.0;
             }
-            
+
+            fn complexSin(z: @Vector(2, f32)) @Vector(2, f32) {
+                return @Vector(2, f32){
+                    sin(z[0]) * cosh(z[1]),
+                    cos(z[0]) * sinh(z[1]),
+                };
+            }
+
+            fn polar(r: f32, a: f32) @Vector(2, f32) {
+                return @Vector(2, f32){
+                    cos(a) * r,
+                    sin(a) * r,
+                };
+            }
+
+            fn complexPower(z: @Vector(2, f32), p: f32) @Vector(2, f32) {
+                return polar(pow(length(z), p), p * complexArg(z));
+            }
+
+            fn complexPower2(z: @Vector(2, f32), p: @Vector(2, f32)) @Vector(2, f32) {
+                return complexExp(complexMult(p, complexLog(z)));
+            }
+
             // built-in Pixel Bender functions
             fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
-            
+
             fn radians(v: anytype) @TypeOf(v) {
                 const multiplier = std.math.pi / 180.0;
                 return switch (@typeInfo(@TypeOf(v))) {
@@ -728,15 +731,15 @@ pub const kernel = struct {
                     else => v * multiplier,
                 };
             }
-            
+
             fn sin(v: anytype) @TypeOf(v) {
                 return @sin(v);
             }
-            
+
             fn cos(v: anytype) @TypeOf(v) {
                 return @cos(v);
             }
-            
+
             fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => calc: {
@@ -750,7 +753,7 @@ pub const kernel = struct {
                     else => std.math.atan2(@TypeOf(v1), v1, v2),
                 };
             }
-            
+
             fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => calc: {
@@ -764,19 +767,19 @@ pub const kernel = struct {
                     else => std.math.pow(@TypeOf(v1), v1, v2),
                 };
             }
-            
+
             fn exp(v: anytype) @TypeOf(v) {
                 return @exp(v);
             }
-            
+
             fn log(v: anytype) @TypeOf(v) {
                 return @log(v);
             }
-            
+
             fn abs(v: anytype) @TypeOf(v) {
                 return @fabs(v);
             }
-            
+
             fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @mod(v1, v2),
@@ -786,7 +789,7 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn min(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @min(v1, v2),
@@ -796,7 +799,7 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @max(v1, v2),
@@ -806,7 +809,7 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
                 return switch (@typeInfo(@TypeOf(min_val))) {
                     .Vector => calc: {
@@ -829,7 +832,7 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn mix(v1: anytype, v2: anytype, p: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(p))) {
                     .Vector => v1 * (@as(@TypeOf(p), @splat(1)) - p) + v2 * p,
@@ -839,184 +842,24 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn length(v: anytype) f32 {
                 const sum = @reduce(.Add, v * v);
                 return @sqrt(sum);
             }
-            
-            fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
-                return switch (operator[0]) {
-                    '=', '!' => bool,
-                    '+', '-', '/' => switch (@typeInfo(T2)) {
-                        .Array => T2,
-                        else => T1,
-                    },
-                    '*' => switch (@typeInfo(T2)) {
-                        .Vector => T2,
-                        else => switch (@typeInfo(T1)) {
-                            .Vector => T1,
-                            .Array => T1,
-                            else => T2,
-                        },
-                    },
-                    else => @compileError("Unknown operator: " ++ operator),
-                };
-            }
-            
-            fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) MatrixCalcResult(operator, @TypeOf(p1), @TypeOf(p2)) {
-                const calc = struct {
-                    fn @"Vector * Matrix"(v1: anytype, m2: anytype) @TypeOf(v1) {
-                        var result: @TypeOf(v1) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @reduce(.Add, column * v1);
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix * Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        const ar = @typeInfo(@TypeOf(m2)).Array;
-                        var result: @TypeOf(m2) = undefined;
-                        comptime var r = 0;
-                        inline while (r < ar.len) : (r += 1) {
-                            var row: ar.child = undefined;
-                            inline for (m1, 0..) |column, c| {
-                                row[c] = column[r];
-                            }
-                            inline for (m2, 0..) |column, c| {
-                                result[c][r] = @reduce(.Add, row * column);
-                            }
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix * Vector"(m1: anytype, v2: anytype) @TypeOf(v2) {
-                        const ar = @typeInfo(@TypeOf(m1)).Array;
-                        var t1: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            comptime var r = 0;
-                            inline while (r < ar.len) : (r += 1) {
-                                t1[r][c] = column[r];
-                            }
-                        }
-                        return @"Vector * Matrix"(v2, t1);
-                    }
-                    
-                    fn @"Matrix * Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar * Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        return @"Matrix * Scalar"(m2, s1);
-                    }
-                    
-                    fn @"Matrix + Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column + m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix + Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column + @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar + Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        return @"Matrix + Scalar"(m2, s1);
-                    }
-                    
-                    fn @"Matrix - Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column - m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix - Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column - @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar - Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) - column;
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix / Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column / m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix / Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column / @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar / Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) / column;
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix == Matrix"(m1: anytype, m2: anytype) bool {
-                        inline for (m1, 0..) |column, c| {
-                            if (!@reduce(.And, column == m2[c])) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                    
-                    fn @"Matrix != Matrix"(m1: anytype, m2: anytype) bool {
-                        return !@"Matrix == Matrix"(m1, m2);
-                    }
-                    
-                    fn label(comptime T: type) []const u8 {
-                        return switch (@typeInfo(T)) {
-                            .Vector => "Vector",
-                            .Array => "Matrix",
-                            .Float, .ComptimeFloat, .Int, .ComptimeInt => "Scalar",
-                            else => @typeName(T),
-                        };
-                    }
-                };
-                const type1 = comptime calc.label(@TypeOf(p1));
-                const type2 = comptime calc.label(@TypeOf(p2));
-                const fname = type1 ++ " " ++ operator ++ " " ++ type2;
-                if (!@hasDecl(calc, fname)) {
-                    @compileError("Illegal operation: " ++ fname);
+
+            fn @"V * M"(v1: anytype, m2: anytype) @TypeOf(v1) {
+                var result: @TypeOf(v1) = undefined;
+                inline for (m2, 0..) |column, c| {
+                    result[c] = @reduce(.Add, column * v1);
                 }
-                const f = @field(calc, fname);
-                return f(p1, p2);
+                return result;
             }
         };
     }
-    
     // kernel instance creation function
+
+
     pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
@@ -1024,44 +867,22 @@ pub const kernel = struct {
             .params = params,
         };
     }
+
 };
 
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
 
-pub fn createOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, 0, height, input, params);
 }
 
-pub fn createPartialOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createPartialOutput(allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, start, count, input, params);
 }
 
-fn createPartialOutputOf(
-comptime T: type,
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: KernelInput(T, kernel),
-params: Parameters,
-) !KernelOutput(u8, kernel) {
+fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: KernelInput(T, kernel), params: Parameters) !KernelOutput(u8, kernel) {
     var output: KernelOutput(u8, kernel) = undefined;
     inline for (std.meta.fields(Output)) |field| {
         const ImageT = @TypeOf(@field(output, field.name));
@@ -1092,14 +913,14 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         pub const Pixel = @Vector(4, T);
         pub const FPixel = @Vector(len, f32);
         pub const channels = len;
-        
+
         data: if (writable) []Pixel else []const Pixel,
         width: u32,
         height: u32,
         colorSpace: ColorSpace = .srgb,
         premultiplied: bool = false,
         offset: usize = 0,
-        
+
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
             if (len == 4) {
                 return pixel;
@@ -1112,7 +933,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(f32, pixel, undefined, mask);
         }
-        
+
         fn floatPixelFromPBPixel(pixel: FPixel) Pixel {
             if (len == 4) {
                 return pixel;
@@ -1126,7 +947,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(T, pixel, alpha, mask);
         }
-        
+
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
             // https://github.com/ziglang/zig/issues/16267
             var numerator: FPixel = undefined;
@@ -1152,7 +973,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
-        
+
         fn contrain(pixel: FPixel, max: f32) FPixel {
             const lower: FPixel = @splat(0);
             const upper: FPixel = @splat(max);
@@ -1160,7 +981,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const pixel3 = @select(f32, pixel2 < upper, pixel2, upper);
             return pixel3;
         }
-        
+
         fn intPixelFromPBPixel(pixel: FPixel) Pixel {
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
@@ -1195,57 +1016,59 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             }
             return result;
         }
-        
+
         inline fn unsign(value: i32) u32 {
             // allow negative values to be interpreted as large integers to simplify bound-checking
             @setRuntimeSafety(false);
             return @as(u32, @intCast(value));
         }
-        
-        pub fn getPixel(self: @This(), x: i32, y: i32) FPixel {
-            const ux = unsign(x);
-            const uy = unsign(y);
-            if (ux >= self.width or uy >= self.height) {
+
+        fn getPixel(self: @This(), ix: i32, iy: i32) FPixel {
+            const x = unsign(ix);
+            const y = unsign(iy);
+            if (x >= self.width or y >= self.height) {
                 return @as(FPixel, @splat(0));
             }
-            const index = (uy * self.width) + ux;
-            const pixel = self.data[index];
-            return switch (@typeInfo(T)) {
-                .Float => pbPixelFromFloatPixel(pixel),
-                .Int => pbPixelFromIntPixel(pixel),
+            const index = (y * self.width) + x - self.offset;
+            const src_pixel = self.data[index];
+            const pixel: FPixel = switch (@typeInfo(T)) {
+                .Float => pbPixelFromFloatPixel(src_pixel),
+                .Int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            return pixel;
         }
-        
-        pub fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
+
+        fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
             if (comptime !writable) {
                 return;
             }
             const index = (y * self.width) + x - self.offset;
-            self.data[index] = switch (@typeInfo(T)) {
+            const dst_pixel: Pixel = switch (@typeInfo(T)) {
                 .Float => floatPixelFromPBPixel(pixel),
                 .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            self.data[index] = dst_pixel;
         }
-        
-        pub fn pixelSize(self: @This()) @Vector(2, f32) {
+
+        fn pixelSize(self: @This()) @Vector(2, f32) {
             _ = self;
             return .{ 1, 1 };
         }
-        
-        pub fn pixelAspectRatio(self: @This()) f32 {
+
+        fn pixelAspectRatio(self: @This()) f32 {
             _ = self;
             return 1;
         }
-        
-        pub fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
             const x: i32 = @intFromFloat(coord[0]);
             const y: i32 = @intFromFloat(coord[1]);
             return self.getPixel(x, y);
         }
-        
-        pub fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
             const c = coord - @as(@Vector(2, f32), @splat(0.5));
             const x: i32 = @intFromFloat(c[0]);
             const y: i32 = @intFromFloat(c[1]);

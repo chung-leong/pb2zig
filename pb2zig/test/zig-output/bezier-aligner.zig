@@ -1,4 +1,4 @@
-// Pixel Bender "BezierAligner" (translated using pb2zig)
+// Pixel Bender kernel "BezierAligner" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
@@ -10,37 +10,37 @@ pub const kernel = struct {
     pub const parameters = .{
         .startpoint = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -300.0, -300.0 },
-            .maxValue = .{ 900.0, 900.0 },
-            .defaultValue = .{ 50.0, 200.0 },
+            .minValue = .{ -300, -300 },
+            .maxValue = .{ 900, 900 },
+            .defaultValue = .{ 50, 200 },
             .description = "start point for bezier sequence",
         },
         .control1 = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -300.0, -300.0 },
-            .maxValue = .{ 900.0, 900.0 },
-            .defaultValue = .{ 200.0, 100.0 },
+            .minValue = .{ -300, -300 },
+            .maxValue = .{ 900, 900 },
+            .defaultValue = .{ 200, 100 },
             .description = "first control point for bezier sequence",
         },
         .control2 = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -300.0, -300.0 },
-            .maxValue = .{ 900.0, 900.0 },
-            .defaultValue = .{ 400.0, 300.0 },
+            .minValue = .{ -300, -300 },
+            .maxValue = .{ 900, 900 },
+            .defaultValue = .{ 400, 300 },
             .description = "first control point for bezier sequence",
         },
         .endpoint = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -300.0, -300.0 },
-            .maxValue = .{ 900.0, 900.0 },
-            .defaultValue = .{ 550.0, 200.0 },
+            .minValue = .{ -300, -300 },
+            .maxValue = .{ 900, 900 },
+            .defaultValue = .{ 550, 200 },
             .description = "end point for bezier sequence",
         },
         .scale = .{
             .type = @Vector(2, f32),
             .minValue = .{ 0.5, 0.5 },
             .maxValue = .{ 2.5, 2.5 },
-            .defaultValue = .{ 1.0, 1.0 },
+            .defaultValue = .{ 1, 1 },
             .description = "Scales the texture image",
         },
         .imagewidth = .{
@@ -52,9 +52,9 @@ pub const kernel = struct {
         },
         .offset = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -300.0, -300.0 },
-            .maxValue = .{ 300.0, 300.0 },
-            .defaultValue = .{ 0.0, 0.0 },
+            .minValue = .{ -300, -300 },
+            .maxValue = .{ 300, 300 },
+            .defaultValue = .{ 0, 0 },
             .description = "offset.x=Displacement along the curve, offset.y=Displacement perpendicular to the curve",
         },
         .tstart = .{
@@ -75,16 +75,10 @@ pub const kernel = struct {
             .type = [2]@Vector(2, f32),
             .minValue = [2]@Vector(2, f32){
                 .{ -1, -1 },
-                .{ -1, -1 }
+                .{ -1, -1 },
             },
-            .maxValue = [2]@Vector(2, f32){
-                .{ 1, 1 },
-                .{ 1, 1 }
-            },
-            .defaultValue = [2]@Vector(2, f32){
-                .{ 1, 0 },
-                .{ 0, 1 }
-            },
+            .maxValue = [2]@Vector(2, f32){ .{ 1, 1 }, .{ 1, 1 } },
+            .defaultValue = [2]@Vector(2, f32){ .{ 1, 0 }, .{ 0, 1 } },
             .description = "Rotation around the axis",
         },
     };
@@ -95,7 +89,7 @@ pub const kernel = struct {
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
     };
-    
+
     // generic kernel instance type
     fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {
         return struct {
@@ -103,45 +97,68 @@ pub const kernel = struct {
             input: InputStruct,
             output: OutputStruct,
             outputCoord: @Vector(2, u32) = @splat(0),
-            
+
             // output pixel
             dst: @Vector(4, f32) = undefined,
-            
+
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.dst = @splat(0);
-                const background = self.input.background;
                 const startpoint = self.params.startpoint;
                 const control1 = self.params.control1;
                 const control2 = self.params.control2;
                 const endpoint = self.params.endpoint;
+                const scale = self.params.scale;
+                const imagewidth = self.params.imagewidth;
+                const offset = self.params.offset;
                 const tstart = self.params.tstart;
                 const tend = self.params.tend;
                 const rotation = self.params.rotation;
-                const scale = self.params.scale;
-                const offset = self.params.offset;
-                const imagewidth = self.params.imagewidth;
+                const background = self.input.background;
                 const texture = self.input.texture;
-                
+                const dst = self.output.dst;
+                self.dst = @splat(0.0);
+
                 var p: @Vector(2, f32) = self.outCoord();
                 self.dst = background.sampleLinear(p);
-                var fx: @Vector(4, f32) = @Vector(4, f32){ startpoint[0], 3.0 * (control1[0] - startpoint[0]), 3.0 * (startpoint[0] - 2.0 * control1[0] + control2[0]), endpoint[0] - startpoint[0] + 3.0 * (control1[0] - control2[0]) };
-                var fy: @Vector(4, f32) = @Vector(4, f32){ startpoint[1], 3.0 * (control1[1] - startpoint[1]), 3.0 * (startpoint[1] - 2.0 * control1[1] + control2[1]), endpoint[1] - startpoint[1] + 3.0 * (control1[1] - control2[1]) };
+                var fx: @Vector(4, f32) = .{
+                    startpoint[0],
+                    3.0 * (control1[0] - startpoint[0]),
+                    3.0 * (startpoint[0] - 2.0 * control1[0] + control2[0]),
+                    endpoint[0] - startpoint[0] + 3.0 * (control1[0] - control2[0]),
+                };
+                var fy: @Vector(4, f32) = .{
+                    startpoint[1],
+                    3.0 * (control1[1] - startpoint[1]),
+                    3.0 * (startpoint[1] - 2.0 * control1[1] + control2[1]),
+                    endpoint[1] - startpoint[1] + 3.0 * (control1[1] - control2[1]),
+                };
                 var dfx: @Vector(4, f32) = derivative(fx);
                 var dfy: @Vector(4, f32) = derivative(fy);
                 var ta: f32 = tstart;
                 var tb: f32 = tend;
-                var d: @Vector(2, f32) = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, ta), eval(dfy, ta) });
+                var d: @Vector(2, f32) = @"M * V"(rotation, @Vector(2, f32){
+                    eval(dfx, ta),
+                    eval(dfy, ta),
+                });
                 d /= @as(@Vector(2, f32), @splat(length(d)));
-                var p0: @Vector(2, f32) = matrixCalc("*", [2]@Vector(2, f32){
+                var p0: @Vector(2, f32) = @"M * V"([2]@Vector(2, f32){
                     .{ d[0], -d[1] },
-                    .{ d[1], d[0] }
-                }, (p - @Vector(2, f32){ eval(fx, ta), eval(fy, ta) }));
-                d = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, tb), eval(dfy, tb) });
-                var p1: @Vector(2, f32) = matrixCalc("*", [2]@Vector(2, f32){
+                    .{ d[1], d[0] },
+                }, (p - @Vector(2, f32){
+                    eval(fx, ta),
+                    eval(fy, ta),
+                }));
+                d = @"M * V"(rotation, @Vector(2, f32){
+                    eval(dfx, tb),
+                    eval(dfy, tb),
+                });
+                var p1: @Vector(2, f32) = @"M * V"([2]@Vector(2, f32){
                     .{ d[0], -d[1] },
-                    .{ d[1], d[0] }
-                }, (p - @Vector(2, f32){ eval(fx, tb), eval(fy, tb) }));
+                    .{ d[1], d[0] },
+                }, (p - @Vector(2, f32){
+                    eval(fx, tb),
+                    eval(fy, tb),
+                }));
                 if ((p0[0] < 0.0 and p1[0] > 0.0) or (p0[0] > 0.0 and p1[0] < 0.0)) {
                     p1 /= @as(@Vector(2, f32), @splat(length(d)));
                     var t: f32 = undefined;
@@ -151,12 +168,18 @@ pub const kernel = struct {
                         var i: i32 = 0;
                         while (i < 2) {
                             t = ta + p0[0] / (p0[0] - p1[0]) * (tb - ta);
-                            d = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
+                            d = @"M * V"(rotation, @Vector(2, f32){
+                                eval(dfx, t),
+                                eval(dfy, t),
+                            });
                             d /= @as(@Vector(2, f32), @splat(length(d)));
-                            p2 = matrixCalc("*", [2]@Vector(2, f32){
+                            p2 = @"M * V"([2]@Vector(2, f32){
                                 .{ d[0], -d[1] },
-                                .{ d[1], d[0] }
-                            }, (p - @Vector(2, f32){ eval(fx, t), eval(fy, t) }));
+                                .{ d[1], d[0] },
+                            }, (p - @Vector(2, f32){
+                                eval(fx, t),
+                                eval(fy, t),
+                            }));
                             if (sign(p2[0]) == sign(p0[0])) {
                                 p0 = p2;
                                 ta = t;
@@ -168,13 +191,31 @@ pub const kernel = struct {
                         }
                     }
                     t = ta + p0[0] / (p0[0] - p1[0]) * (tb - ta);
-                    d = matrixCalc("*", rotation, @Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
+                    d = @"M * V"(rotation, @Vector(2, f32){
+                        eval(dfx, t),
+                        eval(dfy, t),
+                    });
                     d /= @as(@Vector(2, f32), @splat(length(d)));
-                    p2 = matrixCalc("*", [2]@Vector(2, f32){
+                    p2 = @"M * V"([2]@Vector(2, f32){
                         .{ d[0], -d[1] },
-                        .{ d[1], d[0] }
-                    }, (p - @Vector(2, f32){ eval(fx, t), eval(fy, t) }));
-                    tmp = length(@Vector(2, f32){ eval(dfx, 0.0), eval(dfy, 0.0) }) + 3.0 * (length(@Vector(2, f32){ eval(dfx, 0.33333333 * t), eval(dfy, 0.33333333 * t) }) + length(@Vector(2, f32){ eval(dfx, 0.66666666 * t), eval(dfy, 0.66666666 * t) })) + length(@Vector(2, f32){ eval(dfx, t), eval(dfy, t) });
+                        .{ d[1], d[0] },
+                    }, (p - @Vector(2, f32){
+                        eval(fx, t),
+                        eval(fy, t),
+                    }));
+                    tmp = length(@Vector(2, f32){
+                        eval(dfx, 0.0),
+                        eval(dfy, 0.0),
+                    }) + 3.0 * (length(@Vector(2, f32){
+                        eval(dfx, 0.33333333 * t),
+                        eval(dfy, 0.33333333 * t),
+                    }) + length(@Vector(2, f32){
+                        eval(dfx, 0.66666666 * t),
+                        eval(dfy, 0.66666666 * t),
+                    })) + length(@Vector(2, f32){
+                        eval(dfx, t),
+                        eval(dfy, t),
+                    });
                     p2[0] = 0.125 * t * tmp;
                     p2 /= scale;
                     p2 += offset;
@@ -184,30 +225,35 @@ pub const kernel = struct {
                     var dst2: @Vector(4, f32) = texture.sampleLinear(p2);
                     self.dst += @as(@Vector(4, f32), @splat(dst2[3])) * (dst2 - self.dst);
                 }
-                
-                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+
+                dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
-            
+
             // macros
             fn derivative(f: @Vector(4, f32)) @Vector(4, f32) {
-                return @Vector(4, f32){ f[1], 2.0 * f[2], 3.0 * f[3], 0.0 };
+                return @Vector(4, f32){
+                    f[1],
+                    2.0 * f[2],
+                    3.0 * f[3],
+                    0.0,
+                };
             }
-            
+
             fn eval(f: @Vector(4, f32), t: f32) f32 {
                 return (f[0] + t * (f[1] + t * (f[2] + t * f[3])));
             }
-            
+
             // built-in Pixel Bender functions
             fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
-            
+
             fn sign(v: anytype) @TypeOf(v) {
                 return std.math.sign(v);
             }
-            
+
             fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @mod(v1, v2),
@@ -217,184 +263,32 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn length(v: anytype) f32 {
                 const sum = @reduce(.Add, v * v);
                 return @sqrt(sum);
             }
-            
-            fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
-                return switch (operator[0]) {
-                    '=', '!' => bool,
-                    '+', '-', '/' => switch (@typeInfo(T2)) {
-                        .Array => T2,
-                        else => T1,
-                    },
-                    '*' => switch (@typeInfo(T2)) {
-                        .Vector => T2,
-                        else => switch (@typeInfo(T1)) {
-                            .Vector => T1,
-                            .Array => T1,
-                            else => T2,
-                        },
-                    },
-                    else => @compileError("Unknown operator: " ++ operator),
-                };
-            }
-            
-            fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) MatrixCalcResult(operator, @TypeOf(p1), @TypeOf(p2)) {
-                const calc = struct {
-                    fn @"Vector * Matrix"(v1: anytype, m2: anytype) @TypeOf(v1) {
-                        var result: @TypeOf(v1) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @reduce(.Add, column * v1);
-                        }
-                        return result;
+
+            fn @"M * V"(m1: anytype, v2: anytype) @TypeOf(v2) {
+                const ar = @typeInfo(@TypeOf(m1)).Array;
+                var t1: @TypeOf(m1) = undefined;
+                inline for (m1, 0..) |column, c| {
+                    comptime var r = 0;
+                    inline while (r < ar.len) : (r += 1) {
+                        t1[r][c] = column[r];
                     }
-                    
-                    fn @"Matrix * Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        const ar = @typeInfo(@TypeOf(m2)).Array;
-                        var result: @TypeOf(m2) = undefined;
-                        comptime var r = 0;
-                        inline while (r < ar.len) : (r += 1) {
-                            var row: ar.child = undefined;
-                            inline for (m1, 0..) |column, c| {
-                                row[c] = column[r];
-                            }
-                            inline for (m2, 0..) |column, c| {
-                                result[c][r] = @reduce(.Add, row * column);
-                            }
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix * Vector"(m1: anytype, v2: anytype) @TypeOf(v2) {
-                        const ar = @typeInfo(@TypeOf(m1)).Array;
-                        var t1: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            comptime var r = 0;
-                            inline while (r < ar.len) : (r += 1) {
-                                t1[r][c] = column[r];
-                            }
-                        }
-                        return @"Vector * Matrix"(v2, t1);
-                    }
-                    
-                    fn @"Matrix * Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar * Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        return @"Matrix * Scalar"(m2, s1);
-                    }
-                    
-                    fn @"Matrix + Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column + m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix + Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column + @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar + Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        return @"Matrix + Scalar"(m2, s1);
-                    }
-                    
-                    fn @"Matrix - Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column - m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix - Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column - @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar - Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) - column;
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix / Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column / m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix / Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column / @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar / Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) / column;
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix == Matrix"(m1: anytype, m2: anytype) bool {
-                        inline for (m1, 0..) |column, c| {
-                            if (!@reduce(.And, column == m2[c])) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                    
-                    fn @"Matrix != Matrix"(m1: anytype, m2: anytype) bool {
-                        return !@"Matrix == Matrix"(m1, m2);
-                    }
-                    
-                    fn label(comptime T: type) []const u8 {
-                        return switch (@typeInfo(T)) {
-                            .Vector => "Vector",
-                            .Array => "Matrix",
-                            .Float, .ComptimeFloat, .Int, .ComptimeInt => "Scalar",
-                            else => @typeName(T),
-                        };
-                    }
-                };
-                const type1 = comptime calc.label(@TypeOf(p1));
-                const type2 = comptime calc.label(@TypeOf(p2));
-                const fname = type1 ++ " " ++ operator ++ " " ++ type2;
-                if (!@hasDecl(calc, fname)) {
-                    @compileError("Illegal operation: " ++ fname);
                 }
-                const f = @field(calc, fname);
-                return f(p1, p2);
+                var result: @TypeOf(v2) = undefined;
+                inline for (t1, 0..) |column, c| {
+                    result[c] = @reduce(.Add, column * v2);
+                }
+                return result;
             }
         };
     }
-    
     // kernel instance creation function
+
+
     pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
@@ -402,44 +296,22 @@ pub const kernel = struct {
             .params = params,
         };
     }
+
 };
 
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
 
-pub fn createOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, 0, height, input, params);
 }
 
-pub fn createPartialOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createPartialOutput(allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, start, count, input, params);
 }
 
-fn createPartialOutputOf(
-comptime T: type,
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: KernelInput(T, kernel),
-params: Parameters,
-) !KernelOutput(u8, kernel) {
+fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: KernelInput(T, kernel), params: Parameters) !KernelOutput(u8, kernel) {
     var output: KernelOutput(u8, kernel) = undefined;
     inline for (std.meta.fields(Output)) |field| {
         const ImageT = @TypeOf(@field(output, field.name));
@@ -470,14 +342,14 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         pub const Pixel = @Vector(4, T);
         pub const FPixel = @Vector(len, f32);
         pub const channels = len;
-        
+
         data: if (writable) []Pixel else []const Pixel,
         width: u32,
         height: u32,
         colorSpace: ColorSpace = .srgb,
         premultiplied: bool = false,
         offset: usize = 0,
-        
+
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
             if (len == 4) {
                 return pixel;
@@ -490,7 +362,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(f32, pixel, undefined, mask);
         }
-        
+
         fn floatPixelFromPBPixel(pixel: FPixel) Pixel {
             if (len == 4) {
                 return pixel;
@@ -504,7 +376,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(T, pixel, alpha, mask);
         }
-        
+
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
             // https://github.com/ziglang/zig/issues/16267
             var numerator: FPixel = undefined;
@@ -530,7 +402,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
-        
+
         fn contrain(pixel: FPixel, max: f32) FPixel {
             const lower: FPixel = @splat(0);
             const upper: FPixel = @splat(max);
@@ -538,7 +410,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const pixel3 = @select(f32, pixel2 < upper, pixel2, upper);
             return pixel3;
         }
-        
+
         fn intPixelFromPBPixel(pixel: FPixel) Pixel {
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
@@ -573,57 +445,59 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             }
             return result;
         }
-        
+
         inline fn unsign(value: i32) u32 {
             // allow negative values to be interpreted as large integers to simplify bound-checking
             @setRuntimeSafety(false);
             return @as(u32, @intCast(value));
         }
-        
-        pub fn getPixel(self: @This(), x: i32, y: i32) FPixel {
-            const ux = unsign(x);
-            const uy = unsign(y);
-            if (ux >= self.width or uy >= self.height) {
+
+        fn getPixel(self: @This(), ix: i32, iy: i32) FPixel {
+            const x = unsign(ix);
+            const y = unsign(iy);
+            if (x >= self.width or y >= self.height) {
                 return @as(FPixel, @splat(0));
             }
-            const index = (uy * self.width) + ux;
-            const pixel = self.data[index];
-            return switch (@typeInfo(T)) {
-                .Float => pbPixelFromFloatPixel(pixel),
-                .Int => pbPixelFromIntPixel(pixel),
+            const index = (y * self.width) + x - self.offset;
+            const src_pixel = self.data[index];
+            const pixel: FPixel = switch (@typeInfo(T)) {
+                .Float => pbPixelFromFloatPixel(src_pixel),
+                .Int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            return pixel;
         }
-        
-        pub fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
+
+        fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
             if (comptime !writable) {
                 return;
             }
             const index = (y * self.width) + x - self.offset;
-            self.data[index] = switch (@typeInfo(T)) {
+            const dst_pixel: Pixel = switch (@typeInfo(T)) {
                 .Float => floatPixelFromPBPixel(pixel),
                 .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            self.data[index] = dst_pixel;
         }
-        
-        pub fn pixelSize(self: @This()) @Vector(2, f32) {
+
+        fn pixelSize(self: @This()) @Vector(2, f32) {
             _ = self;
             return .{ 1, 1 };
         }
-        
-        pub fn pixelAspectRatio(self: @This()) f32 {
+
+        fn pixelAspectRatio(self: @This()) f32 {
             _ = self;
             return 1;
         }
-        
-        pub fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
             const x: i32 = @intFromFloat(coord[0]);
             const y: i32 = @intFromFloat(coord[1]);
             return self.getPixel(x, y);
         }
-        
-        pub fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
             const c = coord - @as(@Vector(2, f32), @splat(0.5));
             const x: i32 = @intFromFloat(c[0]);
             const y: i32 = @intFromFloat(c[1]);

@@ -100,7 +100,7 @@ describe('Translator tests', function() {
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('const tmp1 = a;');
       expect(result).to.contain('const tmp2 = a;');
-      expect(result).to.contain('var b: f32 = (tmp1) * (tmp2);');
+      expect(result).to.contain('var b: f32 = tmp1 * tmp2;');
     })
     it('should correctly translate expression involving increments', function() {
       const pbkCode = addPBKWrapper(`
@@ -112,7 +112,7 @@ describe('Translator tests', function() {
       expect(result).to.contain('const tmp2 = a;');
       // increments occur one after the other
       expect(result).to.match(/a \+= 1\.0;\s+a \+= 1\.0;/);
-      expect(result).to.contain('var b: f32 = (tmp1) * (tmp2);');
+      expect(result).to.contain('var b: f32 = tmp1 * tmp2;');
     })
   })
   describe('Swizzling operations', function() {

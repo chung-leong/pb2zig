@@ -1,3 +1,5 @@
+import * as ZIG from './zig-nodes.js';
+
 export class ZigSerializer {
   ast;
   macroASTs;
@@ -272,7 +274,12 @@ export class ZigSerializer {
 
   serializeUnaryOperation({ operator, operand }) {
     const op = this.serializeExpression(operand);
-    return `${operator}${op}`;
+    if (operand instanceof ZIG.BinaryOperation || operand instanceof ZIG.Conditional) {
+      // need parentheses
+      return `${operator}(${op})`;
+    } else {
+      return `${operator}${op}`;
+    }
   }
 }
 

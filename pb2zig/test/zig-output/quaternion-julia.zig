@@ -1,4 +1,4 @@
-// Pixel Bender "QuaternionJulia" (translated using pb2zig)
+// Pixel Bender kernel "QuaternionJulia" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
@@ -7,7 +7,7 @@ pub const kernel = struct {
     const ESCAPE_THRESHOLD = 10.0;
     const DEL = 0.0001;
     const EPSILON = 0.001;
-    
+
     // kernel information
     pub const namespace = "com.subblue.filters";
     pub const vendor = "Tom Beddard";
@@ -39,26 +39,26 @@ pub const kernel = struct {
         },
         .mu = .{
             .type = @Vector(4, f32),
-            .minValue = .{ -2.1, -3.0, -3.0, -1.5 },
-            .maxValue = .{ 2.1, 3.0, 3.0, 1.5 },
-            .defaultValue = .{ -0.04, 0.0, 0.72, 0.0 },
+            .minValue = .{ -2.1, -3, -3, -1.5 },
+            .maxValue = .{ 2.1, 3, 3, 1.5 },
+            .defaultValue = .{ -0.04, 0, 0.72, 0 },
         },
         .camera = .{
             .type = @Vector(4, f32),
-            .minValue = .{ -180.0, -180.0, -180.0, 0.0 },
-            .maxValue = .{ 180.0, 180.0, 180.0, 20.0 },
-            .defaultValue = .{ -30.0, 0.0, -20.0, 3.0 },
+            .minValue = .{ -180, -180, -180, 0 },
+            .maxValue = .{ 180, 180, 180, 20 },
+            .defaultValue = .{ -30, 0, -20, 3 },
         },
         .light = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -10.0, -10.0, -10.0 },
-            .maxValue = .{ 10.0, 10.0, 10.0 },
-            .defaultValue = .{ 2.0, 2.0, 2.0 },
+            .minValue = .{ -10, -10, -10 },
+            .maxValue = .{ 10, 10, 10 },
+            .defaultValue = .{ 2, 2, 2 },
         },
         .background = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0.0, 0.0, 0.0 },
-            .maxValue = .{ 1.0, 1.0, 1.0 },
+            .minValue = .{ 0, 0, 0 },
+            .maxValue = .{ 1, 1, 1 },
             .defaultValue = .{ 0.3, 0.33, 0.35 },
             .aeUIControl = "aeColor",
         },
@@ -71,8 +71,8 @@ pub const kernel = struct {
         },
         .color = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0.0, 0.0, 0.0 },
-            .maxValue = .{ 1.0, 1.0, 1.0 },
+            .minValue = .{ 0, 0, 0 },
+            .maxValue = .{ 1, 1, 1 },
             .defaultValue = .{ 0.63, 0.08, 0.0 },
             .aeUIControl = "aeColor",
         },
@@ -109,12 +109,11 @@ pub const kernel = struct {
             .defaultValue = .{ 600, 400 },
         },
     };
-    pub const inputImages = .{
-    };
+    pub const inputImages = .{};
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
     };
-    
+
     // generic kernel instance type
     fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {
         return struct {
@@ -122,10 +121,10 @@ pub const kernel = struct {
             input: InputStruct,
             output: OutputStruct,
             outputCoord: @Vector(2, u32) = @splat(0),
-            
+
             // output pixel
             dst: @Vector(4, f32) = undefined,
-            
+
             // dependent variables
             aspectRatio: f32 = undefined,
             sampleStep: f32 = undefined,
@@ -136,7 +135,7 @@ pub const kernel = struct {
             viewRotationX: [3]@Vector(3, f32) = undefined,
             viewRotationY: [3]@Vector(3, f32) = undefined,
             viewRotationZ: [3]@Vector(3, f32) = undefined,
-            
+
             // functions defined in kernel
             fn quatMult(q1: @Vector(4, f32), q2: @Vector(4, f32)) @Vector(4, f32) {
                 var r: @Vector(4, f32) = undefined;
@@ -146,7 +145,7 @@ pub const kernel = struct {
                 r[3] = q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] - q1[3] * q2[0];
                 return r;
             }
-            
+
             fn quatSq(q: @Vector(4, f32)) @Vector(4, f32) {
                 var r: @Vector(4, f32) = undefined;
                 r[0] = q[0] * q[0] - q[1] * q[1] - q[2] * q[2] - q[3] * q[3];
@@ -155,26 +154,28 @@ pub const kernel = struct {
                 r[3] = 2.0 * q[0] * q[3];
                 return r;
             }
-            
+
             fn iterateIntersect(q: *@Vector(4, f32), qp: *@Vector(4, f32), c: @Vector(4, f32), maxIterations: i32) void {
                 {
                     var i: i32 = 0;
                     while (i < maxIterations) {
                         qp.* = @as(@Vector(4, f32), @splat(2.0)) * quatMult(q.*, qp.*);
                         q.* = quatSq(q.*) + c;
-                        if (dot(q.*, q.*) > ESCAPE_THRESHOLD) {
-                            break;
-                        }
+                        if (dot(q.*, q.*) > ESCAPE_THRESHOLD) break;
                         i += 1;
                     }
                 }
             }
-            
-            fn normEstimate(self: *@This(), p: @Vector(3, f32), c: @Vector(4, f32)) @Vector(3, f32) {
+
+            fn normEstimate(p: @Vector(3, f32), c: @Vector(4, f32), self: *@This()) @Vector(3, f32) {
                 const maxIterations = self.params.maxIterations;
-                
                 var N: @Vector(3, f32) = undefined;
-                var qP: @Vector(4, f32) = @Vector(4, f32){ p[0], p[1], p[2], 0.0 };
+                var qP: @Vector(4, f32) = .{
+                    p[0],
+                    p[1],
+                    p[2],
+                    0.0,
+                };
                 var gradX: f32 = undefined;
                 var gradY: f32 = undefined;
                 var gradZ: f32 = undefined;
@@ -202,36 +203,37 @@ pub const kernel = struct {
                 N = normalize(@Vector(3, f32){ gradX, gradY, gradZ });
                 return N;
             }
-            
-            fn intersectQJulia(self: *@This(), rO: *@Vector(3, f32), rD: *@Vector(3, f32), c: @Vector(4, f32)) @Vector(2, f32) {
-                const maxIterations = self.params.maxIterations;
+
+            fn intersectQJulia(rO: *@Vector(3, f32), rD: *@Vector(3, f32), c: @Vector(4, f32), self: *@This()) @Vector(2, f32) {
                 const ambientOcclusion = self.params.ambientOcclusion;
-                
+                const maxIterations = self.params.maxIterations;
                 var dist: @Vector(2, f32) = undefined;
                 var n: i32 = 0;
                 while (n < 150) {
-                    var z: @Vector(4, f32) = @Vector(4, f32){ rO.*[0], rO.*[1], rO.*[2], 0.0 };
-                    var zp: @Vector(4, f32) = @Vector(4, f32){ 1.0, 0.0, 0.0, 0.0 };
-                    _ = iterateIntersect(&z, &zp, c, maxIterations);
+                    var z: @Vector(4, f32) = .{
+                        rO.*[0],
+                        rO.*[1],
+                        rO.*[2],
+                        0.0,
+                    };
+                    var zp: @Vector(4, f32) = .{ 1.0, 0.0, 0.0, 0.0 };
+                    iterateIntersect(&z, &zp, c, maxIterations);
                     var normZ: f32 = length(z);
                     dist[0] = 0.5 * normZ * log(normZ) / length(zp);
                     rO.* += rD.* * @as(@Vector(3, f32), @splat(dist[0]));
-                    if (dist[0] < EPSILON or dot(rO.*, rO.*) > BOUNDING_RADIUS_2) {
-                        break;
-                    }
+                    if (dist[0] < EPSILON or dot(rO.*, rO.*) > BOUNDING_RADIUS_2) break;
                     n += 1;
                 }
                 dist[1] = 1.0 - clamp((@as(f32, @floatFromInt(n)) / 150.0) * ambientOcclusion, 0.0, 1.0);
                 return dist;
             }
-            
-            fn Phong(self: *@This(), light: @Vector(3, f32), eye: @Vector(3, f32), pt: @Vector(3, f32), N: @Vector(3, f32), ao: f32) @Vector(3, f32) {
+
+            fn Phong(light: @Vector(3, f32), eye: @Vector(3, f32), pt: @Vector(3, f32), N: @Vector(3, f32), ao: f32, self: *@This()) @Vector(3, f32) {
+                const ambientLight = self.params.ambientLight;
                 const color = self.params.color;
                 const colorSpread = self.params.colorSpread;
-                const ambientLight = self.params.ambientLight;
                 const specularity = self.params.specularity;
                 const specularExponent = self.params.specularExponent;
-                
                 var diffuse: @Vector(3, f32) = color;
                 var L: @Vector(3, f32) = normalize(light - pt);
                 var E: @Vector(3, f32) = normalize(eye - pt);
@@ -241,7 +243,7 @@ pub const kernel = struct {
                 diffuse = (diffuse * @as(@Vector(3, f32), @splat(max(NdotL, ambientLight))) + @as(@Vector(3, f32), @splat(specularity * pow(max(dot(E, R), 0.0), specularExponent)))) * @as(@Vector(3, f32), @splat(ao));
                 return diffuse;
             }
-            
+
             fn intersectSphere(rO: @Vector(3, f32), rD: @Vector(3, f32)) @Vector(3, f32) {
                 var B: f32 = undefined;
                 var C: f32 = undefined;
@@ -258,24 +260,26 @@ pub const kernel = struct {
                 rO += @as(@Vector(3, f32), @splat(t)) * rD;
                 return rO;
             }
-            
-            fn rayDirection(self: *@This(), p: @Vector(2, f32)) @Vector(3, f32) {
-                const aspectRatio = self.aspectRatio;
+
+            fn rayDirection(p: @Vector(2, f32), self: *@This()) @Vector(3, f32) {
                 const size = self.params.size;
+                const aspectRatio = self.aspectRatio;
                 const viewRotation = self.viewRotation;
-                
-                var direction: @Vector(3, f32) = @Vector(3, f32){ 2.0 * aspectRatio * p[0] / @as(f32, @floatFromInt(size[0])) - aspectRatio, -2.0 * p[1] / @as(f32, @floatFromInt(size[1])) + 1.0, -2.0 };
-                return matrixCalc("*", direction, viewRotation);
+                var direction: @Vector(3, f32) = .{
+                    2.0 * aspectRatio * p[0] / @as(f32, @floatFromInt(size[0])) - aspectRatio,
+                    -2.0 * p[1] / @as(f32, @floatFromInt(size[1])) + 1.0,
+                    -2.0,
+                };
+                return @"V * M"(direction, viewRotation);
             }
-            
-            fn renderPoint(self: *@This(), p: @Vector(2, f32)) @Vector(4, f32) {
+
+            fn renderPoint(p: @Vector(2, f32), self: *@This()) @Vector(4, f32) {
+                const shadows = self.params.shadows;
+                const mu = self.params.mu;
                 const background = self.params.background;
                 const backgroundTransparency = self.params.backgroundTransparency;
                 const eye = self.eye;
-                const mu = self.params.mu;
                 const lightSource = self.lightSource;
-                const shadows = self.params.shadows;
-                
                 var color: @Vector(4, f32) = undefined;
                 color = @shuffle(f32, color, background, @Vector(4, i32){ -1, -2, -3, 3 });
                 color[3] = backgroundTransparency;
@@ -301,54 +305,55 @@ pub const kernel = struct {
                 }
                 return color;
             }
-            
+
             pub fn evaluateDependents(self: *@This()) void {
-                const size = self.params.size;
                 const camera = self.params.camera;
                 const light = self.params.light;
-                
+                const size = self.params.size;
                 self.aspectRatio = @as(f32, @floatFromInt(size[0])) / @as(f32, @floatFromInt(size[1]));
                 var c1: f32 = cos(radians(-camera[0]));
                 var s1: f32 = sin(radians(-camera[0]));
                 self.viewRotationY = [3]@Vector(3, f32){
                     .{ c1, 0, s1 },
                     .{ 0, 1, 0 },
-                    .{ -s1, 0, c1 }
+                    .{ -s1, 0, c1 },
                 };
                 var c2: f32 = cos(radians(-camera[1]));
                 var s2: f32 = sin(radians(-camera[1]));
                 self.viewRotationZ = [3]@Vector(3, f32){
                     .{ c2, -s2, 0 },
                     .{ s2, c2, 0 },
-                    .{ 0, 0, 1 }
+                    .{ 0, 0, 1 },
                 };
                 var c3: f32 = cos(radians(-camera[2]));
                 var s3: f32 = sin(radians(-camera[2]));
                 self.viewRotationX = [3]@Vector(3, f32){
                     .{ 1, 0, 0 },
                     .{ 0, c3, -s3 },
-                    .{ 0, s3, c3 }
+                    .{ 0, s3, c3 },
                 };
-                self.viewRotation = matrixCalc("*", matrixCalc("*", self.viewRotationX, self.viewRotationY), self.viewRotationZ);
-                self.eye = matrixCalc("*", @Vector(3, f32){ 0.0, 0.0, camera[3] }, self.viewRotation);
-                self.lightSource = matrixCalc("*", light, self.viewRotation);
+                self.viewRotation = @"M * M"(@"M * M"(self.viewRotationX, self.viewRotationY), self.viewRotationZ);
+                self.eye = @"V * M"(@Vector(3, f32){ 0, 0, camera[3] }, self.viewRotation);
+                self.lightSource = @"V * M"(light, self.viewRotation);
             }
-            
+
             pub fn evaluatePixel(self: *@This()) void {
-                self.dst = @splat(0);
                 const antialiasing = self.params.antialiasing;
-                
-                var c: @Vector(4, f32) = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
+                const dst = self.output.dst;
+                self.dst = @splat(0.0);
+
+                var c: @Vector(4, f32) = .{ 0, 0, 0, 0 };
                 if (antialiasing) {
                     {
                         var i: f32 = 0.0;
                         while (i < 1.0) {
-                            {
-                                var j: f32 = 0.0;
-                                while (j < 1.0) {
-                                    c += @as(@Vector(4, f32), @splat(0.25)) * self.renderPoint(@Vector(2, f32){ self.outCoord()[0] + i, self.outCoord()[1] + j });
-                                    j += 0.5;
-                                }
+                            var j: f32 = 0.0;
+                            while (j < 1.0) {
+                                c += @as(@Vector(4, f32), @splat(0.25)) * self.renderPoint(@Vector(2, f32){
+                                    self.outCoord()[0] + i,
+                                    self.outCoord()[1] + j,
+                                });
+                                j += 0.5;
                             }
                             i += 0.5;
                         }
@@ -357,17 +362,17 @@ pub const kernel = struct {
                     c = self.renderPoint(self.outCoord());
                 }
                 self.dst = c;
-                
-                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+
+                dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
-            
+
             // built-in Pixel Bender functions
             fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
-            
+
             fn radians(v: anytype) @TypeOf(v) {
                 const multiplier = std.math.pi / 180.0;
                 return switch (@typeInfo(@TypeOf(v))) {
@@ -375,15 +380,15 @@ pub const kernel = struct {
                     else => v * multiplier,
                 };
             }
-            
+
             fn sin(v: anytype) @TypeOf(v) {
                 return @sin(v);
             }
-            
+
             fn cos(v: anytype) @TypeOf(v) {
                 return @cos(v);
             }
-            
+
             fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => calc: {
@@ -397,19 +402,19 @@ pub const kernel = struct {
                     else => std.math.pow(@TypeOf(v1), v1, v2),
                 };
             }
-            
+
             fn log(v: anytype) @TypeOf(v) {
                 return @log(v);
             }
-            
+
             fn sqrt(v: anytype) @TypeOf(v) {
                 return @sqrt(v);
             }
-            
+
             fn abs(v: anytype) @TypeOf(v) {
                 return @fabs(v);
             }
-            
+
             fn min(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @min(v1, v2),
@@ -419,7 +424,7 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @max(v1, v2),
@@ -429,7 +434,7 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
                 return switch (@typeInfo(@TypeOf(min_val))) {
                     .Vector => calc: {
@@ -452,198 +457,54 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn length(v: anytype) f32 {
                 const sum = @reduce(.Add, v * v);
                 return @sqrt(sum);
             }
-            
+
             fn dot(v1: anytype, v2: anytype) f32 {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => @reduce(.Add, v1 * v2),
                     else => v1 * v2,
                 };
             }
-            
+
             fn normalize(v: anytype) @TypeOf(v) {
                 return switch (@typeInfo(@TypeOf(v))) {
                     .Vector => v / @as(@TypeOf(v), @splat(@sqrt(@reduce(.Add, v * v)))),
                     else => if (v > 0) 1 else -1,
                 };
             }
-            
-            fn MatrixCalcResult(comptime operator: []const u8, comptime T1: type, comptime T2: type) type {
-                return switch (operator[0]) {
-                    '=', '!' => bool,
-                    '+', '-', '/' => switch (@typeInfo(T2)) {
-                        .Array => T2,
-                        else => T1,
-                    },
-                    '*' => switch (@typeInfo(T2)) {
-                        .Vector => T2,
-                        else => switch (@typeInfo(T1)) {
-                            .Vector => T1,
-                            .Array => T1,
-                            else => T2,
-                        },
-                    },
-                    else => @compileError("Unknown operator: " ++ operator),
-                };
-            }
-            
-            fn matrixCalc(comptime operator: []const u8, p1: anytype, p2: anytype) MatrixCalcResult(operator, @TypeOf(p1), @TypeOf(p2)) {
-                const calc = struct {
-                    fn @"Vector * Matrix"(v1: anytype, m2: anytype) @TypeOf(v1) {
-                        var result: @TypeOf(v1) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @reduce(.Add, column * v1);
-                        }
-                        return result;
+
+            fn @"M * M"(m1: anytype, m2: anytype) @TypeOf(m1) {
+                const ar = @typeInfo(@TypeOf(m2)).Array;
+                var result: @TypeOf(m2) = undefined;
+                comptime var r = 0;
+                inline while (r < ar.len) : (r += 1) {
+                    var row: ar.child = undefined;
+                    inline for (m1, 0..) |column, c| {
+                        row[c] = column[r];
                     }
-                    
-                    fn @"Matrix * Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        const ar = @typeInfo(@TypeOf(m2)).Array;
-                        var result: @TypeOf(m2) = undefined;
-                        comptime var r = 0;
-                        inline while (r < ar.len) : (r += 1) {
-                            var row: ar.child = undefined;
-                            inline for (m1, 0..) |column, c| {
-                                row[c] = column[r];
-                            }
-                            inline for (m2, 0..) |column, c| {
-                                result[c][r] = @reduce(.Add, row * column);
-                            }
-                        }
-                        return result;
+                    inline for (m2, 0..) |column, c| {
+                        result[c][r] = @reduce(.Add, row * column);
                     }
-                    
-                    fn @"Matrix * Vector"(m1: anytype, v2: anytype) @TypeOf(v2) {
-                        const ar = @typeInfo(@TypeOf(m1)).Array;
-                        var t1: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            comptime var r = 0;
-                            inline while (r < ar.len) : (r += 1) {
-                                t1[r][c] = column[r];
-                            }
-                        }
-                        return @"Vector * Matrix"(v2, t1);
-                    }
-                    
-                    fn @"Matrix * Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar * Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        return @"Matrix * Scalar"(m2, s1);
-                    }
-                    
-                    fn @"Matrix + Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column + m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix + Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column + @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar + Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        return @"Matrix + Scalar"(m2, s1);
-                    }
-                    
-                    fn @"Matrix - Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column - m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix - Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column - @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar - Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) - column;
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix / Matrix"(m1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column / m2[c];
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix / Scalar"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                        var result: @TypeOf(m1) = undefined;
-                        inline for (m1, 0..) |column, c| {
-                            result[c] = column / @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Scalar / Matrix"(s1: anytype, m2: anytype) @TypeOf(m2) {
-                        var result: @TypeOf(m2) = undefined;
-                        inline for (m2, 0..) |column, c| {
-                            result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) / column;
-                        }
-                        return result;
-                    }
-                    
-                    fn @"Matrix == Matrix"(m1: anytype, m2: anytype) bool {
-                        inline for (m1, 0..) |column, c| {
-                            if (!@reduce(.And, column == m2[c])) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                    
-                    fn @"Matrix != Matrix"(m1: anytype, m2: anytype) bool {
-                        return !@"Matrix == Matrix"(m1, m2);
-                    }
-                    
-                    fn label(comptime T: type) []const u8 {
-                        return switch (@typeInfo(T)) {
-                            .Vector => "Vector",
-                            .Array => "Matrix",
-                            .Float, .ComptimeFloat, .Int, .ComptimeInt => "Scalar",
-                            else => @typeName(T),
-                        };
-                    }
-                };
-                const type1 = comptime calc.label(@TypeOf(p1));
-                const type2 = comptime calc.label(@TypeOf(p2));
-                const fname = type1 ++ " " ++ operator ++ " " ++ type2;
-                if (!@hasDecl(calc, fname)) {
-                    @compileError("Illegal operation: " ++ fname);
                 }
-                const f = @field(calc, fname);
-                return f(p1, p2);
+                return result;
+            }
+
+            fn @"V * M"(v1: anytype, m2: anytype) @TypeOf(v1) {
+                var result: @TypeOf(v1) = undefined;
+                inline for (m2, 0..) |column, c| {
+                    result[c] = @reduce(.Add, column * v1);
+                }
+                return result;
             }
         };
     }
-    
     // kernel instance creation function
+
+
     pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
@@ -651,44 +512,22 @@ pub const kernel = struct {
             .params = params,
         };
     }
+
 };
 
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
 
-pub fn createOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, 0, height, input, params);
 }
 
-pub fn createPartialOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createPartialOutput(allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, start, count, input, params);
 }
 
-fn createPartialOutputOf(
-comptime T: type,
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: KernelInput(T, kernel),
-params: Parameters,
-) !KernelOutput(u8, kernel) {
+fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: KernelInput(T, kernel), params: Parameters) !KernelOutput(u8, kernel) {
     var output: KernelOutput(u8, kernel) = undefined;
     inline for (std.meta.fields(Output)) |field| {
         const ImageT = @TypeOf(@field(output, field.name));
@@ -719,14 +558,14 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         pub const Pixel = @Vector(4, T);
         pub const FPixel = @Vector(len, f32);
         pub const channels = len;
-        
+
         data: if (writable) []Pixel else []const Pixel,
         width: u32,
         height: u32,
         colorSpace: ColorSpace = .srgb,
         premultiplied: bool = false,
         offset: usize = 0,
-        
+
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
             if (len == 4) {
                 return pixel;
@@ -739,7 +578,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(f32, pixel, undefined, mask);
         }
-        
+
         fn floatPixelFromPBPixel(pixel: FPixel) Pixel {
             if (len == 4) {
                 return pixel;
@@ -753,7 +592,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(T, pixel, alpha, mask);
         }
-        
+
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
             // https://github.com/ziglang/zig/issues/16267
             var numerator: FPixel = undefined;
@@ -779,7 +618,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
-        
+
         fn contrain(pixel: FPixel, max: f32) FPixel {
             const lower: FPixel = @splat(0);
             const upper: FPixel = @splat(max);
@@ -787,7 +626,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const pixel3 = @select(f32, pixel2 < upper, pixel2, upper);
             return pixel3;
         }
-        
+
         fn intPixelFromPBPixel(pixel: FPixel) Pixel {
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
@@ -822,57 +661,59 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             }
             return result;
         }
-        
+
         inline fn unsign(value: i32) u32 {
             // allow negative values to be interpreted as large integers to simplify bound-checking
             @setRuntimeSafety(false);
             return @as(u32, @intCast(value));
         }
-        
-        pub fn getPixel(self: @This(), x: i32, y: i32) FPixel {
-            const ux = unsign(x);
-            const uy = unsign(y);
-            if (ux >= self.width or uy >= self.height) {
+
+        fn getPixel(self: @This(), ix: i32, iy: i32) FPixel {
+            const x = unsign(ix);
+            const y = unsign(iy);
+            if (x >= self.width or y >= self.height) {
                 return @as(FPixel, @splat(0));
             }
-            const index = (uy * self.width) + ux;
-            const pixel = self.data[index];
-            return switch (@typeInfo(T)) {
-                .Float => pbPixelFromFloatPixel(pixel),
-                .Int => pbPixelFromIntPixel(pixel),
+            const index = (y * self.width) + x - self.offset;
+            const src_pixel = self.data[index];
+            const pixel: FPixel = switch (@typeInfo(T)) {
+                .Float => pbPixelFromFloatPixel(src_pixel),
+                .Int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            return pixel;
         }
-        
-        pub fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
+
+        fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
             if (comptime !writable) {
                 return;
             }
             const index = (y * self.width) + x - self.offset;
-            self.data[index] = switch (@typeInfo(T)) {
+            const dst_pixel: Pixel = switch (@typeInfo(T)) {
                 .Float => floatPixelFromPBPixel(pixel),
                 .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            self.data[index] = dst_pixel;
         }
-        
-        pub fn pixelSize(self: @This()) @Vector(2, f32) {
+
+        fn pixelSize(self: @This()) @Vector(2, f32) {
             _ = self;
             return .{ 1, 1 };
         }
-        
-        pub fn pixelAspectRatio(self: @This()) f32 {
+
+        fn pixelAspectRatio(self: @This()) f32 {
             _ = self;
             return 1;
         }
-        
-        pub fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
             const x: i32 = @intFromFloat(coord[0]);
             const y: i32 = @intFromFloat(coord[1]);
             return self.getPixel(x, y);
         }
-        
-        pub fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
             const c = coord - @as(@Vector(2, f32), @splat(0.5));
             const x: i32 = @intFromFloat(c[0]);
             const y: i32 = @intFromFloat(c[1]);

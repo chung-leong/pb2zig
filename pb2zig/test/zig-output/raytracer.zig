@@ -1,10 +1,10 @@
-// Pixel Bender "RayTracer" (translated using pb2zig)
+// Pixel Bender kernel "RayTracer" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // constants
     const PI = 3.141592653589793;
-    
+
     // kernel information
     pub const namespace = "Newgrounds";
     pub const vendor = "Newgrounds";
@@ -48,12 +48,11 @@ pub const kernel = struct {
             .defaultValue = .{ 0.05, 0.1, 1.0, 1.0 },
         },
     };
-    pub const inputImages = .{
-    };
+    pub const inputImages = .{};
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
     };
-    
+
     // generic kernel instance type
     fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {
         return struct {
@@ -61,28 +60,27 @@ pub const kernel = struct {
             input: InputStruct,
             output: OutputStruct,
             outputCoord: @Vector(2, u32) = @splat(0),
-            
+
             // output pixel
             dst: @Vector(4, f32) = undefined,
-            
+
             // dependent variables
             sphereArray: [NUM_SPHERES * SPHERE_PARAMETER_COUNT]f32 = undefined,
-            
+
             // constants
-            const RENDER_WIDTH: f32 = 512.0;
-            const RENDER_HEIGHT: f32 = 512.0;
-            const SPECULAR_EXPONENT: f32 = 50.0;
-            const MAX_RAY_SHOTS: i32 = 4;
-            const NUM_SPHERES: i32 = 35;
-            const SPHERE_PARAMETER_COUNT: i32 = 11;
-            
+            const RENDER_WIDTH = 512.0;
+            const RENDER_HEIGHT = 512.0;
+            const SPECULAR_EXPONENT = 50.0;
+            const MAX_RAY_SHOTS = 4;
+            const NUM_SPHERES = 35;
+            const SPHERE_PARAMETER_COUNT = 11;
+
             // functions defined in kernel
             pub fn evaluateDependents(self: *@This()) void {
                 const sphere0Position = self.params.sphere0Position;
                 const sphere0Radius = self.params.sphere0Radius;
                 const sphere0Color = self.params.sphere0Color;
                 const sphere0Material = self.params.sphere0Material;
-                
                 self.sphereArray[0] = sphere0Position[0];
                 self.sphereArray[1] = sphere0Position[1];
                 self.sphereArray[2] = sphere0Position[2];
@@ -124,10 +122,9 @@ pub const kernel = struct {
                     }
                 }
             }
-            
-            fn shootRay(self: *@This(), origin: @Vector(3, f32), dir: @Vector(3, f32), hit: *i32, pos: *@Vector(3, f32), t: *f32, sphereNum: *i32) void {
+
+            fn shootRay(origin: @Vector(3, f32), dir: @Vector(3, f32), hit: *i32, pos: *@Vector(3, f32), t: *f32, sphereNum: *i32, self: *@This()) void {
                 const sphereArray = self.sphereArray;
-                
                 var curT: f32 = undefined;
                 var B: f32 = undefined;
                 var C: f32 = undefined;
@@ -140,7 +137,11 @@ pub const kernel = struct {
                 {
                     var i: i32 = 0;
                     while (i < NUM_SPHERES * SPHERE_PARAMETER_COUNT) {
-                        spherePos = @Vector(3, f32){ sphereArray[@intCast(i)], sphereArray[@intCast(i + 1)], sphereArray[@intCast(i + 2)] };
+                        spherePos = @Vector(3, f32){
+                            sphereArray[@intCast(i)],
+                            sphereArray[@intCast(i + 1)],
+                            sphereArray[@intCast(i + 2)],
+                        };
                         sphereRadius = sphereArray[@intCast(i + 3)];
                         sphereToOrigin = origin - spherePos;
                         B = dot(sphereToOrigin, dir);
@@ -159,16 +160,21 @@ pub const kernel = struct {
                 }
                 pos.* = origin + dir * @as(@Vector(3, f32), @splat(t.*));
             }
-            
+
             pub fn evaluatePixel(self: *@This()) void {
-                self.dst = @splat(0);
                 const viewPlaneDistance = self.params.viewPlaneDistance;
-                const sphereArray = self.sphereArray;
                 const lightPos = self.params.lightPos;
-                
-                self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 1.0 };
-                var origin: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
-                var dir: @Vector(3, f32) = @Vector(3, f32){ 2.0 * self.outCoord()[0] / RENDER_WIDTH - 1.0, -2.0 * self.outCoord()[1] / RENDER_HEIGHT + 1.0, -viewPlaneDistance };
+                const dst = self.output.dst;
+                const sphereArray = self.sphereArray;
+                self.dst = @splat(0.0);
+
+                self.dst = @Vector(4, f32){ 0, 0, 0, 1.0 };
+                var origin: @Vector(3, f32) = .{ 0, 0, 0 };
+                var dir: @Vector(3, f32) = .{
+                    2.0 * self.outCoord()[0] / RENDER_WIDTH - 1.0,
+                    -2.0 * self.outCoord()[1] / RENDER_HEIGHT + 1.0,
+                    -viewPlaneDistance,
+                };
                 var sphereNum: i32 = undefined;
                 var spherePos: @Vector(3, f32) = undefined;
                 var sphereRadius: f32 = undefined;
@@ -188,7 +194,7 @@ pub const kernel = struct {
                 var temp: @Vector(3, f32) = undefined;
                 var temp2: i32 = undefined;
                 var rayShots: i32 = MAX_RAY_SHOTS;
-                var colorScale: @Vector(3, f32) = @Vector(3, f32){ 1.0, 1.0, 1.0 };
+                var colorScale: @Vector(3, f32) = .{ 1.0, 1.0, 1.0 };
                 var specular: f32 = undefined;
                 var diffuse: f32 = undefined;
                 var lightVal: f32 = undefined;
@@ -196,24 +202,35 @@ pub const kernel = struct {
                 var uv: @Vector(2, f32) = undefined;
                 while (rayShots > 0) {
                     dir = normalize(dir);
-                    _ = self.shootRay(origin, dir, &hit, &hitPoint, &t, &sphereNum);
+                    self.shootRay(origin, dir, &hit, &hitPoint, &t, &sphereNum);
                     if (hit != 0) {
-                        spherePos = @Vector(3, f32){ sphereArray[@intCast(sphereNum)], sphereArray[@intCast(sphereNum + 1)], sphereArray[@intCast(sphereNum + 2)] };
+                        spherePos = @Vector(3, f32){
+                            sphereArray[@intCast(sphereNum)],
+                            sphereArray[@intCast(sphereNum + 1)],
+                            sphereArray[@intCast(sphereNum + 2)],
+                        };
                         sphereRadius = sphereArray[@intCast(sphereNum + 3)];
-                        sphereColor = @Vector(3, f32){ sphereArray[@intCast(sphereNum + 4)], sphereArray[@intCast(sphereNum + 5)], sphereArray[@intCast(sphereNum + 6)] };
-                        sphereMaterial = @Vector(4, f32){ sphereArray[@intCast(sphereNum + 7)], sphereArray[@intCast(sphereNum + 8)], sphereArray[@intCast(sphereNum + 9)], sphereArray[@intCast(sphereNum + 10)] };
+                        sphereColor = @Vector(3, f32){
+                            sphereArray[@intCast(sphereNum + 4)],
+                            sphereArray[@intCast(sphereNum + 5)],
+                            sphereArray[@intCast(sphereNum + 6)],
+                        };
+                        sphereMaterial = @Vector(4, f32){
+                            sphereArray[@intCast(sphereNum + 7)],
+                            sphereArray[@intCast(sphereNum + 8)],
+                            sphereArray[@intCast(sphereNum + 9)],
+                            sphereArray[@intCast(sphereNum + 10)],
+                        };
                         sphereHit = hitPoint - spherePos;
                         n = sphereHit / @as(@Vector(3, f32), @splat(sphereRadius));
                         lightVector = lightPos - hitPoint;
                         lightVectorLen = length(lightVector);
                         l = lightVector / @as(@Vector(3, f32), @splat(lightVectorLen));
-                        _ = self.shootRay(hitPoint, l, &shadowTest, &temp, &t, &temp2);
+                        self.shootRay(hitPoint, l, &shadowTest, &temp, &t, &temp2);
                         if (shadowTest == 0) {
                             shadowTest = 1;
-                        } else {
-                            if (t < lightVectorLen) {
-                                shadowTest = 0;
-                            }
+                        } else if (t < lightVectorLen) {
+                            shadowTest = 0;
                         }
                         diffuse = dot(l, n);
                         lReflect = l - @as(@Vector(3, f32), @splat(2.0 * diffuse)) * n;
@@ -222,12 +239,20 @@ pub const kernel = struct {
                         specular = pow(max(specular, 0.0), SPECULAR_EXPONENT);
                         if (sphereNum == 11) {
                             phi = acos(-dot(@Vector(3, f32){ 1.0, 0.0, 0.0 }, n));
-                            uv = @Vector(2, f32){ acos(dot(@Vector(3, f32){ 0.0, 0.0, 1.0 }, n) / sin(phi)) / (2.0 * PI), phi / PI };
-                            sphereColor *= @as(@Vector(3, f32), @splat(@as(f32, if ((mod(floor(uv[0] * 2000.0) + floor(uv[1] * 2000.0), 2.0) == 0.0)) 0.5 else 1.0)));
+                            uv = @Vector(2, f32){
+                                acos(dot(@Vector(3, f32){ 0.0, 0.0, 1.0 }, n) / sin(phi)) / (2.0 * PI),
+                                phi / PI,
+                            };
+                            sphereColor *= @as(@Vector(3, f32), @splat(if ((mod(floor(uv[0] * 2000.0) + floor(uv[1] * 2000.0), 2.0) == 0.0)) 0.5 else 1.0));
                         }
                         lightVal = (sphereMaterial[0] + @as(f32, @floatFromInt(shadowTest)) * (diffuse * sphereMaterial[1] + specular * sphereMaterial[2]));
                         var res: @Vector(3, f32) = colorScale * @as(@Vector(3, f32), @splat(lightVal)) * sphereColor;
-                        self.dst += @Vector(4, f32){ res[0], res[1], res[2], 0.0 };
+                        self.dst += @Vector(4, f32){
+                            res[0],
+                            res[1],
+                            res[2],
+                            0.0,
+                        };
                         if (sphereMaterial[3] > 0.0) {
                             dirReflect = dir - @as(@Vector(3, f32), @splat(2.0 * dot(dir, n))) * n;
                             dirReflect = normalize(dirReflect);
@@ -242,25 +267,25 @@ pub const kernel = struct {
                         rayShots = 0;
                     }
                 }
-                
-                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+
+                dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
-            
+
             // built-in Pixel Bender functions
             fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
-            
+
             fn sin(v: anytype) @TypeOf(v) {
                 return @sin(v);
             }
-            
+
             fn cos(v: anytype) @TypeOf(v) {
                 return @cos(v);
             }
-            
+
             fn acos(v: anytype) @TypeOf(v) {
                 return switch (@typeInfo(@TypeOf(v))) {
                     .Vector => calc: {
@@ -274,7 +299,7 @@ pub const kernel = struct {
                     else => std.math.acos(v),
                 };
             }
-            
+
             fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => calc: {
@@ -288,15 +313,15 @@ pub const kernel = struct {
                     else => std.math.pow(@TypeOf(v1), v1, v2),
                 };
             }
-            
+
             fn sqrt(v: anytype) @TypeOf(v) {
                 return @sqrt(v);
             }
-            
+
             fn floor(v: anytype) @TypeOf(v) {
                 return @floor(v);
             }
-            
+
             fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @mod(v1, v2),
@@ -306,7 +331,7 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @max(v1, v2),
@@ -316,19 +341,19 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn length(v: anytype) f32 {
                 const sum = @reduce(.Add, v * v);
                 return @sqrt(sum);
             }
-            
+
             fn dot(v1: anytype, v2: anytype) f32 {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => @reduce(.Add, v1 * v2),
                     else => v1 * v2,
                 };
             }
-            
+
             fn normalize(v: anytype) @TypeOf(v) {
                 return switch (@typeInfo(@TypeOf(v))) {
                     .Vector => v / @as(@TypeOf(v), @splat(@sqrt(@reduce(.Add, v * v)))),
@@ -337,8 +362,9 @@ pub const kernel = struct {
             }
         };
     }
-    
     // kernel instance creation function
+
+
     pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
@@ -346,44 +372,22 @@ pub const kernel = struct {
             .params = params,
         };
     }
+
 };
 
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
 
-pub fn createOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, 0, height, input, params);
 }
 
-pub fn createPartialOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createPartialOutput(allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, start, count, input, params);
 }
 
-fn createPartialOutputOf(
-comptime T: type,
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: KernelInput(T, kernel),
-params: Parameters,
-) !KernelOutput(u8, kernel) {
+fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: KernelInput(T, kernel), params: Parameters) !KernelOutput(u8, kernel) {
     var output: KernelOutput(u8, kernel) = undefined;
     inline for (std.meta.fields(Output)) |field| {
         const ImageT = @TypeOf(@field(output, field.name));
@@ -414,14 +418,14 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         pub const Pixel = @Vector(4, T);
         pub const FPixel = @Vector(len, f32);
         pub const channels = len;
-        
+
         data: if (writable) []Pixel else []const Pixel,
         width: u32,
         height: u32,
         colorSpace: ColorSpace = .srgb,
         premultiplied: bool = false,
         offset: usize = 0,
-        
+
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
             if (len == 4) {
                 return pixel;
@@ -434,7 +438,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(f32, pixel, undefined, mask);
         }
-        
+
         fn floatPixelFromPBPixel(pixel: FPixel) Pixel {
             if (len == 4) {
                 return pixel;
@@ -448,7 +452,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(T, pixel, alpha, mask);
         }
-        
+
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
             // https://github.com/ziglang/zig/issues/16267
             var numerator: FPixel = undefined;
@@ -474,7 +478,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
-        
+
         fn contrain(pixel: FPixel, max: f32) FPixel {
             const lower: FPixel = @splat(0);
             const upper: FPixel = @splat(max);
@@ -482,7 +486,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const pixel3 = @select(f32, pixel2 < upper, pixel2, upper);
             return pixel3;
         }
-        
+
         fn intPixelFromPBPixel(pixel: FPixel) Pixel {
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
@@ -517,57 +521,59 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             }
             return result;
         }
-        
+
         inline fn unsign(value: i32) u32 {
             // allow negative values to be interpreted as large integers to simplify bound-checking
             @setRuntimeSafety(false);
             return @as(u32, @intCast(value));
         }
-        
-        pub fn getPixel(self: @This(), x: i32, y: i32) FPixel {
-            const ux = unsign(x);
-            const uy = unsign(y);
-            if (ux >= self.width or uy >= self.height) {
+
+        fn getPixel(self: @This(), ix: i32, iy: i32) FPixel {
+            const x = unsign(ix);
+            const y = unsign(iy);
+            if (x >= self.width or y >= self.height) {
                 return @as(FPixel, @splat(0));
             }
-            const index = (uy * self.width) + ux;
-            const pixel = self.data[index];
-            return switch (@typeInfo(T)) {
-                .Float => pbPixelFromFloatPixel(pixel),
-                .Int => pbPixelFromIntPixel(pixel),
+            const index = (y * self.width) + x - self.offset;
+            const src_pixel = self.data[index];
+            const pixel: FPixel = switch (@typeInfo(T)) {
+                .Float => pbPixelFromFloatPixel(src_pixel),
+                .Int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            return pixel;
         }
-        
-        pub fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
+
+        fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
             if (comptime !writable) {
                 return;
             }
             const index = (y * self.width) + x - self.offset;
-            self.data[index] = switch (@typeInfo(T)) {
+            const dst_pixel: Pixel = switch (@typeInfo(T)) {
                 .Float => floatPixelFromPBPixel(pixel),
                 .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            self.data[index] = dst_pixel;
         }
-        
-        pub fn pixelSize(self: @This()) @Vector(2, f32) {
+
+        fn pixelSize(self: @This()) @Vector(2, f32) {
             _ = self;
             return .{ 1, 1 };
         }
-        
-        pub fn pixelAspectRatio(self: @This()) f32 {
+
+        fn pixelAspectRatio(self: @This()) f32 {
             _ = self;
             return 1;
         }
-        
-        pub fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
             const x: i32 = @intFromFloat(coord[0]);
             const y: i32 = @intFromFloat(coord[1]);
             return self.getPixel(x, y);
         }
-        
-        pub fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
             const c = coord - @as(@Vector(2, f32), @splat(0.5));
             const x: i32 = @intFromFloat(c[0]);
             const y: i32 = @intFromFloat(c[1]);

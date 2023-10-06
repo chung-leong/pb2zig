@@ -1,4 +1,4 @@
-// Pixel Bender "Bumpmap" (translated using pb2zig)
+// Pixel Bender kernel "Bumpmap" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
@@ -17,8 +17,16 @@ pub const kernel = struct {
         },
         .light = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 2560.0, 2560.0, 10000.0 },
-            .maxValue = .{ 2560.0, 2560.0, 10000.0 },
+            .minValue = .{
+                2560.0,
+                2560.0,
+                10000.0,
+            },
+            .maxValue = .{
+                2560.0,
+                2560.0,
+                10000.0,
+            },
             .defaultValue = .{ 250.0, 250.0, 800.0 },
             .description = "The light coordinates (x,y,z). The z-coordinate always needs to be positive to be in front of the image",
         },
@@ -72,7 +80,7 @@ pub const kernel = struct {
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
     };
-    
+
     // generic kernel instance type
     fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {
         return struct {
@@ -80,28 +88,29 @@ pub const kernel = struct {
             input: InputStruct,
             output: OutputStruct,
             outputCoord: @Vector(2, u32) = @splat(0),
-            
+
             // output pixel
             dst: @Vector(4, f32) = undefined,
-            
+
             // constants
-            const chann: i32 = 0;
-            const use_ps: i32 = 0;
-            
+            const chann = 0;
+            const use_ps = 0;
+
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                self.dst = @splat(0);
                 const on = self.params.on;
-                const img = self.input.img;
-                const src = self.input.src;
-                const invert = self.params.invert;
                 const light = self.params.light;
-                const lightwidth = self.params.lightwidth;
-                const heightmap_multi = self.params.heightmap_multi;
-                const refl_tolerance = self.params.refl_tolerance;
-                const reflection = self.params.reflection;
                 const lightcolor = self.params.lightcolor;
-                
+                const heightmap_multi = self.params.heightmap_multi;
+                const invert = self.params.invert;
+                const lightwidth = self.params.lightwidth;
+                const reflection = self.params.reflection;
+                const refl_tolerance = self.params.refl_tolerance;
+                const src = self.input.src;
+                const img = self.input.img;
+                const dst = self.output.dst;
+                self.dst = @splat(0.0);
+
                 if (!(on != 0)) {
                     self.dst = img.sampleNearest(self.outCoord());
                 } else {
@@ -113,10 +122,19 @@ pub const kernel = struct {
                     if (invert == 0) {
                         height = 1.0 - height;
                     }
-                    var ray: @Vector(3, f32) = @Vector(3, f32){ self.outCoord()[0], self.outCoord()[1], height } - light;
+                    var ray: @Vector(3, f32) = @Vector(3, f32){
+                        self.outCoord()[0],
+                        self.outCoord()[1],
+                        height,
+                    } - light;
                     var tmp_ray_len: f32 = length(ray);
                     if (tmp_ray_len > lightwidth) {
-                        self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, img.sampleNearest(self.outCoord())[3] };
+                        self.dst = @Vector(4, f32){
+                            0.0,
+                            0.0,
+                            0.0,
+                            img.sampleNearest(self.outCoord())[3],
+                        };
                     } else {
                         hvec[2] = src.sampleNearest(self.outCoord() - @Vector(2, f32){ 2.0, 0.0 })[chann];
                         hvec[2] += src.sampleNearest(self.outCoord() - @Vector(2, f32){ 1.0, 0.0 })[chann];
@@ -139,7 +157,7 @@ pub const kernel = struct {
                         var norm: @Vector(3, f32) = cross(hvec, yvec);
                         var tmp_dot: f32 = dot(ray, norm);
                         var refl_low: f32 = 0.99 - refl_tolerance / 10000.0;
-                        var clightrefl: @Vector(3, f32) = @Vector(3, f32){ 0.0, 0.0, 0.0 };
+                        var clightrefl: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
                         if (tmp_dot < 0.0) {
                             fac = 1.0 - fract(tmp_dot / (tmp_ray_len * length(norm)));
                             if (fac > refl_low) {
@@ -152,42 +170,57 @@ pub const kernel = struct {
                             fac = fac * fac * fac * fac;
                             if (fac > 0.0) {
                                 hvec = clightrefl + @as(@Vector(3, f32), @splat((lightwidth - tmp_ray_len) / lightwidth * fac)) * @shuffle(f32, img.sampleNearest(self.outCoord()), undefined, @Vector(3, i32){ 0, 1, 2 });
-                                self.dst = @Vector(4, f32){ hvec[0], hvec[1], hvec[2], img.sampleNearest(self.outCoord())[3] };
+                                self.dst = @Vector(4, f32){
+                                    hvec[0],
+                                    hvec[1],
+                                    hvec[2],
+                                    img.sampleNearest(self.outCoord())[3],
+                                };
                             } else {
-                                self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, img.sampleNearest(self.outCoord())[3] };
+                                self.dst = @Vector(4, f32){
+                                    0.0,
+                                    0.0,
+                                    0.0,
+                                    img.sampleNearest(self.outCoord())[3],
+                                };
                             }
                         } else {
-                            self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, img.sampleNearest(self.outCoord())[3] };
+                            self.dst = @Vector(4, f32){
+                                0.0,
+                                0.0,
+                                0.0,
+                                img.sampleNearest(self.outCoord())[3],
+                            };
                         }
                     }
                 }
-                
-                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+
+                dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
-            
+
             // built-in Pixel Bender functions
             fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
-            
+
             fn fract(v: anytype) @TypeOf(v) {
                 return v - @floor(v);
             }
-            
+
             fn length(v: anytype) f32 {
                 const sum = @reduce(.Add, v * v);
                 return @sqrt(sum);
             }
-            
+
             fn dot(v1: anytype, v2: anytype) f32 {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => @reduce(.Add, v1 * v2),
                     else => v1 * v2,
                 };
             }
-            
+
             fn cross(v1: anytype, v2: anytype) @TypeOf(v1) {
                 const CT = @typeInfo(@TypeOf(v1)).Vector.child;
                 const p1 = @shuffle(CT, v1, undefined, @Vector(3, i32){ 1, 2, 0 }) * @shuffle(CT, v2, undefined, @Vector(3, i32){ 2, 0, 1 });
@@ -196,8 +229,9 @@ pub const kernel = struct {
             }
         };
     }
-    
     // kernel instance creation function
+
+
     pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
@@ -205,44 +239,22 @@ pub const kernel = struct {
             .params = params,
         };
     }
+
 };
 
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
 
-pub fn createOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, 0, height, input, params);
 }
 
-pub fn createPartialOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createPartialOutput(allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, start, count, input, params);
 }
 
-fn createPartialOutputOf(
-comptime T: type,
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: KernelInput(T, kernel),
-params: Parameters,
-) !KernelOutput(u8, kernel) {
+fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: KernelInput(T, kernel), params: Parameters) !KernelOutput(u8, kernel) {
     var output: KernelOutput(u8, kernel) = undefined;
     inline for (std.meta.fields(Output)) |field| {
         const ImageT = @TypeOf(@field(output, field.name));
@@ -273,14 +285,14 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         pub const Pixel = @Vector(4, T);
         pub const FPixel = @Vector(len, f32);
         pub const channels = len;
-        
+
         data: if (writable) []Pixel else []const Pixel,
         width: u32,
         height: u32,
         colorSpace: ColorSpace = .srgb,
         premultiplied: bool = false,
         offset: usize = 0,
-        
+
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
             if (len == 4) {
                 return pixel;
@@ -293,7 +305,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(f32, pixel, undefined, mask);
         }
-        
+
         fn floatPixelFromPBPixel(pixel: FPixel) Pixel {
             if (len == 4) {
                 return pixel;
@@ -307,7 +319,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(T, pixel, alpha, mask);
         }
-        
+
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
             // https://github.com/ziglang/zig/issues/16267
             var numerator: FPixel = undefined;
@@ -333,7 +345,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
-        
+
         fn contrain(pixel: FPixel, max: f32) FPixel {
             const lower: FPixel = @splat(0);
             const upper: FPixel = @splat(max);
@@ -341,7 +353,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const pixel3 = @select(f32, pixel2 < upper, pixel2, upper);
             return pixel3;
         }
-        
+
         fn intPixelFromPBPixel(pixel: FPixel) Pixel {
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
@@ -376,57 +388,59 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             }
             return result;
         }
-        
+
         inline fn unsign(value: i32) u32 {
             // allow negative values to be interpreted as large integers to simplify bound-checking
             @setRuntimeSafety(false);
             return @as(u32, @intCast(value));
         }
-        
-        pub fn getPixel(self: @This(), x: i32, y: i32) FPixel {
-            const ux = unsign(x);
-            const uy = unsign(y);
-            if (ux >= self.width or uy >= self.height) {
+
+        fn getPixel(self: @This(), ix: i32, iy: i32) FPixel {
+            const x = unsign(ix);
+            const y = unsign(iy);
+            if (x >= self.width or y >= self.height) {
                 return @as(FPixel, @splat(0));
             }
-            const index = (uy * self.width) + ux;
-            const pixel = self.data[index];
-            return switch (@typeInfo(T)) {
-                .Float => pbPixelFromFloatPixel(pixel),
-                .Int => pbPixelFromIntPixel(pixel),
+            const index = (y * self.width) + x - self.offset;
+            const src_pixel = self.data[index];
+            const pixel: FPixel = switch (@typeInfo(T)) {
+                .Float => pbPixelFromFloatPixel(src_pixel),
+                .Int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            return pixel;
         }
-        
-        pub fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
+
+        fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
             if (comptime !writable) {
                 return;
             }
             const index = (y * self.width) + x - self.offset;
-            self.data[index] = switch (@typeInfo(T)) {
+            const dst_pixel: Pixel = switch (@typeInfo(T)) {
                 .Float => floatPixelFromPBPixel(pixel),
                 .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            self.data[index] = dst_pixel;
         }
-        
-        pub fn pixelSize(self: @This()) @Vector(2, f32) {
+
+        fn pixelSize(self: @This()) @Vector(2, f32) {
             _ = self;
             return .{ 1, 1 };
         }
-        
-        pub fn pixelAspectRatio(self: @This()) f32 {
+
+        fn pixelAspectRatio(self: @This()) f32 {
             _ = self;
             return 1;
         }
-        
-        pub fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
             const x: i32 = @intFromFloat(coord[0]);
             const y: i32 = @intFromFloat(coord[1]);
             return self.getPixel(x, y);
         }
-        
-        pub fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
             const c = coord - @as(@Vector(2, f32), @splat(0.5));
             const x: i32 = @intFromFloat(c[0]);
             const y: i32 = @intFromFloat(c[1]);

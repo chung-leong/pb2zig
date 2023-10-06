@@ -1,4 +1,4 @@
-// Pixel Bender "SmartSSAO" (translated using pb2zig)
+// Pixel Bender kernel "SmartSSAO" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
@@ -57,7 +57,7 @@ pub const kernel = struct {
     pub const outputImages = .{
         .dst = .{ .channels = 4 },
     };
-    
+
     // generic kernel instance type
     fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {
         return struct {
@@ -65,17 +65,21 @@ pub const kernel = struct {
             input: InputStruct,
             output: OutputStruct,
             outputCoord: @Vector(2, u32) = @splat(0),
-            
+
             // output pixel
             dst: @Vector(4, f32) = undefined,
-            
+
             // dependent variables
             sphere_x: [12]f32 = undefined,
             sphere_y: [12]f32 = undefined,
-            
+
             // constants
-            const unpack: @Vector(3, f32) = @Vector(3, f32){ 255.0 / 256.0, 255.0 / (256.0 * 256.0), 255.0 / (256.0 * 256.0 * 256.0) };
-            
+            const unpack = @Vector(3, f32){
+                255.0 / 256.0,
+                255.0 / (256.0 * 256.0),
+                255.0 / (256.0 * 256.0 * 256.0),
+            };
+
             // functions defined in kernel
             pub fn evaluateDependents(self: *@This()) void {
                 self.sphere_x[0] = -0.326212;
@@ -103,26 +107,28 @@ pub const kernel = struct {
                 self.sphere_x[11] = -0.791559;
                 self.sphere_y[11] = -0.597705;
             }
-            
+
             fn random(arg: @Vector(2, f32)) f32 {
-                return 0.5 + (fract(sin(dot(@shuffle(f32, arg, undefined, @Vector(2, i32){ 0, 1 }), @Vector(2, f32){ 12.9898, 78.233 })) * 43758.5453)) * 0.5;
+                return 0.5 + fract(sin(dot(@shuffle(f32, arg, undefined, @Vector(2, i32){ 0, 1 }), @Vector(2, f32){ 12.9898, 78.233 })) * 43758.5453) * 0.5;
             }
-            
+
             pub fn evaluatePixel(self: *@This()) void {
-                self.dst = @splat(0);
-                const depthmap = self.input.depthmap;
-                const sphere_x = self.sphere_x;
-                const sphere_y = self.sphere_y;
-                const D_lightxy = self.params.D_lightxy;
-                const B_radius = self.params.B_radius;
-                const E_noise = self.params.E_noise;
                 const A_bias = self.params.A_bias;
+                const B_radius = self.params.B_radius;
                 const C_bleed = self.params.C_bleed;
+                const D_lightxy = self.params.D_lightxy;
+                const E_noise = self.params.E_noise;
                 const F_brightness = self.params.F_brightness;
                 const G_contrast = self.params.G_contrast;
-                
+                const depthmap = self.input.depthmap;
+                const dst = self.output.dst;
+                const sphere_x = self.sphere_x;
+                const sphere_y = self.sphere_y;
+                self.dst = @splat(0.0);
+
                 var zbu: f32 = undefined;
                 var pd: f32 = undefined;
+                _ = pd;
                 var bl: f32 = undefined;
                 var sd: f32 = undefined;
                 var dc: f32 = undefined;
@@ -130,7 +136,10 @@ pub const kernel = struct {
                 var tmp: f32 = undefined;
                 var pt: @Vector(2, f32) = undefined;
                 var rnd: @Vector(2, f32) = undefined;
-                rnd = @Vector(2, f32){ random(self.outCoord()), random(self.outCoord()) };
+                rnd = @Vector(2, f32){
+                    random(self.outCoord()),
+                    random(self.outCoord()),
+                };
                 zbu = dot(@shuffle(f32, depthmap.sampleNearest(self.outCoord()), undefined, @Vector(3, i32){ 0, 1, 2 }), unpack);
                 if (zbu == 0.0) {
                     zbu = 0.0001;
@@ -138,7 +147,13 @@ pub const kernel = struct {
                 {
                     var i: i32 = 0;
                     while (i < 12) {
-                        pt = @Vector(2, f32){ sphere_x[@intCast(i)], sphere_y[@intCast(i)] } + rnd + @Vector(2, f32){ D_lightxy[0] - 1.0, D_lightxy[1] * -1.0 - 1.0 };
+                        pt = @Vector(2, f32){
+                            sphere_x[@intCast(i)],
+                            sphere_y[@intCast(i)],
+                        } + rnd + @Vector(2, f32){
+                            D_lightxy[0] - 1.0,
+                            D_lightxy[1] * -1.0 - 1.0,
+                        };
                         sd = (dot(@shuffle(f32, depthmap.sampleNearest(@shuffle(f32, self.outCoord(), undefined, @Vector(2, i32){ 0, 1 }) + pt * @as(@Vector(2, f32), @splat(B_radius)) / @as(@Vector(2, f32), @splat(zbu))), undefined, @Vector(3, i32){ 0, 1, 2 }), unpack) + E_noise * rnd[0]) * (A_bias * 10.0);
                         dc = zbu * (A_bias * 10.0) - sd;
                         if (zbu == 0.0) {
@@ -156,22 +171,21 @@ pub const kernel = struct {
                 bl /= 12.0;
                 tmp = pow(bl, G_contrast);
                 self.dst = @Vector(4, f32){ tmp, tmp, tmp, 1.0 };
-                
-                self.output.dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
-                _ = pd;
+
+                dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
-            
+
             // built-in Pixel Bender functions
             fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
-            
+
             fn sin(v: anytype) @TypeOf(v) {
                 return @sin(v);
             }
-            
+
             fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => calc: {
@@ -185,11 +199,11 @@ pub const kernel = struct {
                     else => std.math.pow(@TypeOf(v1), v1, v2),
                 };
             }
-            
+
             fn fract(v: anytype) @TypeOf(v) {
                 return v - @floor(v);
             }
-            
+
             fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
                 return switch (@typeInfo(@TypeOf(v2))) {
                     .Vector => @max(v1, v2),
@@ -199,7 +213,7 @@ pub const kernel = struct {
                     },
                 };
             }
-            
+
             fn dot(v1: anytype, v2: anytype) f32 {
                 return switch (@typeInfo(@TypeOf(v1))) {
                     .Vector => @reduce(.Add, v1 * v2),
@@ -208,8 +222,9 @@ pub const kernel = struct {
             }
         };
     }
-    
     // kernel instance creation function
+
+
     pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
@@ -217,44 +232,22 @@ pub const kernel = struct {
             .params = params,
         };
     }
+
 };
 
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
 
-pub fn createOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, 0, height, input, params);
 }
 
-pub fn createPartialOutput(
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: Input,
-params: Parameters,
-) !Output {
+pub fn createPartialOutput(allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: Input, params: Parameters) !Output {
     return createPartialOutputOf(u8, allocator, width, height, start, count, input, params);
 }
 
-fn createPartialOutputOf(
-comptime T: type,
-allocator: std.mem.Allocator,
-width: u32,
-height: u32,
-start: u32,
-count: u32,
-input: KernelInput(T, kernel),
-params: Parameters,
-) !KernelOutput(u8, kernel) {
+fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: KernelInput(T, kernel), params: Parameters) !KernelOutput(u8, kernel) {
     var output: KernelOutput(u8, kernel) = undefined;
     inline for (std.meta.fields(Output)) |field| {
         const ImageT = @TypeOf(@field(output, field.name));
@@ -285,14 +278,14 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         pub const Pixel = @Vector(4, T);
         pub const FPixel = @Vector(len, f32);
         pub const channels = len;
-        
+
         data: if (writable) []Pixel else []const Pixel,
         width: u32,
         height: u32,
         colorSpace: ColorSpace = .srgb,
         premultiplied: bool = false,
         offset: usize = 0,
-        
+
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
             if (len == 4) {
                 return pixel;
@@ -305,7 +298,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(f32, pixel, undefined, mask);
         }
-        
+
         fn floatPixelFromPBPixel(pixel: FPixel) Pixel {
             if (len == 4) {
                 return pixel;
@@ -319,7 +312,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             };
             return @shuffle(T, pixel, alpha, mask);
         }
-        
+
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
             // https://github.com/ziglang/zig/issues/16267
             var numerator: FPixel = undefined;
@@ -345,7 +338,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
-        
+
         fn contrain(pixel: FPixel, max: f32) FPixel {
             const lower: FPixel = @splat(0);
             const upper: FPixel = @splat(max);
@@ -353,7 +346,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const pixel3 = @select(f32, pixel2 < upper, pixel2, upper);
             return pixel3;
         }
-        
+
         fn intPixelFromPBPixel(pixel: FPixel) Pixel {
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
@@ -388,57 +381,59 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             }
             return result;
         }
-        
+
         inline fn unsign(value: i32) u32 {
             // allow negative values to be interpreted as large integers to simplify bound-checking
             @setRuntimeSafety(false);
             return @as(u32, @intCast(value));
         }
-        
-        pub fn getPixel(self: @This(), x: i32, y: i32) FPixel {
-            const ux = unsign(x);
-            const uy = unsign(y);
-            if (ux >= self.width or uy >= self.height) {
+
+        fn getPixel(self: @This(), ix: i32, iy: i32) FPixel {
+            const x = unsign(ix);
+            const y = unsign(iy);
+            if (x >= self.width or y >= self.height) {
                 return @as(FPixel, @splat(0));
             }
-            const index = (uy * self.width) + ux;
-            const pixel = self.data[index];
-            return switch (@typeInfo(T)) {
-                .Float => pbPixelFromFloatPixel(pixel),
-                .Int => pbPixelFromIntPixel(pixel),
+            const index = (y * self.width) + x - self.offset;
+            const src_pixel = self.data[index];
+            const pixel: FPixel = switch (@typeInfo(T)) {
+                .Float => pbPixelFromFloatPixel(src_pixel),
+                .Int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            return pixel;
         }
-        
-        pub fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
+
+        fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
             if (comptime !writable) {
                 return;
             }
             const index = (y * self.width) + x - self.offset;
-            self.data[index] = switch (@typeInfo(T)) {
+            const dst_pixel: Pixel = switch (@typeInfo(T)) {
                 .Float => floatPixelFromPBPixel(pixel),
                 .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
+            self.data[index] = dst_pixel;
         }
-        
-        pub fn pixelSize(self: @This()) @Vector(2, f32) {
+
+        fn pixelSize(self: @This()) @Vector(2, f32) {
             _ = self;
             return .{ 1, 1 };
         }
-        
-        pub fn pixelAspectRatio(self: @This()) f32 {
+
+        fn pixelAspectRatio(self: @This()) f32 {
             _ = self;
             return 1;
         }
-        
-        pub fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
             const x: i32 = @intFromFloat(coord[0]);
             const y: i32 = @intFromFloat(coord[1]);
             return self.getPixel(x, y);
         }
-        
-        pub fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
+
+        fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
             const c = coord - @as(@Vector(2, f32), @splat(0.5));
             const x: i32 = @intFromFloat(c[0]);
             const y: i32 = @intFromFloat(c[1]);
