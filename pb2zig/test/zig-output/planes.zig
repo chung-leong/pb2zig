@@ -126,7 +126,7 @@ pub const kernel = struct {
             }
 
             fn abs(v: anytype) @TypeOf(v) {
-                return @fabs(v);
+                return @abs(v);
             }
 
             fn floor(v: anytype) @TypeOf(v) {

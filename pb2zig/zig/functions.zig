@@ -365,7 +365,7 @@ test "inverseSqrt" {
 }
 
 pub fn abs(v: anytype) @TypeOf(v) {
-    return @fabs(v);
+    return @abs(v);
 }
 
 test "abs" {

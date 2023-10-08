@@ -2947,7 +2947,7 @@ pub const kernel = struct {
             }
 
             fn abs(v: anytype) @TypeOf(v) {
-                return @fabs(v);
+                return @abs(v);
             }
 
             fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
