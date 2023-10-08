@@ -304,7 +304,22 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'droste';
     await translate(name);
-    await apply(name, { oImage: 'malgorzata-socha.png' });
+    const params = {
+      strandMirror: true,
+      transparentInside: true,
+      transparentOutside: true,
+      twist: true,
+      periodicityAuto: false,
+      hyperDroste: false,
+      antialiasing: 2,
+      size: [ 680, 725 ],
+      radiusInside: 56,
+      radiusOutside: 100,
+      periodicity: 1,
+      strands: 1,
+      centerShift: [ -32, 1.5 ],
+    };
+    await apply(name, { src: 'ipad.png' }, params);
   })
   it('should correctly translate dynamic-palette.pbk', async function() {
     this.timeout(60000);

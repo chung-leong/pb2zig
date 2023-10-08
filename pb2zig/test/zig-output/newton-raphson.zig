@@ -16,75 +16,75 @@ pub const kernel = struct {
         },
         .colorStart = .{
             .type = @Vector(4, f32),
-            .minValue = @as(@Vector(4, f32), @splat(0)),
-            .maxValue = @as(@Vector(4, f32), @splat(1)),
-            .defaultValue = @as(@Vector(4, f32), @splat(1)),
+            .minValue = @as(@Vector(4, f32), @splat(0.0)),
+            .maxValue = @as(@Vector(4, f32), @splat(1.0)),
+            .defaultValue = @as(@Vector(4, f32), @splat(1.0)),
         },
         .colorEnd = .{
             .type = @Vector(4, f32),
-            .minValue = @as(@Vector(4, f32), @splat(0)),
-            .maxValue = @as(@Vector(4, f32), @splat(1)),
+            .minValue = @as(@Vector(4, f32), @splat(0.0)),
+            .maxValue = @as(@Vector(4, f32), @splat(1.0)),
             .defaultValue = .{ 0, 0, 0.8, 1 },
         },
         .rangeX = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-10)),
-            .maxValue = @as(@Vector(2, f32), @splat(10)),
+            .minValue = @as(@Vector(2, f32), @splat(-10.0)),
+            .maxValue = @as(@Vector(2, f32), @splat(10.0)),
             .defaultValue = .{ -5, 5 },
         },
         .rangeY = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-10)),
-            .maxValue = @as(@Vector(2, f32), @splat(10)),
+            .minValue = @as(@Vector(2, f32), @splat(-10.0)),
+            .maxValue = @as(@Vector(2, f32), @splat(10.0)),
             .defaultValue = .{ -5, 5 },
         },
         .c0 = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-10)),
-            .maxValue = @as(@Vector(2, f32), @splat(10)),
-            .defaultValue = @as(@Vector(2, f32), @splat(0)),
+            .minValue = @as(@Vector(2, f32), @splat(-10.0)),
+            .maxValue = @as(@Vector(2, f32), @splat(10.0)),
+            .defaultValue = @as(@Vector(2, f32), @splat(0.0)),
         },
         .c1 = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-10)),
-            .maxValue = @as(@Vector(2, f32), @splat(10)),
-            .defaultValue = @as(@Vector(2, f32), @splat(0)),
+            .minValue = @as(@Vector(2, f32), @splat(-10.0)),
+            .maxValue = @as(@Vector(2, f32), @splat(10.0)),
+            .defaultValue = @as(@Vector(2, f32), @splat(0.0)),
         },
         .c2 = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-10)),
-            .maxValue = @as(@Vector(2, f32), @splat(10)),
-            .defaultValue = @as(@Vector(2, f32), @splat(0)),
+            .minValue = @as(@Vector(2, f32), @splat(-10.0)),
+            .maxValue = @as(@Vector(2, f32), @splat(10.0)),
+            .defaultValue = @as(@Vector(2, f32), @splat(0.0)),
         },
         .c3 = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-10)),
-            .maxValue = @as(@Vector(2, f32), @splat(10)),
-            .defaultValue = @as(@Vector(2, f32), @splat(0)),
+            .minValue = @as(@Vector(2, f32), @splat(-10.0)),
+            .maxValue = @as(@Vector(2, f32), @splat(10.0)),
+            .defaultValue = @as(@Vector(2, f32), @splat(0.0)),
         },
         .c4 = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-10)),
-            .maxValue = @as(@Vector(2, f32), @splat(10)),
-            .defaultValue = @as(@Vector(2, f32), @splat(0)),
+            .minValue = @as(@Vector(2, f32), @splat(-10.0)),
+            .maxValue = @as(@Vector(2, f32), @splat(10.0)),
+            .defaultValue = @as(@Vector(2, f32), @splat(0.0)),
         },
         .c5 = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-10)),
-            .maxValue = @as(@Vector(2, f32), @splat(10)),
-            .defaultValue = @as(@Vector(2, f32), @splat(0)),
+            .minValue = @as(@Vector(2, f32), @splat(-10.0)),
+            .maxValue = @as(@Vector(2, f32), @splat(10.0)),
+            .defaultValue = @as(@Vector(2, f32), @splat(0.0)),
         },
         .c6 = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-10)),
-            .maxValue = @as(@Vector(2, f32), @splat(10)),
-            .defaultValue = @as(@Vector(2, f32), @splat(0)),
+            .minValue = @as(@Vector(2, f32), @splat(-10.0)),
+            .maxValue = @as(@Vector(2, f32), @splat(10.0)),
+            .defaultValue = @as(@Vector(2, f32), @splat(0.0)),
         },
         .c7 = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-10)),
-            .maxValue = @as(@Vector(2, f32), @splat(10)),
-            .defaultValue = @as(@Vector(2, f32), @splat(0)),
+            .minValue = @as(@Vector(2, f32), @splat(-10.0)),
+            .maxValue = @as(@Vector(2, f32), @splat(10.0)),
+            .defaultValue = @as(@Vector(2, f32), @splat(0.0)),
         },
         .toleranceInversePower = .{
             .type = f32,
@@ -267,7 +267,6 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
     var instance = kernel.create(input, output, params);
     if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
         instance.evaluateDependents();
-        std.debug.print("evaluateDependents()\n", .{});
     }
     var y: u32 = 0;
     while (y < height) : (y += 1) {
@@ -324,27 +323,13 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
 
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
-            // https://github.com/ziglang/zig/issues/16267
-            var numerator: FPixel = undefined;
-            switch (len) {
-                1 => numerator[0] = @floatFromInt(pixel[0]),
-                2 => {
-                    numerator[0] = @floatFromInt(pixel[0]);
-                    numerator[3] = @floatFromInt(pixel[3]);
-                },
-                3 => {
-                    numerator[0] = @floatFromInt(pixel[0]);
-                    numerator[1] = @floatFromInt(pixel[1]);
-                    numerator[2] = @floatFromInt(pixel[2]);
-                },
-                4 => {
-                    numerator[0] = @floatFromInt(pixel[0]);
-                    numerator[1] = @floatFromInt(pixel[1]);
-                    numerator[2] = @floatFromInt(pixel[2]);
-                    numerator[3] = @floatFromInt(pixel[3]);
-                },
+            const numerator: FPixel = switch (len) {
+                1 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(1, i32){0}))),
+                2 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(2, i32){ 0, 3 }))),
+                3 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(3, i32){ 0, 1, 2 }))),
+                4 => @floatFromInt(pixel),
                 else => @compileError("Unsupported number of channels: " ++ len),
-            }
+            };
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
@@ -361,34 +346,14 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
             const product: FPixel = contrain(pixel * multiplier, max);
-            var result: Pixel = undefined;
-            switch (len) {
-                1 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[0]);
-                    result[2] = @intFromFloat(product[0]);
-                    result[3] = std.math.maxInt(T);
-                },
-                2 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[0]);
-                    result[2] = @intFromFloat(product[0]);
-                    result[3] = @intFromFloat(product[1]);
-                },
-                3 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[1]);
-                    result[2] = @intFromFloat(product[2]);
-                    result[3] = std.math.maxInt(T);
-                },
-                4 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[1]);
-                    result[2] = @intFromFloat(product[2]);
-                    result[3] = @intFromFloat(product[3]);
-                },
+            const maxAlpha: @Vector(1, T) = .{std.math.maxInt(T)};
+            const result: Pixel = switch (len) {
+                1 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, ~0 })),
+                2 => @intFromFloat(@shuffle(Pixel, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
+                3 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, ~0 })),
+                4 => @intFromFloat(product),
                 else => @compileError("Unsupported number of channels: " ++ len),
-            }
+            };
             return result;
         }
 

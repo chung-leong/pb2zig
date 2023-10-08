@@ -151,7 +151,6 @@ export class PixelBenderToZigTranslator {
       const splatCall = ZIG.FunctionCall.create({ name: '@splat', args: [ expression ], type });
       return (forceType) ? this.forceType(splatCall) : splatCall;
     } else {
-      debugger;
       throw new Error(`Cannot convert ${expression.type} to ${type}`);
     }
   }
@@ -1206,7 +1205,6 @@ export class PixelBenderToZigTranslator {
       return arg;
     });
     f.called  = true;
-    debugger;
     return ZIG.FunctionCall.create({ receiver, name, args, type });
   }
 
@@ -1215,26 +1213,41 @@ export class PixelBenderToZigTranslator {
     const type = this.translateType(pb.type);
     if (ZIG.isMatrix(type)) {
       const typeV = ZIG.getChildType(type);
+      const typeE = ZIG.getChildType(typeV);
       const width = ZIG.getVectorWidth(typeV);
       const initializers = [];
       if (args[0].isVector())  {
         initializers.push(...argList);
       } else if (args.length === 1) {
         let arg = args[0];
-        arg = this.promoteExpression(arg, typeV);
-        for (let i = 0; i < width; i++) {
-          initializers.push(arg);
+        if (arg.isMatrix(arg)) {
+          arg = this.convertExpression(arg, type);
+        } else {
+          if (arg.isVector()) {
+            arg = this.convertExpression(arg, typeV);
+          } else {
+            arg = this.promoteExpression(this.convertExpression(arg, typeE), typeV);
+          }
+          for (let i = 0; i < width; i++) {
+            initializers.push(arg);
+          }
         }
       } else {
         for (let i = 0, j = 0; i < width; i++, j += width) {
-          const slice = args.slice(j, j + width);
+          const slice = args.slice(j, j + width).map(a => this.convertExpression(a, typeE));
           initializers.push(ZIG.TupleLiteral.create({ initializers: slice, type: '.'}));
         }
       }
       return ZIG.TupleLiteral.create({ initializers, type });
     } else if (ZIG.isVector(type)) {
       if (args.length === 1) {
-        return this.promoteExpression(args[0], type);
+        const arg = args[0];
+        if (!ZIG.isVector(arg.type)) {
+          const typeE = ZIG.getChildType(type);
+          return this.promoteExpression(this.convertExpression(arg, typeE), type);
+        } else {
+          return this.convertExpression(arg, type);
+        }
       } else {
         return ZIG.TupleLiteral.create({
           initializers: args,
@@ -1242,15 +1255,20 @@ export class PixelBenderToZigTranslator {
         });
       }
     } else {
-      const value = args[0];
-      if (type === value.type) {
-        return value;
-      }
-      if (value instanceof ZIG.Literal) {
-        return this.convertLiteral(value, type);
-      } else {
-        return this.createCastExpression(value, type);
-      }
+      return this.convertExpression(args[0], type);
+    }
+  }
+
+  convertExpression(value, type) {
+    if (type === value.type) {
+      return value;
+    }
+    if (value instanceof ZIG.Literal) {
+      return this.convertLiteral(value, type);
+    } if (value instanceof ZIG.TupleLiteral) {
+      return this.convertTupleLiteral(value, type)
+    }else {
+      return this.createCastExpression(value, type);
     }
   }
 
@@ -1270,32 +1288,53 @@ export class PixelBenderToZigTranslator {
     return ZIG.Literal.create({ value, type });
   }
 
+  convertTupleLiteral(literal, type) {
+    const initializers = literal.initializers.map(i => this.convertExpression(i));
+    return ZIG.TupleLiteral({ initializers, type });
+  }
+
   createCastExpression(value, type) {
-    if (type === 'bool') {
-      const zero = ZIG.Literal.create({ value: 0, type: value.type });
-      return ZIG.BinaryOperation.create({ operand1: value, operator: '!=', operand2: zero });
-    } else if (type === 'f32') {
-      if (value instanceof ZIG.Literal) {
-        return ZIG.Literal.create({ value: Number(value.value), type })
-      } else {
+    if (ZIG.isMatrix(type) && value.isMatrix()) {
+      const typeV = ZIG.getChildType(type);
+      const width = ZIG.getVectorWidth(typeV);
+      const initializers = [];
+      for (let i = 0; i < width; i++) {
+        const vector = ZIG.ElementAccess.create({ expression: value, index: i });
+        initializers.push(this.createCastExpression(value, type));
+      }
+      return this.TupleLiteral({ initializers, type });
+    } else if (ZIG.isVector(type) && value.isVector()) {
+      const typeE = ZIG.getChildType(type);
+      if (typeE === 'bool') {
+        const valueTypeE = value.getChildType();
+        const zero = ZIG.Literal.create({ value: 0, type: valueTypeE });
+        const zeroV = this.promoteExpression(zero, typeE, true);
+        return ZIG.BinaryOperation.create({ operand1: value, operator: '!=', operand2: zero });
+      } else if (typeE === 'f32') {
+        if (value.getChildType() === 'i32') {
+          return this.forceType(ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ value ], type }));
+        } else if (value.getChildType() === 'bool') {
+          const width = value.getVectorWidth();
+          const valueInt = this.createCastExpression(value, `@Vector(${width}, i32)`);
+          return this.forceType(ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ valueInt ], type }));
+        }
+      }
+    } else if (ZIG.isScalar(type) && value.isScalar()) {
+      if (type === 'bool') {
+        const zero = ZIG.Literal.create({ value: 0, type: value.type });
+        return ZIG.BinaryOperation.create({ operand1: value, operator: '!=', operand2: zero });
+      } else if (type === 'f32') {
         if (value.type === 'i32') {
           return this.forceType(ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ value ], type }));
         } else if (value.type === 'bool') {
-          const zero = ZIG.Literal.create({ value: 0, type });
-          const one = ZIG.Literal.create({ value: 1, type });
-          return this.forceType(ZIG.Conditional.create({ condition: value, onTrue: one, onFalse: zero, type }));
+          const valueInt = this.createCastExpression(value, `i32`);
+          return this.forceType(ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ valueInt ], type }));
         }
-      }
-    } else if (type === 'i32') {
-      if (value instanceof ZIG.Literal) {
-        return ZIG.Literal.create({ value: Number(value.value), type })
-      } else {
+      } else if (type === 'i32') {
         if (value.type === 'f32') {
           return this.forceType(ZIG.FunctionCall.create({ name: '@intFromFloat', args: [ value ], type }));
         } else if (value.type === 'bool') {
-          const zero = ZIG.Literal.create({ value: 0, type });
-          const one = ZIG.Literal.create({ value: 1, type });
-          return this.forceType(ZIG.Conditional.create({ condition: value, onTrue: one, onFalse: zero, type }));
+          return this.forceType(ZIG.FunctionCall.create({ name: '@intFromBool', args: [ value ], type }));
         }
       }
     }
@@ -1430,9 +1469,6 @@ export class PixelBenderToZigTranslator {
     } else {
       // perform normally
       this.sideEffects.push(ZIG.AssignmentStatement.create({ lvalue, operator, rvalue }));
-    }
-    if (lvalue.name === 'minDist') {
-      debugger;
     }
     if (typeExpected !== 'void') {
       // the expression's value is being used--need to save the value to a temporary variable

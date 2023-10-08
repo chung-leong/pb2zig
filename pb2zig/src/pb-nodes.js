@@ -199,18 +199,6 @@ export class ExpressionStatement extends PBNode {
 export class EmptyStatement extends PBNode {
 }
 
-export function isVector(type) {
-  return /^[_a-z]+\d$/.test(type);
-}
-
-export function isMatrix(type) {
-  return /^[_a-z]+\dx\d$/.test(type);
-}
-
-export function isArray(type) {
-  return /^[_a-z]+\[\]$/.test(type);
-}
-
 export function isUnsupported(type) {
   return [ 'region', 'imageRef' ].includes(type);
 }

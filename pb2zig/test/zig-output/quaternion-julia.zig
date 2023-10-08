@@ -314,23 +314,23 @@ pub const kernel = struct {
                 var c1: f32 = cos(radians(-camera[0]));
                 var s1: f32 = sin(radians(-camera[0]));
                 self.viewRotationY = [3]@Vector(3, f32){
-                    .{ c1, 0, s1 },
-                    .{ 0, 1, 0 },
-                    .{ -s1, 0, c1 },
+                    .{ c1, 0.0, s1 },
+                    .{ 0.0, 1.0, 0.0 },
+                    .{ -s1, 0.0, c1 },
                 };
                 var c2: f32 = cos(radians(-camera[1]));
                 var s2: f32 = sin(radians(-camera[1]));
                 self.viewRotationZ = [3]@Vector(3, f32){
-                    .{ c2, -s2, 0 },
-                    .{ s2, c2, 0 },
-                    .{ 0, 0, 1 },
+                    .{ c2, -s2, 0.0 },
+                    .{ s2, c2, 0.0 },
+                    .{ 0.0, 0.0, 1.0 },
                 };
                 var c3: f32 = cos(radians(-camera[2]));
                 var s3: f32 = sin(radians(-camera[2]));
                 self.viewRotationX = [3]@Vector(3, f32){
-                    .{ 1, 0, 0 },
-                    .{ 0, c3, -s3 },
-                    .{ 0, s3, c3 },
+                    .{ 1.0, 0.0, 0.0 },
+                    .{ 0.0, c3, -s3 },
+                    .{ 0.0, s3, c3 },
                 };
                 self.viewRotation = @"M * M"(@"M * M"(self.viewRotationX, self.viewRotationY), self.viewRotationZ);
                 self.eye = @"V * M"(@Vector(3, f32){ 0, 0, camera[3] }, self.viewRotation);
@@ -541,7 +541,6 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
     var instance = kernel.create(input, output, params);
     if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
         instance.evaluateDependents();
-        std.debug.print("evaluateDependents()\n", .{});
     }
     var y: u32 = 0;
     while (y < height) : (y += 1) {
@@ -598,27 +597,13 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
 
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
-            // https://github.com/ziglang/zig/issues/16267
-            var numerator: FPixel = undefined;
-            switch (len) {
-                1 => numerator[0] = @floatFromInt(pixel[0]),
-                2 => {
-                    numerator[0] = @floatFromInt(pixel[0]);
-                    numerator[3] = @floatFromInt(pixel[3]);
-                },
-                3 => {
-                    numerator[0] = @floatFromInt(pixel[0]);
-                    numerator[1] = @floatFromInt(pixel[1]);
-                    numerator[2] = @floatFromInt(pixel[2]);
-                },
-                4 => {
-                    numerator[0] = @floatFromInt(pixel[0]);
-                    numerator[1] = @floatFromInt(pixel[1]);
-                    numerator[2] = @floatFromInt(pixel[2]);
-                    numerator[3] = @floatFromInt(pixel[3]);
-                },
+            const numerator: FPixel = switch (len) {
+                1 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(1, i32){0}))),
+                2 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(2, i32){ 0, 3 }))),
+                3 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(3, i32){ 0, 1, 2 }))),
+                4 => @floatFromInt(pixel),
                 else => @compileError("Unsupported number of channels: " ++ len),
-            }
+            };
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
@@ -635,34 +620,14 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
             const product: FPixel = contrain(pixel * multiplier, max);
-            var result: Pixel = undefined;
-            switch (len) {
-                1 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[0]);
-                    result[2] = @intFromFloat(product[0]);
-                    result[3] = std.math.maxInt(T);
-                },
-                2 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[0]);
-                    result[2] = @intFromFloat(product[0]);
-                    result[3] = @intFromFloat(product[1]);
-                },
-                3 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[1]);
-                    result[2] = @intFromFloat(product[2]);
-                    result[3] = std.math.maxInt(T);
-                },
-                4 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[1]);
-                    result[2] = @intFromFloat(product[2]);
-                    result[3] = @intFromFloat(product[3]);
-                },
+            const maxAlpha: @Vector(1, T) = .{std.math.maxInt(T)};
+            const result: Pixel = switch (len) {
+                1 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, ~0 })),
+                2 => @intFromFloat(@shuffle(Pixel, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
+                3 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, ~0 })),
+                4 => @intFromFloat(product),
                 else => @compileError("Unsupported number of channels: " ++ len),
-            }
+            };
             return result;
         }
 

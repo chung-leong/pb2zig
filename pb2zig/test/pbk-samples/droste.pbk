@@ -356,7 +356,7 @@ kernel Droste
 
     pixel4 renderPoint(float2 s)
     {
-        float2 z, d, ratio, polar;
+        float2 z, d, ratio;
         float radius, theta, div;
         int iteration;
         int sign = 0;
