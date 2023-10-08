@@ -271,9 +271,9 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const product: FPixel = contrain(pixel * multiplier, max);
             const maxAlpha: @Vector(1, T) = .{std.math.maxInt(T)};
             const result: Pixel = switch (len) {
-                1 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, ~0 })),
+                1 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
                 2 => @intFromFloat(@shuffle(Pixel, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
-                3 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, ~0 })),
+                3 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
                 4 => @intFromFloat(product),
                 else => @compileError("Unsupported number of channels: " ++ len),
             };
