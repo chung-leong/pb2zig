@@ -1,0 +1,540 @@
+<languageVersion : 1.0;>
+
+kernel Landscape
+<   namespace : "com.subblue.filters";
+    vendor : "Tom Beddard";
+    version : 1;
+    description : "Landscape rendering using ray marching";
+>
+
+// Landscape Generator
+// -----------------------
+// By Tom Beddard
+// http://www.subblue.com
+//
+//
+// Notes:
+// -----------------------
+//
+// A ray vector for each pixel is fired into the scene. The ray steps a distance
+// epsilon and then checks it's height above the terrain. This process continues
+// until the ray height drops below that of the terrain. At this intersection
+// point we calculate the normal vector then the dot product of this with a 
+// normalised vector to the sun position to calculate the diffuse shading
+// factor.
+//
+// This version uses a composition of different frequency sine functions to
+// create a noise-like height map to for the terrain displacement.
+// I also created versions that use Perlin and Simplex noise functions to generate 
+// more realistic height maps, but that is too slow and often locks up the GPU 
+// requiring a hard reset on my NVidia 8800GS iMac!
+// 
+// Standard landscape ray-marching techniques store the ray depth of the pixel
+// below the one being calculated (as you it will correspond to a point on
+// the terrain closer to the camera than the pixel above it), which means subsequent
+// ray tracing can start from where the previous ray stopped saving a huge number of
+// iterations.
+// Unfortunately because the way the GPU renders many pixels in parallel you can't
+// query the result of the pixel below the one you are calculating so it isn't
+// possible to use this optimisation. The ray marching has to be done with brute
+// force! 
+// 
+//
+// References:
+// ------------------------
+//
+//   Texturing & Modeling - A Procedural Approach 3rd Ed.
+//   Ebert, Musgrave, Peachy, Perlin and Worley
+//   ISBN: 1-55860-848-6
+//
+//   Mathematics for 3D Game Programming & Computer Graphics 2nd Ed.
+//   Eric Lengyel
+//   ISBN: 1-58450-277-0
+//
+//   Inspiration from:
+//   http://rgba.scenesp.org/iq/computer/articles/terrainmarching/terrainmarching.htm
+//   Thanks iigo!
+//
+
+#define AIF_FLASH_TARGET 0
+
+{
+    output pixel4 dst;
+
+    const float EPSILON           = 0.1;        // The initial ray marching step size
+    const float SPECULAR_EXPONENT = 50.0;       // The water specular component
+    
+    dependent float detailLevel, aspectRatio, ambient, specular, sunSize, contourInterval;
+    dependent float3 sunPosition, cameraEye;
+    dependent float3x3 viewRotation;
+    dependent float3 fogColor, valleyColor, peakColor, buildingColor, waterColor, skyColor, sunColor;
+    dependent float start_dst[1024];
+    
+    parameter int2 size
+    <
+        aeDisplayName: "Output image size";
+        minValue:int2(100, 100);
+        maxValue:int2(1000, 1000);
+        defaultValue:int2(500, 350);
+    >;
+    
+    parameter float3 cameraPosition
+    <
+        minValue:float3(-100, 0, -100);
+        maxValue:float3(100, 20, 100);
+        defaultValue:float3(-6, 4, 6);
+    >;
+    
+    parameter float3 cameraPositionFine
+    <
+        minValue:float3(-5, -1, -5);
+        maxValue:float3(5, 1, 5);
+        defaultValue:float3(0, 0, 0);
+    >;
+    
+    parameter float cameraRotation
+    <
+        minValue:-180.0;
+        maxValue:180.0;
+        defaultValue:0.0;
+    >;
+    
+    parameter float terrainHorizon
+    <
+        minValue:       10.0;
+        maxValue:       100.0;
+        defaultValue:   25.0;
+    >;
+    
+    parameter float terrainDetail
+    <
+        minValue:       1.0;
+        maxValue:       10.0;
+        defaultValue:   7.0;
+    >;
+    
+    parameter bool buildings
+    <
+        defaultValue:   false;
+    >;
+    
+    parameter float waterLevel
+    <
+        minValue:       -0.1;
+        maxValue:       1.0;
+        defaultValue:   0.34;
+    >;
+    
+    parameter int sampling
+    <
+        minValue:       0;
+        maxValue:       2;
+        defaultValue:   0;
+    >;
+    
+    parameter bool shadows
+    <
+        defaultValue:   true;
+    >;
+    
+    parameter bool contours
+    <
+        defaultValue:   false;
+    >;
+    
+    parameter float2 sun
+    <
+        minValue:       float2(0.0, 0.0);
+        maxValue:       float2( 90.0, 360.0);
+        defaultValue:   float2( 14.0, 252.0);
+    >;
+    
+    parameter float terrainHeight
+    <
+        minValue:       0.5;
+        maxValue:       10.0;
+        defaultValue:   3.5;
+    >;
+    
+    
+    region generated()
+    {
+        return region(float4(0, 0, size.x, size.y));
+    }
+    
+    
+    // Find the terrain displacement for the current point
+    // 
+    // return.s = distance to surface
+    // return.t = depth of water or height of building
+    // return.p = surface type; 0 = hills, 1 = water, 2 = buildings
+    float3 displacement(float3 p)
+    {
+        float  alt;
+        float  hills = 0.0;
+        float  structures = 0.0;
+        float3 terrain;
+        
+        hills = abs(2.0 * cos(p.x/32.0 - 0.5) * sin(p.z/32.0 - 0.5) + 
+                          cos(p.x/8.0) * sin(p.z/8.0 + 0.5) + 
+                          cos(p.x/2.0 - 0.5) * sin(p.z/2.0 + 0.5) + 
+                          cos(2.0 * p.x) * sin(2.0 * p.z) / 8.0) / 2.125;
+        
+        if (hills <= waterLevel)
+        {
+            // Hit water
+            terrain = float3(terrainHeight * waterLevel, terrainHeight * hills, 1);
+        }
+        else if (buildings)
+        {
+            // Only show buildings over a certain threshold
+            structures = waterLevel + (mod(p.x / 2.0, 0.8) - mod(p.x / 2.0, 0.5)) * 
+                                      (mod(p.z / 2.0, 0.8) - mod(p.z / 2.0, 0.5)) * terrainHeight / 4.0;
+            
+            if (structures < hills)
+            {
+                terrain = float3(terrainHeight * hills, 0, 0);
+            } else {
+                terrain = float3(terrainHeight * structures, structures, 2);
+            }
+        } else {
+            terrain = float3(terrainHeight * hills, 0, 0);
+        }
+        
+        return terrain;
+    }
+    
+    
+    // Define the ray direction from the pixel coordinates
+    float3 rayDirection(float2 p)
+    {
+        float3 direction = float3( 2.0 * aspectRatio * p.x / float(size.x) - aspectRatio, 
+                                  -2.0 * p.y / float(size.y) + 1.0, 
+                                  -2.0);
+        return direction * viewRotation;
+    }
+    
+    
+    // Find the normal vector at the intersection of the ray and terrain
+    float3 intersectionNormal(float3 p, float epsilon)
+    {
+        float3 n;
+        float  e = epsilon;
+        float3 p1 = float3(p.x - e, p.y, p.z    );
+        float3 p2 = float3(p.x + e, p.y, p.z    );
+        float3 p3 = float3(p.x,     p.y, p.z - e);
+        float3 p4 = float3(p.x,     p.y, p.z + e);
+        
+        n = float3(displacement(p1).s - displacement(p2).s,
+                   2.0 * e,
+                   displacement(p3).s - displacement(p4).s);
+        
+        return normalize(n);
+    }
+    
+    
+    // Trace the ray through the scene
+    void castRay(
+        in  float3   ray_direction,         // Ray direction
+        in  float    t,                     // Start distance
+        out float3   ray,                   // Current position of marching ray
+        out float3   normal,                // Normal vector at terrain intersection point
+        out float    ray_distance,          // Distance the ray travelled to intersection
+        out float3   surface
+        )
+    {
+        float dt = EPSILON;                 // Step size
+        ray = float3(0.0, 0.0, 0.0);
+        float  start_d = t;
+        float3 basic_ray, prev_ray;
+        float  prev_alt;
+        
+        // March ray until we reach the horizon
+        while (t < terrainHorizon)
+        {
+            ray_distance = -1.0;            // < 0 when no intersection
+            
+            // Vector for current position
+            ray = cameraEye + ray_direction * t;
+            
+            // If greater than the max terrain height and moving away from the plane then stop
+            if (ray.y > terrainHeight * 2.0 && ray.y > prev_ray.y && t > start_d)
+                break;
+            
+            // Find terrain displacement for the current point
+            surface = displacement(ray);
+            
+            if (ray.y <= surface.s)
+            {
+                // Interpolate the intersection distance
+                float id = (prev_alt - prev_ray.y)/(ray.y -  prev_ray.y - surface.s + prev_alt);
+                ray_distance = mix(t, (t-dt), id);
+                surface.s = mix(surface.s, ray.y, id);
+                ray.y = surface.s;
+                prev_ray.y = prev_alt;
+                normal = intersectionNormal(ray, dt);
+                break;
+            }
+            
+            // Step size increases proportionally to the ray length
+            t += dt;
+            dt = max((t - start_d) * detailLevel, 0.005);
+            prev_alt = surface.s;
+            prev_ray = ray;
+        }
+    }
+    
+    
+    // Trace a ray from the origin point in the terrain coordinates to the sun. 
+    // If it intersects anything then we are in shadow.
+    float castShadowRay(float3 origin, float3 direction)
+    {
+        float t = EPSILON;
+        float epsilon = t;
+        float3 surface = displacement(origin);
+        origin.y = surface.s;
+        float3 ray = float3(0.0, 0.0, 0.0);
+        float shadow_length = 0.0;
+        
+        // Trace ray until we intersect terrain or reach the terrain ceiling
+        while (ray.y < terrainHeight)
+        {
+            // Vector for current position
+            ray = origin + direction * t;
+            surface = displacement(ray);
+            
+            if (ray.y <= surface.s)
+            {
+                shadow_length = t;
+                break;
+            }
+            t += epsilon;
+        }
+        
+        return shadow_length;
+    }
+    
+    
+    // Add a fog factor depending on the distance away from the camera and terrain horizon
+    float3 fog(float3 c, float d)
+    {
+        float r = abs(d) / terrainHorizon;
+        return mix(c, fogColor, r);
+    }
+    
+    
+    // Add shadow factor depending on the shadow length
+    float shadow(float diffuse, float l)
+    {
+        if (l > 0.0)
+        {
+            diffuse = clamp(diffuse - 0.01, 0.0, 1.0) * ambient;
+        }
+        return diffuse;
+    }
+    
+    
+    // Sky colour
+    float3 sky(float3 ray_direction)
+    {
+        float a = clamp((abs(acos(dot(ray_direction, sunPosition) / (length(ray_direction) * length(sunPosition)))) / 3.14) / sunSize, 0.0, 1.0) ;
+        float3 s = sunColor * (1.0 - a);
+        
+        return skyColor * ambient + s;
+    }
+    
+    
+    // Contours
+    bool overlayContour(float3 o, float h)
+    {
+        float contour = mod(h * 100.0, contourInterval) - mod((h * 100.0 - 1.5), contourInterval);
+        
+        return (contours && contour < 0.5 ? true : false);
+    }
+    
+    
+    // The main render function returns a colour for the input pixel coordinates
+    float3 render(float2 p)
+    {
+        float3 o;            // Output colour
+        float3 ray;          // Final ray vector at intersection
+        float3 l;            // Normalised vector from current point to the sun
+        float3 n;            // Normal of terrain intersection point
+        float  ray_distance; // Distance ray traveled
+        float3 reflection;   // Light reflection
+        float  diffuse;      // Diffuse colour contribution
+        float  spec;         // Specular colour contribution
+        float3 surface;      // Type of surface
+        float  shadow_length;
+        float  t = start_dst[int(p.x / 5.0)];
+        float3 ray_direction = rayDirection(p);
+        float contour;
+        
+        castRay(ray_direction, t, ray, n, ray_distance, surface);
+        
+        if (ray_distance >= 0.0)
+        {
+            if (surface.p == 1.0)
+            {
+                // Water level
+                l = normalize(sunPosition - ray);
+                diffuse = dot(l, n);
+                o = waterColor;
+                
+                if (shadows)
+                {
+                    shadow_length = castShadowRay(ray, l);
+                    diffuse = shadow(diffuse, shadow_length);
+                }
+                
+                if (shadow_length == 0.0)
+                {
+                    // Coast factor
+                    float cf = (surface.s - surface.t) / (waterLevel * terrainHeight);
+                    if (cf < 0.35)
+                        diffuse *= 1.35 - cf;
+                
+                    reflection = l - 2.0 * diffuse * n;         // reflect the light vector 
+                    spec = dot(normalize(ray), reflection);
+                    spec = pow(max(specular, 0.0), specular) * 0.5;
+                    o = o * diffuse * (0.5 + spec);
+                    if (overlayContour(o, surface.t))
+                        o *= 1.4;
+                    
+                    o = fog(o, ray_distance);
+                } else {
+                    diffuse *= 0.4;
+                    if (overlayContour(o, surface.s))
+                        o *= 1.4;
+                    o = fog(o * diffuse, ray_distance);
+                }
+            } else if (surface.p == 2.0) {
+                // Building
+                l = normalize(sunPosition - ray);
+                diffuse = 0.3 + dot(l, n) / 1.43;
+                
+                if (shadows)
+                {
+                    shadow_length = castShadowRay(ray, l);
+                    diffuse = shadow(diffuse, shadow_length);
+                }
+                
+                o = buildingColor * diffuse;
+                o = fog(o, ray_distance);
+                
+            } else {
+                // Landscape colour
+                l = normalize(sunPosition - ray);
+                diffuse = 0.3 + dot(l, n) / 1.43;
+                
+                if (shadows)
+                {
+                    shadow_length = castShadowRay(ray, l);
+                    diffuse = shadow(diffuse, shadow_length);
+                }
+                
+                o = mix(valleyColor, peakColor, clamp((ray.y - waterLevel) / (terrainHeight - terrainHeight * waterLevel), 0.0, 1.0)) * diffuse;
+                
+                if (overlayContour(o, surface.s))
+                    o *= 0.4;
+                
+                o = fog(o, ray_distance);
+            }
+        } else {
+            // Sky colour
+            o = mix(sky(ray_direction), fogColor, 1.0 - (float(size.y) / 1.8 - p.y) / float(size.y));
+        }
+        
+        return o;
+    }
+    
+    
+    void evaluateDependents()
+    {
+        // Camera orientation
+        float c = cos(radians(-cameraRotation));
+        float s = sin(radians(-cameraRotation));
+        viewRotation = float3x3( c, 0, s, 
+                                 0, 1, 0, 
+                                -s, 0, c);
+        
+        // Setep camera eye
+        cameraEye = cameraPosition + cameraPositionFine;
+        
+        if (cameraEye.y <= (waterLevel * terrainHeight))
+            cameraEye.y = (waterLevel * terrainHeight) + 0.1;
+        
+        // Sun position
+        float sd = 1000.0;    // Sun distance from plane
+        sunPosition = float3(sd * cos(radians(sun.y)) * sin(radians(90.0 - sun.x)),
+                             sd * cos(radians(90.0 - sun.x)),
+                             sd * sin(radians(sun.y)) * sin(radians(90.0 - sun.x)));
+        sunPosition += cameraEye;
+        
+        // Others
+        detailLevel = (11.0 - terrainDetail) / 175.0;
+        aspectRatio = float(size.x) / float(size.y);
+        specular = 0.5;
+        sunSize = 0.17;
+        contourInterval = 10.0;
+        
+        // Find the starting distance for current view
+        // Sample points from the bottom row and use the smallest distance as the
+        // ray marching starting distance
+        float3 ray, n, surface;
+        float ray_distance, h;
+        
+        // Collision check
+        for (float x = 0.0; x < float(size.x); x += float(size.x) / 2.0)
+        {
+            ray = cameraEye + rayDirection(float2(x, size.y)) * 0.1;
+            surface = displacement(ray);
+            
+            if (ray.y < surface.s)
+            {
+                cameraEye.y = surface.s - rayDirection(float2(x, size.y)).y * 0.1 + EPSILON;
+            }
+        }
+        
+        // Find start positions for the bottom row - it's an extra row of calcuations but should give a better result
+        for (float i = 0.0; i < float(size.x); i += 5.0)
+        {
+            castRay(rayDirection(float2(i, size.y)), 0.01, ray, n, ray_distance, surface);
+            ray_distance -= EPSILON;
+            if (ray_distance < EPSILON) ray_distance = EPSILON;
+            start_dst[int(i / 5.0)] = ray_distance;
+        }
+        
+        // Colours
+        skyColor      = float3(0.0, 0.0, 1.0);
+        sunColor      = float3(1.0, 1.0, 1.0);
+        fogColor      = float3(251.0, 251.0, 253.0) / 255.0;
+        waterColor    = float3(0.0, 0.3, 1.0);
+        valleyColor   = float3(75.0, 139.0, 44.0) / 255.0;
+        peakColor     = float3(189.0, 178.0, 149.0) / 255.0;
+        buildingColor = float3(203.0, 199.0, 188.0) / 255.0;
+        ambient       = clamp(sun.x / 50.0, 0.5, 1.0);
+    }
+    
+    
+    void evaluatePixel()
+    {
+        float3 c = float3(0, 0, 0);
+        
+        if (sampling == 1)
+        {
+            // Super sample the height only
+            c = mix(render(outCoord()), render(float2(outCoord().x, outCoord().y - 0.5)), 0.5);
+        } else if (sampling == 2) {
+            // Average 4 points per pixel
+            for (float i = 0.0; i < 1.0; i += 0.5)
+                for (float j = 0.0; j < 1.0; j += 0.5)
+                    c += 0.25 * render(float2(outCoord().x + i, outCoord().y + j));
+        } else {
+            // No super sampling
+            c = render(outCoord());
+        }
+        
+        dst = pixel4(c.r, c.g, c.b, 1.0);
+    }
+}

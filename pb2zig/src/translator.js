@@ -116,11 +116,11 @@ export class PixelBenderToZigTranslator {
     });
   }
 
-  insertIgnoreStatements(statements) {
+  insertIgnoreStatements(statements, args) {
     for (const [ name, { used } ] of Object.entries(this.variables)) {
       if (!used) {
         const index = statements.findIndex(s => s instanceof ZIG.VariableDeclaration && s.name === name);
-        if (index !== -1) {
+        if (index !== -1 || args?.find(a => a.name === name)) {
           const value = ZIG.VariableAccess.create({ name });
           const ignore = this.createIgnoreStatement(value);
           statements.splice(index + 1, 0, ignore);
@@ -409,9 +409,10 @@ export class PixelBenderToZigTranslator {
       this.createBlankLine(),
       this.createComment(`generic kernel instance type`),
       this.createInstanceFunction(),
-      this.createComment(`kernel instance creation function`),
       this.createBlankLine(),
+      this.createComment(`kernel instance creation function`),
       this.createCreateFunction(),
+      ...this.includeCalledFunctions(),
     ];
     return ZIG.VariableDeclaration.create({
       name: 'kernel',
@@ -547,7 +548,7 @@ export class PixelBenderToZigTranslator {
           .params = params,
         };
       }
-    `;
+    `.trim();
   }
 
   createInstanceFunction() {
@@ -568,12 +569,20 @@ export class PixelBenderToZigTranslator {
   translateKernelInstance() {
     // set the types of constants now in case array-dimensions involve constants
     const constantDecls = this.translateConstantDeclarations();
+    const outCoord = `
+      pub fn outCoord(self: *@This()) @Vector(2, f32) {
+        const x = self.outputCoord[0];
+        const y = self.outputCoord[1];
+        return .{ @floatFromInt(x), @floatFromInt(y) };
+      }
+    `.trim();
     const statements = [
       ...this.translateInputOutputFields(),
       ...this.translateDependentFields(),
       ...constantDecls,
       ...this.translateDefinedFunctions(),
-      ...this.includeCalledFunctions(),
+      this.createBlankLine(),
+      outCoord,
     ];
     this.initializeConstants();
     return ZIG.StructDefinition.create({ statements });
@@ -822,7 +831,7 @@ export class PixelBenderToZigTranslator {
       }
     }
     // deal with unused variables/return values
-    this.insertIgnoreStatements(statements);
+    this.insertIgnoreStatements(statements, args);
     // get the shadow variables before exiting scope
     const shadowVariables = map(this.variables, v => (v.shadow) ? v : undefined);
     this.endScope();

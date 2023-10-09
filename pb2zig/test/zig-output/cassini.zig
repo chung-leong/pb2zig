@@ -89,71 +89,15 @@ pub const kernel = struct {
                 dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
 
-            // built-in Pixel Bender functions
-            fn outCoord(self: *@This()) @Vector(2, f32) {
+            pub fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
-
-            fn sin(v: anytype) @TypeOf(v) {
-                return @sin(v);
-            }
-
-            fn cos(v: anytype) @TypeOf(v) {
-                return @cos(v);
-            }
-
-            fn tan(v: anytype) @TypeOf(v) {
-                return @tan(v);
-            }
-
-            fn asin(v: anytype) @TypeOf(v) {
-                return switch (@typeInfo(@TypeOf(v))) {
-                    .Vector => calc: {
-                        var result: @TypeOf(v) = undefined;
-                        comptime var i = 0;
-                        inline while (i < @typeInfo(@TypeOf(v)).Vector.len) : (i += 1) {
-                            result[i] = asin(v[i]);
-                        }
-                        break :calc result;
-                    },
-                    else => std.math.asin(v),
-                };
-            }
-
-            fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v1))) {
-                    .Vector => calc: {
-                        var result: @TypeOf(v1) = undefined;
-                        comptime var i = 0;
-                        inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
-                            result[i] = atan2(v1[i], v2[i]);
-                        }
-                        break :calc result;
-                    },
-                    else => std.math.atan2(@TypeOf(v1), v1, v2),
-                };
-            }
-
-            fn sqrt(v: anytype) @TypeOf(v) {
-                return @sqrt(v);
-            }
-
-            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @mod(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @mod(v1, v2),
-                    },
-                };
-            }
         };
     }
+
     // kernel instance creation function
-
-
     pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
@@ -162,6 +106,60 @@ pub const kernel = struct {
         };
     }
 
+    // built-in Pixel Bender functions
+    fn sin(v: anytype) @TypeOf(v) {
+        return @sin(v);
+    }
+
+    fn cos(v: anytype) @TypeOf(v) {
+        return @cos(v);
+    }
+
+    fn tan(v: anytype) @TypeOf(v) {
+        return @tan(v);
+    }
+
+    fn asin(v: anytype) @TypeOf(v) {
+        return switch (@typeInfo(@TypeOf(v))) {
+            .Vector => calc: {
+                var result: @TypeOf(v) = undefined;
+                comptime var i = 0;
+                inline while (i < @typeInfo(@TypeOf(v)).Vector.len) : (i += 1) {
+                    result[i] = asin(v[i]);
+                }
+                break :calc result;
+            },
+            else => std.math.asin(v),
+        };
+    }
+
+    fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
+        return switch (@typeInfo(@TypeOf(v1))) {
+            .Vector => calc: {
+                var result: @TypeOf(v1) = undefined;
+                comptime var i = 0;
+                inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+                    result[i] = atan2(v1[i], v2[i]);
+                }
+                break :calc result;
+            },
+            else => std.math.atan2(@TypeOf(v1), v1, v2),
+        };
+    }
+
+    fn sqrt(v: anytype) @TypeOf(v) {
+        return @sqrt(v);
+    }
+
+    fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
+        return switch (@typeInfo(@TypeOf(v2))) {
+            .Vector => @mod(v1, v2),
+            else => switch (@typeInfo(@TypeOf(v1))) {
+                .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                else => @mod(v1, v2),
+            },
+        };
+    }
 };
 
 pub const Input = KernelInput(u8, kernel);
@@ -247,9 +245,9 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
 
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
             const numerator: FPixel = switch (len) {
-                1 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(1, i32){0}))),
-                2 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(2, i32){ 0, 3 }))),
-                3 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(3, i32){ 0, 1, 2 }))),
+                1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
+                2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
+                3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
                 4 => @floatFromInt(pixel),
                 else => @compileError("Unsupported number of channels: " ++ len),
             };
@@ -269,11 +267,11 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
             const product: FPixel = contrain(pixel * multiplier, max);
-            const maxAlpha: @Vector(1, T) = .{std.math.maxInt(T)};
+            const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
             const result: Pixel = switch (len) {
-                1 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
-                2 => @intFromFloat(@shuffle(Pixel, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
-                3 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
+                1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
+                2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
+                3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
                 4 => @intFromFloat(product),
                 else => @compileError("Unsupported number of channels: " ++ len),
             };

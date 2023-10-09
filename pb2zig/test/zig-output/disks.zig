@@ -191,84 +191,15 @@ pub const kernel = struct {
                 }, (rot[0][0] * rot[1][1] - rot[1][0] * rot[0][1]));
             }
 
-            // built-in Pixel Bender functions
-            fn outCoord(self: *@This()) @Vector(2, f32) {
+            pub fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
-
-            fn floor(v: anytype) @TypeOf(v) {
-                return @floor(v);
-            }
-
-            fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
-                return switch (@typeInfo(@TypeOf(min_val))) {
-                    .Vector => calc: {
-                        const T = @typeInfo(@TypeOf(v)).Vector.child;
-                        const result1 = @select(T, v < min_val, min_val, v);
-                        const result2 = @select(T, result1 > max_val, max_val, result1);
-                        break :calc result2;
-                    },
-                    else => switch (@typeInfo(@TypeOf(v))) {
-                        .Vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
-                        else => calc: {
-                            if (v < min_val) {
-                                break :calc min_val;
-                            } else if (v > max_val) {
-                                break :calc max_val;
-                            } else {
-                                break :calc v;
-                            }
-                        },
-                    },
-                };
-            }
-
-            fn @"M * M"(m1: anytype, m2: anytype) @TypeOf(m1) {
-                const ar = @typeInfo(@TypeOf(m2)).Array;
-                var result: @TypeOf(m2) = undefined;
-                comptime var r = 0;
-                inline while (r < ar.len) : (r += 1) {
-                    var row: ar.child = undefined;
-                    inline for (m1, 0..) |column, c| {
-                        row[c] = column[r];
-                    }
-                    inline for (m2, 0..) |column, c| {
-                        result[c][r] = @reduce(.Add, row * column);
-                    }
-                }
-                return result;
-            }
-
-            fn @"V * M"(v1: anytype, m2: anytype) @TypeOf(v1) {
-                var result: @TypeOf(v1) = undefined;
-                inline for (m2, 0..) |column, c| {
-                    result[c] = @reduce(.Add, column * v1);
-                }
-                return result;
-            }
-
-            fn @"M * S"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                var result: @TypeOf(m1) = undefined;
-                inline for (m1, 0..) |column, c| {
-                    result[c] = column * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                }
-                return result;
-            }
-
-            fn @"M / S"(m1: anytype, s2: anytype) @TypeOf(m1) {
-                var result: @TypeOf(m1) = undefined;
-                inline for (m1, 0..) |column, c| {
-                    result[c] = column / @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
-                }
-                return result;
-            }
         };
     }
+
     // kernel instance creation function
-
-
     pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
@@ -277,6 +208,73 @@ pub const kernel = struct {
         };
     }
 
+    // built-in Pixel Bender functions
+    fn floor(v: anytype) @TypeOf(v) {
+        return @floor(v);
+    }
+
+    fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
+        return switch (@typeInfo(@TypeOf(min_val))) {
+            .Vector => calc: {
+                const T = @typeInfo(@TypeOf(v)).Vector.child;
+                const result1 = @select(T, v < min_val, min_val, v);
+                const result2 = @select(T, result1 > max_val, max_val, result1);
+                break :calc result2;
+            },
+            else => switch (@typeInfo(@TypeOf(v))) {
+                .Vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
+                else => calc: {
+                    if (v < min_val) {
+                        break :calc min_val;
+                    } else if (v > max_val) {
+                        break :calc max_val;
+                    } else {
+                        break :calc v;
+                    }
+                },
+            },
+        };
+    }
+
+    fn @"M * M"(m1: anytype, m2: anytype) @TypeOf(m1) {
+        const ar = @typeInfo(@TypeOf(m2)).Array;
+        var result: @TypeOf(m2) = undefined;
+        comptime var r = 0;
+        inline while (r < ar.len) : (r += 1) {
+            var row: ar.child = undefined;
+            inline for (m1, 0..) |column, c| {
+                row[c] = column[r];
+            }
+            inline for (m2, 0..) |column, c| {
+                result[c][r] = @reduce(.Add, row * column);
+            }
+        }
+        return result;
+    }
+
+    fn @"V * M"(v1: anytype, m2: anytype) @TypeOf(v1) {
+        var result: @TypeOf(v1) = undefined;
+        inline for (m2, 0..) |column, c| {
+            result[c] = @reduce(.Add, column * v1);
+        }
+        return result;
+    }
+
+    fn @"M * S"(m1: anytype, s2: anytype) @TypeOf(m1) {
+        var result: @TypeOf(m1) = undefined;
+        inline for (m1, 0..) |column, c| {
+            result[c] = column * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+        }
+        return result;
+    }
+
+    fn @"M / S"(m1: anytype, s2: anytype) @TypeOf(m1) {
+        var result: @TypeOf(m1) = undefined;
+        inline for (m1, 0..) |column, c| {
+            result[c] = column / @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+        }
+        return result;
+    }
 };
 
 pub const Input = KernelInput(u8, kernel);
@@ -362,9 +360,9 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
 
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
             const numerator: FPixel = switch (len) {
-                1 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(1, i32){0}))),
-                2 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(2, i32){ 0, 3 }))),
-                3 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(3, i32){ 0, 1, 2 }))),
+                1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
+                2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
+                3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
                 4 => @floatFromInt(pixel),
                 else => @compileError("Unsupported number of channels: " ++ len),
             };
@@ -384,11 +382,11 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
             const product: FPixel = contrain(pixel * multiplier, max);
-            const maxAlpha: @Vector(1, T) = .{std.math.maxInt(T)};
+            const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
             const result: Pixel = switch (len) {
-                1 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
-                2 => @intFromFloat(@shuffle(Pixel, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
-                3 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
+                1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
+                2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
+                3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
                 4 => @intFromFloat(product),
                 else => @compileError("Unsupported number of channels: " ++ len),
             };

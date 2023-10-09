@@ -1,12 +1,6 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-pub fn outCoord(self: *@This()) @Vector(2, f32) {
-    const x = self.outputCoord[0];
-    const y = self.outputCoord[1];
-    return .{ @floatFromInt(x), @floatFromInt(y) };
-}
-
 pub fn any(v: anytype) bool {
     return @reduce(.Or, v);
 }

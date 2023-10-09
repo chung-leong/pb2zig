@@ -443,6 +443,12 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
+  it('should correctly translate landscape.pbk', async function() {
+    this.timeout(60000);
+    const name = 'landscape';
+    await translate(name);
+    await apply(name, {});
+  })
   it('should correctly translate levels.pbk', async function() {
     this.timeout(60000);
     const name = 'levels';
@@ -639,12 +645,15 @@ describe('Integration tests', function() {
     await apply(name, { inputUsedToTest: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate rt-terrain.pbk', async function() {
-    this.timeout(60000);
+    this.timeout(60000 * 3);
     const name = 'rt-terrain';
     await translate(name);
-    const params = {
-    };
-    await apply(name, { inputUsedToTest: 'malgorzata-socha.png' }, params);
+    await apply(name, {
+      heightMap: 'bigmap-blur.jpg',
+      normalMap: 'bigmap-normal.png',
+      diffuseMap: 'diffuse-map-big.jpg',
+      sphereMap: 'sky-sphere4.jpg',
+    });
   })
   it('should correctly translate ripple-blocks.pbk', async function() {
     this.timeout(60000);

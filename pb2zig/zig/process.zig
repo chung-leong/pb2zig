@@ -103,9 +103,9 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
 
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
             const numerator: FPixel = switch (len) {
-                1 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(1, i32){0}))),
-                2 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(2, i32){ 0, 3 }))),
-                3 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(3, i32){ 0, 1, 2 }))),
+                1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
+                2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
+                3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
                 4 => @floatFromInt(pixel),
                 else => @compileError("Unsupported number of channels: " ++ len),
             };
@@ -125,11 +125,11 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
             const product: FPixel = contrain(pixel * multiplier, max);
-            const maxAlpha: @Vector(1, T) = .{std.math.maxInt(T)};
+            const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
             const result: Pixel = switch (len) {
-                1 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
-                2 => @intFromFloat(@shuffle(Pixel, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
-                3 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
+                1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
+                2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
+                3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
                 4 => @intFromFloat(product),
                 else => @compileError("Unsupported number of channels: " ++ len),
             };

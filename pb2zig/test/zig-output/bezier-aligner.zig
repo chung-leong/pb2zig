@@ -249,52 +249,15 @@ pub const kernel = struct {
                 return (f[0] + t * (f[1] + t * (f[2] + t * f[3])));
             }
 
-            // built-in Pixel Bender functions
-            fn outCoord(self: *@This()) @Vector(2, f32) {
+            pub fn outCoord(self: *@This()) @Vector(2, f32) {
                 const x = self.outputCoord[0];
                 const y = self.outputCoord[1];
                 return .{ @floatFromInt(x), @floatFromInt(y) };
             }
-
-            fn sign(v: anytype) @TypeOf(v) {
-                return std.math.sign(v);
-            }
-
-            fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
-                return switch (@typeInfo(@TypeOf(v2))) {
-                    .Vector => @mod(v1, v2),
-                    else => switch (@typeInfo(@TypeOf(v1))) {
-                        .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
-                        else => @mod(v1, v2),
-                    },
-                };
-            }
-
-            fn length(v: anytype) f32 {
-                const sum = @reduce(.Add, v * v);
-                return @sqrt(sum);
-            }
-
-            fn @"M * V"(m1: anytype, v2: anytype) @TypeOf(v2) {
-                const ar = @typeInfo(@TypeOf(m1)).Array;
-                var t1: @TypeOf(m1) = undefined;
-                inline for (m1, 0..) |column, c| {
-                    comptime var r = 0;
-                    inline while (r < ar.len) : (r += 1) {
-                        t1[r][c] = column[r];
-                    }
-                }
-                var result: @TypeOf(v2) = undefined;
-                inline for (t1, 0..) |column, c| {
-                    result[c] = @reduce(.Add, column * v2);
-                }
-                return result;
-            }
         };
     }
+
     // kernel instance creation function
-
-
     pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
         return .{
             .input = input,
@@ -303,6 +266,41 @@ pub const kernel = struct {
         };
     }
 
+    // built-in Pixel Bender functions
+    fn sign(v: anytype) @TypeOf(v) {
+        return std.math.sign(v);
+    }
+
+    fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
+        return switch (@typeInfo(@TypeOf(v2))) {
+            .Vector => @mod(v1, v2),
+            else => switch (@typeInfo(@TypeOf(v1))) {
+                .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                else => @mod(v1, v2),
+            },
+        };
+    }
+
+    fn length(v: anytype) f32 {
+        const sum = @reduce(.Add, v * v);
+        return @sqrt(sum);
+    }
+
+    fn @"M * V"(m1: anytype, v2: anytype) @TypeOf(v2) {
+        const ar = @typeInfo(@TypeOf(m1)).Array;
+        var t1: @TypeOf(m1) = undefined;
+        inline for (m1, 0..) |column, c| {
+            comptime var r = 0;
+            inline while (r < ar.len) : (r += 1) {
+                t1[r][c] = column[r];
+            }
+        }
+        var result: @TypeOf(v2) = undefined;
+        inline for (t1, 0..) |column, c| {
+            result[c] = @reduce(.Add, column * v2);
+        }
+        return result;
+    }
 };
 
 pub const Input = KernelInput(u8, kernel);
@@ -388,9 +386,9 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
 
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
             const numerator: FPixel = switch (len) {
-                1 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(1, i32){0}))),
-                2 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(2, i32){ 0, 3 }))),
-                3 => @as(pixel, @floatFromInt(@shuffle(FPixel, pixel, undefined, @Vector(3, i32){ 0, 1, 2 }))),
+                1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
+                2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
+                3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
                 4 => @floatFromInt(pixel),
                 else => @compileError("Unsupported number of channels: " ++ len),
             };
@@ -410,11 +408,11 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
             const product: FPixel = contrain(pixel * multiplier, max);
-            const maxAlpha: @Vector(1, T) = .{std.math.maxInt(T)};
+            const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
             const result: Pixel = switch (len) {
-                1 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
-                2 => @intFromFloat(@shuffle(Pixel, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
-                3 => @intFromFloat(@shuffle(Pixel, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
+                1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
+                2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
+                3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
                 4 => @intFromFloat(product),
                 else => @compileError("Unsupported number of channels: " ++ len),
             };
