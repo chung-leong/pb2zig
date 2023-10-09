@@ -780,16 +780,8 @@ export class PixelBenderToZigTranslator {
       const { name } = pba;
       const pointer = pba.direction.includes('out');
       const type = this.translateType(pba.type);
-      this.variables[name] = { type, scope: 'local', mutable: !pointer, pointer, used: false };
+      this.variables[name] = { type, scope: 'local', mutable: true, pointer, used: false, modified: false };
     }
-    const args = pb.args.map((pba) => {
-      const { name } = pba;
-      let type = this.translateType(pba.type);
-      if (this.variables[name].pointer) {
-        type = `*${type}`;
-      }
-      return ZIG.FunctionArgument.create({ name, type });
-    });
     const statements = []
     if (name === 'evaluatePixel' && outputCount > 0) {
       const zero = ZIG.Literal.create({ value: 0, type: 'f32' });
@@ -830,6 +822,30 @@ export class PixelBenderToZigTranslator {
         statements.push(ZIG.ExpressionStatement.create({ expression: fcall }));
       }
     }
+    // construct the argument array, now that we know which ones will be modified
+    let offset = 0;
+    const args = [];
+    for (const pba of pb.args) {
+      let { name } = pba;
+      let type = this.translateType(pba.type);
+      const param = this.variables[name];
+      if (param.modified && !param.pointer) {
+        // add prefix to argument
+        let alias = name;
+        do {
+          alias = `_${alias}`;
+        } while (this.variables[alias]);
+        // assign its value to a variable
+        const initializer = ZIG.VariableAccess.create({ name: alias });
+        const assignment = ZIG.VariableDeclaration.create({ name, initializer });
+        statements.splice(offset++, 0, assignment);
+        name = alias;
+      }
+      if (param.pointer) {
+        type = `*${type}`;
+      }
+      args.push(ZIG.FunctionArgument.create({ name, type }));
+    }
     // deal with unused variables/return values
     this.insertIgnoreStatements(statements, args);
     // get the shadow variables before exiting scope
@@ -837,7 +853,7 @@ export class PixelBenderToZigTranslator {
     this.endScope();
 
     // add references to fields in kernel instance
-    let offset = 0, receiver;
+    let receiver;
     for (const [ varname, { used, scope } ] of Object.entries(shadowVariables)) {
       if (used) {
         // don't create constant copy of dependent variables for evaluateDependents()
@@ -891,7 +907,7 @@ export class PixelBenderToZigTranslator {
     const { name } = pb;
     const type = this.translateType(pb.type);
     const initializer = (pb.initializer) ? this.translateExpression(pb.initializer, 'comptime') : undefined;
-    this.variables[name] = { type, scope: 'local', mutable: true, pointer: false, used: false };
+    this.variables[name] = { type, scope: 'local', mutable: true, pointer: false, used: false, modified: false };
     return ZIG.VariableDeclaration.create({ name, type, initializer });
   }
 
@@ -1209,6 +1225,10 @@ export class PixelBenderToZigTranslator {
     args = args.map((arg, index) => {
       if (f.argPointers[index]) {
         // pass pointers when arguments are out or inout
+        const [ va ] = find(arg, ZIG.VariableAccess);
+        if (va) {
+          this.variables[va.name].modified = true;
+        }
         return ZIG.UnaryOperation.create({ operator: '&', operand: arg, type: `*${arg.type}` });
       }
       return arg;
@@ -1479,6 +1499,7 @@ export class PixelBenderToZigTranslator {
       // perform normally
       this.sideEffects.push(ZIG.AssignmentStatement.create({ lvalue, operator, rvalue }));
     }
+    this.variables[pb.lvalue.name].modified = true;
     if (typeExpected !== 'void') {
       // the expression's value is being used--need to save the value to a temporary variable
       // since the lvalue can get modified again prior to the expression being read

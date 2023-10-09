@@ -244,7 +244,8 @@ pub const kernel = struct {
                 return diffuse;
             }
 
-            fn intersectSphere(rO: @Vector(3, f32), rD: @Vector(3, f32)) @Vector(3, f32) {
+            fn intersectSphere(_rO: @Vector(3, f32), rD: @Vector(3, f32)) @Vector(3, f32) {
+                var rO = _rO;
                 var B: f32 = undefined;
                 var C: f32 = undefined;
                 var d: f32 = undefined;
