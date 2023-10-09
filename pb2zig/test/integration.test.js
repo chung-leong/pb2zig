@@ -634,7 +634,7 @@ describe('Integration tests', function() {
     const params = {
       width: 400,
       height: 300,
-      c: [ -0.04, -0.02, -0.28, 0.11 ],
+      c: [ -0.4, -0.02, -0.28, 0.11 ],
       w: 0.02,
       camDistance: 2.5,
       rotationY: -0.4,
