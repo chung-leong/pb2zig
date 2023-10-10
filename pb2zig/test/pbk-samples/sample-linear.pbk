@@ -1,0 +1,38 @@
+<languageVersion : 1.0;>
+
+kernel untitled
+<   namespace : "Your Namespace";
+    vendor : "Your Vendor";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    void
+    evaluatePixel()
+    {
+        float2 c1 = outCoord();
+        float2 c2;
+        if (c1.y == 0.5) {
+            c2 = float2(10.5, 10.5);
+        } else if (c1.y < 50.0) {
+            c2 = float2(9.5, 9.5);
+        } else if (c1.y < 100.0) {
+            c2 = float2(9.5, 10.0);
+        } else if (c1.y < 150.0) {
+            c2 = float2(10.0, 10.0);
+        } else if (c1.y < 200.0) {
+            c2 = float2(10.5, 10.0);
+        } else if (c1.y < 250.0) {
+            c2 = float2(10.5, 10.5);
+        } else if (c1.y < 300.0) {
+            c2 = float2(10.25, 10.25);
+        } else if (c1.y < 350.0) {
+            c2 = float2(10.75, 10.75);
+        } else {
+            c2 = float2(9.75, 9.75);
+        }
+        dst = sample(src, c2);
+    }
+}

@@ -11,6 +11,18 @@ describe('Integration tests', function() {
     process.env.NODE_ENV = 'production';
     process.env.ZIGAR_CLEAN = '';
   })
+  it('should correctly perform nearest pixel sampling', async function() {
+    this.timeout(60000);
+    const name = 'sample-nearest';
+    await translate(name);
+    await apply(name, { src: 'red-dot.png' });
+  })
+  it('should correctly perform linear sampling', async function() {
+    this.timeout(60000);
+    const name = 'sample-linear';
+    await translate(name);
+    await apply(name, { src: 'red-dot.png' });
+  })
   it('should correctly translate advanced-stereographic.pbk', async function() {
     this.timeout(60000);
     const name = 'advanced-stereographic';

@@ -571,9 +571,7 @@ export class PixelBenderToZigTranslator {
     const constantDecls = this.translateConstantDeclarations();
     const outCoord = `
       pub fn outCoord(self: *@This()) @Vector(2, f32) {
-        const x = self.outputCoord[0];
-        const y = self.outputCoord[1];
-        return .{ @floatFromInt(x), @floatFromInt(y) };
+        return @as(@Vector(2, f32), @floatFromInt(self.outputCoord)) + @as(@Vector(2, f32), @splat(0.5));
       }
     `.trim();
     const statements = [
@@ -1200,7 +1198,7 @@ export class PixelBenderToZigTranslator {
       }
     }
     if (name === 'sample') {
-      name = 'sampleNearest';
+      name = 'sampleLinear';
     } else if (name === 'atan' && args.length === 2) {
       name = 'atan2';
     }

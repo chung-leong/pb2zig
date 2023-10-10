@@ -193,7 +193,8 @@ pub const kernel = struct {
                 return normalize(n);
             }
 
-            fn castRay(self: *@This(), ray_direction: @Vector(3, f32), t: f32, ray: *@Vector(3, f32), normal: *@Vector(3, f32), ray_distance: *f32, surface: *@Vector(3, f32)) void {
+            fn castRay(self: *@This(), ray_direction: @Vector(3, f32), _t: f32, ray: *@Vector(3, f32), normal: *@Vector(3, f32), ray_distance: *f32, surface: *@Vector(3, f32)) void {
+                var t = _t;
                 const terrainHorizon = self.params.terrainHorizon;
                 const terrainHeight = self.params.terrainHeight;
                 const detailLevel = self.detailLevel;
@@ -226,7 +227,8 @@ pub const kernel = struct {
                 }
             }
 
-            fn castShadowRay(self: *@This(), origin: @Vector(3, f32), direction: @Vector(3, f32)) f32 {
+            fn castShadowRay(self: *@This(), _origin: @Vector(3, f32), direction: @Vector(3, f32)) f32 {
+                var origin = _origin;
                 const terrainHeight = self.params.terrainHeight;
                 var t: f32 = EPSILON;
                 var epsilon: f32 = t;
@@ -253,7 +255,8 @@ pub const kernel = struct {
                 return mix(c, fogColor, r);
             }
 
-            fn shadow(self: *@This(), diffuse: f32, l: f32) f32 {
+            fn shadow(self: *@This(), _diffuse: f32, l: f32) f32 {
+                var diffuse = _diffuse;
                 const ambient = self.ambient;
                 if (l > 0.0) {
                     diffuse = clamp(diffuse - 0.01, 0.0, 1.0) * ambient;
@@ -476,9 +479,7 @@ pub const kernel = struct {
             }
 
             pub fn outCoord(self: *@This()) @Vector(2, f32) {
-                const x = self.outputCoord[0];
-                const y = self.outputCoord[1];
-                return .{ @floatFromInt(x), @floatFromInt(y) };
+                return @as(@Vector(2, f32), @floatFromInt(self.outputCoord)) + @as(@Vector(2, f32), @splat(0.5));
             }
         };
     }
@@ -649,12 +650,10 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
     if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
         instance.evaluateDependents();
     }
-    var y: u32 = 0;
-    while (y < height) : (y += 1) {
-        var x: u32 = 0;
-        instance.outputCoord[1] = y;
-        while (x < width) : (x += 1) {
-            instance.outputCoord[0] = x;
+    instance.outputCoord[1] = start;
+    while (instance.outputCoord[1] < height) : (instance.outputCoord[1] += 1) {
+        instance.outputCoord[0] = 0;
+        while (instance.outputCoord[0] < width) : (instance.outputCoord[0] += 1) {
             instance.evaluatePixel();
         }
     }
@@ -794,28 +793,24 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const x: i32 = @intFromFloat(c[0]);
             const y: i32 = @intFromFloat(c[1]);
             const f0 = c - @floor(c);
-            if (@reduce(.Add, f0) == 0) {
-                return self.getPixel(x, y);
-            } else {
-                const f1 = @as(@Vector(2, f32), @splat(1)) - f0;
-                const w: @Vector(4, f32) = .{
-                    f1[0] * f1[1],
-                    f0[0] * f1[1],
-                    f1[0] * f0[1],
-                    f0[0] * f0[1],
-                };
-                const p00 = self.getPixel(x, y);
-                const p01 = self.getPixel(x, y + 1);
-                const p10 = self.getPixel(x + 1, y);
-                const p11 = self.getPixel(x + 1, y + 1);
-                var result: FPixel = undefined;
-                comptime var i = 0;
-                inline while (i < len) : (i += 1) {
-                    const p: @Vector(4, f32) = .{ p00[i], p10[i], p01[i], p11[i] };
-                    result[i] = @reduce(.Add, p * w);
-                }
-                return result;
+            const f1 = @as(@Vector(2, f32), @splat(1)) - f0;
+            const w: @Vector(4, f32) = .{
+                f1[0] * f1[1],
+                f0[0] * f1[1],
+                f1[0] * f0[1],
+                f0[0] * f0[1],
+            };
+            const p00 = self.getPixel(x, y);
+            const p01 = self.getPixel(x, y + 1);
+            const p10 = self.getPixel(x + 1, y);
+            const p11 = self.getPixel(x + 1, y + 1);
+            var result: FPixel = undefined;
+            comptime var i = 0;
+            inline while (i < len) : (i += 1) {
+                const p: @Vector(4, f32) = .{ p00[i], p10[i], p01[i], p11[i] };
+                result[i] = @reduce(.Add, p * w);
             }
+            return result;
         }
     };
 }
