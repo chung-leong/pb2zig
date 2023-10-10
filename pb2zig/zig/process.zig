@@ -153,19 +153,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
                 .Int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
-            const pixel_adjusted: FPixel = adjust: {
-                if (self.premultiplied) {
-                    break :adjust pixel;
-                } else {
-                    if (pixel[3] >= 1.0 or pixel[3] == 0.0) {
-                        break :adjust pixel;
-                    } else {
-                        const rgb = @shuffle(f32, pixel, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(pixel[3]));
-                        break :adjust @shuffle(f32, rgb, pixel, @Vector(4, i32){ 0, 1, 2, -4 });
-                    }
-                }
-            };
-            return pixel_adjusted;
+            return pixel;
         }
 
         fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
@@ -173,24 +161,9 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
                 return;
             }
             const index = (y * self.width) + x - self.offset;
-            const pixel_adjusted: FPixel = adjust: {
-                if (self.premultiplied) {
-                    break :adjust pixel;
-                } else {
-                    // undo premultiplication
-                    if (pixel[3] >= 1.0) {
-                        break :adjust pixel;
-                    } else if (pixel[3] == 0.0) {
-                        break :adjust @splat(0);
-                    } else {
-                        const rgb = @shuffle(f32, pixel, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(pixel[3]));
-                        break :adjust @shuffle(f32, rgb, pixel, @Vector(4, i32){ 0, 1, 2, -4 });
-                    }
-                }
-            };
             const dst_pixel: Pixel = switch (@typeInfo(T)) {
-                .Float => floatPixelFromPBPixel(pixel_adjusted),
-                .Int => intPixelFromPBPixel(pixel_adjusted),
+                .Float => floatPixelFromPBPixel(pixel),
+                .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
             self.data[index] = dst_pixel;

@@ -1,14 +1,11 @@
-// Pixel Bender kernel "AlphaFromMaxColor" (translated using pb2zig)
+// Pixel Bender kernel "premultiplication" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "AfterEffects";
-    pub const vendor = "Adobe Systems Incorporated";
-    pub const version = 2;
-    pub const description = "Estimate alpha based on color channels.";
-    pub const displayName = "Alpha From Max Color";
-    pub const category = "Utility";
+    pub const namespace = "Your Namespace";
+    pub const vendor = "Your Vendor";
+    pub const version = 1;
     pub const parameters = .{};
     pub const inputImages = .{
         .src = .{ .channels = 4 },
@@ -30,17 +27,10 @@ pub const kernel = struct {
 
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                const src = self.input.src;
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                self.dst = src.sampleNearest(self.outCoord());
-                self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                self.dst[3] = max(max(self.dst[0], self.dst[1]), self.dst[2]);
-                self.dst[3] *= 254.0 / 255.0;
-                if (self.dst[3] != 0.0) {
-                    self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(self.dst[3])), @Vector(4, i32){ -1, -2, -3, 3 });
-                }
+                self.dst = @Vector(4, f32){ 0.5, 0.0, 0.0, 0.5 };
 
                 dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
@@ -57,17 +47,6 @@ pub const kernel = struct {
             .input = input,
             .output = output,
             .params = params,
-        };
-    }
-
-    // built-in Pixel Bender functions
-    fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
-        return switch (@typeInfo(@TypeOf(v2))) {
-            .Vector => @max(v1, v2),
-            else => switch (@typeInfo(@TypeOf(v1))) {
-                .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
-                else => @max(v1, v2),
-            },
         };
     }
 };

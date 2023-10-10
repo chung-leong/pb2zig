@@ -23,6 +23,12 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'red-dot.png' });
   })
+  it('should correctly handle alpha channel', async function() {
+    this.timeout(60000);
+    const name = 'alpha-channel';
+    await translate(name);
+    await apply(name, { src: 'helicopter.png' });
+  })
   it('should correctly translate advanced-stereographic.pbk', async function() {
     this.timeout(60000);
     const name = 'advanced-stereographic';
@@ -944,7 +950,7 @@ async function apply(name, sources, options = {}) {
     const filename = (outputImages.length > 1) ? name + index : name;
     const dstPixels = image.data.typedArray;
     sharp(dstPixels, {
-      raw: { width, height, channels, depth },
+      raw: { width, height, channels, depth, premultiplied: false },
     }).png().toFile(`${imgOutDir}/${filename}.png`);
   }
 }
