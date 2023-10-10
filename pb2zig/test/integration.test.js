@@ -529,7 +529,17 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'newton-raphson';
     await translate(name);
-    await apply(name, {});
+    const params = {
+      size: [ 400, 400 ],
+      c0: [ 4, 0 ],
+      c1: [ 0, 5 ],
+      c2: [ 0, 3 ],
+      c5: [ 3, 0 ],
+      c6: [ 2, 3 ],
+      outputWidth: 400,
+      outputHeight: 400,
+    }
+    await apply(name, {}, params);
   })
   it('should correctly translate outline.pbk', async function() {
     this.timeout(60000);

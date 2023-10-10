@@ -20,15 +20,15 @@ pub const kernel = struct {
         },
         .cameraPosition = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -100, 0, -100 },
-            .maxValue = .{ 100, 20, 100 },
-            .defaultValue = .{ -6, 4, 6 },
+            .minValue = .{ -100.0, 0.0, -100.0 },
+            .maxValue = .{ 100.0, 20.0, 100.0 },
+            .defaultValue = .{ -6.0, 4.0, 6.0 },
         },
         .cameraPositionFine = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -5, -1, -5 },
-            .maxValue = .{ 5, 1, 5 },
-            .defaultValue = .{ 0, 0, 0 },
+            .minValue = .{ -5.0, -1.0, -5.0 },
+            .maxValue = .{ 5.0, 1.0, 5.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0 },
         },
         .cameraRotation = .{
             .type = f32,
@@ -139,28 +139,28 @@ pub const kernel = struct {
                     terrain = @Vector(3, f32){
                         terrainHeight * waterLevel,
                         terrainHeight * hills,
-                        1,
+                        1.0,
                     };
                 } else if (buildings) {
                     structures = waterLevel + (mod(p[0] / 2.0, 0.8) - mod(p[0] / 2.0, 0.5)) * (mod(p[2] / 2.0, 0.8) - mod(p[2] / 2.0, 0.5)) * terrainHeight / 4.0;
                     if (structures < hills) {
                         terrain = @Vector(3, f32){
                             terrainHeight * hills,
-                            0,
-                            0,
+                            0.0,
+                            0.0,
                         };
                     } else {
                         terrain = @Vector(3, f32){
                             terrainHeight * structures,
                             structures,
-                            2,
+                            2.0,
                         };
                     }
                 } else {
                     terrain = @Vector(3, f32){
                         terrainHeight * hills,
-                        0,
-                        0,
+                        0.0,
+                        0.0,
                     };
                 }
                 return terrain;
@@ -409,10 +409,16 @@ pub const kernel = struct {
                 {
                     var x: f32 = 0.0;
                     while (x < @as(f32, @floatFromInt(size[0]))) {
-                        ray = self.cameraEye + self.rayDirection(@Vector(2, f32){ x, size[1] }) * @as(@Vector(3, f32), @splat(0.1));
+                        ray = self.cameraEye + self.rayDirection(@Vector(2, f32){
+                            x,
+                            @as(f32, @floatFromInt(size[1])),
+                        }) * @as(@Vector(3, f32), @splat(0.1));
                         surface = self.displacement(ray);
                         if (ray[1] < surface[0]) {
-                            self.cameraEye[1] = surface[0] - self.rayDirection(@Vector(2, f32){ x, size[1] })[1] * 0.1 + EPSILON;
+                            self.cameraEye[1] = surface[0] - self.rayDirection(@Vector(2, f32){
+                                x,
+                                @as(f32, @floatFromInt(size[1])),
+                            })[1] * 0.1 + EPSILON;
                         }
                         x += @as(f32, @floatFromInt(size[0])) / 2.0;
                     }
@@ -420,7 +426,10 @@ pub const kernel = struct {
                 {
                     var i: f32 = 0.0;
                     while (i < @as(f32, @floatFromInt(size[0]))) {
-                        self.castRay(self.rayDirection(@Vector(2, f32){ i, size[1] }), 0.01, &ray, &n, &ray_distance, &surface);
+                        self.castRay(self.rayDirection(@Vector(2, f32){
+                            i,
+                            @as(f32, @floatFromInt(size[1])),
+                        }), 0.01, &ray, &n, &ray_distance, &surface);
                         ray_distance -= EPSILON;
                         if (ray_distance < EPSILON) {
                             ray_distance = EPSILON;
@@ -444,7 +453,7 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var c: @Vector(3, f32) = .{ 0, 0, 0 };
+                var c: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
                 if (sampling == 1) {
                     c = mix(self.render(self.outCoord()), self.render(@Vector(2, f32){
                         self.outCoord()[0],

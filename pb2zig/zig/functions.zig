@@ -596,21 +596,25 @@ test "smoothStep" {
 }
 
 pub fn length(v: anytype) f32 {
-    const sum = @reduce(.Add, v * v);
-    return @sqrt(sum);
+    return switch (@typeInfo(@TypeOf(v))) {
+        .Vector => @sqrt(@reduce(.Add, v * v)),
+        else => @abs(v),
+    };
 }
 
 test "length" {
     const vector1: @Vector(3, f32) = .{ 3, 3, 3 };
     const vector2: @Vector(2, f32) = .{ 1, 2 };
+    const vector3: f32 = -4;
     assert(length(vector1) == @sqrt(27.0));
     assert(length(vector2) == @sqrt(5.0));
+    assert(length(vector3) == 4);
 }
 
 pub fn distance(v1: anytype, v2: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v1))) {
         .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-        else => std.math.fabs(v1 - v2),
+        else => @abs(v1 - v2),
     };
 }
 

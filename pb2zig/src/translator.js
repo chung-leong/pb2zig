@@ -1244,7 +1244,7 @@ export class PixelBenderToZigTranslator {
       const width = ZIG.getVectorWidth(typeV);
       const initializers = [];
       if (args[0].isVector())  {
-        initializers.push(...argList);
+        initializers.push(...args.map(a => this.convertExpression(a, typeV)));
       } else if (args.length === 1) {
         let arg = args[0];
         if (arg.isMatrix(arg)) {
@@ -1267,17 +1267,17 @@ export class PixelBenderToZigTranslator {
       }
       return ZIG.TupleLiteral.create({ initializers, type });
     } else if (ZIG.isVector(type)) {
+      const typeE = ZIG.getChildType(type);
       if (args.length === 1) {
         const arg = args[0];
         if (!ZIG.isVector(arg.type)) {
-          const typeE = ZIG.getChildType(type);
           return this.promoteExpression(this.convertExpression(arg, typeE), type);
         } else {
           return this.convertExpression(arg, type);
         }
       } else {
         return ZIG.TupleLiteral.create({
-          initializers: args,
+          initializers: args.map(a => this.convertExpression(a, typeE)),
           type: (typeExpected === 'comptime') ? '.' : type
         });
       }

@@ -10,9 +10,9 @@ pub const kernel = struct {
     pub const parameters = .{
         .size = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 1000, 1000 },
-            .defaultValue = .{ 500, 500 },
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 1000.0, 1000.0 },
+            .defaultValue = .{ 500.0, 500.0 },
         },
         .colorStart = .{
             .type = @Vector(4, f32),
@@ -24,19 +24,19 @@ pub const kernel = struct {
             .type = @Vector(4, f32),
             .minValue = @as(@Vector(4, f32), @splat(0.0)),
             .maxValue = @as(@Vector(4, f32), @splat(1.0)),
-            .defaultValue = .{ 0, 0, 0.8, 1 },
+            .defaultValue = .{ 0.0, 0.0, 0.8, 1.0 },
         },
         .rangeX = .{
             .type = @Vector(2, f32),
             .minValue = @as(@Vector(2, f32), @splat(-10.0)),
             .maxValue = @as(@Vector(2, f32), @splat(10.0)),
-            .defaultValue = .{ -5, 5 },
+            .defaultValue = .{ -5.0, 5.0 },
         },
         .rangeY = .{
             .type = @Vector(2, f32),
             .minValue = @as(@Vector(2, f32), @splat(-10.0)),
             .maxValue = @as(@Vector(2, f32), @splat(10.0)),
-            .defaultValue = .{ -5, 5 },
+            .defaultValue = .{ -5.0, 5.0 },
         },
         .c0 = .{
             .type = @Vector(2, f32),
@@ -232,8 +232,10 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        const sum = @reduce(.Add, v * v);
-        return @sqrt(sum);
+        return switch (@typeInfo(@TypeOf(v))) {
+            .Vector => @sqrt(@reduce(.Add, v * v)),
+            else => @abs(v),
+        };
     }
 };
 
