@@ -1,73 +1,20 @@
-// Pixel Bender kernel "Droste" (translated using pb2zig)
+// Pixel Bender kernel "FractalExplorerOrbitTraps" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // constants
-    const PI: f32 = 3.141592653;
-    const TWOPI: f32 = 6.283185307;
-    const PI180: f32 = 0.017453292;
+    const BAILOUT: f32 = 4.0;
+    const LOG2: f32 = log(@as(f32, 2.0));
     const I: @Vector(2, f32) = @Vector(2, f32){ 0.0, 1.0 };
 
     // kernel information
     pub const namespace = "com.subblue.filters";
     pub const vendor = "Tom Beddard";
     pub const version = 1;
-    pub const description = "The Droste effect.";
+    pub const description = "Fractal explorer with orbit traps";
+    pub const displayName = "Fractal Explorer with Orbit Traps";
+    pub const category = "Pixel Bender";
     pub const parameters = .{
-        .size = .{
-            .type = @Vector(2, i32),
-            .minValue = .{ 100, 100 },
-            .maxValue = .{ 4000, 4000 },
-            .defaultValue = .{ 680, 680 },
-            .description = "Output size of final image",
-        },
-        .radiusInside = .{
-            .type = f32,
-            .minValue = 0.1,
-            .maxValue = 100.0,
-            .defaultValue = 25.0,
-            .description = "The inner radius of the repeating annular",
-        },
-        .radiusOutside = .{
-            .type = f32,
-            .minValue = 1.0,
-            .maxValue = 100.0,
-            .defaultValue = 100.0,
-            .description = "The outer radius of the repeating annular",
-        },
-        .periodicity = .{
-            .type = f32,
-            .minValue = 6.0,
-            .maxValue = 6.0,
-            .defaultValue = 1.0,
-            .description = "The number of image the image is repeated on each level",
-        },
-        .strands = .{
-            .type = i32,
-            .minValue = 12,
-            .maxValue = 12,
-            .defaultValue = 1,
-            .description = "The number of strands of the spiral",
-        },
-        .strandMirror = .{
-            .type = bool,
-            .defaultValue = true,
-            .description = "Smoother repeating when using more than one strand",
-        },
-        .zoom = .{
-            .type = f32,
-            .minValue = 0.0,
-            .maxValue = 30.0,
-            .defaultValue = 0.0,
-            .description = "Overall image magnification",
-        },
-        .rotate = .{
-            .type = f32,
-            .minValue = 360.0,
-            .maxValue = 360.0,
-            .defaultValue = 0.0,
-            .description = "Overall image rotation",
-        },
         .antialiasing = .{
             .type = i32,
             .minValue = 1,
@@ -77,84 +24,161 @@ pub const kernel = struct {
         },
         .center = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -200.0, -200.0 },
-            .maxValue = .{ 200.0, 200.0 },
+            .minValue = .{ -2.0, -1.0 },
+            .maxValue = .{ 2.0, 1.0 },
             .defaultValue = .{ 0.0, 0.0 },
-            .description = "Panning of the image in the output frame",
+            .description = "The center of the fractal.",
         },
-        .centerShift = .{
+        .centerFineTune = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -200.0, -200.0 },
-            .maxValue = .{ 200.0, 200.0 },
+            .minValue = .{ -1.0, -1.0 },
+            .maxValue = .{ 1.0, 1.0 },
             .defaultValue = .{ 0.0, 0.0 },
-            .description = "Shift the centre of the spiral",
+            .description = "Fine tune the center position.",
         },
-        .backgroundRGBA = .{
-            .type = @Vector(4, f32),
-            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
-            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
-            .defaultValue = .{ 0.0, 0.0, 0.0, 1.0 },
-            .description = "Set the RGBA background colour",
+        .sizeInput = .{
+            .type = @Vector(2, i32),
+            .minValue = .{ 100, 100 },
+            .maxValue = .{ 4096, 4096 },
+            .defaultValue = .{ 300, 300 },
+            .description = "The input size of the source image",
         },
-        .levels = .{
-            .type = i32,
-            .minValue = 1,
-            .maxValue = 20,
-            .defaultValue = 9,
-            .description = "The number of repeating levels of the spiral",
+        .sizeOutput = .{
+            .type = @Vector(2, i32),
+            .minValue = .{ 100, 100 },
+            .maxValue = .{ 4096, 4096 },
+            .defaultValue = .{ 640, 480 },
+            .description = "The output size of the rendered fractal.",
         },
-        .levelStart = .{
-            .type = i32,
-            .minValue = 1,
-            .maxValue = 20,
-            .defaultValue = 3,
-            .description = "The starting spiral level",
-        },
-        .transparentInside = .{
-            .type = bool,
-            .defaultValue = true,
-            .description = "Enable for images with transparent middle areas (such as a picture frame).",
-        },
-        .transparentOutside = .{
-            .type = bool,
-            .defaultValue = true,
-            .description = "Enable for images with transparent areas around the outside.",
-        },
-        .twist = .{
-            .type = bool,
-            .defaultValue = true,
-            .description = "Uncheck to unroll the circular annular of the image.",
-        },
-        .periodicityAuto = .{
+        .mandelbrot = .{
             .type = bool,
             .defaultValue = false,
-            .description = "Automatically set the ideal periodicity for the current radius settings.",
+            .description = "Use the standard Mandelbrot equation.",
         },
-        .rotatePolar = .{
+        .power = .{
             .type = f32,
-            .minValue = 360.0,
-            .maxValue = 360.0,
-            .defaultValue = 0.0,
-            .description = "Polar rotation",
+            .minValue = 12.0,
+            .maxValue = 12.0,
+            .defaultValue = 3.0,
+            .description = "Raise z to the power e in the fractal formula: z' = z^e + mu",
         },
-        .rotateSpin = .{
+        .powerFineTune = .{
             .type = f32,
-            .minValue = 360.0,
-            .maxValue = 360.0,
+            .minValue = 0.1,
+            .maxValue = 0.1,
             .defaultValue = 0.0,
-            .description = "Spin mapped image. Best used with polar rotation.",
+            .description = "Fine tune the exponent.",
         },
-        .hyperDroste = .{
-            .type = bool,
-            .defaultValue = false,
-            .description = "Enable hyper droste effect.",
+        .mu = .{
+            .type = @Vector(2, f32),
+            .minValue = .{ -1.0, -1.0 },
+            .maxValue = .{ 1.0, 1.0 },
+            .defaultValue = .{ 0.5, 0.0 },
+            .description = "The complex parameter of the fractal formula: z' = z^e + mu",
         },
-        .fractalPoints = .{
+        .muFineTune = .{
+            .type = @Vector(2, f32),
+            .minValue = .{ -0.01, -0.01 },
+            .maxValue = .{ 0.01, 0.01 },
+            .defaultValue = .{ 0.0, 0.0 },
+            .description = "Fine tune mu.",
+        },
+        .iterations = .{
+            .type = i32,
+            .minValue = 1,
+            .maxValue = 100,
+            .defaultValue = 10,
+            .description = "The maximum number of iterations for each pixel before bailout. Use to increase detail at the fractal edges.",
+        },
+        .iterationsOffset = .{
             .type = i32,
             .minValue = 0,
-            .maxValue = 10,
+            .maxValue = 20,
             .defaultValue = 0,
-            .description = "Used by hyper droste option.",
+            .description = "Offset the start of the iteration count",
+        },
+        .colorBackground = .{
+            .type = @Vector(3, f32),
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0 },
+            .description = "The background colour.",
+            .aeUIControl = "aeColor",
+        },
+        .colorAlpha = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1.0,
+            .defaultValue = 1.0,
+            .description = "Separate alpha channel for After Effects compatibility.",
+        },
+        .orbitTrap = .{
+            .type = bool,
+            .defaultValue = true,
+            .description = "Use the source image as an orbit trap.",
+        },
+        .orbitTrapEdgeDetail = .{
+            .type = f32,
+            .minValue = 0.2,
+            .maxValue = 0.99,
+            .defaultValue = 0.9,
+            .description = "Fine tune the masking at the transparent edge of the source image.",
+        },
+        .orbitTrapScale = .{
+            .type = f32,
+            .minValue = 0.01,
+            .maxValue = 5.0,
+            .defaultValue = 0.6,
+            .description = "The relative scale of the source image.",
+        },
+        .orbitTrapRotation = .{
+            .type = f32,
+            .minValue = 180.0,
+            .maxValue = 180.0,
+            .defaultValue = 0.0,
+            .description = "Rotate the image map.",
+        },
+        .orbitTrapSpin = .{
+            .type = f32,
+            .minValue = 180.0,
+            .maxValue = 180.0,
+            .defaultValue = 0.0,
+            .description = "Rotate mapped image.",
+        },
+        .orbitTrapOffset = .{
+            .type = @Vector(2, f32),
+            .minValue = .{ -2.0, -2.0 },
+            .maxValue = .{ 2.0, 2.0 },
+            .defaultValue = .{ 0.5, 0.0 },
+            .description = "The relative position of the source image.",
+        },
+        .iterationColorBlend = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1.0,
+            .defaultValue = 0.0,
+            .description = "Add the illusion of depth by blending subsequent iterations into the background.",
+        },
+        .rotate = .{
+            .type = f32,
+            .minValue = 180.0,
+            .maxValue = 180.0,
+            .defaultValue = 0.0,
+            .description = "Rotate the fractal.",
+        },
+        .zoom = .{
+            .type = f32,
+            .minValue = 1.0,
+            .maxValue = 13.0,
+            .defaultValue = 0.1,
+            .description = "Primary zoom.",
+        },
+        .zoomFineTune = .{
+            .type = f32,
+            .minValue = 1.0,
+            .maxValue = 1.0,
+            .defaultValue = 0.0,
+            .description = "Fine tune the zoom.",
         },
     };
     pub const inputImages = .{
@@ -176,239 +200,170 @@ pub const kernel = struct {
             dst: @Vector(4, f32) = undefined,
 
             // dependent variables
-            r1: f32 = undefined,
-            r2: f32 = undefined,
-            p1: f32 = undefined,
-            p2: f32 = undefined,
-            w: f32 = undefined,
-            h: f32 = undefined,
+            x1: f32 = undefined,
+            x2: f32 = undefined,
+            y1: f32 = undefined,
+            zoomFactor: f32 = undefined,
+            spanX: f32 = undefined,
+            spanY: f32 = undefined,
             sampleStep: f32 = undefined,
             sampleContribution: f32 = undefined,
-            _shift: @Vector(2, f32) = undefined,
-            _center: @Vector(2, f32) = undefined,
-            _rotate: @Vector(2, f32) = undefined,
-            _zoom: @Vector(2, f32) = undefined,
-            xBounds: @Vector(2, f32) = undefined,
-            yBounds: @Vector(2, f32) = undefined,
-            xyMiddle: @Vector(2, f32) = undefined,
-            minDimension: @Vector(2, f32) = undefined,
-            imageSpin: [2]@Vector(2, f32) = undefined,
-            tileBasedOnTransparency: bool = undefined,
+            scale: @Vector(2, f32) = undefined,
+            bitmap2complex: @Vector(2, f32) = undefined,
+            orbitRotation: [2]@Vector(2, f32) = undefined,
+            orbitSpin: [2]@Vector(2, f32) = undefined,
+            minIterations: i32 = undefined,
+            rotation: [2]@Vector(2, f32) = undefined,
+            color_background: @Vector(4, f32) = undefined,
 
             // functions defined in kernel
             pub fn evaluateDependents(self: *@This()) void {
-                const size = self.params.size;
-                const radiusInside = self.params.radiusInside;
-                const radiusOutside = self.params.radiusOutside;
-                const periodicity = self.params.periodicity;
-                const strands = self.params.strands;
-                const zoom = self.params.zoom;
-                const rotate = self.params.rotate;
                 const antialiasing = self.params.antialiasing;
                 const center = self.params.center;
-                const centerShift = self.params.centerShift;
-                const transparentInside = self.params.transparentInside;
-                const transparentOutside = self.params.transparentOutside;
-                const twist = self.params.twist;
-                const periodicityAuto = self.params.periodicityAuto;
-                const rotateSpin = self.params.rotateSpin;
-                self.r1 = radiusInside / 100.0;
-                self.r2 = radiusOutside / 100.0;
-                self.p1 = periodicity;
-                if (self.p1 == 0.0) {
-                    self.p1 = 0.001;
-                }
-                self.p2 = @as(f32, @floatFromInt(strands));
-                if (self.p2 == 0.0) {
-                    self.p2 = 0.0001;
-                }
-                self.tileBasedOnTransparency = @as(bool, if ((transparentInside or !transparentOutside)) true else false);
-                self._shift = @as(@Vector(2, f32), @splat(1.0)) + centerShift / @as(@Vector(2, f32), @splat(100.0));
-                self._center = (@as(@Vector(2, f32), @floatFromInt(size)) / @as(@Vector(2, f32), @splat(2.0))) + center * (@as(@Vector(2, f32), @floatFromInt(size)) / @as(@Vector(2, f32), @splat(2.0))) / @as(@Vector(2, f32), @splat(100.0));
-                self.w = @as(f32, @floatFromInt(size[0]));
-                self.h = @as(f32, @floatFromInt(size[1]));
-                self.minDimension = @as(@Vector(2, f32), @splat(min(self.w, self.h) / 2.0));
-                if (periodicityAuto) {
-                    self.p1 = self.p2 / 2.0 * (1.0 + sqrt(1.0 - pow(log(self.r2 / self.r1) / PI, 2.0)));
-                }
-                self._rotate = if (self.p1 > 0.0) @Vector(2, f32){ -PI180 * rotate, 0.0 } else @Vector(2, f32){ PI180 * rotate, 0.0 };
-                var sc: f32 = cos(radians(rotateSpin));
-                var ss: f32 = sin(radians(rotateSpin));
-                self.imageSpin = [2]@Vector(2, f32){
-                    .{ sc, ss },
-                    .{ -ss, sc },
-                };
-                self._zoom = @Vector(2, f32){
-                    (exp(zoom) + radiusInside - 1.0) / 100.0,
-                    0.0,
-                };
-                if (twist) {
-                    self.xBounds = @Vector(2, f32){ -self.r2, self.r2 };
-                    self.yBounds = @Vector(2, f32){ -self.r2, self.r2 };
-                } else {
-                    self.xBounds = @Vector(2, f32){
-                        -log(self.r2 / self.r1),
-                        log(self.r2 / self.r1),
+                const centerFineTune = self.params.centerFineTune;
+                const sizeInput = self.params.sizeInput;
+                const sizeOutput = self.params.sizeOutput;
+                const iterations = self.params.iterations;
+                const iterationsOffset = self.params.iterationsOffset;
+                const colorBackground = self.params.colorBackground;
+                const colorAlpha = self.params.colorAlpha;
+                const orbitTrapScale = self.params.orbitTrapScale;
+                const orbitTrapRotation = self.params.orbitTrapRotation;
+                const orbitTrapSpin = self.params.orbitTrapSpin;
+                const rotate = self.params.rotate;
+                const zoom = self.params.zoom;
+                const zoomFineTune = self.params.zoomFineTune;
+                var x0: f32 = center[0];
+                var y0: f32 = center[1];
+                self.minIterations = if (iterationsOffset >= iterations) iterations - 1 else iterationsOffset;
+                self.zoomFactor = exp(zoom + zoomFineTune);
+                self.x1 = x0 - 2.0 / self.zoomFactor;
+                self.x2 = x0 + 2.0 / self.zoomFactor;
+                self.spanX = self.x2 - self.x1;
+                self.spanY = self.spanX * (@as(f32, @floatFromInt(sizeOutput[1])) / @as(f32, @floatFromInt(sizeOutput[0])));
+                self.y1 = y0 - self.spanY / 2.0;
+                self.x1 += centerFineTune[0] * self.spanX;
+                self.y1 += centerFineTune[1] * self.spanY;
+                if (rotate != 0.0) {
+                    var rc: f32 = cos(radians(rotate));
+                    var rs: f32 = sin(radians(rotate));
+                    self.rotation = [2]@Vector(2, f32){
+                        .{ rc, rs },
+                        .{ -rs, rc },
                     };
-                    self.yBounds = @Vector(2, f32){ 0.0, 2.1 * PI };
+                    var xy: @Vector(2, f32) = @"V * M"(@Vector(2, f32){ self.x1, self.y1 }, self.rotation);
+                    self.x1 = xy[0];
+                    self.y1 = xy[1];
                 }
-                self.xyMiddle = @Vector(2, f32){
-                    self.xBounds[0] + self.xBounds[1],
-                    self.yBounds[0] + self.yBounds[1],
-                } / @as(@Vector(2, f32), @splat(2.0));
-                var xyRange: @Vector(2, f32) = .{
-                    self.xBounds[1] - self.xBounds[0],
-                    self.yBounds[1] - self.yBounds[0],
+                self.scale = @Vector(2, f32){
+                    self.spanX / @as(f32, @floatFromInt(sizeOutput[0])),
+                    self.spanY / @as(f32, @floatFromInt(sizeOutput[1])),
                 };
-                xyRange[0] = xyRange[1] * (self.w / self.h);
-                self.xBounds = @Vector(2, f32){
-                    self.xyMiddle[0] - xyRange[0] / 2.0,
-                    self.xyMiddle[0] + xyRange[0] / 2.0,
+                self.bitmap2complex = @as(@Vector(2, f32), @splat(min(@as(f32, @floatFromInt(sizeInput[0])), @as(f32, @floatFromInt(sizeInput[1]))) / 2.0)) / @as(@Vector(2, f32), @splat(orbitTrapScale));
+                var otrc: f32 = cos(radians(orbitTrapRotation));
+                var otrs: f32 = sin(radians(orbitTrapRotation));
+                self.orbitRotation = [2]@Vector(2, f32){
+                    .{ otrc, otrs },
+                    .{ -otrs, otrc },
+                };
+                var otsc: f32 = cos(radians(orbitTrapSpin));
+                var otss: f32 = sin(radians(orbitTrapSpin));
+                self.orbitSpin = [2]@Vector(2, f32){
+                    .{ otsc, otss },
+                    .{ -otss, otsc },
+                };
+                self.color_background = @Vector(4, f32){
+                    colorBackground[0],
+                    colorBackground[1],
+                    colorBackground[2],
+                    colorAlpha,
                 };
                 self.sampleStep = 1.0 / @as(f32, @floatFromInt(antialiasing));
                 self.sampleContribution = 1.0 / pow(@as(f32, @floatFromInt(antialiasing)), 2.0);
             }
 
-            fn render(self: *@This(), z: @Vector(2, f32), alphaRemaining: *f32, sign: *i32, iteration: *i32, colorSoFar: *@Vector(4, f32)) void {
-                const transparentOutside = self.params.transparentOutside;
+            fn orbitMapping(self: *@This(), c: @Vector(4, f32), w: @Vector(2, f32)) @Vector(4, f32) {
+                const sizeInput = self.params.sizeInput;
+                const orbitTrapOffset = self.params.orbitTrapOffset;
                 const src = self.input.src;
-                const r1 = self.r1;
-                const r2 = self.r2;
-                const _shift = self._shift;
-                const minDimension = self.minDimension;
-                const tileBasedOnTransparency = self.tileBasedOnTransparency;
-                var d: @Vector(2, f32) = minDimension * (z + _shift);
-                sign.* = 0;
-                if (tileBasedOnTransparency or iteration.* == 0) {
-                    var color: @Vector(4, f32) = src.sampleLinear(d);
-                    colorSoFar.* += color * @as(@Vector(4, f32), @splat((color[3] * alphaRemaining.*)));
-                    alphaRemaining.* *= (1.0 - colorSoFar.*[3]);
+                const bitmap2complex = self.bitmap2complex;
+                const orbitRotation = self.orbitRotation;
+                const orbitSpin = self.orbitSpin;
+                var color: @Vector(4, f32) = .{ 0.0, 0.0, 0.0, 0.0 };
+                var sp: @Vector(2, f32) = @as(@Vector(2, f32), @floatFromInt(sizeInput / @as(@Vector(2, i32), @splat(2)))) + @"V * M"((@"V * M"(w, orbitSpin) + orbitTrapOffset), orbitRotation) * bitmap2complex;
+                var s: @Vector(4, f32) = src.sampleLinear(sp);
+                if (s[3] > 0.0) {
+                    color = mix(c, s, s[3]);
                 }
-                if (tileBasedOnTransparency) {
-                    if (!transparentOutside and alphaRemaining.* > 0.0) {
-                        sign.* = -1;
-                    }
-                    if (transparentOutside and alphaRemaining.* > 0.0) {
-                        sign.* = 1;
-                    }
-                } else {
-                    if (iteration.* > 0) {
-                        colorSoFar.* = src.sampleLinear(d);
-                    }
-                    var radius: f32 = length(z);
-                    sign.* = if ((radius < r1)) -1 else @as(i32, if (radius > r2) 1 else 0);
-                }
-                iteration.* += 1;
+                return color;
             }
 
-            fn renderPoint(self: *@This(), s: @Vector(2, f32)) @Vector(4, f32) {
-                const strandMirror = self.params.strandMirror;
-                const levels = self.params.levels;
-                const levelStart = self.params.levelStart;
-                const transparentOutside = self.params.transparentOutside;
-                const twist = self.params.twist;
-                const rotatePolar = self.params.rotatePolar;
-                const hyperDroste = self.params.hyperDroste;
-                const fractalPoints = self.params.fractalPoints;
-                const r1 = self.r1;
-                const r2 = self.r2;
-                const p1 = self.p1;
-                const p2 = self.p2;
-                const w = self.w;
-                const h = self.h;
-                const _center = self._center;
-                const _rotate = self._rotate;
-                const _zoom = self._zoom;
-                const xBounds = self.xBounds;
-                const yBounds = self.yBounds;
-                const xyMiddle = self.xyMiddle;
-                const imageSpin = self.imageSpin;
-                const tileBasedOnTransparency = self.tileBasedOnTransparency;
+            fn colorMapping(self: *@This(), n: f32, z: @Vector(2, f32)) @Vector(4, f32) {
+                const iterations = self.params.iterations;
+                const color_background = self.color_background;
+                _ = z;
+                var p: f32 = 1.0 - n / @as(f32, @floatFromInt(iterations));
+                p = pow(p, 2.0);
+                return mix(color_background, @Vector(4, f32){ 1.0, 1.0, 1.0, 1.0 }, p);
+            }
+
+            fn renderPoint(self: *@This(), p: @Vector(2, f32)) @Vector(4, f32) {
+                const mandelbrot = self.params.mandelbrot;
+                const power = self.params.power;
+                const powerFineTune = self.params.powerFineTune;
+                const mu = self.params.mu;
+                const muFineTune = self.params.muFineTune;
+                const iterations = self.params.iterations;
+                const orbitTrap = self.params.orbitTrap;
+                const orbitTrapEdgeDetail = self.params.orbitTrapEdgeDetail;
+                const iterationColorBlend = self.params.iterationColorBlend;
+                const rotate = self.params.rotate;
+                const x1 = self.x1;
+                const y1 = self.y1;
+                const scale = self.scale;
+                const minIterations = self.minIterations;
+                const rotation = self.rotation;
+                const color_background = self.color_background;
+                var color: @Vector(4, f32) = color_background;
+                color[3] = orbitTrapEdgeDetail;
                 var z: @Vector(2, f32) = undefined;
-                var d: @Vector(2, f32) = undefined;
-                _ = d;
-                var ratio: @Vector(2, f32) = undefined;
-                var radius: f32 = undefined;
-                _ = radius;
-                var theta: f32 = undefined;
-                var div: f32 = undefined;
-                var iteration: i32 = undefined;
-                var sign: i32 = 0;
-                var alphaRemaining: f32 = 1.0;
-                var colorSoFar: @Vector(4, f32) = .{ 0.0, 0.0, 0.0, 0.0 };
-                z = @Vector(2, f32){
-                    (xBounds[0] + (xBounds[1] - xBounds[0]) * ((s[0] - _center[0]) + w / 2.0) / w),
-                    (yBounds[0] + (yBounds[1] - yBounds[0]) * ((s[1] - _center[1]) + h / 2.0) / h),
-                };
-                if (twist) {
-                    z = xyMiddle + complexMult(complexDivision((z - xyMiddle), _zoom), complexExp(complexMult(-I, _rotate)));
+                if (rotate != 0.0) {
+                    z = @Vector(2, f32){ x1, y1 } + @"V * M"(p * scale, rotation);
+                } else {
+                    z = @Vector(2, f32){ x1, y1 } + p * scale;
                 }
-                if (hyperDroste) {
-                    z = complexSin(z);
-                }
-                if (fractalPoints > 0) {
-                    z = power(z, fractalPoints);
-                    z = complexTan(complexMult(z, @Vector(2, f32){ 2.0, 0.0 }));
-                }
-                if (rotatePolar != 0.0) {
-                    theta = PI180 * rotatePolar;
-                    div = (1.0 + pow(z[0], 2.0) + pow(z[1], 2.0) + ((1.0 - pow(z[0], 2.0) - pow(z[1], 2.0)) * cos(theta)) - (2.0 * z[0] * sin(theta))) / 2.0;
-                    z[0] = z[0] * cos(theta) + ((1.0 - pow(z[0], 2.0) - pow(z[1], 2.0)) * sin(theta) / 2.0);
-                    z = complexDivision(z, @Vector(2, f32){ div, 0.0 });
-                }
-                z = @"V * M"(z, imageSpin);
-                if (twist) {
-                    z = complexLog(complexDivision(z, @Vector(2, f32){ r1, 0.0 }));
-                }
-                var alpha: @Vector(2, f32) = .{
-                    atan((p2 / p1) * (log(r2 / r1) / TWOPI)),
-                    0.0,
-                };
-                var f: @Vector(2, f32) = .{ cos(alpha[0]), 0.0 };
-                var beta: @Vector(2, f32) = complexMult(f, complexExp(complexMult(alpha, I)));
-                var angle: @Vector(2, f32) = .{ -TWOPI * p1, 0.0 };
-                if (p2 > 0.0) {
-                    angle = -angle;
-                }
-                if (strandMirror) {
-                    angle /= @as(@Vector(2, f32), @splat(p2));
-                }
-                z = complexDivision(complexMult(@Vector(2, f32){ p1, 0.0 }, z), beta);
-                z = complexMult(@Vector(2, f32){ r1, 0.0 }, complexExp(z));
-                if (tileBasedOnTransparency and levelStart > 0) {
-                    if (transparentOutside) {
-                        ratio = complexMult(@Vector(2, f32){ r2 / r1, 0.0 }, complexExp(complexMult(angle, I)));
-                    } else {
-                        ratio = complexMult(@Vector(2, f32){ r1 / r2, 0.0 }, complexExp(complexMult(angle, -I)));
+                var e: f32 = power + powerFineTune;
+                var c: @Vector(2, f32) = if (mandelbrot) z else (mu + muFineTune);
+                var n: i32 = 0;
+                var blend: f32 = 1.0;
+                while (n < iterations) {
+                    z = complexPower(z, e) + c;
+                    if (n >= minIterations) {
+                        if (orbitTrap) {
+                            color = self.orbitMapping(color, z / @as(@Vector(2, f32), @splat(2.0)));
+                            if (color[3] > orbitTrapEdgeDetail) break;
+                        } else if ((pow(z[0], 2.0) + pow(z[1], 2.0)) > BAILOUT) {
+                            color = self.colorMapping(@as(f32, @floatFromInt(n)), z);
+                            break;
+                        }
                     }
-                    z = complexMult(z, power(ratio, levelStart));
+                    n += 1;
                 }
-                iteration = 0;
-                self.render(z, &alphaRemaining, &sign, &iteration, &colorSoFar);
-                if (sign < 0) {
-                    ratio = complexMult(@Vector(2, f32){ r2 / r1, 0.0 }, complexExp(complexMult(angle, I)));
+                if (iterationColorBlend > 0.0) {
+                    blend = clamp(1.0 - (@as(f32, @floatFromInt(n - minIterations)) / @as(f32, @floatFromInt(iterations - minIterations))) * iterationColorBlend, 0.0, 1.0);
                 }
-                if (sign > 0) {
-                    ratio = complexMult(@Vector(2, f32){ r1 / r2, 0.0 }, complexExp(complexMult(angle, -I)));
-                }
-                iteration = levelStart;
-                var maxIteration: i32 = levels + levelStart - 1;
-                while (sign != 0 and iteration < maxIteration) {
-                    z = complexMult(z, ratio);
-                    self.render(z, &alphaRemaining, &sign, &iteration, &colorSoFar);
-                }
-                return colorSoFar;
+                color = mix(color_background, color, color[3] * blend);
+                return color;
             }
 
             pub fn evaluatePixel(self: *@This()) void {
                 const antialiasing = self.params.antialiasing;
-                const backgroundRGBA = self.params.backgroundRGBA;
                 const dst = self.output.dst;
                 const sampleStep = self.sampleStep;
                 const sampleContribution = self.sampleContribution;
                 self.dst = @splat(0.0);
 
-                var c: @Vector(4, f32) = backgroundRGBA;
+                var c: @Vector(4, f32) = .{ 0.0, 0.0, 0.0, 1.0 };
                 if (antialiasing > 1) {
                     {
                         var i: f32 = 0.0;
@@ -427,75 +382,14 @@ pub const kernel = struct {
                 } else {
                     c = self.renderPoint(self.outCoord());
                 }
-                if (c[3] < 1.0) {
-                    c = mix(c, backgroundRGBA, 1.0 - c[3]);
-                }
                 self.dst = c;
 
                 dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
 
             // macros
-            fn complexMult(a: @Vector(2, f32), b: @Vector(2, f32)) @Vector(2, f32) {
-                return @Vector(2, f32){
-                    a[0] * b[0] - a[1] * b[1],
-                    a[0] * b[1] + a[1] * b[0],
-                };
-            }
-
-            fn complexMag(z: @Vector(2, f32)) f32 {
-                return pow(length(z), 2.0);
-            }
-
-            fn complexReciprocal(z: @Vector(2, f32)) @Vector(2, f32) {
-                return @Vector(2, f32){
-                    z[0] / complexMag(z),
-                    -z[1] / complexMag(z),
-                };
-            }
-
-            fn complexDivision(a: @Vector(2, f32), b: @Vector(2, f32)) @Vector(2, f32) {
-                return complexMult(a, complexReciprocal(b));
-            }
-
             fn complexArg(z: @Vector(2, f32)) f32 {
                 return atan2(z[1], z[0]);
-            }
-
-            fn complexLog(z: @Vector(2, f32)) @Vector(2, f32) {
-                return @Vector(2, f32){
-                    log(length(z)),
-                    complexArg(z),
-                };
-            }
-
-            fn complexExp(z: @Vector(2, f32)) @Vector(2, f32) {
-                return @Vector(2, f32){
-                    exp(z[0]) * cos(z[1]),
-                    exp(z[0]) * sin(z[1]),
-                };
-            }
-
-            fn sinh(x: f32) f32 {
-                return (exp(x) - exp(-x)) / 2.0;
-            }
-
-            fn cosh(x: f32) f32 {
-                return (exp(x) + exp(-x)) / 2.0;
-            }
-
-            fn complexSin(z: @Vector(2, f32)) @Vector(2, f32) {
-                return @Vector(2, f32){
-                    sin(z[0]) * cosh(z[1]),
-                    cos(z[0]) * sinh(z[1]),
-                };
-            }
-
-            fn complexTan(z: @Vector(2, f32)) @Vector(2, f32) {
-                return @Vector(2, f32){
-                    sin(2.0 * z[0]) / (cos(2.0 * z[0]) + cosh(2.0 * z[1])),
-                    sinh(2.0 * z[1]) / (cos(2.0 * z[0]) + cosh(2.0 * z[1])),
-                };
             }
 
             fn polar(r: f32, a: f32) @Vector(2, f32) {
@@ -505,8 +399,8 @@ pub const kernel = struct {
                 };
             }
 
-            fn power(z: @Vector(2, f32), p: i32) @Vector(2, f32) {
-                return polar(pow(length(z), @as(f32, @floatFromInt(p))), @as(f32, @floatFromInt(p)) * complexArg(z));
+            fn complexPower(z: @Vector(2, f32), p: f32) @Vector(2, f32) {
+                return polar(pow(length(z), p), p * complexArg(z));
             }
 
             pub fn outCoord(self: *@This()) @Vector(2, f32) {
@@ -539,20 +433,6 @@ pub const kernel = struct {
 
     fn cos(v: anytype) @TypeOf(v) {
         return @cos(v);
-    }
-
-    fn atan(v: anytype) @TypeOf(v) {
-        return switch (@typeInfo(@TypeOf(v))) {
-            .Vector => calc: {
-                var result: @TypeOf(v) = undefined;
-                comptime var i = 0;
-                inline while (i < @typeInfo(@TypeOf(v)).Vector.len) : (i += 1) {
-                    result[i] = atan(v[i]);
-                }
-                break :calc result;
-            },
-            else => std.math.atan(v),
-        };
     }
 
     fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
@@ -591,16 +471,35 @@ pub const kernel = struct {
         return @log(v);
     }
 
-    fn sqrt(v: anytype) @TypeOf(v) {
-        return @sqrt(v);
-    }
-
     fn min(v1: anytype, v2: anytype) @TypeOf(v1) {
         return switch (@typeInfo(@TypeOf(v2))) {
             .Vector => @min(v1, v2),
             else => switch (@typeInfo(@TypeOf(v1))) {
                 .Vector => @min(v1, @as(@TypeOf(v1), @splat(v2))),
                 else => @min(v1, v2),
+            },
+        };
+    }
+
+    fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
+        return switch (@typeInfo(@TypeOf(min_val))) {
+            .Vector => calc: {
+                const T = @typeInfo(@TypeOf(v)).Vector.child;
+                const result1 = @select(T, v < min_val, min_val, v);
+                const result2 = @select(T, result1 > max_val, max_val, result1);
+                break :calc result2;
+            },
+            else => switch (@typeInfo(@TypeOf(v))) {
+                .Vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
+                else => calc: {
+                    if (v < min_val) {
+                        break :calc min_val;
+                    } else if (v > max_val) {
+                        break :calc max_val;
+                    } else {
+                        break :calc v;
+                    }
+                },
             },
         };
     }

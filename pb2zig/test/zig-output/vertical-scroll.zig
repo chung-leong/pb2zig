@@ -51,9 +51,9 @@ pub const kernel = struct {
         },
         .fogColour = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0, 0, 0 },
-            .maxValue = .{ 0, 0, 0 },
-            .defaultValue = .{ 0, 0, 0 },
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 0.0, 0.0, 0.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0 },
             .parameterType = "colorRGB",
             .displayName = "Fog Colour",
         },
@@ -114,7 +114,7 @@ pub const kernel = struct {
                 var doRoll: bool = undefined;
                 if (pos[1] < rollOffsetY or pos[1] > rollOffsetY + rollHeight or pos[0] < rollOffsetX or pos[0] > rollOffsetX + rollWidth) {
                     self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
-                    doRoll = true;
+                    doRoll = false;
                 } else if (pos[1] < rollOffsetY + topRollRadius) {
                     doRoll = true;
                     yFract = 1.0 - ((pos[1] - rollOffsetY) / topRollRadius);
@@ -128,7 +128,7 @@ pub const kernel = struct {
                     yDir = 1.0;
                     rollRadius = bottomRollRadius;
                 } else {
-                    doRoll = true;
+                    doRoll = false;
                     self.dst = src.sampleNearest(pos);
                 }
                 if (doRoll) {

@@ -56,7 +56,7 @@ pub const kernel = struct {
                 if ((remX == remY) or (((@as(i32, @intFromFloat(cPos[0])) - @as(i32, @intFromFloat(blPos[0]))) == (@as(i32, @intFromFloat(blPos[1])) - @as(i32, @intFromFloat(cPos[1])))))) {
                     self.outputPx = src.sampleNearest(tlPos);
                 } else {
-                    self.outputPx = @Vector(4, f32){ 0, 0, 0, 0 };
+                    self.outputPx = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 }
 
                 outputPx.setPixel(self.outputCoord[0], self.outputCoord[1], self.outputPx);

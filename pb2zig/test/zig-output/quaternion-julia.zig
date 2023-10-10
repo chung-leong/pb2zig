@@ -16,7 +16,7 @@ pub const kernel = struct {
     pub const parameters = .{
         .antialiasing = .{
             .type = bool,
-            .defaultValue = true,
+            .defaultValue = false,
             .description = "Average 4 sample rays per pixel.",
         },
         .ambientLight = .{
@@ -39,26 +39,51 @@ pub const kernel = struct {
         },
         .mu = .{
             .type = @Vector(4, f32),
-            .minValue = .{ -2.1, -3, -3, -1.5 },
-            .maxValue = .{ 2.1, 3, 3, 1.5 },
-            .defaultValue = .{ -0.04, 0, 0.72, 0 },
+            .minValue = .{
+                -2.1,
+                -3.0,
+                -3.0,
+                -1.5,
+            },
+            .maxValue = .{ 2.1, 3.0, 3.0, 1.5 },
+            .defaultValue = .{
+                -0.04,
+                0.0,
+                0.72,
+                0.0,
+            },
         },
         .camera = .{
             .type = @Vector(4, f32),
-            .minValue = .{ -180, -180, -180, 0 },
-            .maxValue = .{ 180, 180, 180, 20 },
-            .defaultValue = .{ -30, 0, -20, 3 },
+            .minValue = .{
+                -180.0,
+                -180.0,
+                -180.0,
+                0.0,
+            },
+            .maxValue = .{
+                180.0,
+                180.0,
+                180.0,
+                20.0,
+            },
+            .defaultValue = .{
+                -30.0,
+                0.0,
+                -20.0,
+                3.0,
+            },
         },
         .light = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -10, -10, -10 },
-            .maxValue = .{ 10, 10, 10 },
-            .defaultValue = .{ 2, 2, 2 },
+            .minValue = .{ -10.0, -10.0, -10.0 },
+            .maxValue = .{ 10.0, 10.0, 10.0 },
+            .defaultValue = .{ 2.0, 2.0, 2.0 },
         },
         .background = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0, 0, 0 },
-            .maxValue = .{ 1, 1, 1 },
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
             .defaultValue = .{ 0.3, 0.33, 0.35 },
             .aeUIControl = "aeColor",
         },
@@ -71,8 +96,8 @@ pub const kernel = struct {
         },
         .color = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0, 0, 0 },
-            .maxValue = .{ 1, 1, 1 },
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
             .defaultValue = .{ 0.63, 0.08, 0.0 },
             .aeUIControl = "aeColor",
         },
@@ -334,7 +359,7 @@ pub const kernel = struct {
                     .{ 0.0, s3, c3 },
                 };
                 self.viewRotation = @"M * M"(@"M * M"(self.viewRotationX, self.viewRotationY), self.viewRotationZ);
-                self.eye = @"V * M"(@Vector(3, f32){ 0, 0, camera[3] }, self.viewRotation);
+                self.eye = @"V * M"(@Vector(3, f32){ 0.0, 0.0, camera[3] }, self.viewRotation);
                 self.lightSource = @"V * M"(light, self.viewRotation);
             }
 
@@ -343,7 +368,7 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var c: @Vector(4, f32) = .{ 0, 0, 0, 0 };
+                var c: @Vector(4, f32) = .{ 0.0, 0.0, 0.0, 0.0 };
                 if (antialiasing) {
                     {
                         var i: f32 = 0.0;
@@ -469,8 +494,10 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        const sum = @reduce(.Add, v * v);
-        return @sqrt(sum);
+        return switch (@typeInfo(@TypeOf(v))) {
+            .Vector => @sqrt(@reduce(.Add, v * v)),
+            else => @abs(v),
+        };
     }
 
     fn dot(v1: anytype, v2: anytype) f32 {

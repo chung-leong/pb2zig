@@ -59,8 +59,12 @@ export function createPartialImageData(width, height, start, count, source = {},
   return createResult(output);
 }
 
-export function getKernel() {
-  return kernel;
+export function getKernelInfo() {
+  const info = {};
+  for (const [ name, object ] of Object.entries(kernel)) {
+    info[name] = object.valueOf();
+  }
+  return info;
 }
 
 export { __init };

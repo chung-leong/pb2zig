@@ -10,37 +10,37 @@ pub const kernel = struct {
     pub const parameters = .{
         .startpoint = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -300, -300 },
-            .maxValue = .{ 900, 900 },
-            .defaultValue = .{ 50, 200 },
+            .minValue = .{ -300.0, -300.0 },
+            .maxValue = .{ 900.0, 900.0 },
+            .defaultValue = .{ 50.0, 200.0 },
             .description = "start point for bezier sequence",
         },
         .control1 = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -300, -300 },
-            .maxValue = .{ 900, 900 },
-            .defaultValue = .{ 200, 100 },
+            .minValue = .{ -300.0, -300.0 },
+            .maxValue = .{ 900.0, 900.0 },
+            .defaultValue = .{ 200.0, 100.0 },
             .description = "first control point for bezier sequence",
         },
         .control2 = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -300, -300 },
-            .maxValue = .{ 900, 900 },
-            .defaultValue = .{ 400, 300 },
+            .minValue = .{ -300.0, -300.0 },
+            .maxValue = .{ 900.0, 900.0 },
+            .defaultValue = .{ 400.0, 300.0 },
             .description = "first control point for bezier sequence",
         },
         .endpoint = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -300, -300 },
-            .maxValue = .{ 900, 900 },
-            .defaultValue = .{ 550, 200 },
+            .minValue = .{ -300.0, -300.0 },
+            .maxValue = .{ 900.0, 900.0 },
+            .defaultValue = .{ 550.0, 200.0 },
             .description = "end point for bezier sequence",
         },
         .scale = .{
             .type = @Vector(2, f32),
             .minValue = .{ 0.5, 0.5 },
             .maxValue = .{ 2.5, 2.5 },
-            .defaultValue = .{ 1, 1 },
+            .defaultValue = .{ 1.0, 1.0 },
             .description = "Scales the texture image",
         },
         .imagewidth = .{
@@ -52,9 +52,9 @@ pub const kernel = struct {
         },
         .offset = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -300, -300 },
-            .maxValue = .{ 300, 300 },
-            .defaultValue = .{ 0, 0 },
+            .minValue = .{ -300.0, -300.0 },
+            .maxValue = .{ 300.0, 300.0 },
+            .defaultValue = .{ 0.0, 0.0 },
             .description = "offset.x=Displacement along the curve, offset.y=Displacement perpendicular to the curve",
         },
         .tstart = .{
@@ -280,8 +280,10 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        const sum = @reduce(.Add, v * v);
-        return @sqrt(sum);
+        return switch (@typeInfo(@TypeOf(v))) {
+            .Vector => @sqrt(@reduce(.Add, v * v)),
+            else => @abs(v),
+        };
     }
 
     fn @"M * V"(m1: anytype, v2: anytype) @TypeOf(v2) {
@@ -434,19 +436,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
                 .Int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
-            const pixel_adjusted: FPixel = adjust: {
-                if (self.premultiplied) {
-                    break :adjust pixel;
-                } else {
-                    if (pixel[3] >= 1.0 or pixel[3] == 0.0) {
-                        break :adjust pixel;
-                    } else {
-                        const rgb = @shuffle(f32, pixel, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(pixel[3]));
-                        break :adjust @shuffle(f32, rgb, pixel, @Vector(4, i32){ 0, 1, 2, -4 });
-                    }
-                }
-            };
-            return pixel_adjusted;
+            return pixel;
         }
 
         fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
@@ -454,24 +444,9 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
                 return;
             }
             const index = (y * self.width) + x - self.offset;
-            const pixel_adjusted: FPixel = adjust: {
-                if (self.premultiplied) {
-                    break :adjust pixel;
-                } else {
-                    // undo premultiplication
-                    if (pixel[3] >= 1.0) {
-                        break :adjust pixel;
-                    } else if (pixel[3] == 0.0) {
-                        break :adjust @splat(0);
-                    } else {
-                        const rgb = @shuffle(f32, pixel, undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(pixel[3]));
-                        break :adjust @shuffle(f32, rgb, pixel, @Vector(4, i32){ 0, 1, 2, -4 });
-                    }
-                }
-            };
             const dst_pixel: Pixel = switch (@typeInfo(T)) {
-                .Float => floatPixelFromPBPixel(pixel_adjusted),
-                .Int => intPixelFromPBPixel(pixel_adjusted),
+                .Float => floatPixelFromPBPixel(pixel),
+                .Int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
             self.data[index] = dst_pixel;

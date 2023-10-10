@@ -17,9 +17,9 @@ pub const kernel = struct {
         },
         .base = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -200, -200 },
-            .maxValue = .{ 800, 500 },
-            .defaultValue = .{ 400, 250 },
+            .minValue = .{ -200.0, -200.0 },
+            .maxValue = .{ 800.0, 500.0 },
+            .defaultValue = .{ 400.0, 250.0 },
             .description = "base point",
         },
     };

@@ -23,8 +23,8 @@ pub const kernel = struct {
         .distort = .{
             .type = @Vector(2, f32),
             .minValue = .{ 0.1, 0.1 },
-            .maxValue = .{ 8, 8 },
-            .defaultValue = .{ 3, 1.7320508 },
+            .maxValue = .{ 8.0, 8.0 },
+            .defaultValue = .{ 3.0, 1.7320508 },
         },
         .center = .{
             .type = @Vector(2, f32),

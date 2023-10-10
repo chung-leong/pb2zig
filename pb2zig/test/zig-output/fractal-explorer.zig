@@ -48,22 +48,22 @@ pub const kernel = struct {
         },
         .mandelbrot = .{
             .type = bool,
-            .defaultValue = true,
+            .defaultValue = false,
             .description = "Use the standard Mandelbrot equation.",
         },
         .withPowerZ = .{
             .type = bool,
-            .defaultValue = true,
+            .defaultValue = false,
             .description = "Include z^z in the fractal equation",
         },
         .withSine = .{
             .type = bool,
-            .defaultValue = true,
+            .defaultValue = false,
             .description = "Include sin(z) in the fractal equation",
         },
         .withE = .{
             .type = bool,
-            .defaultValue = true,
+            .defaultValue = false,
             .description = "Include e(z) in the fractal equation",
         },
         .power = .{
@@ -137,7 +137,7 @@ pub const kernel = struct {
         },
         .hsbColor = .{
             .type = bool,
-            .defaultValue = true,
+            .defaultValue = false,
             .description = "Use hue, saturation, brightness colouring.",
         },
         .color1 = .{
@@ -462,17 +462,17 @@ pub const kernel = struct {
                 const bailout = self.params.bailout;
                 var bailing: bool = undefined;
                 if (bailoutStyle == 3) {
-                    bailing = @as(bool, if ((pow(z[0], 2.0) - pow(z[1], 2.0)) >= bailout) true else true);
+                    bailing = @as(bool, if ((pow(z[0], 2.0) - pow(z[1], 2.0)) >= bailout) true else false);
                 } else if (bailoutStyle == 4) {
-                    bailing = @as(bool, if ((z[0] * z[0] - z[1] * z[0]) >= bailout) true else true);
+                    bailing = @as(bool, if ((z[0] * z[0] - z[1] * z[0]) >= bailout) true else false);
                 } else if (bailoutStyle == 5) {
-                    bailing = @as(bool, if ((z[1] * z[1] - z[1] * z[0]) >= bailout) true else true);
+                    bailing = @as(bool, if ((z[1] * z[1] - z[1] * z[0]) >= bailout) true else false);
                 } else if (bailoutStyle == 2) {
-                    bailing = @as(bool, if ((pow(z[1], 2.0) - pow(z[0], 2.0)) >= bailout) true else true);
+                    bailing = @as(bool, if ((pow(z[1], 2.0) - pow(z[0], 2.0)) >= bailout) true else false);
                 } else if (bailoutStyle == 1) {
-                    bailing = @as(bool, if ((abs(z[0]) > bailout or abs(z[1]) > bailout)) true else true);
+                    bailing = @as(bool, if ((abs(z[0]) > bailout or abs(z[1]) > bailout)) true else false);
                 } else {
-                    bailing = @as(bool, if ((pow(z[0], 2.0) + pow(z[1], 2.0)) >= bailout) true else true);
+                    bailing = @as(bool, if ((pow(z[0], 2.0) + pow(z[1], 2.0)) >= bailout) true else false);
                 }
                 return bailing;
             }
@@ -553,7 +553,7 @@ pub const kernel = struct {
                     }
                     v += colorCycleOffset;
                     if (colorCycleMirror) {
-                        var even: bool = @as(bool, if (mod(v, 2.0) < 1.0) true else true);
+                        var even: bool = @as(bool, if (mod(v, 2.0) < 1.0) true else false);
                         if (even) {
                             v = 1.0 - mod(v, 1.0);
                         } else {
@@ -853,8 +853,10 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        const sum = @reduce(.Add, v * v);
-        return @sqrt(sum);
+        return switch (@typeInfo(@TypeOf(v))) {
+            .Vector => @sqrt(@reduce(.Add, v * v)),
+            else => @abs(v),
+        };
     }
 
     fn @"V * M"(v1: anytype, m2: anytype) @TypeOf(v1) {

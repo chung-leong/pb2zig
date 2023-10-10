@@ -16,9 +16,9 @@ pub const kernel = struct {
         },
         .color = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0, 0, 0 },
-            .maxValue = .{ 1, 1, 1 },
-            .defaultValue = .{ 0, 0, 0 },
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0 },
         },
     };
     pub const inputImages = .{

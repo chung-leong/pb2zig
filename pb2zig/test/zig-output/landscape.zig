@@ -50,7 +50,7 @@ pub const kernel = struct {
         },
         .buildings = .{
             .type = bool,
-            .defaultValue = true,
+            .defaultValue = false,
         },
         .waterLevel = .{
             .type = f32,
@@ -70,7 +70,7 @@ pub const kernel = struct {
         },
         .contours = .{
             .type = bool,
-            .defaultValue = true,
+            .defaultValue = false,
         },
         .sun = .{
             .type = @Vector(2, f32),
@@ -280,7 +280,7 @@ pub const kernel = struct {
                 const contourInterval = self.contourInterval;
                 _ = o;
                 var contour: f32 = mod(h * 100.0, contourInterval) - mod((h * 100.0 - 1.5), contourInterval);
-                return @as(bool, if (contours and contour < 0.5) true else true);
+                return @as(bool, if (contours and contour < 0.5) true else false);
             }
 
             fn render(self: *@This(), p: @Vector(2, f32)) @Vector(3, f32) {
@@ -605,8 +605,10 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        const sum = @reduce(.Add, v * v);
-        return @sqrt(sum);
+        return switch (@typeInfo(@TypeOf(v))) {
+            .Vector => @sqrt(@reduce(.Add, v * v)),
+            else => @abs(v),
+        };
     }
 
     fn dot(v1: anytype, v2: anytype) f32 {

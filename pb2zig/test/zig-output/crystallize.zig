@@ -43,7 +43,7 @@ pub const kernel = struct {
                 .{ 0.951, -0.309 },
                 .{ 0.309, 0.951 },
             };
-            const base1: @Vector(2, f32) = @Vector(2, f32){ 2400, -100 };
+            const base1: @Vector(2, f32) = @Vector(2, f32){ 2400.0, -100.0 };
             const rot2: [2]@Vector(2, f32) = [2]@Vector(2, f32){
                 .{ 0.866, 0.5 },
                 .{ -0.5, 0.866 },
@@ -52,7 +52,7 @@ pub const kernel = struct {
                 .{ 0.866, -0.5 },
                 .{ 0.5, 0.866 },
             };
-            const base2: @Vector(2, f32) = @Vector(2, f32){ -100, 2400 };
+            const base2: @Vector(2, f32) = @Vector(2, f32){ -100.0, 2400.0 };
 
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
@@ -95,8 +95,10 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        const sum = @reduce(.Add, v * v);
-        return @sqrt(sum);
+        return switch (@typeInfo(@TypeOf(v))) {
+            .Vector => @sqrt(@reduce(.Add, v * v)),
+            else => @abs(v),
+        };
     }
 
     fn @"M * V"(m1: anytype, v2: anytype) @TypeOf(v2) {

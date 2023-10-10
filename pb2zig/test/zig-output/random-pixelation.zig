@@ -40,8 +40,8 @@ pub const kernel = struct {
         },
         .randomPoint = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -100, -100 },
-            .maxValue = .{ 1000, 1000 },
+            .minValue = .{ -100.0, -100.0 },
+            .maxValue = .{ 1000.0, 1000.0 },
             .defaultValue = .{ 217.5, 781.6 },
         },
     };

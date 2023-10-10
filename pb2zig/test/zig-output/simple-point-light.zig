@@ -101,7 +101,7 @@ pub const kernel = struct {
     fn distance(v1: anytype, v2: anytype) f32 {
         return switch (@typeInfo(@TypeOf(v1))) {
             .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-            else => std.math.fabs(v1 - v2),
+            else => @abs(v1 - v2),
         };
     }
 };

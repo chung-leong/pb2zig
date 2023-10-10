@@ -12,7 +12,7 @@ pub const kernel = struct {
             .type = @Vector(3, f32),
             .minValue = @as(@Vector(3, f32), @splat(-1000.0)),
             .maxValue = @as(@Vector(3, f32), @splat(1000.0)),
-            .defaultValue = .{ 200, 60, 40 },
+            .defaultValue = .{ 200.0, 60.0, 40.0 },
             .description = "xyz-location of the light source",
         },
         .shininess = .{
@@ -38,15 +38,15 @@ pub const kernel = struct {
         },
         .stripesize = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 1, 1 },
-            .maxValue = .{ 256, 200 },
-            .defaultValue = .{ 256, 10 },
+            .minValue = .{ 1.0, 1.0 },
+            .maxValue = .{ 256.0, 200.0 },
+            .defaultValue = .{ 256.0, 10.0 },
             .description = "the size for input 'stripe'",
         },
         .viewDirection = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -1, -1, -1 },
-            .maxValue = .{ 1, 1, 1 },
+            .minValue = .{ -1.0, -1.0, -1.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
             .defaultValue = .{ 0.0, 0.0, 1.0 },
         },
     };
@@ -87,29 +87,29 @@ pub const kernel = struct {
                 self.dst = source.sampleLinear(po);
                 if (self.dst[3] > 0.01) {
                     var sourcesample: @Vector(4, f32) = self.dst;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ -3, 0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ -3.0, 0.0 });
                     const tmp1 = tmp4;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ -2, 0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ -2.0, 0.0 });
                     const tmp2 = tmp4;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ -1, 0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ -1.0, 0.0 });
                     const tmp3 = tmp4;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 1, 0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 1.0, 0.0 });
                     const tmp5 = tmp4;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 2, 0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 2.0, 0.0 });
                     const tmp6 = tmp4;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 3, 0 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 3.0, 0.0 });
                     const tmp7 = tmp4;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0, -3 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, -3.0 });
                     const tmp8 = tmp4;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0, -2 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, -2.0 });
                     const tmp9 = tmp4;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0, -1 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, -1.0 });
                     const tmp10 = tmp4;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0, 1 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, 1.0 });
                     const tmp11 = tmp4;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0, 2 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, 2.0 });
                     const tmp12 = tmp4;
-                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0, 3 });
+                    tmp4 = source.sampleLinear(po + @Vector(2, f32){ 0.0, 3.0 });
                     const tmp13 = tmp4;
                     var normal: @Vector(3, f32) = .{
                         (0.7 * tmp1[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp2[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) + (0.7 * tmp3[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp5[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp6[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]) - (0.7 * tmp7[1] + 0.2 * tmp4[0] + 0.1 * tmp4[2]),

@@ -10,8 +10,8 @@ pub const kernel = struct {
     pub const parameters = .{
         .lineEquation = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -1, -1, -100 },
-            .maxValue = .{ 1, 1, 100 },
+            .minValue = .{ -1.0, -1.0, -100.0 },
+            .maxValue = .{ 1.0, 1.0, 100.0 },
             .defaultValue = .{ 0.707, -0.707, 30.0 },
         },
         .uScale = .{

@@ -10,9 +10,9 @@ pub const kernel = struct {
     pub const parameters = .{
         .center = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -200, -200 },
-            .maxValue = .{ 500, 500 },
-            .defaultValue = .{ 300, 200 },
+            .minValue = .{ -200.0, -200.0 },
+            .maxValue = .{ 500.0, 500.0 },
+            .defaultValue = .{ 300.0, 200.0 },
             .parameterType = "position",
         },
         .size = .{
@@ -35,37 +35,37 @@ pub const kernel = struct {
         },
         .imagesize = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 1, 1 },
-            .maxValue = .{ 600, 600 },
-            .defaultValue = .{ 400, 400 },
+            .minValue = .{ 1.0, 1.0 },
+            .maxValue = .{ 600.0, 600.0 },
+            .defaultValue = .{ 400.0, 400.0 },
             .parameterType = "position",
         },
         .colorX = .{
             .type = @Vector(4, f32),
             .minValue = @as(@Vector(4, f32), @splat(0.0)),
-            .maxValue = .{ 1, 1, 1, 1 },
-            .defaultValue = .{ 1, 1, 1, 1 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 1.0, 1.0, 1.0, 1.0 },
             .parameterType = "colorRGBA",
         },
         .colorY = .{
             .type = @Vector(4, f32),
             .minValue = @as(@Vector(4, f32), @splat(0.0)),
-            .maxValue = .{ 1, 1, 1, 1 },
-            .defaultValue = .{ 1, 1, 1, 1 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 1.0, 1.0, 1.0, 1.0 },
             .parameterType = "colorRGBA",
         },
         .colorZ = .{
             .type = @Vector(4, f32),
             .minValue = @as(@Vector(4, f32), @splat(0.0)),
-            .maxValue = .{ 1, 1, 1, 1 },
-            .defaultValue = .{ 0.8, 0.8, 0.8, 1 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.8, 0.8, 0.8, 1.0 },
             .parameterType = "colorRGBA",
         },
         .bgcolor = .{
             .type = @Vector(4, f32),
             .minValue = @as(@Vector(4, f32), @splat(0.0)),
-            .maxValue = .{ 1, 1, 1, 1 },
-            .defaultValue = .{ 0, 0, 0, 1 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0, 1.0 },
             .parameterType = "colorRGBA",
         },
         .orientation = .{
@@ -157,7 +157,7 @@ pub const kernel = struct {
                 var viewdir: @Vector(3, f32) = @as(@Vector(3, f32), @splat(focallength)) * (@as(@Vector(3, f32), @splat(cos(theta))) * @shuffle(f32, orientation[0], undefined, @Vector(3, i32){ 0, 1, 2 }) + @as(@Vector(3, f32), @splat(sin(theta))) * @shuffle(f32, orientation[1], undefined, @Vector(3, i32){ 0, 1, 2 })) + @as(@Vector(3, f32), @splat(po[1])) * @shuffle(f32, orientation[2], undefined, @Vector(3, i32){ 0, 1, 2 });
                 var v: @Vector(3, f32) = @shuffle(f32, orientation[3], undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(size));
                 var currentAlpha: f32 = 1.0;
-                self.dst = @Vector(4, f32){ 0, 0, 0, 0 };
+                self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 var dst2: @Vector(4, f32) = undefined;
                 var t: @Vector(3, f32) = undefined;
                 var n: i32 = 5;

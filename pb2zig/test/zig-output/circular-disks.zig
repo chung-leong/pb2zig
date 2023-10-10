@@ -24,8 +24,8 @@ pub const kernel = struct {
         },
         .base = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -200, -200 },
-            .maxValue = .{ 800, 500 },
+            .minValue = .{ -200.0, -200.0 },
+            .maxValue = .{ 800.0, 500.0 },
             .defaultValue = .{ 350.2, 100.2 },
             .description = "Base Point",
         },
@@ -75,7 +75,7 @@ pub const kernel = struct {
                     cos(polar[1]),
                     sin(polar[1]),
                 };
-                self.dst = @Vector(4, f32){ 0, 0, 0, 0 };
+                self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 if (radius * size > length(po - self.outCoord())) {
                     self.dst = src.sampleLinear(po);
                 }
@@ -126,8 +126,10 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        const sum = @reduce(.Add, v * v);
-        return @sqrt(sum);
+        return switch (@typeInfo(@TypeOf(v))) {
+            .Vector => @sqrt(@reduce(.Add, v * v)),
+            else => @abs(v),
+        };
     }
 };
 

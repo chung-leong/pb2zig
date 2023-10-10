@@ -10,15 +10,15 @@ pub const kernel = struct {
     pub const parameters = .{
         .size = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 1024, 1024 },
-            .defaultValue = .{ 1024, 512 },
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 1024.0, 1024.0 },
+            .defaultValue = .{ 1024.0, 512.0 },
         },
         .center = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 1024, 1024 },
-            .defaultValue = .{ 512, 256 },
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 1024.0, 1024.0 },
+            .defaultValue = .{ 512.0, 256.0 },
         },
         .distort = .{
             .type = f32,
@@ -28,19 +28,19 @@ pub const kernel = struct {
         },
         .offset = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -100, -100 },
-            .maxValue = .{ 100, 100 },
-            .defaultValue = .{ 0, 0 },
+            .minValue = .{ -100.0, -100.0 },
+            .maxValue = .{ 100.0, 100.0 },
+            .defaultValue = .{ 0.0, 0.0 },
         },
         .color_offset = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -5, -5, -5 },
-            .maxValue = .{ 5, 5, 5 },
-            .defaultValue = .{ 0, 0, 0 },
+            .minValue = .{ -5.0, -5.0, -5.0 },
+            .maxValue = .{ 5.0, 5.0, 5.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0 },
         },
         .wave = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 0, 0 },
+            .minValue = .{ 0.0, 0.0 },
             .maxValue = .{ 0.1, 0.1 },
             .defaultValue = .{ 0.05, 0.05 },
         },

@@ -1,11 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { createImageData } from './crystallize.pbk';
+import { createImageData, getKernelInfo } from './crystallize.pbk';
 import testImage from '../img/malgorzata-socha.png';
 import './App.css'
 
 function App() {
   const srcCanvasRef = useRef();
   const dstCanvasRef = useRef();
+  console.log(getKernelInfo());
   const update = useCallback(() => {
     const srcCanvas = srcCanvasRef.current;
     const dstCanvas = dstCanvasRef.current;

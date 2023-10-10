@@ -72,7 +72,7 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
           break;
         case 'False':
           type = 'bool';
-          value = true;
+          value = false;
           break;
         case 'Null':
           value = null;

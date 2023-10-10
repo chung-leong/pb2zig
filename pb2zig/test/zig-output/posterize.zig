@@ -16,7 +16,7 @@ pub const kernel = struct {
                 0.441,
                 0.5859375,
                 0.62109375,
-                1,
+                1.0,
             },
             .parameterType = "colorRGBA",
         },
@@ -28,7 +28,7 @@ pub const kernel = struct {
                 0.839,
                 0.101,
                 0.1289,
-                1,
+                1.0,
             },
             .parameterType = "colorRGBA",
         },
@@ -36,7 +36,7 @@ pub const kernel = struct {
             .type = @Vector(4, f32),
             .minValue = @as(@Vector(4, f32), @splat(0.0)),
             .maxValue = @as(@Vector(4, f32), @splat(1.0)),
-            .defaultValue = .{ 0, 0.195, 0.3, 1 },
+            .defaultValue = .{ 0.0, 0.195, 0.3, 1.0 },
             .parameterType = "colorRGBA",
         },
         .color4 = .{
@@ -47,7 +47,7 @@ pub const kernel = struct {
                 0.983,
                 0.89,
                 0.656,
-                1,
+                1.0,
             },
             .parameterType = "colorRGBA",
         },
@@ -55,28 +55,28 @@ pub const kernel = struct {
             .type = @Vector(4, f32),
             .minValue = @as(@Vector(4, f32), @splat(0.0)),
             .maxValue = @as(@Vector(4, f32), @splat(1.0)),
-            .defaultValue = .{ 0, 0, 0, 1 },
+            .defaultValue = .{ 0.0, 0.0, 0.0, 1.0 },
             .parameterType = "colorRGBA",
         },
         .color6 = .{
             .type = @Vector(4, f32),
             .minValue = @as(@Vector(4, f32), @splat(0.0)),
             .maxValue = @as(@Vector(4, f32), @splat(1.0)),
-            .defaultValue = .{ 1, 0, 0, 1 },
+            .defaultValue = .{ 1.0, 0.0, 0.0, 1.0 },
             .parameterType = "colorRGBA",
         },
         .color7 = .{
             .type = @Vector(4, f32),
             .minValue = @as(@Vector(4, f32), @splat(0.0)),
             .maxValue = @as(@Vector(4, f32), @splat(1.0)),
-            .defaultValue = .{ 0, 1, 0, 1 },
+            .defaultValue = .{ 0.0, 1.0, 0.0, 1.0 },
             .parameterType = "colorRGBA",
         },
         .color8 = .{
             .type = @Vector(4, f32),
             .minValue = @as(@Vector(4, f32), @splat(0.0)),
             .maxValue = @as(@Vector(4, f32), @splat(1.0)),
-            .defaultValue = .{ 0, 0, 1, 1 },
+            .defaultValue = .{ 0.0, 0.0, 1.0, 1.0 },
             .parameterType = "colorRGBA",
         },
         .numColors = .{
@@ -130,8 +130,8 @@ pub const kernel = struct {
                 var minDist: f32 = undefined;
                 var tmp: f32 = undefined;
                 var po: @Vector(4, f32) = src.sampleLinear(self.outCoord());
-                po += src.sampleLinear(self.outCoord() + @Vector(2, f32){ blur, 0 }) + src.sampleLinear(self.outCoord() + @Vector(2, f32){ -blur, 0 });
-                po += src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0, blur }) + src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0, -blur });
+                po += src.sampleLinear(self.outCoord() + @Vector(2, f32){ blur, 0.0 }) + src.sampleLinear(self.outCoord() + @Vector(2, f32){ -blur, 0.0 });
+                po += src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, blur }) + src.sampleLinear(self.outCoord() + @Vector(2, f32){ 0.0, -blur });
                 if (po[3] < 0.01) {
                     self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 } else {

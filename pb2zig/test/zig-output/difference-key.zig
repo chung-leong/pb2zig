@@ -1,43 +1,40 @@
-// Pixel Bender kernel "twirl" (translated using pb2zig)
+// Pixel Bender kernel "DifferenceKey" (translated using pb2zig)
 const std = @import("std");
 
 pub const kernel = struct {
     // kernel information
-    pub const namespace = "Pixel Bender Samples";
-    pub const vendor = "Adobe Systems";
-    pub const version = 2;
-    pub const description = "twist an image around";
+    pub const namespace = "com.quasimondo";
+    pub const vendor = "Quasimondo";
+    pub const version = 1;
+    pub const description = "A simple difference key for chroma keying";
     pub const parameters = .{
-        .radius = .{
-            .type = f32,
-            .minValue = 0.1,
-            .maxValue = 2048.0,
-            .defaultValue = 10.0,
+        .keyColor = .{
+            .type = @Vector(3, f32),
         },
-        .center = .{
-            .type = @Vector(2, f32),
-            .minValue = .{ 0.0, 0.0 },
-            .maxValue = .{ 2048.0, 2048.0 },
-            .defaultValue = .{ 256.0, 256.0 },
-        },
-        .twirlAngle = .{
+        .tolerance = .{
             .type = f32,
             .minValue = 0.0,
-            .maxValue = 360.0,
-            .defaultValue = 90.0,
+            .maxValue = 3.0,
+            .defaultValue = 0.02,
         },
-        .gaussOrSinc = .{
-            .type = i32,
-            .minValue = 0,
-            .maxValue = 1,
-            .defaultValue = 0,
+        .ramp = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 1.0,
+            .defaultValue = 0.005,
+        },
+        .gamma = .{
+            .type = f32,
+            .minValue = 0.0,
+            .maxValue = 10.0,
+            .defaultValue = 1.0,
         },
     };
     pub const inputImages = .{
-        .oImage = .{ .channels = 4 },
+        .src = .{ .channels = 4 },
     };
     pub const outputImages = .{
-        .outputColor = .{ .channels = 4 },
+        .dst = .{ .channels = 4 },
     };
 
     // generic kernel instance type
@@ -49,40 +46,27 @@ pub const kernel = struct {
             outputCoord: @Vector(2, u32) = @splat(0),
 
             // output pixel
-            outputColor: @Vector(4, f32) = undefined,
-
-            // constants
-            const PI: f32 = 3.14159265;
+            dst: @Vector(4, f32) = undefined,
 
             // functions defined in kernel
             pub fn evaluatePixel(self: *@This()) void {
-                const radius = self.params.radius;
-                const center = self.params.center;
-                const twirlAngle = self.params.twirlAngle;
-                const gaussOrSinc = self.params.gaussOrSinc;
-                const oImage = self.input.oImage;
-                const outputColor = self.output.outputColor;
-                self.outputColor = @splat(0.0);
+                const keyColor = self.params.keyColor;
+                const tolerance = self.params.tolerance;
+                const ramp = self.params.ramp;
+                const gamma = self.params.gamma;
+                const src = self.input.src;
+                const dst = self.output.dst;
+                self.dst = @splat(0.0);
 
-                var twirlAngleRadians: f32 = radians(twirlAngle);
-                var relativePos: @Vector(2, f32) = self.outCoord() - center;
-                var distFromCenter: f32 = length(relativePos);
-                distFromCenter /= radius;
-                var adjustedRadians: f32 = undefined;
-                var sincWeight: f32 = sin(distFromCenter) * twirlAngleRadians / distFromCenter;
-                var gaussWeight: f32 = exp(-1.0 * distFromCenter * distFromCenter) * twirlAngleRadians;
-                adjustedRadians = if ((distFromCenter == 0.0)) twirlAngleRadians else sincWeight;
-                adjustedRadians = if ((gaussOrSinc == 1)) adjustedRadians else gaussWeight;
-                var cosAngle: f32 = cos(adjustedRadians);
-                var sinAngle: f32 = sin(adjustedRadians);
-                var rotationMat: [2]@Vector(2, f32) = [2]@Vector(2, f32){
-                    .{ cosAngle, sinAngle },
-                    .{ -sinAngle, cosAngle },
-                };
-                relativePos = @"M * V"(rotationMat, relativePos);
-                self.outputColor = oImage.sampleLinear(relativePos + center);
+                self.dst = src.sampleNearest(self.outCoord());
+                var diff: f32 = length(@shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) - keyColor);
+                if (diff < tolerance) {
+                    self.dst[3] = 0.0;
+                } else if (diff < tolerance + ramp) {
+                    self.dst[3] = pow((diff - tolerance) / ramp, gamma);
+                }
 
-                outputColor.setPixel(self.outputCoord[0], self.outputCoord[1], self.outputColor);
+                dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
             }
 
             pub fn outCoord(self: *@This()) @Vector(2, f32) {
@@ -101,24 +85,18 @@ pub const kernel = struct {
     }
 
     // built-in Pixel Bender functions
-    fn radians(v: anytype) @TypeOf(v) {
-        const multiplier = std.math.pi / 180.0;
-        return switch (@typeInfo(@TypeOf(v))) {
-            .Vector => v * @as(@TypeOf(v), @splat(multiplier)),
-            else => v * multiplier,
+    fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
+        return switch (@typeInfo(@TypeOf(v1))) {
+            .Vector => calc: {
+                var result: @TypeOf(v1) = undefined;
+                comptime var i = 0;
+                inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+                    result[i] = pow(v1[i], v2[i]);
+                }
+                break :calc result;
+            },
+            else => std.math.pow(@TypeOf(v1), v1, v2),
         };
-    }
-
-    fn sin(v: anytype) @TypeOf(v) {
-        return @sin(v);
-    }
-
-    fn cos(v: anytype) @TypeOf(v) {
-        return @cos(v);
-    }
-
-    fn exp(v: anytype) @TypeOf(v) {
-        return @exp(v);
     }
 
     fn length(v: anytype) f32 {
@@ -126,22 +104,6 @@ pub const kernel = struct {
             .Vector => @sqrt(@reduce(.Add, v * v)),
             else => @abs(v),
         };
-    }
-
-    fn @"M * V"(m1: anytype, v2: anytype) @TypeOf(v2) {
-        const ar = @typeInfo(@TypeOf(m1)).Array;
-        var t1: @TypeOf(m1) = undefined;
-        inline for (m1, 0..) |column, c| {
-            comptime var r = 0;
-            inline while (r < ar.len) : (r += 1) {
-                t1[r][c] = column[r];
-            }
-        }
-        var result: @TypeOf(v2) = undefined;
-        inline for (t1, 0..) |column, c| {
-            result[c] = @reduce(.Add, column * v2);
-        }
-        return result;
     }
 };
 

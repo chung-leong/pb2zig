@@ -10,7 +10,7 @@ pub const kernel = struct {
     pub const parameters = .{
         .a = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -5, -5 },
+            .minValue = .{ -5.0, -5.0 },
             .maxValue = .{ 5.0, 5.0 },
             .defaultValue = .{ -0.3, -1.1 },
         },
@@ -35,20 +35,20 @@ pub const kernel = struct {
         .distort = .{
             .type = @Vector(2, f32),
             .minValue = .{ 0.1, 0.1 },
-            .maxValue = .{ 20, 20 },
-            .defaultValue = .{ 3, 1.7320508 },
+            .maxValue = .{ 20.0, 20.0 },
+            .defaultValue = .{ 3.0, 1.7320508 },
         },
         .imagesize = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 1, 1 },
-            .maxValue = .{ 500, 400 },
-            .defaultValue = .{ 250, 188 },
+            .minValue = .{ 1.0, 1.0 },
+            .maxValue = .{ 500.0, 400.0 },
+            .defaultValue = .{ 250.0, 188.0 },
         },
         .center = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 1, 1 },
+            .minValue = .{ 1.0, 1.0 },
             .maxValue = .{ 1000.0, 1000.0 },
-            .defaultValue = .{ 220, 380 },
+            .defaultValue = .{ 220.0, 380.0 },
         },
         .focus = .{
             .type = f32,
@@ -70,9 +70,9 @@ pub const kernel = struct {
         },
         .bgcolor = .{
             .type = @Vector(4, f32),
-            .minValue = .{ 0, 0, 0, 0 },
-            .maxValue = .{ 1, 1, 1, 1 },
-            .defaultValue = .{ 0, 0, 0, 0 },
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0, 0.0 },
         },
     };
     pub const inputImages = .{

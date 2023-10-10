@@ -26,12 +26,12 @@ pub const kernel = struct {
         },
         .julia = .{
             .type = bool,
-            .defaultValue = true,
+            .defaultValue = false,
             .description = "Enable Julia set version.",
         },
         .radiolaria = .{
             .type = bool,
-            .defaultValue = true,
+            .defaultValue = false,
             .description = "Enable radiolaria style.",
         },
         .radiolariaFactor = .{
@@ -85,30 +85,34 @@ pub const kernel = struct {
         },
         .julia_c = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -2, -2, -2 },
-            .maxValue = .{ 2, 2, 2 },
+            .minValue = .{ -2.0, -2.0, -2.0 },
+            .maxValue = .{ 2.0, 2.0, 2.0 },
             .defaultValue = .{ 1.0, 0.0, 0.0 },
             .description = "The c constant for Julia set fractals",
         },
         .cameraPosition = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -4, -4, -4 },
-            .maxValue = .{ 4, 4, 4 },
-            .defaultValue = .{ 0, -2.6, 0 },
+            .minValue = .{ -4.0, -4.0, -4.0 },
+            .maxValue = .{ 4.0, 4.0, 4.0 },
+            .defaultValue = .{ 0.0, -2.6, 0.0 },
             .description = "Camera position.",
         },
         .cameraPositionFine = .{
             .type = @Vector(3, f32),
             .minValue = .{ -0.1, -0.1, -0.1 },
             .maxValue = .{ 0.1, 0.1, 0.1 },
-            .defaultValue = .{ 0, 0.0, 0.0 },
+            .defaultValue = .{ 0.0, 0.0, 0.0 },
             .description = "Fine tune position.",
         },
         .cameraRotation = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -180, -180, -180 },
-            .maxValue = .{ 180, 180, 180 },
-            .defaultValue = .{ 0, 0, -90 },
+            .minValue = .{
+                -180.0,
+                -180.0,
+                -180.0,
+            },
+            .maxValue = .{ 180.0, 180.0, 180.0 },
+            .defaultValue = .{ 0.0, 0.0, -90.0 },
             .description = "Pointing angle in each axis of the camera.",
         },
         .cameraZoom = .{
@@ -120,15 +124,15 @@ pub const kernel = struct {
         },
         .light = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -50, -50, -50 },
-            .maxValue = .{ 50, 50, 50 },
-            .defaultValue = .{ 38, -42, 38 },
+            .minValue = .{ -50.0, -50.0, -50.0 },
+            .maxValue = .{ 50.0, 50.0, 50.0 },
+            .defaultValue = .{ 38.0, -42.0, 38.0 },
             .description = "Position of point light.",
         },
         .colorBackground = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0, 0, 0 },
-            .maxValue = .{ 1, 1, 1 },
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
             .defaultValue = .{ 0.0, 0.0, 0.0 },
             .description = "Background colour.",
             .aeUIControl = "aeColor",
@@ -142,16 +146,16 @@ pub const kernel = struct {
         },
         .colorDiffuse = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0, 0, 0 },
-            .maxValue = .{ 1, 1, 1 },
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
             .defaultValue = .{ 0.0, 0.85, 0.99 },
             .description = "Diffuse colour.",
             .aeUIControl = "aeColor",
         },
         .colorAmbient = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0, 0, 0 },
-            .maxValue = .{ 1, 1, 1 },
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
             .defaultValue = .{ 0.67, 0.85, 1.0 },
             .description = "Ambient light colour.",
             .aeUIControl = "aeColor",
@@ -165,8 +169,8 @@ pub const kernel = struct {
         },
         .colorLight = .{
             .type = @Vector(3, f32),
-            .minValue = .{ 0, 0, 0 },
-            .maxValue = .{ 1, 1, 1 },
+            .minValue = .{ 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
             .defaultValue = .{ 0.48, 0.59, 0.66 },
             .description = "Light colour.",
             .aeUIControl = "aeColor",
@@ -201,9 +205,13 @@ pub const kernel = struct {
         },
         .rotation = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -180, -180, -180 },
-            .maxValue = .{ 180, 180, 180 },
-            .defaultValue = .{ 0, 36, 39.6 },
+            .minValue = .{
+                -180.0,
+                -180.0,
+                -180.0,
+            },
+            .maxValue = .{ 180.0, 180.0, 180.0 },
+            .defaultValue = .{ 0.0, 36.0, 39.6 },
             .description = "Rotate the Mandelbulb in each axis.",
         },
         .maxIterations = .{
@@ -315,7 +323,7 @@ pub const kernel = struct {
 
             fn intersectBoundingSphere(self: *@This(), origin: @Vector(3, f32), direction: @Vector(3, f32), tmin: *f32, tmax: *f32) bool {
                 const bounding = self.params.bounding;
-                var hit: bool = true;
+                var hit: bool = false;
                 var b: f32 = dot(origin, direction);
                 var c: f32 = dot(origin, origin) - bounding;
                 var disc: f32 = b * b - c;
@@ -344,12 +352,12 @@ pub const kernel = struct {
 
             fn estimate_normal(self: *@This(), z: @Vector(3, f32), e: f32) @Vector(3, f32) {
                 var min_dst: f32 = undefined;
-                var z1: @Vector(3, f32) = z + @Vector(3, f32){ e, 0, 0 };
-                var z2: @Vector(3, f32) = z - @Vector(3, f32){ e, 0, 0 };
-                var z3: @Vector(3, f32) = z + @Vector(3, f32){ 0, e, 0 };
-                var z4: @Vector(3, f32) = z - @Vector(3, f32){ 0, e, 0 };
-                var z5: @Vector(3, f32) = z + @Vector(3, f32){ 0, 0, e };
-                var z6: @Vector(3, f32) = z - @Vector(3, f32){ 0, 0, e };
+                var z1: @Vector(3, f32) = z + @Vector(3, f32){ e, 0.0, 0.0 };
+                var z2: @Vector(3, f32) = z - @Vector(3, f32){ e, 0.0, 0.0 };
+                var z3: @Vector(3, f32) = z + @Vector(3, f32){ 0.0, e, 0.0 };
+                var z4: @Vector(3, f32) = z - @Vector(3, f32){ 0.0, e, 0.0 };
+                var z5: @Vector(3, f32) = z + @Vector(3, f32){ 0.0, 0.0, e };
+                var z6: @Vector(3, f32) = z - @Vector(3, f32){ 0.0, 0.0, e };
                 var dx: f32 = self.DE(z1, &min_dst) - self.DE(z2, &min_dst);
                 var dy: f32 = self.DE(z3, &min_dst) - self.DE(z4, &min_dst);
                 var dz: f32 = self.DE(z5, &min_dst) - self.DE(z6, &min_dst);
@@ -368,8 +376,8 @@ pub const kernel = struct {
                 const specularExponent = self.params.specularExponent;
                 const eye = self.eye;
                 const objRotation = self.objRotation;
-                var diffuse: @Vector(3, f32) = .{ 0, 0, 0 };
-                var color: @Vector(3, f32) = .{ 0, 0, 0 };
+                var diffuse: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
+                var color: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
                 _ = color;
                 specular.* = 0.0;
                 var L: @Vector(3, f32) = normalize(@"V * M"(light, objRotation) - pt);
@@ -539,8 +547,8 @@ pub const kernel = struct {
                 };
                 self.objRotation = @"M * M"(@"M * M"(objRotationX, objRotationY), objRotationZ);
                 self.eye = (cameraPosition + cameraPositionFine);
-                if (@reduce(.And, self.eye == @Vector(3, f32){ 0, 0, 0 })) {
-                    self.eye = @Vector(3, f32){ 0, 0.0001, 0 };
+                if (@reduce(.And, self.eye == @Vector(3, f32){ 0.0, 0.0, 0.0 })) {
+                    self.eye = @Vector(3, f32){ 0.0, 0.0001, 0.0 };
                 }
                 self.eye = @"V * M"(self.eye, self.objRotation);
                 self.sampleStep = 1.0 / @as(f32, @floatFromInt(antialiasing));
@@ -555,7 +563,7 @@ pub const kernel = struct {
                 const sampleContribution = self.sampleContribution;
                 self.dst = @splat(0.0);
 
-                var color: @Vector(4, f32) = .{ 0, 0, 0, 0 };
+                var color: @Vector(4, f32) = .{ 0.0, 0.0, 0.0, 0.0 };
                 if (antialiasing > 1) {
                     {
                         var i: f32 = 0.0;
@@ -703,8 +711,10 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        const sum = @reduce(.Add, v * v);
-        return @sqrt(sum);
+        return switch (@typeInfo(@TypeOf(v))) {
+            .Vector => @sqrt(@reduce(.Add, v * v)),
+            else => @abs(v),
+        };
     }
 
     fn dot(v1: anytype, v2: anytype) f32 {

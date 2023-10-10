@@ -10,7 +10,7 @@ pub const kernel = struct {
     pub const parameters = .{
         .xAxisColor = .{
             .type = @Vector(3, f32),
-            .defaultValue = .{ 1, 0.3, 0.4 },
+            .defaultValue = .{ 1.0, 0.3, 0.4 },
         },
         .yAxisColor = .{
             .type = @Vector(3, f32),
@@ -18,18 +18,18 @@ pub const kernel = struct {
         },
         .zAxisColor = .{
             .type = @Vector(3, f32),
-            .defaultValue = .{ 0.1, 0.3, 1 },
+            .defaultValue = .{ 0.1, 0.3, 1.0 },
         },
         .center = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 800, 800 },
-            .defaultValue = .{ 300, 300 },
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 800.0, 800.0 },
+            .defaultValue = .{ 300.0, 300.0 },
         },
         .spin = .{
             .type = @Vector(3, f32),
-            .minValue = .{ -10, -10, -10 },
-            .maxValue = .{ 10, 10, 10 },
+            .minValue = .{ -10.0, -10.0, -10.0 },
+            .maxValue = .{ 10.0, 10.0, 10.0 },
             .defaultValue = .{ 0.1, 0.02, 0.3 },
         },
         .plunge = .{
@@ -142,7 +142,7 @@ pub const kernel = struct {
                 p = abs(p);
                 perp = abs(perp);
                 var t: @Vector(3, f32) = p / perp;
-                var co: @Vector(3, f32) = .{ 0, 0, 0 };
+                var co: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
                 var z: f32 = undefined;
                 if (t[0] >= 0.0) {
                     co = xAxisColor;

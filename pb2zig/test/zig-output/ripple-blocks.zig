@@ -10,9 +10,9 @@ pub const kernel = struct {
     pub const parameters = .{
         .amplitude = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 100, 100 },
-            .defaultValue = .{ 20, 20 },
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 100.0, 100.0 },
+            .defaultValue = .{ 20.0, 20.0 },
         },
         .wavelength = .{
             .type = @Vector(2, f32),

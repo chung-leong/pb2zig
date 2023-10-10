@@ -71,6 +71,12 @@ describe('Integration tests', function() {
       texture: 'telephone-cord.png'
     }, params);
   })
+  it('should correctly translate bilateral-blur.pbk', async function() {
+    this.timeout(60000);
+    const name = 'bilateral-blur';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
   it('should correctly translate blendmode-color.pbk', async function() {
     this.timeout(60000);
     const name = 'blendmode-color';
@@ -127,6 +133,15 @@ describe('Integration tests', function() {
     const name = 'cassini';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
+  })
+  it('should correctly translate channel-threshold.pbk', async function() {
+    this.timeout(60000);
+    const name = 'channel-threshold';
+    await translate(name);
+    const params = {
+      threshold0: [ 0, 0.7 ],
+    };
+    await apply(name, { source: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate checker-fill.pbk', async function() {
     this.timeout(60000);
@@ -235,6 +250,16 @@ describe('Integration tests', function() {
     };
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
+  it('should correctly translate crossfade.pbk', async function() {
+    this.timeout(60000);
+    const name = 'crossfade';
+    await translate(name);
+    const params = { intensity: 0.5 };
+    await apply(name, {
+      frontImage: 'malgorzata-socha.png',
+      backImage: 'malgorzata-socha2.png'
+    }, params);
+  })
   it('should correctly translate cross-stitch.pbk', async function() {
     this.timeout(60000);
     const name = 'cross-stitch';
@@ -276,6 +301,13 @@ describe('Integration tests', function() {
       imageHeight: 384,
       stretch: 1,
     }
+    await apply(name, { src: 'malgorzata-socha.png' }, params);
+  })
+  it('should correctly translate difference-key.pbk', async function() {
+    this.timeout(60000);
+    const name = 'difference-key';
+    await translate(name);
+    const params = { tolerance: 0.5 }
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate displace.pbk', async function() {
@@ -398,8 +430,15 @@ describe('Integration tests', function() {
     const name = 'fractal-explorer';
     await translate(name);
     const params = {
+      size: [ 400, 400 ],
     };
     await apply(name, {}, params);
+  })
+  it('should correctly translate fractal-explorer-orbit-traps.pbk', async function() {
+    this.timeout(60000);
+    const name = 'fractal-explorer-orbit-traps';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate frei-chen.pbk', async function() {
     this.timeout(60000);
@@ -490,13 +529,19 @@ describe('Integration tests', function() {
     this.timeout(60000);
     const name = 'mandelbulb-quick';
     await translate(name);
-    await apply(name, {});
+    const params = {
+      size: [ 400, 400 ],
+    };
+    await apply(name, {}, params);
   })
   it('should correctly translate mandelbulb.pbk', async function() {
     this.timeout(60000);
     const name = 'mandelbulb';
     await translate(name);
-    await apply(name, {});
+    const params = {
+      size: [ 400, 400 ],
+    };
+    await apply(name, {}, params);
   })
   it('should correctly translate mercator.pbk', async function() {
     this.timeout(60000);

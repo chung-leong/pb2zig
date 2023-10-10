@@ -168,8 +168,8 @@ pub const kernel = struct {
                 const sphereArray = self.sphereArray;
                 self.dst = @splat(0.0);
 
-                self.dst = @Vector(4, f32){ 0, 0, 0, 1.0 };
-                var origin: @Vector(3, f32) = .{ 0, 0, 0 };
+                self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 1.0 };
+                var origin: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
                 var dir: @Vector(3, f32) = .{
                     2.0 * self.outCoord()[0] / RENDER_WIDTH - 1.0,
                     -2.0 * self.outCoord()[1] / RENDER_HEIGHT + 1.0,
@@ -352,8 +352,10 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        const sum = @reduce(.Add, v * v);
-        return @sqrt(sum);
+        return switch (@typeInfo(@TypeOf(v))) {
+            .Vector => @sqrt(@reduce(.Add, v * v)),
+            else => @abs(v),
+        };
     }
 
     fn dot(v1: anytype, v2: anytype) f32 {

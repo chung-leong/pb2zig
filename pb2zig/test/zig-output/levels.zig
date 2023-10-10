@@ -10,27 +10,27 @@ pub const kernel = struct {
     pub const parameters = .{
         .red = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 1, 1 },
-            .defaultValue = .{ 0, 1 },
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 1.0 },
         },
         .green = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 1, 1 },
-            .defaultValue = .{ 0, 1 },
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 1.0 },
         },
         .blue = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 1, 1 },
-            .defaultValue = .{ 0, 1 },
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 1.0 },
         },
         .luminance = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 0, 0 },
-            .maxValue = .{ 1, 1 },
-            .defaultValue = .{ 0, 1 },
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0 },
+            .defaultValue = .{ 0.0, 1.0 },
         },
     };
     pub const inputImages = .{

@@ -10,7 +10,7 @@ pub const kernel = struct {
     pub const parameters = .{
         .a = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -10, -10 },
+            .minValue = .{ -10.0, -10.0 },
             .maxValue = .{ 10.0, 10.0 },
             .defaultValue = .{ 1.0, 0.62 },
         },
@@ -18,11 +18,11 @@ pub const kernel = struct {
             .type = @Vector(2, f32),
             .minValue = .{ -500.0, -500.0 },
             .maxValue = .{ 500.0, 500.0 },
-            .defaultValue = .{ -86, 22 },
+            .defaultValue = .{ -86.0, 22.0 },
         },
         .c = .{
             .type = @Vector(2, f32),
-            .minValue = .{ -1, -1 },
+            .minValue = .{ -1.0, -1.0 },
             .maxValue = .{ 1.0, 1.0 },
             .defaultValue = .{ -0.02, -0.02 },
         },
@@ -30,19 +30,19 @@ pub const kernel = struct {
             .type = @Vector(2, f32),
             .minValue = .{ -100.0, -100.0 },
             .maxValue = .{ 100.0, 100.0 },
-            .defaultValue = .{ -2, 10.0 },
+            .defaultValue = .{ -2.0, 10.0 },
         },
         .size = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 1, 1 },
+            .minValue = .{ 1.0, 1.0 },
             .maxValue = .{ 1000.0, 1000.0 },
-            .defaultValue = .{ 368, 285 },
+            .defaultValue = .{ 368.0, 285.0 },
         },
         .center = .{
             .type = @Vector(2, f32),
-            .minValue = .{ 1, 1 },
+            .minValue = .{ 1.0, 1.0 },
             .maxValue = .{ 1000.0, 1000.0 },
-            .defaultValue = .{ 168, 185 },
+            .defaultValue = .{ 168.0, 185.0 },
         },
     };
     pub const inputImages = .{
