@@ -1,5 +1,5 @@
-export async function getKernel(workerNum = 0) {
-  return startJob(workerNum, 'getKernel');
+export async function getKernelInfo(workerNum = 0) {
+  return startJob(workerNum, 'getKernelInfo');
 }
 
 export async function createImageData(width, height, source = {}, params = {}, workerNum = 0) {

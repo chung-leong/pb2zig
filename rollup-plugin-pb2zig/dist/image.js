@@ -61,10 +61,59 @@ export function createPartialImageData(width, height, start, count, source = {},
 
 export function getKernelInfo() {
   const info = {};
-  for (const [ name, object ] of Object.entries(kernel)) {
-    info[name] = object.valueOf();
-  }
-  return info;
+  function extract(object) {
+    let f;
+    if (object[Symbol.iterator]) {
+      if ('string' in object) {
+        return object.string;
+      } else {
+        const array = [];
+        for (const element of object) {
+          array.push(extract(element));
+        }
+        return array;
+      }
+    } else if (object && typeof(object) === 'object') {
+      const result = {};
+      for (const [ name, child ] of Object.entries(object)) {
+        const childResult = extract(child);
+        if (childResult !== undefined) {
+          result[name] = childResult;
+        }
+      }
+      return result;
+    } else if (typeof(object) === 'function') {
+      const types = {
+        'bool': 'bool',
+        '@Vector(2, bool)': 'bool2',
+        '@Vector(3, bool)': 'bool3',
+        '@Vector(4, bool)': 'bool4',
+
+        'i32': 'int',
+        '@Vector(2, i32)': 'int2',
+        '@Vector(3, i32)': 'int3',
+        '@Vector(4, i32)': 'int4',
+
+        'f32': 'float',
+        '@Vector(2, f32)': 'float2',
+        '@Vector(3, f32)': 'float3',
+        '@Vector(4, f32)': 'float4',
+
+        '[2]@Vector(2, f32)': 'float2x2',
+        '[3]@Vector(3, f32)': 'float3x3',
+        '[4]@Vector(4, f32)': 'float4x4',
+      };
+      const type = types[object.name];
+      if (type) {
+        return type;
+      } else {
+        return extract({ ...object });
+      }
+    } else {
+      return object;
+    }
+  };
+  return extract(kernel);
 }
 
 export { __init };

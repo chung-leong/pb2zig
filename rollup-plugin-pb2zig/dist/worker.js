@@ -9,11 +9,13 @@ onmessage = (evt) => {
 
 async function runFunction(name, args) {
   switch (name) {
-    case 'getKernel':
-      const kernel = await getKernel(...args);
+    case 'getKernelInfo':
+      const kernel = getKernelInfo(...args);
       return [ kernel ];
     case 'createPartialImageData':
-      const output = await createPartialImageData(...args);
+    // await needed here since we're not using top-level await
+    // and Zigar functions can return promises initially
+    const output = await createPartialImageData(...args);
       const transfer = [];
       if ('data' in output && 'width' in output && 'height' in output) {
         transfer.push(output.data.buffer);
