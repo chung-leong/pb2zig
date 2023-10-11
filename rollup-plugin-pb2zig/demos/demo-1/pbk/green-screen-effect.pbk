@@ -1,0 +1,82 @@
+<languageVersion : 1.0;>
+kernel GreenScreenEffect
+<   
+    namespace : "GreenScreenEffect";
+    vendor : "Lee Felarca";
+    version : 1;
+    description : "A green screen / chroma key-like effect";
+>
+{
+    input image4 liveVideo;
+    input image4 baseImage;
+    output pixel4 dst;
+
+	parameter float curveX 
+    < 
+        minValue:0.0;
+        maxValue:1.0;
+        defaultValue:0.5;
+    >;
+
+	parameter float curveY
+    < 
+        minValue:0.0;
+        maxValue:1.0;
+        defaultValue:0.5;
+    >;
+    
+    parameter int useCurve
+    < 
+        minValue:0; // flat
+        maxValue:1; // curved
+        defaultValue:1;
+    >;
+    
+    parameter int useSolidColor
+    < 
+        minValue:0;
+        maxValue:1;
+        defaultValue:0;
+    >;
+    parameter pixel3 solidColor
+    < 
+        minValue:pixel3(0,0,0);
+        maxValue:pixel3(1,1,1);
+        defaultValue:pixel3(1,0,0);
+    >;
+    
+    void evaluatePixel()
+    {
+        pixel4 b = sample(baseImage, outCoord());
+        pixel4 s = sample(liveVideo, outCoord());
+
+        // val possible range: 0 to 3 (higher end is unlikely)
+        float val = abs(s.r - b.r) + abs(s.g - b.g) + abs(s.b - b.b);
+        // .. below, we're discounting everything from 1-3
+
+        if (val < curveX)
+        {
+            // lerp to [0-1]
+            val /= curveX;
+
+            // convert linear to exponential (val^3)
+            if (useCurve == 1) val *= val * val;
+
+            // lerp to [0-curveY]
+            val *= curveY;            
+        }
+        else
+        {
+            val = 1.0;
+        }
+
+        dst.a = val;
+        
+        if (useSolidColor==0) {
+            dst.rgb =  s.rgb;
+        }
+        else {
+            dst.rgb = solidColor.rgb;
+        }
+    }
+}

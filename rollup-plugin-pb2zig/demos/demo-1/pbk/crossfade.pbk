@@ -1,0 +1,43 @@
+/*****************************************************************************
+ *
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright (C) 2010 Adobe Systems Incorporated
+ * All Rights Reserved.
+ *
+ * NOTICE:  Adobe permits you to use, modify, and distribute this file in 
+ * accordance with the terms of the Adobe license agreement accompanying it.  
+ * If you have received this file from a source other than Adobe, then your 
+ * use, modification, or distribution of it requires the prior written 
+ * permission of Adobe.
+ *
+ *****************************************************************************/
+<languageVersion : 1.0;>
+
+kernel Crossfade
+<   namespace : "AIF";
+    vendor : "Adobe Systems";
+    version : 2;
+    description : "Crossfade between two images"; >
+{
+   parameter float intensity
+   < minValue: 0.0;
+     maxValue: 1.0;
+     defaultValue: 0.0;
+   >;
+
+   input image4 frontImage;
+   input image4 backImage;
+   output pixel4 dst;
+   
+   void evaluatePixel()
+   {
+        // Acquire the pixel values from both images at the current location
+        float4 frontPixel = sampleNearest(frontImage, outCoord());
+        float4 backPixel = sampleNearest(backImage, outCoord());
+        
+        // We set the output to the mix of the two pixels.  The mix function
+        // applies the following equation to the pixel values:
+        //    (1.0 - intensity) * frontPixel + intensity * backPixel
+        dst = mix(frontPixel, backPixel, intensity);
+   }
+}

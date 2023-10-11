@@ -1,0 +1,146 @@
+<languageVersion : 1.0;>
+
+kernel Scroll
+<   namespace : "www.tbyrne.org";
+    vendor : "Tom Byrne";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    parameter float topRollRadius
+    <
+        displayName: "Top Roll Radius";
+        minValue: 0.0;
+        maxValue: 1000.0;
+        defaultValue: 100.0;
+        
+    >;
+    parameter float bottomRollRadius
+    <
+        displayName: "Bottom Roll Radius";
+        minValue: 0.0;
+        maxValue: 1000.0;
+        defaultValue: 100.0;
+        
+    >;
+    parameter float rollHeight
+    <
+        displayName: "Roll Height";
+        minValue: 0.0;
+        maxValue: 1000.0;
+        defaultValue: 500.0;
+        
+    >;
+    parameter float rollOffsetY
+    <
+        displayName: "Roll Offset Y";
+        minValue: 0.0;
+        maxValue: 1000.0;
+        defaultValue: 0.0;
+        
+    >;
+    parameter float rollWidth
+    <
+        displayName: "Roll Width";
+        minValue: 0.0;
+        maxValue: 1000.0;
+        defaultValue: 500.0;
+        
+    >;
+    parameter float rollOffsetX
+    <
+        displayName: "Roll Offset X";
+        minValue: 0.0;
+        maxValue: 1000.0;
+        defaultValue: 0.0;
+        
+    >;
+    parameter float3 fogColour
+    <
+        displayName: "Fog Colour";
+        minValue: float3(0,0,0);
+        maxValue: float3(0,0,0);
+        defaultValue: float3(0,0,0);
+        parameterType: "colorRGB";
+        
+    >;
+    parameter float fogInfluence
+    <
+        displayName: "Fog Influence";
+        minValue: 0.0;
+        maxValue: 10.0;
+        defaultValue: 1.0;
+        
+    >;
+    parameter float fade
+    <
+        displayName: "Fade";
+        minValue: 0.0;
+        maxValue: 10.0;
+        defaultValue: 1.0;
+        
+    >;
+    void
+    evaluatePixel()
+    {
+        float pi = 3.14159265358979;
+        
+        float2 pos = outCoord();
+        float yFract;
+        float xFract;
+        float yDir;
+        float rollRadius;
+        bool doRoll;
+        if(pos.y<rollOffsetY || pos.y>rollOffsetY+rollHeight || pos.x<rollOffsetX || pos.x>rollOffsetX+rollWidth){
+            // outside of rolls
+            dst = float4(0.0,0.0,0.0,0.0);
+            doRoll = false;
+        }else if(pos.y<rollOffsetY+topRollRadius){
+            // top roll
+            doRoll = true;
+            yFract = 1.0-((pos.y-rollOffsetY)/topRollRadius);
+            xFract = (pos.x-rollOffsetX-rollWidth/2.0)/(rollWidth/2.0);
+            yDir = -1.0;
+            rollRadius = topRollRadius;
+        }else if(pos.y>rollOffsetY+rollHeight-bottomRollRadius){
+            // bottom roll
+            doRoll = true;
+            yFract = ((pos.y-(rollOffsetY+rollHeight-bottomRollRadius))/bottomRollRadius);
+            xFract = (pos.x-rollOffsetX-rollWidth/2.0)/(rollWidth/2.0);
+            yDir = 1.0;
+            rollRadius = bottomRollRadius;
+        }else{
+            // between rolls
+            doRoll = false;
+            dst = sampleNearest( src, pos );
+        }
+        if(doRoll){
+            float ySin = 1.0-sqrt(1.0-(yFract*yFract));
+            
+            float rollVisible = rollRadius*pi/2.0;
+            
+            float posX = pos.x+(xFract*ySin*rollRadius);
+            
+            if(posX>rollOffsetX && posX<rollOffsetX+rollWidth){
+                float4 colour = sampleNearest( src, float2(posX,pos.y+ySin*rollVisible*yDir) );
+                
+                if(fogInfluence>0.0){
+                    float inf = fogInfluence*ySin;
+                    float invInf = 1.0-inf;
+                    colour[0] = colour[0]*invInf+fogColour[0]*inf;
+                    colour[1] = colour[1]*invInf+fogColour[1]*inf;
+                    colour[2] = colour[2]*invInf+fogColour[2]*inf;
+                }
+                if(fade>0.0){
+                    colour[3] *= (1.0-fade*ySin);
+                }
+            
+                dst = colour;
+            }else{
+                dst = float4(0.0,0.0,0.0,0.0);
+            }
+        }
+    }
+}

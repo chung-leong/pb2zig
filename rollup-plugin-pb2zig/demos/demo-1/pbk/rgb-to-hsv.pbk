@@ -1,0 +1,57 @@
+<languageVersion: 1.0;>
+kernel rgbToHSV
+<
+	namespace: "net.onthewings.filters";
+	vendor: "Andy Li";
+	version: 1;
+	description: "Convert RGB input to HSV.";
+>
+{
+	input image4 src;
+	output pixel4 target;
+
+	void evaluatePixel()
+	{
+		pixel4 ori = sampleNearest(src,outCoord());
+        
+        
+        //Modified from wikipedia http://en.wikipedia.org/wiki/HSL_and_HSV and mojocolor http://code.google.com/p/mojocolors/
+        float min;
+        float max;
+        float delta;
+
+        min = min(min(ori.r,ori.g),ori.b);
+        max = max(max(ori.r,ori.g),ori.b);
+        
+        float h;
+        float s;
+        float v = max;
+        delta = max - min;
+        
+        if( max != 0.0 ) {
+            s = delta / max;		// s
+            
+            if( ori.r == max ) {
+                h = ( ori.g - ori.b ) / delta;		// between yellow & magenta
+            } else if ( ori.g == max ) {
+                h = 2.0 + ( ori.b - ori.r ) / delta;	// between cyan & yellow
+            } else {
+                h = 4.0 + ( ori.r - ori.g ) / delta;	// between magenta & cyan
+            }
+            h *= 60.0;				
+            // degrees
+            if( h < 0.0 ) {
+                h += 360.0;
+            }
+        } else {
+            s = 0.0;
+            h = -1.0;
+        }
+        //hsv is calculated at this point
+        //h: 0 - 360
+        //s: 0 - 1
+        //v: 0 - 1
+        
+        target = float4(h/360.0,s,v,ori.a);
+	}
+}

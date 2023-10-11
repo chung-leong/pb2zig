@@ -1,0 +1,88 @@
+<languageVersion : 1.0;>
+
+kernel FreiChen
+<   namespace : "com.quasimondo";
+    vendor : "Mario Klingemann";
+    version : 1;
+>
+{
+
+    /* 
+    Implementation of Frei-Chen Edge Detection as found on
+    http://rastergrid.com/blog/2011/01/frei-chen-edge-detector/
+    */
+    
+    input image4 src;
+    output pixel4 dst;
+    
+    parameter float threshold
+    <
+        minValue: 0.0;
+        maxValue: 1.0;
+        defaultValue: 0.0;
+    >;
+    
+    parameter float factor
+    <
+        minValue: 0.0;
+        maxValue: 10.0;
+        defaultValue: 1.0;
+    >;
+    
+    parameter float gamma
+    <
+        minValue: 0.0;
+        maxValue: 20.0;
+        defaultValue: 1.0;
+    >;
+    
+    parameter float invert
+    <
+        minValue: 0.0;
+        maxValue: 1.0;
+        defaultValue: 0.0;
+    >;
+    
+    const float sqrt2 = 1.41421356;
+    void
+    evaluatePixel()
+    {
+        float2 c = outCoord();
+        float p11 = length( sampleNearest(src,c).rgb );
+        c.x -= 1.0;
+        float p01 = length( sampleNearest(src,c).rgb );
+        c.y -= 1.0;
+        float p00 = length( sampleNearest(src,c).rgb );
+        c.x += 1.0;
+        float p10 = length( sampleNearest(src,c).rgb );
+        c.x += 1.0;
+        float p20 = length( sampleNearest(src,c).rgb );
+        c.y += 1.0;
+        float p21 = length( sampleNearest(src,c).rgb );
+        c.y += 1.0;
+        float p22 = length( sampleNearest(src,c).rgb );
+        c.x -= 1.0;
+        float p12 = length( sampleNearest(src,c).rgb );
+        c.x -= 1.0;
+        float p02 = length( sampleNearest(src,c).rgb );
+        
+        float f1 = 1.0 / ( 2.0 * 1.41421356 );
+        
+        float g1 = f1  * ( p00 + sqrt2 * p10 + p20 - p02 - sqrt2 * p12 - p22 );
+        float g2 = f1  * ( p00 + sqrt2 * p01 + p02 - p20 - sqrt2 * p21 - p22 );
+        float g3 = f1  * ( p01 + sqrt2 * p20 + p12 - p10 - sqrt2 * p02 - p21 );
+        float g4 = f1  * ( p11 + sqrt2 * p00 + p12 - p10 - sqrt2 * p22 - p01 );
+        float g5 = 0.5 * ( p10 + p12 - p01 - p21 );
+        float g6 = 0.5 * ( p20 + p02 - p00 - p22 );
+        float g7 = 0.166666667 * ( p00 + p20 + 4.0 * p11 + p02 + p22 - 2.0 * p10 - 2.0 * p12 - 2.0 * p01 - 2.0 * p21 );
+        float g8 = 0.166666667 * ( p10 + p12 + 4.0 * p11 + p01 + p21 - 2.0 * p00 - 2.0 * p20 - 2.0 * p02 - 2.0 * p22 );
+        float g9 = 0.333333333 * ( p00 + p10 + p20 + p01 + p11 + p21 + p02 + p12 + p22 );
+        
+        float M = g1 * g1 + g2 * g2 + g3 * g3 + g4 * g4;
+        float S = g5 * g5 + g6 * g6 + g7 * g7 + g8 * g8 + g9 * g9 + M; 
+        float v = pow( sqrt( M / S ), gamma );
+        v *= (step( v, threshold ) - threshold) * factor;
+        v = mix( v, 1.0 - v, invert );
+        dst = float4( v, v, v, 1.0 );
+    }
+}

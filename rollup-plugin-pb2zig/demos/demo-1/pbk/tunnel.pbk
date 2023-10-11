@@ -1,0 +1,59 @@
+<languageVersion : 1.0;>
+
+kernel NewFilter
+<   namespace : "Tunnel";
+    vendor : "Mr.doob";
+    version : 1;
+    description : "Tunnel effect";
+>
+{
+    input image4 src;
+    output pixel4 dst;
+    
+    parameter float2 imgSize
+    <
+        defaultValue : float2(512.0, 512.0);
+        minValue : float2(0.0,0.0);
+        maxValue : float2(512.0,512.0);
+    >;
+    
+    parameter float2 center
+    <
+        defaultValue : float2(256.0, 256.0);
+        minValue : float2(0.0,0.0);
+        maxValue : float2(512.0,512.0);        
+    >;
+    
+    parameter float2 offset;
+
+    void evaluatePixel()
+    {        
+        float2 pos = (outCoord() - center) / imgSize;
+
+        float pi = 3.141592653589793;
+        float a = atan(pos.y,pos.x);
+        float r = sqrt(pow(pos.x,2.0)+pow(pos.y,2.0));
+        
+        float u = 0.0;
+        float v = 0.0;
+        float w = 0.0;
+        
+        u += offset.x;
+        v += offset.y;
+        
+        u += 1.0/r;
+        v += 3.0*a/pi;
+        w += r*2.0;
+
+        u *= imgSize.x;
+        v *= imgSize.y;
+        
+        if (u < 0.0) u += imgSize.x * ceil(-u / imgSize.x);
+        if (v < 0.0) v += imgSize.y * ceil(-v / imgSize.y);
+        if (u > imgSize.x) u -= imgSize.x * floor(u / imgSize.x);
+        if (v > imgSize.y) v -= imgSize.y * floor(v / imgSize.y);
+        
+        dst = sampleNearest(src,float2(u, v));
+        dst.rgb *= w;
+    }
+}

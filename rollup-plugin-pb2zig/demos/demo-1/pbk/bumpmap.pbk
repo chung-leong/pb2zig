@@ -1,0 +1,255 @@
+/**
+ * Bumpmap.pbk
+ * Last update: 27 August 2011
+ *
+ * Changelog:
+ *		1.0		- Initial release
+ *		1.0.1	- Added new parameter: refl_tolerance
+ *		    	- Provided easier platform (Flashplayer/Photoshop) targeting, by just manipulating a comment (see: [#1])
+ *
+ * 
+ * Copyright (c) 2011 Elias Stehle
+ * Twitter: @ejbs
+ * E-Mail: elias.stehle@gmail.com
+ * 
+ * Licensed under the CC BY-NC-SA license:
+ * http://creativecommons.org/licenses/by-nc-sa/3.0/legalcode
+ */
+
+<languageVersion : 1.0;>
+
+kernel Bumpmap
+<   namespace : "com.shader";
+    vendor : "Elias Stehle";
+    version : 1;
+    description : "Bumpmap Shader - Stunning effects on texture-like inputs";
+>
+{
+    //[#1] TO USE WITH PHOTOSHOP: Replace the '/*' in the next line by '//*'
+    /*
+        #define heightmap_src img
+        
+        parameter int chann 
+        <
+         minValue: 0;
+         maxValue: 3;
+         defaultValue: 0;
+         description: "The color channel to use for the heightmap input (0:red, 1:green, 2:blue, 3:alpha)";
+        >;
+    
+        //Constant is only used within the code, to determine whether to use a seperate(use_ps=0) input img, or not (use_ps=1) 
+        const int use_ps = 0;
+    
+    /*/
+    //DECLARATIONS FOR THE FLASHPLAYER (see [#1])
+        #define heightmap_src src
+        
+        //src: heightmap [Source channel can be defined by the 'chann' constant in flash respectively parameter in Photoshop]
+        input image4 src;
+        
+        //The color channel to use for the heightmap input (0:red, 1:green, 2:blue, 3:alpha)
+        const int chann = 0;
+        
+        //Constant is only used within the code, to determine whether to use a seperate(use_ps=0) input img, or not (use_ps=1) 
+        const int use_ps = 0;
+    //*/
+    
+    //DECLARATIONS FOR FLASHPLAYER, AS WELL AS FOR PHOTOSHOP
+    //img: image to apply the shader to
+    input image4 img;
+    
+    //dst: output 
+    output pixel4 dst;
+    
+    //on: Only while on is 1, the shader will be applied to the input image
+    parameter int on
+    <
+        minValue: 0;
+        maxValue: 1;
+        defaultValue: 1;
+        description: "Only while on is 1, the shader will be applied to the input image";
+    >;
+    
+    //light: The light coordinates (x,y,z). The z-coordinate always needs to be positive to be in front of the image
+    parameter float3 light
+    <
+     minValue: -float3(2560.0, 2560.0, 10000.0);
+     maxValue: float3(2560.0, 2560.0, 10000.0);
+     defaultValue: float3(250.0, 250.0, 800.0);
+     description: "The light coordinates (x,y,z). The z-coordinate always needs to be positive to be in front of the image";
+    >;
+    
+    //lightcolor: Color of the light source [R,G,B]
+    parameter float3 lightcolor
+    <
+     minValue: float3(0.0, 0.0, 0.0);
+     maxValue: float3(1.0, 1.0, 1.0);
+     defaultValue: float3(1.0, 1.0, 1.0);
+     description: "Color of the light source [R,G,B]";
+    >;
+    
+    //heightmap_multi: A factor by which the heightmap differences will be multiplied
+    parameter float heightmap_multi
+    <
+     minValue: 1.0;
+     maxValue: 10.0;
+     defaultValue: 1.0;
+     description: "A factor by which the heightmap differences will be multiplied";
+    >;
+    
+    //invert: Invert heightmap
+    parameter int invert 
+    <
+     minValue: 0;
+     maxValue: 1;
+     defaultValue: 1;
+     description: "Invert heightmap";
+    >;
+    
+    //lightwidth: The maximum reach/length of a light ray
+    parameter float lightwidth 
+    <
+     minValue: 0.0;
+     maxValue: 10000.0;
+     defaultValue: 1300.0;
+     description: "The maximum reach/length of a light ray";
+    >;
+    
+    //reflection: The strength of the surface reflection
+    parameter float reflection 
+    <
+     minValue: 0.0;
+     maxValue: 2.0;
+     defaultValue: 0.6;
+     description: "The strength of the surface reflection";
+    >;
+    
+    //refl_tolerance: The lower the value, the more exactly the reflection ray needs to reflected streight back towards the light source
+    parameter float refl_tolerance 
+    <
+     minValue: 0.0;
+     maxValue: 1000.0;
+     defaultValue: 9.0;
+     description: "The lower the value, the more exactly the reflection ray needs to reflected streight back towards the light source";
+    >;
+    
+     
+    
+    void
+    evaluatePixel()
+    {
+        //Do not apply shader if on==0
+        if(!bool(on)){
+            dst = sampleNearest(img, outCoord());
+        }
+        
+        //Shader is only applied while (on==1)
+        else{
+            //height: The interpreted height at the current pixel
+            float height;
+            //hvec: Horizontal vector of the plane to generate the normal vector
+            float3 hvec;
+            //yvec: Vertical vector of the plane to generate the normal vector
+            float3 yvec;
+            //fac: Representing the ray reflection at current pixel (1:reflection ray goes streight back, 0: reflection ray is orthogonal to the light ray)
+            float fac;
+            
+            //Height at pixel coordinate
+            height = sampleNearest(heightmap_src,outCoord())[chann];
+            
+            
+            if(invert==0)
+                height = 1.0-height;
+            
+            //ray: Light-Ray Vector (pxl_coordinate-light_coordinate)
+            float3 ray        = float3(outCoord().x, outCoord().y, height) - light;
+           
+            //tmp_ray_len: Length of the light ray
+            float tmp_ray_len = length(ray);
+            
+            //Lightray doesn't reach surface -> BLACK (with old alpha)
+            if(tmp_ray_len>lightwidth){
+                dst = float4(0.0, 0.0, 0.0, sampleNearest(img,outCoord()).a);
+            }
+            
+            //Lightray reaches the surface
+            else{
+                hvec.z        = sampleNearest(heightmap_src,outCoord() - float2(2.0,0.0))[chann];
+                hvec.z       += sampleNearest(heightmap_src,outCoord() - float2(1.0,0.0))[chann];
+                hvec.z       -= sampleNearest(heightmap_src,outCoord() + float2(1.0,0.0))[chann];
+                hvec.z       -= sampleNearest(heightmap_src,outCoord() + float2(2.0,0.0))[chann];
+                hvec.x        = 4.0;
+                hvec.y        = 0.0;
+                hvec.z       *= heightmap_multi;
+                
+                yvec.z        = sampleNearest(heightmap_src,outCoord() - float2(0.0, 2.0))[chann];
+                yvec.z       += sampleNearest(heightmap_src,outCoord() - float2(0.0, 1.0))[chann];
+                yvec.z       -= sampleNearest(heightmap_src,outCoord() + float2(0.0, 1.0))[chann];
+                yvec.z       -= sampleNearest(heightmap_src,outCoord() + float2(0.0, 2.0))[chann];
+                yvec.x        = 0.0;
+                yvec.y        = 4.0;
+                yvec.z       *= heightmap_multi;
+                
+                /*
+                hvec.z       = sampleNearest(heightmap_src,outCoord() - float2(1.0,0.0))[chann];
+                hvec.z       -= sampleNearest(heightmap_src,outCoord() + float2(1.0,0.0))[chann];
+                hvec.x        = 3.0;
+                hvec.y        = 0.0;
+                hvec.z       *= heightmap_multi;
+                
+                float3 yvec;
+                yvec.z        = sampleNearest(heightmap_src,outCoord() - float2(0.0, 1.0))[chann];
+                yvec.z       -= sampleNearest(heightmap_src,outCoord() + float2(0.0, 1.0))[chann];
+                yvec.x        = 0.0;
+                yvec.y        = 3.0;
+                yvec.z       *= heightmap_multi;
+                */
+                
+                if(invert==1){
+                    yvec.z = -yvec.z;
+                    hvec.z = -hvec.z;
+                }
+                
+                //Calculate the normal vector (This is orthogonal to the 'surface' and is directed towards the light origin)
+                float3 norm         = cross(hvec, yvec);
+                
+                //Calculate the intersection angle of norm (normal vector) and ray (light ray)      
+                float tmp_dot=dot(ray, norm);
+                
+                //Min. value when the reflection will be applied refl_low->1 means, the lightray needs to be reflected directly back
+                float refl_low = 0.99-refl_tolerance/10000.0;
+                
+                //The specular part of reflection (will be updated for reflections)
+                float3 clightrefl = float3(0.0,0.0,0.0);
+                
+                if(tmp_dot < 0.0){
+                    //The reflection angle
+                    fac      = 1.0 - fract(tmp_dot / (tmp_ray_len * length(norm)));
+                    
+                    //Lightreflection
+                    if(fac > refl_low){
+                        if(fac > 1.0)
+                            fac = 1.0;
+                        //Cubic reflection increase beginning from cos(angle)>refl_low, with f(refl_low)=0, f(1)=1;
+                        clightrefl = -1.0/(refl_low*refl_low*refl_low-3.0*refl_low*refl_low+3.0*refl_low-1.0)*(fac-refl_low)*(fac-refl_low)*(fac-refl_low)*reflection*lightcolor;
+                    }
+                    
+                    fac      = fac*fac*fac*1.1;         
+                    fac      = fac*fac*fac*fac;
+                    if(fac>0.0){
+                        hvec = clightrefl+(lightwidth-tmp_ray_len)/lightwidth*fac*sampleNearest(img,outCoord()).rgb;                    
+                        
+                        dst = float4(hvec.r, hvec.g, hvec.b, sampleNearest(img,outCoord()).a);
+                    }else{
+                        dst = float4(0.0, 0.0, 0.0, sampleNearest(img,outCoord()).a);
+                    }
+                }
+                //Lightray, and reflection arrays are contrary -> Black
+                else{
+                    dst = float4(0.0, 0.0, 0.0, sampleNearest(img,outCoord()).a);
+                }
+            }
+        }
+        
+    }
+}

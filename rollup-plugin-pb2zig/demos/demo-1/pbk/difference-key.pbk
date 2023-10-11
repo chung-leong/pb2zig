@@ -1,0 +1,50 @@
+<languageVersion : 1.0;>
+
+kernel DifferenceKey
+<   namespace : "com.quasimondo";
+    vendor : "Quasimondo";
+    version : 1;
+    description : "A simple difference key for chroma keying";
+>
+{
+    input image4 src;
+    output pixel4 dst;
+    
+    parameter float3 keyColor;
+    
+    parameter float tolerance
+    <
+        minValue: 0.0;
+        maxValue: 3.0;
+        defaultValue: 0.02;
+    >;
+    
+    parameter float ramp
+    <
+        minValue: 0.0;
+        maxValue: 1.0;
+        defaultValue: 0.005;
+    >;
+    
+     parameter float gamma
+    <
+        minValue: 0.0;
+        maxValue: 10.0;
+        defaultValue: 1.00;
+    >;
+
+    void
+    evaluatePixel()
+    {
+        dst = sampleNearest(src,outCoord());
+        float diff = length( dst.rgb - keyColor );
+        if ( diff < tolerance )
+        {
+            dst.a = 0.0;
+        } else if ( diff < tolerance + ramp )
+        {
+            dst.a = pow( (diff - tolerance) / ramp, gamma );
+        }
+        
+    }
+}

@@ -1,0 +1,30 @@
+<languageVersion : 1.0;>
+kernel DynamicColorPalette
+< namespace : "thelab.org";
+vendor : "Eduardo.Costa";
+version : 1;
+description : "Manipulates the Color Palette of the bitmap";
+>
+{
+input image4 src1;
+
+output pixel4 dst;
+
+parameter int palette
+<
+minValue:int(1);
+maxValue:int(128);
+defaultValue:int(64);
+>;
+
+
+void
+evaluatePixel()
+{
+float2 uv = outCoord();
+dst = sampleLinear(src1, uv);
+
+dst = floor(dst*floor(float(palette)))/floor(float(palette));
+
+}
+}

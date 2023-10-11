@@ -1,0 +1,59 @@
+<languageVersion : 1.0;>
+
+kernel simple
+<   namespace : "pb2zig";
+    vendor : "Chung Leong";
+    version : 1;
+    description : "";
+>
+{
+   parameter float strength
+    <
+        minValue: 0.0;
+        maxValue: 100.0;
+        defaultValue: 4.0;
+    >;
+
+    input image4 src;
+    output pixel4 dst;
+    const float4x4 YIQMatrix = float4x4(
+        0.299,  0.596,  0.212, 0.000,
+        0.587, -0.275, -0.523, 0.000,
+        0.114, -0.321,  0.311, 0.000,
+        0.000,  0.000,  0.000, 1.000
+    );
+    const float4x4 inverseYIQ = float4x4(
+        1.0,    1.0,    1.0,    0.0,
+        0.956, -0.272, -1.10,  0.0,
+        0.621, -0.647,  1.70,   0.0,
+        0.0,    0.0,    0.0,    1.0
+    );
+
+    float hypot(float a, float b) {
+        return sqrt(a * a + b * b);
+    }
+
+    void
+    evaluatePixel()
+    {
+        float4 pRGBA = sampleNearest(src, outCoord());
+        // convert to YIQA color space
+        float4 pYIQA = YIQMatrix * pRGBA;
+
+
+        // the south-west quadrance is greenish
+        // see https://en.wikipedia.org/wiki/YIQ
+		if(pYIQA[1] < 0.0 && pYIQA[2] < 0.0 && pYIQA[0] > 0.01) {
+            // reduces alpha based on how green and bright it is
+ 			float alpha = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
+            // discard chroma component
+			pYIQA[1] = 0.0;
+            pYIQA[2] = 0.0;
+
+            // convert back from YIQA and apply alpha
+            dst = inverseYIQ * pYIQA * alpha;
+    	} else {
+            dst = pRGBA;
+        }
+    }
+}

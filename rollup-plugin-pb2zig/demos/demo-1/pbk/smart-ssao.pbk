@@ -1,0 +1,126 @@
+<languageVersion: 1.0;>
+ 
+kernel SmartSSAO
+<   namespace : "com.smart-page-net.shaders";
+    vendor : "smart-page.net - Jan Frischmuth";
+    version : 2;
+    description : "Computes screen space ambien occlusion from a depth buffer"; >
+{
+    parameter float A_bias
+    <
+        minValue:       float(0.0);
+        maxValue:       float(100);
+        defaultValue:   float(10);
+    >;
+    
+    parameter float B_radius
+    <
+        minValue:       float(0.0);
+        maxValue:       float(10.0);
+        defaultValue:   float(1.0);
+    >;
+    
+    parameter float C_bleed
+    <
+        minValue:       float(0.01);
+        maxValue:       float(3.0);
+        defaultValue:   float(2.0);
+    >;
+    
+    parameter float2 D_lightxy
+    <
+        minValue:       float2(-1.0,-1.0);
+        maxValue:       float2(1.0,1.0);
+        defaultValue:   float2(0.0,0.0);
+    >;
+    
+    parameter float E_noise
+    <
+        minValue:       float(-0.1);
+        maxValue:       float(0.1);
+        defaultValue:   float(0.02);
+    >;
+    
+    parameter float F_brightness
+    <
+        minValue:       float(0.0);
+        maxValue:       float(2.0);
+        defaultValue:   float(1.0);
+    >;
+
+    parameter float G_contrast
+    <
+        minValue:       float(0.0);
+        maxValue:       float(5.0);
+        defaultValue:   float(1.0);
+    >;
+
+    input image4 depthmap;
+    output float4 dst;
+
+    const float3 unpack = float3( 255.0/256.0, 255.0/(256.0*256.0), 255.0/(256.0*256.0*256.0) );
+       
+    dependent float sphere_x[12];
+    dependent float sphere_y[12];
+    
+    void evaluateDependents(){   
+           
+        sphere_x[0] =  -0.326212;
+        sphere_y[0] = -0.405805;        
+        sphere_x[1] =  -0.840144;
+        sphere_y[1] = -0.073580;        
+        sphere_x[2] = -0.695914;
+        sphere_y[2] = 0.457137;        
+        sphere_x[3] = -0.203345;
+        sphere_y[3] = 0.620716;        
+        sphere_x[4] = 0.962340;
+        sphere_y[4] = -0.194983;        
+        sphere_x[5] = 0.473434;
+        sphere_y[5] = -0.480026;        
+        sphere_x[6] = 0.519456;
+        sphere_y[6] = 0.767022;        
+        sphere_x[7] = 0.185461;
+        sphere_y[7] = -0.893124;   
+        sphere_x[8] = 0.507431;
+        sphere_y[8] = 0.064425;  
+        sphere_x[9] = 0.896420;
+        sphere_y[9] = 0.412458;  
+        sphere_x[10] = -0.321940;
+        sphere_y[10] = -0.932615;  
+        sphere_x[11] = -0.791559;
+        sphere_y[11] = -0.597705;  
+    }
+    
+    float random(float2 arg){
+            return 0.5+(fract(sin(dot(arg.xy ,float2(12.9898,78.233))) * 43758.5453))*0.5;
+    }
+
+    void evaluatePixel(){    
+            
+        float zbu,pd,bl,sd,dc,zd,tmp;
+        float2 pt,rnd;
+        
+        rnd = float2(random(outCoord()),random(outCoord()));    
+        zbu = dot(sampleNearest(depthmap, outCoord()).xyz,unpack);     
+        if(zbu==0.0) zbu=0.0001;
+
+        for (int i = 0; i < 12; i++){
+        
+            pt = float2(sphere_x[i],sphere_y[i])+rnd+float2(D_lightxy.x-1.0,D_lightxy.y*-1.0-1.0);
+            
+            sd = (dot(sampleNearest(depthmap,outCoord().xy+pt*B_radius/zbu).xyz,unpack)+E_noise*rnd.x)*(A_bias*10.0);
+            dc = zbu * (A_bias*10.0) - sd;
+            
+            if(zbu==0.0) dc=0.0;
+            if(sd==0.0)  dc=0.0;
+            
+            dc = dc * (2.0 - (dc/C_bleed));
+            zd = 0.5 * max(dc+F_brightness, 0.0);
+            bl +=1.0/(1.0+zd*zd);
+        }
+        bl/=12.0;
+        tmp=pow(bl, G_contrast);
+        dst=float4(tmp,tmp,tmp,1.0);
+    }  
+}
+

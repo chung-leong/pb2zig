@@ -1,0 +1,17 @@
+<languageVersion : 1.0;>
+
+kernel premultiplication
+<   namespace : "Your Namespace";
+    vendor : "Your Vendor";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    void
+    evaluatePixel()
+    {
+        dst = float4(0.5, 0.0, 0.0, 0.5);
+    }
+}

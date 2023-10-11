@@ -1,0 +1,78 @@
+<languageVersion : 1.0;>
+
+kernel PlasmaEffect
+<   namespace : "com.mrdoob.shaders";
+    vendor : "Mr.doob";
+    version : 1;
+    description : "Good old plasma effect";
+>
+{
+    output pixel4 dst;
+    
+    #if !AIF_FLASH_TARGET
+    
+    parameter float2 size
+    <
+        minValue:float2(0,0);
+        maxValue:float2(1024,1024);
+        defaultValue:float2(1024, 512);
+    >;
+    
+    #endif
+    
+    parameter float2 center
+    <
+        minValue:float2(0,0);
+        maxValue:float2(1024,1024);
+        defaultValue:float2(512,256);
+    >;
+
+    parameter float distort
+    <
+        minValue:float(0);
+        maxValue:float(0.1);
+        defaultValue:float(0.0);
+    >;
+
+    parameter float2 offset
+    <
+        minValue:float2(-100,-100);
+        maxValue:float2(100,100);
+        defaultValue:float2(0,0);
+    >;
+
+    parameter float3 color_offset
+    <
+        minValue:float3(-5,-5,-5);
+        maxValue:float3(5,5,5);
+        defaultValue:float3(0,0,0);
+    >;
+    
+    parameter float2 wave
+    <
+        minValue:float2(0,0);
+        maxValue:float2(0.1,0.1);
+        defaultValue:float2(0.05,0.05);
+    >;
+
+    #if !AIF_FLASH_TARGET
+
+    region generated()
+    {
+        return region(float4(0, 0, size.x, size.y));
+    }
+    
+    #endif
+
+    void evaluatePixel()
+    {
+        float2 pos = outCoord();
+        
+        float2 dist = pos - center;
+        float distance = sqrt((dist.x * dist.x) + (dist.y * dist.y)) * distort;
+        
+        float color = cos((offset.x + pos.x) * wave.x) + sin((offset.y + pos.y) * wave.y) + sin(distance) + cos(distance);
+        
+        dst = pixel4(color + color_offset.x, color + color_offset.y, color + color_offset.z, 1.0);
+    }
+}

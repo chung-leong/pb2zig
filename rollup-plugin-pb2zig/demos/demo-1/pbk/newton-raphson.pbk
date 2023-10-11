@@ -1,0 +1,177 @@
+/**
+readme
+==========
+renders newton raphson fractals. i.e finds soln of a polynomial using newton's iteration.
+uses x axis as real numbers, and y axis as imaginery numbers.
+
+z = z + f(z)/f'(z);
+
+settings
+-----------
+c0-c7  - coefficients of the polynomial equation e.g c7x^7 + c6x^6 + .. + c0 =0 all of them as complex numbers
+
+size - dimensions of the output image
+
+colorStart/colorEnd - start and ending colours of the fractals
+
+rangeX/rangeY - range on which the fractal computations are to be made.
+e.g from -5 to +5 on x-axiz and -5 to +2 on y-axis
+
+iterations - number of iterations to be processed on the fractals
+
+toleranceInversePower - the tolerance value before iteration stops. 
+i.e if toleranceInversePower = 3, then if the answer is closer than 0.001, that is the colour value used.
+
+references
+-----------
+http://local.wasp.uwa.edu.au/~pbourke/fractals/newtonraphson/
+
+**/
+<languageVersion : 1.0;>
+
+kernel NewtonRaphson
+<   namespace : "com.om-labs.filters.newtonRaphson";
+    vendor : "Om Labs";
+    version : 1;
+    description : "Newton Raphson Fractals";
+>
+{
+    parameter float2 size<
+        minValue:float2(0,0);
+        maxValue:float2(1000,1000);
+        defaultValue:float2(500,500);
+    >;
+    
+    parameter float4 colorStart<
+        minValue:float4(0);
+        maxValue:float4(1);
+        defaultValue:float4(1);
+    >;
+    
+    parameter float4 colorEnd<
+        minValue:float4(0);
+        maxValue:float4(1);
+        defaultValue:float4(0,0,0.8,1);
+    >;
+    
+    parameter float2 rangeX<
+        minValue:float2(-10);
+        maxValue:float2(10);
+        defaultValue:float2(-5,5);
+    >;
+    
+    parameter float2 rangeY<
+        minValue:float2(-10);
+        maxValue:float2(10);
+        defaultValue:float2(-5,5);
+    >;
+    
+    parameter float2 c0<
+        minValue:float2(-10);
+        maxValue:float2(10);
+        defaultValue:float2(0);
+    >;
+
+    parameter float2 c1<
+        minValue:float2(-10);
+        maxValue:float2(10);
+        defaultValue:float2(0);
+    >;
+    
+    parameter float2 c2<
+        minValue:float2(-10);
+        maxValue:float2(10);
+        defaultValue:float2(0);
+    >;
+    
+    parameter float2 c3<
+        minValue:float2(-10);
+        maxValue:float2(10);
+        defaultValue:float2(0);
+    >;
+    
+    parameter float2 c4<
+        minValue:float2(-10);
+        maxValue:float2(10);
+        defaultValue:float2(0);
+    >;
+    
+    parameter float2 c5<
+        minValue:float2(-10);
+        maxValue:float2(10);
+        defaultValue:float2(0);
+    >;
+    
+    parameter float2 c6<
+        minValue:float2(-10);
+        maxValue:float2(10);
+        defaultValue:float2(0);
+    >;
+    
+    parameter float2 c7<
+        minValue:float2(-10);
+        maxValue:float2(10);
+        defaultValue:float2(0);
+    >;    
+    
+    parameter float toleranceInversePower<
+        minValue:float(1);
+        maxValue:float(10);
+        defaultValue:float(3);
+    >;
+    
+    parameter float iterations<
+        minValue:float(1);
+        maxValue:float(100);
+        defaultValue:float(25);
+    >;
+    
+    dependent float tolerance;
+    output pixel4 dst;
+
+    region generated(){
+        return region(float4(0, 0, size.x, size.y));
+    }
+    
+    void evaluateDependents(){
+        tolerance = pow(10.0,-toleranceInversePower);
+    }
+    
+    float2 muli(in float2 a,in float2 b){
+        return float2(a[0]*b[0]-a[1]*b[1],a[1]*b[0]+a[0]*b[1]);
+    }
+    
+    float2 divi(in float2 a, in float2 b){
+        return float2(a[0]*b[0]+a[1]*b[1],a[1]*b[0]-a[0]*b[1])/(b[0]*b[0] + b[1]*b[1]);
+    }
+    
+    float2 f(in float2 z, out float2 fz){
+        float2 z2 = muli(z,z);
+        float2 z3 = muli(z2,z);        
+        float2 z4 = muli(z3,z); 
+        float2 z5 = muli(z4,z); 
+        float2 z6 = muli(z5,z); 
+        float2 z7 = muli(z6,z); 
+        fz =  muli(c7,z7) + muli(c6,z6) + muli(c5,z5) + muli(c4,z4) + muli(c3,z3) + muli(c2,z2) + muli(c1,z) + c0;
+        float2 fdiffz = 7.0*muli(c7,z6) + 6.0*muli(c6,z5) + 5.0*muli(c5,z4) + 4.0*muli(c4,z3) + 3.0*muli(c3,z2) + 2.0*muli(c2,z) + c1;
+        return divi(fz,fdiffz);
+    }
+    
+    void evaluatePixel(){
+        float2 pos = outCoord();
+        pos = float2(mix(rangeX[0],rangeX[1],pos.x/size[0]),mix(rangeY[0],rangeY[1],pos.y/size[1]));
+        
+        float curIterations;
+        float2 fz;
+        for(curIterations=0.0; curIterations<iterations; curIterations++){
+            pos -= f(pos,fz);
+            if(length(fz[0]) < tolerance){
+                break;
+            }
+        }
+
+        dst = mix(colorStart,colorEnd,curIterations/iterations);
+    }
+    
+
+}
