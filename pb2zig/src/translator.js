@@ -317,9 +317,9 @@ export class PixelBenderToZigTranslator {
     }
     const table = {
       bool: 'bool',
-      bool2: 'bool[2]',
-      bool3: 'bool[3]',
-      bool4: 'bool[4]',
+      bool2: '@Vector(2, bool)',
+      bool3: '@Vector(3, bool)',
+      bool4: '@Vector(4, bool)',
 
       int: 'i32',
       int2: '@Vector(2, i32)',
@@ -569,11 +569,17 @@ export class PixelBenderToZigTranslator {
   translateKernelInstance() {
     // set the types of constants now in case array-dimensions involve constants
     const constantDecls = this.translateConstantDeclarations();
+    // const outCoord = `
+    //   pub fn outCoord(self: *@This()) @Vector(2, f32) {
+    //     return @as(@Vector(2, f32), @floatFromInt(self.outputCoord)) + @as(@Vector(2, f32), @splat(0.5));
+    //   }
+    // `.trim();
     const outCoord = `
       pub fn outCoord(self: *@This()) @Vector(2, f32) {
-        return @as(@Vector(2, f32), @floatFromInt(self.outputCoord)) + @as(@Vector(2, f32), @splat(0.5));
+        return .{ @as(f32, @floatFromInt(self.outputCoord[0])) + 0.5, @as(f32, @floatFromInt(self.outputCoord[1])) + 0.5 };
       }
     `.trim();
+
     const statements = [
       ...this.translateInputOutputFields(),
       ...this.translateDependentFields(),
@@ -1338,12 +1344,32 @@ export class PixelBenderToZigTranslator {
         const zeroV = this.promoteExpression(zero, typeE, true);
         return ZIG.BinaryOperation.create({ operand1: value, operator: '!=', operand2: zero });
       } else if (typeE === 'f32') {
+        // if (value.getChildType() === 'i32') {
+        //   return this.forceType(ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ value ], type }));
+        // } else if (value.getChildType() === 'bool') {
+        //   const width = value.getVectorWidth();
+        //   const valueInt = this.createCastExpression(value, `@Vector(${width}, i32)`);
+        //   return this.forceType(ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ valueInt ], type }));
+        // }
         if (value.getChildType() === 'i32') {
-          return this.forceType(ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ value ], type }));
+          this.functions.floatVectorFromIntVector.called = true;
+          return this.forceType(ZIG.FunctionCall.create({ name: 'floatVectorFromIntVector', args: [ value ], type }));
         } else if (value.getChildType() === 'bool') {
           const width = value.getVectorWidth();
           const valueInt = this.createCastExpression(value, `@Vector(${width}, i32)`);
-          return this.forceType(ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ valueInt ], type }));
+          this.functions.floatVectorFromIntVector.called = true;
+          return ZIG.FunctionCall.create({ name: 'floatVectorFromIntVector', args: [ valueInt ], type });
+        }
+      } else if (typeE === 'i32') {
+        // if (value.getChildType() === 'f32') {
+        //   return this.forceType(ZIG.FunctionCall.create({ name: '@intFromFloat', args: [ value ], type }));
+        // } else if (value.getChildType() === 'bool') {
+        //   return this.forceType(ZIG.FunctionCall.create({ name: '@intFromBool', args: [ valueInt ], type }));
+        // }
+        if (value.getChildType() === 'f32') {
+          return ZIG.FunctionCall.create({ name: 'intVectorFromFloatVector', args: [ value ], type });
+        } else if (value.getChildType() === 'bool') {
+          return ZIG.FunctionCall.create({ name: 'intVectorFromBoolVector', args: [ valueInt ], type });
         }
       }
     } else if (ZIG.isScalar(type) && value.isScalar()) {
@@ -1827,6 +1853,22 @@ const builtInFunctions = (() => {
       [ bool, float2x2, float2x2 ],
       [ bool, float3x3, float3x3 ],
       [ bool, float4x4, float4x4 ],
+    ],
+    // casting functions (temporary)
+    floatVectorFromIntVector: [
+      [ float2, int2 ],
+      [ float3, int3 ],
+      [ float4, int4 ],
+    ],
+    intVectorFromFloatVector: [
+      [ int2, float2 ],
+      [ int3, float3 ],
+      [ int4, float4 ],
+    ],
+    intVectorFromBoolVector: [
+      [ bool2, int2 ],
+      [ bool3, int3 ],
+      [ bool4, int4 ],
     ],
   };
   const returnTypeSources = {

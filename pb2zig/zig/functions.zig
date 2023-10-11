@@ -359,7 +359,8 @@ test "inverseSqrt" {
 }
 
 pub fn abs(v: anytype) @TypeOf(v) {
-    return @abs(v);
+    // return @abs(v);
+    return @fabs(v);
 }
 
 test "abs" {
@@ -596,9 +597,13 @@ test "smoothStep" {
 }
 
 pub fn length(v: anytype) f32 {
+    // return switch (@typeInfo(@TypeOf(v))) {
+    //     .Vector => @sqrt(@reduce(.Add, v * v)),
+    //     else => @abs(v),
+    // };
     return switch (@typeInfo(@TypeOf(v))) {
         .Vector => @sqrt(@reduce(.Add, v * v)),
-        else => @abs(v),
+        else => @fabs(v),
     };
 }
 
@@ -612,9 +617,13 @@ test "length" {
 }
 
 pub fn distance(v1: anytype, v2: anytype) f32 {
+    // return switch (@typeInfo(@TypeOf(v1))) {
+    //     .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
+    //     else => @abs(v1 - v2),
+    // };
     return switch (@typeInfo(@TypeOf(v1))) {
         .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-        else => @abs(v1 - v2),
+        else => @fabs(v1 - v2),
     };
 }
 
@@ -890,4 +899,34 @@ test "matrix functions" {
     const result18 = @"S / M"(60, m1);
     assert(all(result18[0] == @Vector(2, f32){ 60, 30 }));
     assert(all(result18[1] == @Vector(2, f32){ 20, 15 }));
+}
+
+pub fn floatVectorFromIntVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector.len, f32) {
+    const len = @typeInfo(@TypeOf(v)).Vector.len;
+    var result: @Vector(len, f32) = undefined;
+    comptime var i = 0;
+    inline while (i < len) : (i += 1) {
+        result[i] = @floatFromInt(v[i]);
+    }
+    return result;
+}
+
+pub fn intVectorFromFloatVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector.len, i32) {
+    const len = @typeInfo(@TypeOf(v)).Vector.len;
+    var result: @Vector(len, f32) = undefined;
+    comptime var i = 0;
+    inline while (i < len) : (i += 1) {
+        result[i] = @intFromFloat(v[i]);
+    }
+    return result;
+}
+
+pub fn intVectorFromBoolVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector.len, i32) {
+    const len = @typeInfo(@TypeOf(v)).Vector.len;
+    var result: @Vector(len, f32) = undefined;
+    comptime var i = 0;
+    inline while (i < len) : (i += 1) {
+        result[i] = @intFromBool(v[i]);
+    }
+    return result;
 }

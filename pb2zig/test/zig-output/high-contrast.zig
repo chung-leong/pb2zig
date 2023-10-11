@@ -61,7 +61,7 @@ pub const kernel = struct {
             }
 
             pub fn outCoord(self: *@This()) @Vector(2, f32) {
-                return @as(@Vector(2, f32), @floatFromInt(self.outputCoord)) + @as(@Vector(2, f32), @splat(0.5));
+                return .{ @as(f32, @floatFromInt(self.outputCoord[0])) + 0.5, @as(f32, @floatFromInt(self.outputCoord[1])) + 0.5 };
             }
         };
     }
@@ -181,13 +181,37 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
 
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
-            const numerator: FPixel = switch (len) {
-                1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
-                2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
-                3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
-                4 => @floatFromInt(pixel),
+            // requires newest version of zig, which has issues
+            //
+            // const numerator: FPixel = switch (len) {
+                //     1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
+                //     2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
+                //     3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
+                //     4 => @floatFromInt(pixel),
+                //     else => @compileError("Unsupported number of channels: " ++ len),
+                // };
+            // const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
+            // return numerator / denominator;
+            var numerator: FPixel = undefined;
+            switch (len) {
+                1 => numerator[0] = @floatFromInt(pixel[0]),
+                2 => {
+                    numerator[0] = @floatFromInt(pixel[0]);
+                    numerator[3] = @floatFromInt(pixel[3]);
+                },
+                3 => {
+                    numerator[0] = @floatFromInt(pixel[0]);
+                    numerator[1] = @floatFromInt(pixel[1]);
+                    numerator[2] = @floatFromInt(pixel[2]);
+                },
+                4 => {
+                    numerator[0] = @floatFromInt(pixel[0]);
+                    numerator[1] = @floatFromInt(pixel[1]);
+                    numerator[2] = @floatFromInt(pixel[2]);
+                    numerator[3] = @floatFromInt(pixel[3]);
+                },
                 else => @compileError("Unsupported number of channels: " ++ len),
-            };
+            }
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
@@ -201,17 +225,49 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
 
         fn intPixelFromPBPixel(pixel: FPixel) Pixel {
+            // const max: f32 = @floatFromInt(std.math.maxInt(T));
+            // const multiplier: FPixel = @splat(max);
+            // const product: FPixel = contrain(pixel * multiplier, max);
+            // const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
+            // const result: Pixel = switch (len) {
+                //     1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
+                //     2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
+                //     3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
+                //     4 => @intFromFloat(product),
+                //     else => @compileError("Unsupported number of channels: " ++ len),
+                // };
+            // return result;
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
             const product: FPixel = contrain(pixel * multiplier, max);
-            const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
-            const result: Pixel = switch (len) {
-                1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
-                2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
-                3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
-                4 => @intFromFloat(product),
+            var result: Pixel = undefined;
+            switch (len) {
+                1 => {
+                    result[0] = @intFromFloat(product[0]);
+                    result[1] = @intFromFloat(product[0]);
+                    result[2] = @intFromFloat(product[0]);
+                    result[3] = std.math.maxInt(T);
+                },
+                2 => {
+                    result[0] = @intFromFloat(product[0]);
+                    result[1] = @intFromFloat(product[0]);
+                    result[2] = @intFromFloat(product[0]);
+                    result[3] = @intFromFloat(product[1]);
+                },
+                3 => {
+                    result[0] = @intFromFloat(product[0]);
+                    result[1] = @intFromFloat(product[1]);
+                    result[2] = @intFromFloat(product[2]);
+                    result[3] = std.math.maxInt(T);
+                },
+                4 => {
+                    result[0] = @intFromFloat(product[0]);
+                    result[1] = @intFromFloat(product[1]);
+                    result[2] = @intFromFloat(product[2]);
+                    result[3] = @intFromFloat(product[3]);
+                },
                 else => @compileError("Unsupported number of channels: " ++ len),
-            };
+            }
             return result;
         }
 
