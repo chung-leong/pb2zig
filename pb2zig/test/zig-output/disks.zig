@@ -31,15 +31,15 @@ pub const kernel = struct {
         },
         .rotation = .{
             .type = [2]@Vector(2, f32),
-            .minValue = [2]@Vector(2, f32){
+            .minValue = .{
                 .{ -1.0, -1.0 },
                 .{ -1.0, -1.0 },
             },
-            .maxValue = [2]@Vector(2, f32){
+            .maxValue = .{
                 .{ 1.0, 1.0 },
                 .{ 1.0, 1.0 },
             },
-            .defaultValue = [2]@Vector(2, f32){
+            .defaultValue = .{
                 .{ 1.0, 0.0 },
                 .{ 0.0, 1.0 },
             },

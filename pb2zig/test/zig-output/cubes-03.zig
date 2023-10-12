@@ -84,7 +84,7 @@ pub const kernel = struct {
 
                 var axis1: @Vector(3, f32) = .{ 1.0, 0.0, 0.0 };
                 var axis2: @Vector(3, f32) = .{ 0.0, 1.0, 0.0 };
-                var elevR: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                var elevR: [3]@Vector(3, f32) = .{
                     .{ 1.0, 0.0, 0.0 },
                     .{
                         0.0,
@@ -97,7 +97,7 @@ pub const kernel = struct {
                         cos(spin[0]),
                     },
                 };
-                var bearR: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                var bearR: [3]@Vector(3, f32) = .{
                     .{
                         cos(spin[1]),
                         sin(spin[1]),
@@ -110,7 +110,7 @@ pub const kernel = struct {
                     },
                     .{ 0.0, 0.0, 1.0 },
                 };
-                var yamR: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                var yamR: [3]@Vector(3, f32) = .{
                     .{
                         cos(spin[2]),
                         0.0,

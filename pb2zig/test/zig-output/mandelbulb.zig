@@ -518,21 +518,21 @@ pub const kernel = struct {
                 self.aspectRatio = @as(f32, @floatFromInt(size[0])) / @as(f32, @floatFromInt(size[1]));
                 var c1: f32 = cos(radians(-cameraRotation[0]));
                 var s1: f32 = sin(radians(-cameraRotation[0]));
-                var viewRotationY: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                var viewRotationY: [3]@Vector(3, f32) = .{
                     .{ c1, 0.0, s1 },
                     .{ 0.0, 1.0, 0.0 },
                     .{ -s1, 0.0, c1 },
                 };
                 var c2: f32 = cos(radians(-cameraRotation[1]));
                 var s2: f32 = sin(radians(-cameraRotation[1]));
-                var viewRotationZ: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                var viewRotationZ: [3]@Vector(3, f32) = .{
                     .{ c2, -s2, 0.0 },
                     .{ s2, c2, 0.0 },
                     .{ 0.0, 0.0, 1.0 },
                 };
                 var c3: f32 = cos(radians(-cameraRotation[2]));
                 var s3: f32 = sin(radians(-cameraRotation[2]));
-                var viewRotationX: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                var viewRotationX: [3]@Vector(3, f32) = .{
                     .{ 1.0, 0.0, 0.0 },
                     .{ 0.0, c3, -s3 },
                     .{ 0.0, s3, c3 },
@@ -540,21 +540,21 @@ pub const kernel = struct {
                 self.viewRotation = @"M * M"(@"M * M"(viewRotationX, viewRotationY), viewRotationZ);
                 c1 = cos(radians(-rotation[0]));
                 s1 = sin(radians(-rotation[0]));
-                var objRotationY: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                var objRotationY: [3]@Vector(3, f32) = .{
                     .{ c1, 0.0, s1 },
                     .{ 0.0, 1.0, 0.0 },
                     .{ -s1, 0.0, c1 },
                 };
                 c2 = cos(radians(-rotation[1]));
                 s2 = sin(radians(-rotation[1]));
-                var objRotationZ: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                var objRotationZ: [3]@Vector(3, f32) = .{
                     .{ c2, -s2, 0.0 },
                     .{ s2, c2, 0.0 },
                     .{ 0.0, 0.0, 1.0 },
                 };
                 c3 = cos(radians(-rotation[2]));
                 s3 = sin(radians(-rotation[2]));
-                var objRotationX: [3]@Vector(3, f32) = [3]@Vector(3, f32){
+                var objRotationX: [3]@Vector(3, f32) = .{
                     .{ 1.0, 0.0, 0.0 },
                     .{ 0.0, c3, -s3 },
                     .{ 0.0, s3, c3 },

@@ -62,7 +62,7 @@ describe('Translator tests', function() {
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('.transform = .{');
       expect(result).to.contain('.type = [3]@Vector(3, f32),');
-      expect(result).to.contain('.minValue = [3]@Vector(3, f32){');
+      expect(result).to.contain('.minValue = .{');
       expect(result).to.contain('.{ -1.0, -1.0, -1.0 },');
     })
     it('should correctly translate inputs and outputs', function() {

@@ -9,17 +9,17 @@ pub const kernel = struct {
     pub const parameters = .{
         .transform = .{
             .type = [3]@Vector(3, f32),
-            .minValue = [3]@Vector(3, f32){
+            .minValue = .{
                 .{ -1.0, -1.0, -1.0 },
                 .{ -1.0, -1.0, -1.0 },
                 .{ -1.0, -1.0, -1.0 },
             },
-            .maxValue = [3]@Vector(3, f32){
+            .maxValue = .{
                 .{ 1.0, 1.0, 1.0 },
                 .{ 1.0, 1.0, 1.0 },
                 .{ 1.0, 1.0, 1.0 },
             },
-            .defaultValue = [3]@Vector(3, f32){
+            .defaultValue = .{
                 .{ 0.5, 0.0, 0.0 },
                 .{ 0.3, 1.0, 0.7 },
                 .{ 0.1, 0.3, 0.8 },

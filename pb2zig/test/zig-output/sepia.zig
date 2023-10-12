@@ -42,7 +42,7 @@ pub const kernel = struct {
 
                 var rgbaColor: @Vector(4, f32) = undefined;
                 var yiqaColor: @Vector(4, f32) = undefined;
-                var YIQMatrix: [4]@Vector(4, f32) = [4]@Vector(4, f32){
+                var YIQMatrix: [4]@Vector(4, f32) = .{
                     .{
                         0.299,
                         0.596,
@@ -63,7 +63,7 @@ pub const kernel = struct {
                     },
                     .{ 0.0, 0.0, 0.0, 1.0 },
                 };
-                var inverseYIQ: [4]@Vector(4, f32) = [4]@Vector(4, f32){
+                var inverseYIQ: [4]@Vector(4, f32) = .{
                     .{ 1.0, 1.0, 1.0, 0.0 },
                     .{
                         0.956,

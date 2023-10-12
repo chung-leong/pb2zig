@@ -70,7 +70,7 @@ pub const kernel = struct {
         },
         .orientation = .{
             .type = [4]@Vector(4, f32),
-            .minValue = [4]@Vector(4, f32){
+            .minValue = .{
                 .{
                     -1.0,
                     -1.0,
@@ -96,7 +96,7 @@ pub const kernel = struct {
                     -1.0,
                 },
             },
-            .maxValue = [4]@Vector(4, f32){
+            .maxValue = .{
                 .{ 1.0, 1.0, 1.0, 0.0 },
                 .{ 1.0, 1.0, 1.0, 0.0 },
                 .{ 1.0, 1.0, 1.0, 0.0 },
@@ -107,7 +107,7 @@ pub const kernel = struct {
                     1.0,
                 },
             },
-            .defaultValue = [4]@Vector(4, f32){
+            .defaultValue = .{
                 .{ 1.0, 0.0, 0.0, 0.0 },
                 .{ 0.0, 1.0, 0.0, 0.0 },
                 .{ 0.0, 0.0, 1.0, 0.0 },

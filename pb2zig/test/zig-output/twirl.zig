@@ -75,7 +75,7 @@ pub const kernel = struct {
                 adjustedRadians = if ((gaussOrSinc == 1)) adjustedRadians else gaussWeight;
                 var cosAngle: f32 = cos(adjustedRadians);
                 var sinAngle: f32 = sin(adjustedRadians);
-                var rotationMat: [2]@Vector(2, f32) = [2]@Vector(2, f32){
+                var rotationMat: [2]@Vector(2, f32) = .{
                     .{ cosAngle, sinAngle },
                     .{ -sinAngle, cosAngle },
                 };

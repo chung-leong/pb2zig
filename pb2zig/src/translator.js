@@ -1271,7 +1271,7 @@ export class PixelBenderToZigTranslator {
           initializers.push(ZIG.TupleLiteral.create({ initializers: slice, type: '.'}));
         }
       }
-      return ZIG.TupleLiteral.create({ initializers, type });
+      return ZIG.TupleLiteral.create({ initializers, type: (typeExpected === 'comptime') ? '.' : type });
     } else if (ZIG.isVector(type)) {
       const typeE = ZIG.getChildType(type);
       if (args.length === 1) {
