@@ -42,3 +42,17 @@
   display: flex;
   flex-direction: row;
 }
+
+.change-btn {
+  cursor: pointer;
+  color: rgba(50, 160, 255, 0.4);
+  margin-left: 10px;
+}
+
+.change-btn:hover {
+  color: rgba(50, 160, 255, 1);
+}
+
+.change-btn input[type="file"] {
+  width: 0px;
+}

@@ -32,6 +32,14 @@ function App() {
     ctx.drawImage(bitmap, 0, 0);
   }
 
+  async function handleImageChange(evt) {
+    const { files } = evt.target;
+    if (files.length >= 1) {
+      const bitmap = await createImageBitmap(files[0]);
+      setBitmap(bitmap);
+    }
+  }
+
   function renderControls() {
     if (!kernelInfo) {
       return;
@@ -231,7 +239,13 @@ function App() {
     <div className="App">
       <div className="display">
         <div className="frame">
-          <div>Input:</div>
+          <div>
+            Input:
+            <label className="change-btn">
+              change
+              <input type="file" accept="image/*" onChange={handleImageChange} />
+            </label>
+          </div>
           <canvas ref={srcCanvasRef}></canvas>
         </div>
         <div className="frame">
