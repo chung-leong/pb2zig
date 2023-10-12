@@ -37,14 +37,14 @@ pub const kernel = struct {
         },
         .periodicity = .{
             .type = f32,
-            .minValue = 6.0,
+            .minValue = -6.0,
             .maxValue = 6.0,
             .defaultValue = 1.0,
             .description = "The number of image the image is repeated on each level",
         },
         .strands = .{
             .type = i32,
-            .minValue = 12,
+            .minValue = -12,
             .maxValue = 12,
             .defaultValue = 1,
             .description = "The number of strands of the spiral",
@@ -63,7 +63,7 @@ pub const kernel = struct {
         },
         .rotate = .{
             .type = f32,
-            .minValue = 360.0,
+            .minValue = -360.0,
             .maxValue = 360.0,
             .defaultValue = 0.0,
             .description = "Overall image rotation",
@@ -132,14 +132,14 @@ pub const kernel = struct {
         },
         .rotatePolar = .{
             .type = f32,
-            .minValue = 360.0,
+            .minValue = -360.0,
             .maxValue = 360.0,
             .defaultValue = 0.0,
             .description = "Polar rotation",
         },
         .rotateSpin = .{
             .type = f32,
-            .minValue = 360.0,
+            .minValue = -360.0,
             .maxValue = 360.0,
             .defaultValue = 0.0,
             .description = "Spin mapped image. Best used with polar rotation.",

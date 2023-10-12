@@ -469,9 +469,9 @@ export class PixelBenderToZigTranslator {
       const { name, type: pbType, ...others } = pb;
       const type = this.translateType(pbType);
       const attributes = { type };
-      for (const [ aname, value ] of Object.entries(others)) {
-        if (value) {
-          attributes[aname] = this.translateExpression(value, 'comptime');
+      for (const [ aname, pba ] of Object.entries(others)) {
+        if (pba) {
+          attributes[aname] = this.translateExpression(pba, 'comptime');
         }
       }
       initializers[name] = ZIG.StructLiteral.create({

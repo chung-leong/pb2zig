@@ -68,14 +68,14 @@ pub const kernel = struct {
         },
         .power = .{
             .type = f32,
-            .minValue = 12.0,
+            .minValue = -12.0,
             .maxValue = 12.0,
             .defaultValue = 3.0,
             .description = "Raise z to the power e in the fractal formula: z' = z^e + mu",
         },
         .powerFineTune = .{
             .type = f32,
-            .minValue = 0.1,
+            .minValue = -0.1,
             .maxValue = 0.1,
             .defaultValue = 0.0,
             .description = "Fine tune the exponent.",
@@ -206,7 +206,7 @@ pub const kernel = struct {
         },
         .rotate = .{
             .type = f32,
-            .minValue = 180.0,
+            .minValue = -180.0,
             .maxValue = 180.0,
             .defaultValue = 0.0,
             .description = "Rotate the fractal.",
@@ -220,14 +220,14 @@ pub const kernel = struct {
         },
         .zoom = .{
             .type = f32,
-            .minValue = 2.0,
+            .minValue = -2.0,
             .maxValue = 13.0,
             .defaultValue = 0.1,
             .description = "Primary zoom.",
         },
         .zoomFineTune = .{
             .type = f32,
-            .minValue = 1.0,
+            .minValue = -1.0,
             .maxValue = 1.0,
             .defaultValue = 0.0,
             .description = "Fine tune the zoom.",

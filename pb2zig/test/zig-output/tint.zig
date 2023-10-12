@@ -10,7 +10,7 @@ pub const kernel = struct {
     pub const parameters = .{
         .amount = .{
             .type = f32,
-            .minValue = 1.0,
+            .minValue = -1.0,
             .maxValue = 1.0,
             .defaultValue = 0.0,
         },

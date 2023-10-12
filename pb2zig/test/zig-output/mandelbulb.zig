@@ -36,7 +36,7 @@ pub const kernel = struct {
         },
         .radiolariaFactor = .{
             .type = f32,
-            .minValue = 4.0,
+            .minValue = -4.0,
             .maxValue = 4.0,
             .defaultValue = 0.0,
             .description = "Tweak the radiolaria effect.",
@@ -78,7 +78,7 @@ pub const kernel = struct {
         },
         .power = .{
             .type = f32,
-            .minValue = 20.0,
+            .minValue = -20.0,
             .maxValue = 20.0,
             .defaultValue = 8.0,
             .description = "The power of the fractal.",

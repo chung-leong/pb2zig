@@ -52,14 +52,14 @@ pub const kernel = struct {
         },
         .xPos = .{
             .type = f32,
-            .minValue = 1050.0,
+            .minValue = -1050.0,
             .maxValue = 1050.0,
             .defaultValue = 160.0,
             .description = "sets initial x.position",
         },
         .yPos = .{
             .type = f32,
-            .minValue = 1050.0,
+            .minValue = -1050.0,
             .maxValue = 1050.0,
             .defaultValue = 160.0,
             .description = "sets initial y.position",

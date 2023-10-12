@@ -34,7 +34,7 @@ pub const kernel = struct {
         },
         .w = .{
             .type = f32,
-            .minValue = 1.0,
+            .minValue = -1.0,
             .maxValue = 1.0,
             .defaultValue = 0.0,
         },
@@ -46,7 +46,7 @@ pub const kernel = struct {
         },
         .rotationY = .{
             .type = f32,
-            .minValue = 5.0,
+            .minValue = -5.0,
             .maxValue = 5.0,
             .defaultValue = 0.0,
         },

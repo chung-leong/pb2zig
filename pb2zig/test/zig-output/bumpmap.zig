@@ -17,7 +17,7 @@ pub const kernel = struct {
         },
         .light = .{
             .type = @Vector(3, f32),
-            .minValue = .{
+            .minValue = -@Vector(3, f32){
                 2560.0,
                 2560.0,
                 10000.0,

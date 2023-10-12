@@ -10,13 +10,13 @@ pub const kernel = struct {
     pub const parameters = .{
         .line = .{
             .type = f32,
-            .minValue = 1000.0,
+            .minValue = -1000.0,
             .maxValue = 1000.0,
             .defaultValue = 200.0,
         },
         .height = .{
             .type = f32,
-            .minValue = 1000.0,
+            .minValue = -1000.0,
             .maxValue = 1000.0,
             .defaultValue = 100.0,
         },

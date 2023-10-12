@@ -36,7 +36,7 @@ pub const kernel = struct {
         },
         .radiolariaFactor = .{
             .type = f32,
-            .minValue = 4.0,
+            .minValue = -4.0,
             .maxValue = 4.0,
             .defaultValue = 0.0,
             .description = "Tweak the radiolaria effect.",

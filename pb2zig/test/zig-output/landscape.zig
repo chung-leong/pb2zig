@@ -32,7 +32,7 @@ pub const kernel = struct {
         },
         .cameraRotation = .{
             .type = f32,
-            .minValue = 180.0,
+            .minValue = -180.0,
             .maxValue = 180.0,
             .defaultValue = 0.0,
         },
@@ -54,7 +54,7 @@ pub const kernel = struct {
         },
         .waterLevel = .{
             .type = f32,
-            .minValue = 0.1,
+            .minValue = -0.1,
             .maxValue = 1.0,
             .defaultValue = 0.34,
         },

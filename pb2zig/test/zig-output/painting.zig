@@ -22,7 +22,7 @@ pub const kernel = struct {
         },
         .n2 = .{
             .type = f32,
-            .minValue = 0.5,
+            .minValue = -0.5,
             .maxValue = 0.5,
             .defaultValue = 0.11,
         },
