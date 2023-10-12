@@ -6,3 +6,39 @@
   padding: 5px;
 }
 
+.display {
+  display: flex;
+  flex-direction: row;
+}
+
+.frame {
+  margin: 5px 5px 5px 5px;
+  flex: 0 1 auto;
+}
+
+.frame CANVAS {
+  width: 100%;
+}
+
+.control {
+  display: inline-block;
+  margin: 5px 5px 5px 5px;
+}
+
+.control input[type="range"] {
+  margin: 5px 5px 0 0;
+  vertical-align: middle;
+}
+
+.control input[type="number"] {
+  width: 5em;
+}
+
+.element {
+  margin-right: 4px;
+}
+
+.matrix {
+  display: flex;
+  flex-direction: row;
+}

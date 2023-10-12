@@ -8,17 +8,3 @@ body {
   background-color: #333333;
   color: #ffffff;
 }
-
-.App {
-  display: flex;
-  flex-direction: row;
-}
-
-.frame {
-  margin: 5px 5px 5px 5px;
-  flex: 0 1 auto;
-}
-
-.frame CANVAS {
-  width: 100%;
-}
