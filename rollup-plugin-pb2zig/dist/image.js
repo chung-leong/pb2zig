@@ -61,59 +61,72 @@ export function createPartialImageData(width, height, start, count, source = {},
 
 export function getKernelInfo() {
   const info = {};
-  function extract(object) {
-    let f;
-    if (object[Symbol.iterator]) {
-      if ('string' in object) {
-        return object.string;
-      } else {
-        const array = [];
-        for (const element of object) {
-          array.push(extract(element));
-        }
-        return array;
-      }
-    } else if (object && typeof(object) === 'object') {
-      const result = {};
-      for (const [ name, child ] of Object.entries(object)) {
-        const childResult = extract(child);
-        if (childResult !== undefined) {
-          result[name] = childResult;
+  for (let [ name, value ] of Object.entries(kernel)) {
+    if (name === 'parameters') {
+      const params = {};
+      for (const [ pname, pvalue ] of Object.entries(value)) {
+        const param = params[pname] = {};
+        for (let [ aname, avalue ] of Object.entries(pvalue)) {
+          if (typeof(avalue) === 'object') {
+            if ('string' in value) {
+              avalue = avalue.string;
+            } else {
+              avalue = toArray(avalue);
+            }
+          } else if (typeof(avalue) === 'function') {
+            avalue = getPBType(avalue.name);
+          }
+          param[aname] = avalue;
         }
       }
-      return result;
-    } else if (typeof(object) === 'function') {
-      const types = {
-        'bool': 'bool',
-        '@Vector(2, bool)': 'bool2',
-        '@Vector(3, bool)': 'bool3',
-        '@Vector(4, bool)': 'bool4',
-
-        'i32': 'int',
-        '@Vector(2, i32)': 'int2',
-        '@Vector(3, i32)': 'int3',
-        '@Vector(4, i32)': 'int4',
-
-        'f32': 'float',
-        '@Vector(2, f32)': 'float2',
-        '@Vector(3, f32)': 'float3',
-        '@Vector(4, f32)': 'float4',
-
-        '[2]@Vector(2, f32)': 'float2x2',
-        '[3]@Vector(3, f32)': 'float3x3',
-        '[4]@Vector(4, f32)': 'float4x4',
-      };
-      const type = types[object.name];
-      if (type) {
-        return type;
-      } else {
-        return extract({ ...object });
-      }
+      value = params;
     } else {
-      return object;
+      if (typeof(value) === 'object') {
+        if ('string' in value) {
+          value = value.string;
+        } else {
+          value = value.valueOf();
+        }
+      }
     }
+    info[name] = value;
+  }
+  return info;
+}
+
+function toArray(tuple) {
+  const result = [];
+  for (let [ index, value ] of Object.entries(tuple)) {
+    if (typeof(value) === 'object') {
+      value = toArray(value);
+    }
+    result[index] = value;
+  }
+  return result;
+}
+
+function getPBType(zigType) {
+  const types = {
+    'bool': 'bool',
+    '@Vector(2, bool)': 'bool2',
+    '@Vector(3, bool)': 'bool3',
+    '@Vector(4, bool)': 'bool4',
+
+    'i32': 'int',
+    '@Vector(2, i32)': 'int2',
+    '@Vector(3, i32)': 'int3',
+    '@Vector(4, i32)': 'int4',
+
+    'f32': 'float',
+    '@Vector(2, f32)': 'float2',
+    '@Vector(3, f32)': 'float3',
+    '@Vector(4, f32)': 'float4',
+
+    '[2]@Vector(2, f32)': 'float2x2',
+    '[3]@Vector(3, f32)': 'float3x3',
+    '[4]@Vector(4, f32)': 'float4x4',
   };
-  return extract(kernel);
+  return types[zigType];
 }
 
 export { __init };
