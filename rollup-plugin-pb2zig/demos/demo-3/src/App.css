@@ -1,0 +1,58 @@
+.App {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  padding: 5px;
+}
+
+.display {
+  display: flex;
+  flex-direction: row;
+}
+
+.frame {
+  margin: 5px 5px 5px 5px;
+  flex: 0 1 auto;
+}
+
+.frame CANVAS {
+  width: 100%;
+}
+
+.control {
+  display: inline-block;
+  margin: 5px 5px 5px 5px;
+}
+
+.control input[type="range"] {
+  margin: 5px 5px 0 0;
+  vertical-align: middle;
+}
+
+.control input[type="number"] {
+  width: 5em;
+}
+
+.element {
+  margin-right: 4px;
+}
+
+.matrix {
+  display: flex;
+  flex-direction: row;
+}
+
+.change-btn {
+  cursor: pointer;
+  color: rgba(50, 160, 255, 0.4);
+  margin-left: 10px;
+}
+
+.change-btn:hover {
+  color: rgba(50, 160, 255, 1);
+}
+
+.change-btn input[type="file"] {
+  width: 0px;
+}
