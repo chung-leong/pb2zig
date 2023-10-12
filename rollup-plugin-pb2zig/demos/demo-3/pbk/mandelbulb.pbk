@@ -313,7 +313,7 @@ kernel Mandelbulb
 	<
 		minValue:int2(100, 100);
 		maxValue:int2(2048, 2048);
-		defaultValue:int2(640, 480);
+		defaultValue:int2(512, 512);
 		description: "The output size in pixels.";
 	>;
 

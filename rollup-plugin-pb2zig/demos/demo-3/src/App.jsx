@@ -1,42 +1,23 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { createImageData } from './crystallize.pbk';
-import testImage from '../img/malgorzata-socha.png';
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
 
 function App() {
-  const srcCanvasRef = useRef();
   const dstCanvasRef = useRef();
-  const [ bitmap, setBitmap ] = useState();
   const [ library, setLibrary ] = useState();
   const [ kernelInfo, setKernelInfo ] = useState();
   const [ parameters, setParameters ] = useState({});
 
-  async function updateDestinationImage() {
-    const { createImageData } = library;
-    const srcCanvas = srcCanvasRef.current;
+  function updateDestinationImage() {
+    const { createPartialImageData } = library;
     const dstCanvas = dstCanvasRef.current;
-    const srcCTX = srcCanvas.getContext('2d', { willReadFrequently: true });
-    const { width, height } = srcCanvas;
-    const srcImageData = srcCTX.getImageData(0, 0, width, height);
+    const { width, height } = dstCanvas;
     const dstCTX = dstCanvas.getContext('2d', { willReadFrequently: true });
-    const dstImageData = await createImageData(width, height, srcImageData, parameters);
-    dstCTX.putImageData(dstImageData, 0, 0);
-  }
-
-  function updateSourceImage() {
-    const srcCanvas = srcCanvasRef.current;
-    const dstCanvas = dstCanvasRef.current;
-    srcCanvas.width = dstCanvas.width = bitmap.width;
-    srcCanvas.height = dstCanvas.height = bitmap.height;
-    const ctx = srcCanvas.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(bitmap, 0, 0);
-  }
-
-  async function handleImageChange(evt) {
-    const { files } = evt.target;
-    if (files.length >= 1) {
-      const bitmap = await createImageBitmap(files[0]);
-      setBitmap(bitmap);
+    const count = height / 8;
+    const indices = [ 0, 1, 2, 3, 4, 5, 6, 7 ];
+    for (const index of indices) {
+      createPartialImageData(width, height, index * count, count, {}, parameters).then((data) => {
+        dstCTX.putImageData(data, 0, index * count);
+      });
     }
   }
 
@@ -71,14 +52,13 @@ function App() {
           const props2 = { ...props1, type: 'number' };
           return (
             <div key={index} className="control">
-              <div>{description ?? name}</div>
+              <div title={description}>{name}</div>
               <input {...props1} />
               <input {...props2} />
             </div>
           );
         }
         case 'bool': {
-          const value = currentValue;
           const props = {
             value: currentValue,
             onChange: (evt) => {
@@ -88,7 +68,7 @@ function App() {
           };
           return (
             <div key={index} className="control">
-              <div>{description ?? name}</div>
+              <div title={description}>{name}</div>
               <select {...props}>
                 <option>false</option>
                 <option>true</option>
@@ -107,7 +87,7 @@ function App() {
             const value = currentValue[i];
             const min = minValue?.[i];
             const max = maxValue?.[i];
-            const step = stepInterval?.[i] ?? getStepInterval(min, max, type.substr(0, -1));
+            const step = stepInterval?.[i] ?? getStepInterval(min, max, type.slice(0, -1));
             const props = {
               type: 'number', value, min, max, step,
               onChange: (evt) => {
@@ -124,7 +104,7 @@ function App() {
           });
           return (
             <div key={index} className="control">
-              <div>{description ?? name}</div>
+              <div title={description}>{name}</div>
               <div className="vector">{inputs}</div>
             </div>
           );
@@ -157,7 +137,7 @@ function App() {
           });
           return (
             <div key={index} className="control">
-              <div>{description ?? name}</div>
+              <div title={description}>{name}</div>
               <div className="vector">{inputs}</div>
             </div>
           );
@@ -192,7 +172,7 @@ function App() {
           });
           return (
             <div key={index} className="control">
-              <div>{description ?? name}</div>
+              <div title={description}>{name}</div>
               <div className="matrix">{columns}</div>
             </div>
           );
@@ -202,27 +182,17 @@ function App() {
   }
 
   useEffect(() => {
-    fetch(testImage).then(async (req) => {
-      const blob = await req.blob();
-      const bitmap = await createImageBitmap(blob);
-      setBitmap(bitmap);
-    });
     const url = new URL(location);
-    const filter = url.searchParams.get('f') ?? 'simple';
+    const filter = url.searchParams.get('f') ?? 'raytracer';
     import(`../pbk/${filter}.pbk`).then((library) => {
       setLibrary(library);
     });
   }, []);
   useEffect(() => {
-    if (bitmap) {
-      updateSourceImage();
-    }
-  }, [ bitmap ]);
-  useEffect(() => {
-    if (bitmap && library) {
+    if (library) {
       updateDestinationImage();
     }
-  }, [ bitmap, library, parameters ]);
+  }, [ library, parameters ]);
   useEffect(() => {
     if (library) {
       const { getKernelInfo } = library;
@@ -239,18 +209,8 @@ function App() {
     <div className="App">
       <div className="display">
         <div className="frame">
-          <div>
-            Input:
-            <label className="change-btn">
-              change
-              <input type="file" accept="image/*" onChange={handleImageChange} />
-            </label>
-          </div>
-          <canvas ref={srcCanvasRef}></canvas>
-        </div>
-        <div className="frame">
           <div>Output:</div>
-          <canvas ref={dstCanvasRef}></canvas>
+          <canvas ref={dstCanvasRef} width={512} height={512} />
         </div>
       </div>
       <div className="controls">
@@ -268,6 +228,9 @@ function getStepInterval(minValue, maxValue, type) {
       return 1 / (10 ** (s.length - dot - 1));
     }
     const range = maxValue - minValue;
+    if (!range) {
+      return 0.1;
+    }
     if (range <= 2) {
       return 0.01;
     } else if (range <= 20) {

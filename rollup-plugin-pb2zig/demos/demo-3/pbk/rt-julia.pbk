@@ -7,11 +7,10 @@ kernel JuliaRaytracer
     description : "Raytraces a Quaternion Julia set";
 >
 {
-    input image3 inputUsedToTest;       // just to test in the toolkit
     output pixel4 dst;
 
-    parameter float width < defaultValue: 800.0; >;
-    parameter float height < defaultValue: 600.0; >;
+    parameter float width < defaultValue: 512.0; >;
+    parameter float height < defaultValue: 512.0; >;
 
     parameter float4 c <    minValue: float4(-1.0, -1.0, -2.0, -0.5);
                             maxValue: float4(1.0, 1.0, 2.0, 0.5);

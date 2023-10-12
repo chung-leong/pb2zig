@@ -445,7 +445,7 @@ kernel FractalExplorer
     <
         minValue:int2(100, 100);
         maxValue:int2(4096, 4096);
-        defaultValue:int2(640, 480);
+        defaultValue:int2(512, 512);
 		description:"The size of the rendered fractal.";
     >;
 

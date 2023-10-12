@@ -71,7 +71,7 @@ function App() {
           const props2 = { ...props1, type: 'number' };
           return (
             <div key={index} className="control">
-              <div>{description ?? name}</div>
+              <div title={description}>{name}</div>
               <input {...props1} />
               <input {...props2} />
             </div>
@@ -88,7 +88,7 @@ function App() {
           };
           return (
             <div key={index} className="control">
-              <div>{description ?? name}</div>
+              <div title={description}>{name}</div>
               <select {...props}>
                 <option>false</option>
                 <option>true</option>
@@ -107,7 +107,7 @@ function App() {
             const value = currentValue[i];
             const min = minValue?.[i];
             const max = maxValue?.[i];
-            const step = stepInterval?.[i] ?? getStepInterval(min, max, type.substr(0, -1));
+            const step = stepInterval?.[i] ?? getStepInterval(min, max, type.slice(0, -1));
             const props = {
               type: 'number', value, min, max, step,
               onChange: (evt) => {
@@ -124,7 +124,7 @@ function App() {
           });
           return (
             <div key={index} className="control">
-              <div>{description ?? name}</div>
+              <div title={description}>{name}</div>
               <div className="vector">{inputs}</div>
             </div>
           );
@@ -157,7 +157,7 @@ function App() {
           });
           return (
             <div key={index} className="control">
-              <div>{description ?? name}</div>
+              <div title={description}>{name}</div>
               <div className="vector">{inputs}</div>
             </div>
           );
@@ -192,7 +192,7 @@ function App() {
           });
           return (
             <div key={index} className="control">
-              <div>{description ?? name}</div>
+              <div title={description}>{name}</div>
               <div className="matrix">{columns}</div>
             </div>
           );

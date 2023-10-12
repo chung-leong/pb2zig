@@ -39,7 +39,7 @@ export function createPartialImageData(width, height, start, count, source = {},
       if (typeof(ImageData) === 'function') {
         // convert Uint8Array to Uint8ClampedArray required by ImageData
         const clampedArray = new Uint8ClampedArray(ta.buffer, ta.byteOffset, ta.byteLength);
-        imageData = new ImageData(clampedArray, width, height, { colorSpace });
+        imageData = new ImageData(clampedArray, width, count, { colorSpace });
       } else {
         // for Node.js, which doesn't have ImageData
         imageData = { data: ta, width, height };
@@ -68,7 +68,7 @@ export function getKernelInfo() {
         const param = params[pname] = {};
         for (let [ aname, avalue ] of Object.entries(pvalue)) {
           if (typeof(avalue) === 'object') {
-            if ('string' in value) {
+            if ('string' in avalue) {
               avalue = avalue.string;
             } else {
               avalue = toArray(avalue);
