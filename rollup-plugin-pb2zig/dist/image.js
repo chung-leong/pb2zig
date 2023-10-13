@@ -3,6 +3,13 @@ export function createImageData(width, height, source = {}, params = {}) {
 }
 
 export function createPartialImageData(width, height, start, count, source = {}, params = {}) {
+  if (Array.isArray(source)) {
+    const list = source;
+    source = {};
+    for (const [ index, key ] of Object.keys(kernel.inputImages).entries()) {
+      source[key] = list[index];
+    }
+  }
   const input = new Input(undefined);
   const inputKeys = Object.keys(kernel.inputImages);
   const missing = [];
