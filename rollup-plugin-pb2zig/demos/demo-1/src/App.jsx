@@ -10,13 +10,14 @@ function App() {
   const [ parameters, setParameters ] = useState({});
 
   async function updateDestinationImage() {
-    const { createImageData } = library;
+    const { createImageData, purgeQueue } = library;
     const srcCanvas = srcCanvasRef.current;
     const dstCanvas = dstCanvasRef.current;
     const srcCTX = srcCanvas.getContext('2d', { willReadFrequently: true });
     const { width, height } = srcCanvas;
     const srcImageData = srcCTX.getImageData(0, 0, width, height);
     const dstCTX = dstCanvas.getContext('2d', { willReadFrequently: true });
+    purgeQueue();
     const dstImageData = await createImageData(width, height, srcImageData, parameters);
     dstCTX.putImageData(dstImageData, 0, 0);
   }
@@ -38,11 +39,15 @@ function App() {
     }
   }
 
+  function handleResetClick() {
+    setParameters({});
+  }
+
   function renderControls() {
     if (!kernelInfo) {
       return;
     }
-    return Object.entries(kernelInfo.parameters).map(([ name, info ], index) => {
+    const controls = Object.entries(kernelInfo.parameters).map(([ name, info ], index) => {
       const {
         type,
         defaultValue,
@@ -197,6 +202,12 @@ function App() {
         }
       }
     });
+    controls.push(
+      <div key={controls.length} className="control button">
+        <button onClick={handleResetClick}>Reset</button>
+      </div>
+    )
+    return controls;
   }
 
   useEffect(() => {

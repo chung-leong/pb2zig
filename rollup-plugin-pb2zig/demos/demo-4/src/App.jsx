@@ -7,18 +7,30 @@ function App() {
   const [ bitmap, setBitmap ] = useState();
   const [ library, setLibrary ] = useState();
   const [ kernelInfo, setKernelInfo ] = useState();
-  const [ parameters, setParameters ] = useState({});
+  const [ parameters, setParameters ] = useState({ size: [] });
 
   async function updateDestinationImage() {
-    const { createImageData } = library;
+    const { createPartialImageData, purgeQueue } = library;
     const srcCanvas = srcCanvasRef.current;
     const dstCanvas = dstCanvasRef.current;
     const srcCTX = srcCanvas.getContext('2d', { willReadFrequently: true });
     const { width, height } = srcCanvas;
     const srcImageData = srcCTX.getImageData(0, 0, width, height);
+    const srcImageList = [ srcImageData ];
+    while (srcImageList.length < 8) {
+      const data = new Uint8ClampedArray(srcImageData.data);
+      srcImageList.push(new ImageData(data, width, height));
+    }
     const dstCTX = dstCanvas.getContext('2d', { willReadFrequently: true });
-    const dstImageData = await createImageData(width, height, srcImageData, parameters);
-    dstCTX.putImageData(dstImageData, 0, 0);
+    const perWorker = Math.ceil(height / 8);
+    purgeQueue();
+    for (let i = 0, offset = 0, remaining = height; offset < height; i++, offset += perWorker, remaining -= perWorker) {
+      const start = offset;
+      const scanlines = Math.min(perWorker, remaining);
+      createPartialImageData(width, height, start, scanlines, srcImageList[i], parameters).then((data) => {
+        dstCTX.putImageData(data, 0, start);
+      });
+    }
   }
 
   function updateSourceImage() {
@@ -26,6 +38,7 @@ function App() {
     const dstCanvas = dstCanvasRef.current;
     srcCanvas.width = dstCanvas.width = bitmap.width;
     srcCanvas.height = dstCanvas.height = bitmap.height;
+    parameters.size = [ bitmap.width, bitmap.height ];
     const ctx = srcCanvas.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(bitmap, 0, 0);
   }
@@ -38,11 +51,15 @@ function App() {
     }
   }
 
+  function handleResetClick() {
+    setParameters({ size: parameters.size });
+  }
+
   function renderControls() {
     if (!kernelInfo) {
       return;
     }
-    return Object.entries(kernelInfo.parameters).map(([ name, info ], index) => {
+    const controls = Object.entries(kernelInfo.parameters).map(([ name, info ], index) => {
       const {
         type,
         defaultValue,
@@ -197,18 +214,24 @@ function App() {
         }
       }
     });
+    controls.push(
+      <div key={controls.length} className="control button">
+        <button onClick={handleResetClick}>Reset</button>
+      </div>
+    )
+    return controls;
   }
 
   useEffect(() => {
     const url = new URL(location);
-    const imgName = url.searchParams.get('i') ?? 'malgorzata-socha';
+    const imgName = url.searchParams.get('i') ?? 'ipad';
     import(`../img/${imgName}.png`).then(async ({ default: url }) => {
       const req = await fetch(url);
       const blob = await req.blob();
       const bitmap = await createImageBitmap(blob);
       setBitmap(bitmap);
     });
-    const filter = url.searchParams.get('f') ?? 'simple';
+    const filter = url.searchParams.get('f') ?? 'droste';
     import(`../pbk/${filter}.pbk`).then((library) => {
       setLibrary(library);
     });

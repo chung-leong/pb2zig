@@ -8,24 +8,30 @@ function App() {
   const [ parameters, setParameters ] = useState({});
 
   function updateDestinationImage() {
-    const { createPartialImageData } = library;
+    const { createPartialImageData, purgeQueue } = library;
     const dstCanvas = dstCanvasRef.current;
     const { width, height } = dstCanvas;
     const dstCTX = dstCanvas.getContext('2d', { willReadFrequently: true });
-    const count = height / 8;
-    const indices = [ 0, 1, 2, 3, 4, 5, 6, 7 ];
-    for (const index of indices) {
-      createPartialImageData(width, height, index * count, count, {}, parameters).then((data) => {
-        dstCTX.putImageData(data, 0, index * count);
+    const perWorker = Math.ceil(height / 8);
+    purgeQueue();
+    for (let i = 0, offset = 0, remaining = height; offset < height; i++, offset += perWorker, remaining -= perWorker) {
+      const start = offset;
+      const scanlines = Math.min(perWorker, remaining);
+      createPartialImageData(width, height, start, scanlines, {}, parameters).then((data) => {
+        dstCTX.putImageData(data, 0, start);
       });
     }
+  }
+
+  function handleResetClick() {
+    setParameters({});
   }
 
   function renderControls() {
     if (!kernelInfo) {
       return;
     }
-    return Object.entries(kernelInfo.parameters).map(([ name, info ], index) => {
+    const controls = Object.entries(kernelInfo.parameters).map(([ name, info ], index) => {
       const {
         type,
         defaultValue,
@@ -179,6 +185,12 @@ function App() {
         }
       }
     });
+    controls.push(
+      <div key={controls.length} className="control button">
+        <button onClick={handleResetClick}>Reset</button>
+      </div>
+    )
+    return controls;
   }
 
   useEffect(() => {

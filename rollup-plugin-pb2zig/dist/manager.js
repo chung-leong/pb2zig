@@ -32,6 +32,10 @@ export function manageWorkers(settings) {
   }
 }
 
+export function purgeQueue() {
+  pendingRequests.splice(0);
+}
+
 const workerURL = '[WORKER-URL]';
 
 let keepAlive = true;

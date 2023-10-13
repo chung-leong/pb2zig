@@ -1,8 +1,6 @@
 .App {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
   padding: 5px;
 }
 
@@ -17,7 +15,12 @@
 }
 
 .frame CANVAS {
-  width: 100%;
+  max-width: 100%;
+}
+
+.controls {
+  border-top: 1px solid #999999;
+  padding-top: 2px;
 }
 
 .control {
@@ -55,4 +58,26 @@
 
 .change-btn input[type="file"] {
   width: 0px;
+}
+
+.control.button {
+  float: right;
+}
+
+button {
+  background-color: #aaaaaa;
+  font-size: 1.5em;
+  text-transform: uppercase;
+}
+
+@media screen and (max-width: 600px) {
+  .display {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .control {
+    display: block;
+    margin-top: 10px;
+  }
 }
