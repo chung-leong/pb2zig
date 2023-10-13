@@ -1,38 +1,63 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { createImageData } from './crystallize.pbk';
-import testImage from '../img/malgorzata-socha.png';
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
 
 function App() {
-  const srcCanvasRef = useRef();
+  const src1CanvasRef = useRef();
+  const src2CanvasRef = useRef();
   const dstCanvasRef = useRef();
-  const [ bitmap, setBitmap ] = useState();
+  const [ bitmap1, setBitmap1 ] = useState();
+  const [ bitmap2, setBitmap2 ] = useState();
   const [ library, setLibrary ] = useState();
   const [ kernelInfo, setKernelInfo ] = useState();
   const [ parameters, setParameters ] = useState({});
 
   async function updateDestinationImage() {
     const { createImageData } = library;
-    const srcCanvas = srcCanvasRef.current;
+    const src1Canvas = src1CanvasRef.current;
+    const src2Canvas = src2CanvasRef.current;
     const dstCanvas = dstCanvasRef.current;
-    const srcCTX = srcCanvas.getContext('2d', { willReadFrequently: true });
-    const { width, height } = srcCanvas;
-    const srcImageData = srcCTX.getImageData(0, 0, width, height);
+    const src1CTX = src1Canvas.getContext('2d', { willReadFrequently: true });
+    const src2CTX = src2Canvas.getContext('2d', { willReadFrequently: true });
+    const { width: width1, height: height1 } = src1Canvas;
+    const { width: width2, height: height2 } = src2Canvas;
+    const src1ImageData = src1CTX.getImageData(0, 0, width1, height1);
+    const src2ImageData = src2CTX.getImageData(0, 0, width2, height2);
     const dstCTX = dstCanvas.getContext('2d', { willReadFrequently: true });
-    const dstImageData = await createImageData(width, height, srcImageData, parameters);
+    const sources = [ src1ImageData, src2ImageData ];
+    const dstImageData = await createImageData(width1, height1, sources, parameters);
     dstCTX.putImageData(dstImageData, 0, 0);
   }
 
-  function updateSourceImage() {
+  function updateSourceImage1() {
+    updateSourceImage(src1CanvasRef, bitmap1);
+  }
+
+  function updateSourceImage2() {
+    updateSourceImage(src2CanvasRef, bitmap2);
+  }
+
+  function updateSourceImage(srcCanvasRef, bitmap) {
     const srcCanvas = srcCanvasRef.current;
     const dstCanvas = dstCanvasRef.current;
-    srcCanvas.width = dstCanvas.width = bitmap.width;
-    srcCanvas.height = dstCanvas.height = bitmap.height;
+    srcCanvas.width = bitmap.width;
+    srcCanvas.height = bitmap.height;
+    if (srcCanvasRef === src1CanvasRef) {
+      dstCanvas.width = bitmap.width;
+      dstCanvas.height = bitmap.height;
+    }
     const ctx = srcCanvas.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(bitmap, 0, 0);
   }
 
-  async function handleImageChange(evt) {
+  function handleImage1Change(evt) {
+    return handleImageChange(setBitmap1, evt);
+  }
+
+  function handleImage2Change(evt) {
+    return handleImageChange(setBitmap2, evt);
+  }
+
+  async function handleImageChange(setBitmap, evt) {
     const { files } = evt.target;
     if (files.length >= 1) {
       const bitmap = await createImageBitmap(files[0]);
@@ -202,27 +227,41 @@ function App() {
   }
 
   useEffect(() => {
-    fetch(testImage).then(async (req) => {
+    const url = new URL(location);
+    const imgName1 = url.searchParams.get('i1') ?? 'malgorzata-socha';
+    import(`../img/${imgName1}.png`).then(async ({ default: url }) => {
+      const req = await fetch(url);
       const blob = await req.blob();
       const bitmap = await createImageBitmap(blob);
-      setBitmap(bitmap);
+      setBitmap1(bitmap);
     });
-    const url = new URL(location);
-    const filter = url.searchParams.get('f') ?? 'simple';
+    const imgName2 = url.searchParams.get('i2') ?? 'mandelbrot';
+    import(`../img/${imgName2}.png`).then(async ({ default: url }) => {
+      const req = await fetch(url);
+      const blob = await req.blob();
+      const bitmap = await createImageBitmap(blob);
+      setBitmap2(bitmap);
+    });
+    const filter = url.searchParams.get('f') ?? 'crossfade';
     import(`../pbk/${filter}.pbk`).then((library) => {
       setLibrary(library);
     });
   }, []);
   useEffect(() => {
-    if (bitmap) {
-      updateSourceImage();
+    if (bitmap1) {
+      updateSourceImage1();
     }
-  }, [ bitmap ]);
+  }, [ bitmap1 ]);
   useEffect(() => {
-    if (bitmap && library) {
+    if (bitmap2) {
+      updateSourceImage2();
+    }
+  }, [ bitmap2 ]);
+  useEffect(() => {
+    if (bitmap1 && bitmap2 && library) {
       updateDestinationImage();
     }
-  }, [ bitmap, library, parameters ]);
+  }, [ bitmap1, bitmap2, library, parameters ]);
   useEffect(() => {
     if (library) {
       const { getKernelInfo } = library;
@@ -240,13 +279,21 @@ function App() {
       <div className="display">
         <div className="frame">
           <div>
-            Input:
+            Input 1:
             <label className="change-btn">
               change
-              <input type="file" accept="image/*" onChange={handleImageChange} />
+              <input type="file" accept="image/*" onChange={handleImage1Change} />
             </label>
           </div>
-          <canvas ref={srcCanvasRef}></canvas>
+          <canvas ref={src1CanvasRef}></canvas>
+          <div>
+            Input 2:
+            <label className="change-btn">
+              change
+              <input type="file" accept="image/*" onChange={handleImage2Change} />
+            </label>
+          </div>
+          <canvas ref={src2CanvasRef}></canvas>
         </div>
         <div className="frame">
           <div>Output:</div>

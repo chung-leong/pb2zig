@@ -13,7 +13,7 @@ export async function createPartialImageData(width, height, start, count, source
     transfer.push(source.data.buffer);
   } else {
     for (const image of Object.values(source)) {
-      transfer.push(source.data.buffer);
+      transfer.push(image.data.buffer);
     }
   }
   return startJob('createPartialImageData', args, transfer);

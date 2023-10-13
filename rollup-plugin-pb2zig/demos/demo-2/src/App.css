@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 100vw;
   padding: 5px;
 }
 
@@ -13,11 +12,13 @@
 
 .frame {
   margin: 5px 5px 5px 5px;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
+  max-width: 50%;
 }
 
 .frame CANVAS {
-  width: 100%;
+  max-width: 100%;
+  margin-bottom: 10px;
 }
 
 .control {

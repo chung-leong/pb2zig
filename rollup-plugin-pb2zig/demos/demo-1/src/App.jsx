@@ -1,6 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { createImageData } from './crystallize.pbk';
-import testImage from '../img/malgorzata-socha.png';
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
 
 function App() {
@@ -202,12 +200,14 @@ function App() {
   }
 
   useEffect(() => {
-    fetch(testImage).then(async (req) => {
+    const url = new URL(location);
+    const imgName = url.searchParams.get('i') ?? 'malgorzata-socha';
+    import(`../img/${imgName}.png`).then(async ({ default: url }) => {
+      const req = await fetch(url);
       const blob = await req.blob();
       const bitmap = await createImageBitmap(blob);
       setBitmap(bitmap);
     });
-    const url = new URL(location);
     const filter = url.searchParams.get('f') ?? 'simple';
     import(`../pbk/${filter}.pbk`).then((library) => {
       setLibrary(library);
