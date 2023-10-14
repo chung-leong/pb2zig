@@ -103,10 +103,10 @@ export default function createPlugin(options = {}) {
           const workerJSPath = fileURLToPath(new URL('./worker.js', import.meta.url));
           const workerJS = await readFile(workerJSPath, 'utf-8');
           const workerCode = `${imageCode}\n${workerJS}`;
-          const workerName = `${parse(pbkPath).name}-worker.js`;
+          const workerName = `${parse(pbkPath).name}-worker`;
           let workerURL;
           if (serving) {
-            const virtualPath = `/pb2zig/${md5(pbkPath).slice(0, 8)}/${workerName}`;
+            const virtualPath = `/pb2zig/${md5(pbkPath).slice(0, 8)}/${workerName}.js`;
             // replace the reference to zigar-runtime so that the worker would try to load the file
             workerScripts[virtualPath] = workerCode.replace('zigar-runtime', '/zigar-runtime');
             workerURL = virtualPath + `?hash=${md5(workerCode).slice(0, 8)}`;
