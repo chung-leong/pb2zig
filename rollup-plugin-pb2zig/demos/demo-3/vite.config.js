@@ -7,4 +7,9 @@ export default defineConfig({
     React(),
     PB2Zig({ webWorker: true }),
   ],
+  base: '/pb2zig/demo-3',
+  build: {
+    emptyOutDir: true,
+    outDir: '../dist/demo-3',
+  },
 })

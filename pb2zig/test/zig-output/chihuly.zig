@@ -185,8 +185,9 @@ fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: 
     if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
         instance.evaluateDependents();
     }
+    const end = start + count;
     instance.outputCoord[1] = start;
-    while (instance.outputCoord[1] < height) : (instance.outputCoord[1] += 1) {
+    while (instance.outputCoord[1] < end) : (instance.outputCoord[1] += 1) {
         instance.outputCoord[0] = 0;
         while (instance.outputCoord[0] < width) : (instance.outputCoord[0] += 1) {
             instance.evaluatePixel();

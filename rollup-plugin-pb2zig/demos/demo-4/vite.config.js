@@ -7,4 +7,9 @@ export default defineConfig({
     React(),
     Zigar({ webWorker: true }),
   ],
+  base: '/pb2zig/demo-4',
+  build: {
+    emptyOutDir: true,
+    outDir: '../dist/demo-4',
+  },
 })
