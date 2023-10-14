@@ -84,6 +84,7 @@ async function startJob(name, args = [], transfer = []) {
     job.reject = reject;
   });
   jobs.push(job);
+  worker.onmessageerror = () => reject(new Error('Message error'));
   worker.postMessage([ name, job.id, ...args], { transfer });
   return job.promise;
 }

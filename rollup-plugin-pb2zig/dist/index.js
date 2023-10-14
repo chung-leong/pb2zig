@@ -103,7 +103,7 @@ export default function createPlugin(options = {}) {
           const workerJSPath = fileURLToPath(new URL('./worker.js', import.meta.url));
           const workerJS = await readFile(workerJSPath, 'utf-8');
           const workerCode = `${imageCode}\n${workerJS}`;
-          const workerName = parse(pbkPath).name + '-worker.js';
+          const workerName = `${parse(pbkPath).name}-worker.js`;
           let workerURL;
           if (serving) {
             const virtualPath = `/pb2zig/${md5(pbkPath).slice(0, 8)}/${workerName}`;
@@ -111,18 +111,22 @@ export default function createPlugin(options = {}) {
             workerScripts[virtualPath] = workerCode.replace('zigar-runtime', '/zigar-runtime');
             workerURL = virtualPath + `?hash=${md5(workerCode).slice(0, 8)}`;
           } else {
+            // save the code so we can retrieve it in the if statement down below
+            const virtualPath = `${pbkPath}#worker`;
+            workerScripts[virtualPath] = workerCode;
             const refID = this.emitFile({
-              type: 'prebuilt-chunk',
-              fileName: workerName,
-              code: workerCode,
-              exports: [ '__init', 'getKernel', 'createImageData', 'createPartialImageData', 'releaseWorkers' ],
+              type: 'chunk',
+              id: virtualPath,
+              name: workerName,
             });
             workerURL = `import.meta.ROLLUP_FILE_URL_${refID}`;
           }
-          return managerJS.replace('[WORKER-URL]', workerURL);
+          return managerJS.replace("'[WORKER-URL]'", workerURL);
         } else {
           return imageCode;
         }
+      } else if (id.endsWith('.pbk#worker')) {
+        return workerScripts[id];
       }
     }
   };

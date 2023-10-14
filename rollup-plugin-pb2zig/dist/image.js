@@ -136,4 +136,4 @@ function getPBType(zigType) {
   return types[zigType];
 }
 
-export { __init };
+export { __zigar };
