@@ -202,15 +202,15 @@ function App() {
   }, []);
   useEffect(() => {
     if (library) {
-      updateDestinationImage();
-    }
-  }, [ library, parameters ]);
-  useEffect(() => {
-    if (library) {
       const { getKernelInfo } = library;
       getKernelInfo().then(setKernelInfo);
     }
   }, [ library ]);
+  useEffect(() => {
+    if (library) {
+      updateDestinationImage();
+    }
+  }, [ library, parameters ]);
   useEffect(() => {
     if (kernelInfo) {
       document.title += `: ${kernelInfo.description}`;

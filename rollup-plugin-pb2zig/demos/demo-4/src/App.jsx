@@ -242,16 +242,16 @@ function App() {
     }
   }, [ bitmap ]);
   useEffect(() => {
-    if (bitmap && library) {
-      updateDestinationImage();
-    }
-  }, [ bitmap, library, parameters ]);
-  useEffect(() => {
     if (library) {
       const { getKernelInfo } = library;
       getKernelInfo().then(setKernelInfo);
     }
   }, [ library ]);
+  useEffect(() => {
+    if (bitmap && library) {
+      updateDestinationImage();
+    }
+  }, [ bitmap, library, parameters ]);
   useEffect(() => {
     if (kernelInfo) {
       document.title += `: ${kernelInfo.description}`;

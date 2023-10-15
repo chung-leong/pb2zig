@@ -269,16 +269,16 @@ function App() {
     }
   }, [ bitmap2 ]);
   useEffect(() => {
-    if (bitmap1 && bitmap2 && library) {
-      updateDestinationImage();
-    }
-  }, [ bitmap1, bitmap2, library, parameters ]);
-  useEffect(() => {
     if (library) {
       const { getKernelInfo } = library;
       getKernelInfo().then(setKernelInfo);
     }
   }, [ library ]);
+  useEffect(() => {
+    if (bitmap1 && bitmap2 && library) {
+      updateDestinationImage();
+    }
+  }, [ bitmap1, bitmap2, library, parameters ]);
   useEffect(() => {
     if (kernelInfo) {
       document.title += `: ${kernelInfo.description}`;
