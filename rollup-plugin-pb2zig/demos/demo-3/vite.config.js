@@ -10,6 +10,6 @@ export default defineConfig({
   base: '/pb2zig/demo-3',
   build: {
     emptyOutDir: true,
-    outDir: '../../../web-site/demo-3',
+    outDir: '../../../docs/demo-3',
   },
 })
