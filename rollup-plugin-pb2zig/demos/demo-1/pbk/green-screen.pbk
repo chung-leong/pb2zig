@@ -4,7 +4,7 @@ kernel simple
 <   namespace : "pb2zig";
     vendor : "Chung Leong";
     version : 1;
-    description : "";
+    description : "Removal of green background";
 >
 {
    parameter float strength
