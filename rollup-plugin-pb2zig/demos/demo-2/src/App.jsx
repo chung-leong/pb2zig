@@ -266,6 +266,19 @@ function App() {
   useEffect(() => {
     if (bitmap2) {
       updateSourceImage2();
+      const url = new URL(location);
+      const sizeName2 = url.searchParams.get('s2');
+      const widthName2 = url.searchParams.get('w2');
+      const heightName2 = url.searchParams.get('h2');
+      if (sizeName2) {
+        parameters[sizeName2] = [ bitmap2.width, bitmap2.height ];
+      }
+      if (widthName2) {
+        parameters[widthName2] = bitmap2.width;
+      }
+      if (heightName2) {
+        parameters[heightName2] = bitmap2.height;
+      }
     }
   }, [ bitmap2 ]);
   useEffect(() => {

@@ -15,7 +15,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/asciimii.jpg)|
 | ![source image](./img/fontmap.png)         |        |
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=asciimii) |
+[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=asciimii&i2=fontmap&i2=fontmap) |
 [Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/asciimii.pbk)
 
 ### bezier-aligner
@@ -29,7 +29,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/bezier-aligner.jpg)|
 | ![source image](./img/telephone-cord.png)  |        |
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=bezier-aligner) |
+[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=bezier-aligner&i2=telephone-cord&w2=imagewidth) |
 [Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/bezier-aligner.pbk)
 
 ### blendmode-color
@@ -71,7 +71,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/zig-logo.jpg)|![result](./img/bumpmap.jpg)|
 | ![source image](./img/wood.jpg)    |        |
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=bumpmap) |
+[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=bumpmap&i1=zig-logo&i2=wood) |
 [Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/bumpmap.pbk)
 
 ### color
@@ -131,7 +131,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/malgorzata-socha2.jpg)|        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=crossfade) |
+[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=crossfade&i2=malgorzata-socha2) |
 [Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/crossfade.pbk)
 
 ### displace
@@ -191,7 +191,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/stripe.png)|   |        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=metallic) |
+[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=metallic&i1=zig-logo&i2=stripe) |
 [Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/metallic.pbk)
 
 ### saturation

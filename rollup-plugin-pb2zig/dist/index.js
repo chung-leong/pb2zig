@@ -109,7 +109,7 @@ export default function createPlugin(options = {}) {
             const virtualPath = `/pb2zig/${md5(pbkPath).slice(0, 8)}/${workerName}.js`;
             // replace the reference to zigar-runtime so that the worker would try to load the file
             workerScripts[virtualPath] = workerCode.replace('zigar-runtime', '/zigar-runtime');
-            workerURL = virtualPath + `?hash=${md5(workerCode).slice(0, 8)}`;
+            workerURL = JSON.stringify(virtualPath + `?hash=${md5(workerCode).slice(0, 8)}`);
           } else {
             // save the code so we can retrieve it in the if statement down below
             const virtualPath = `${pbkPath}#worker`;
