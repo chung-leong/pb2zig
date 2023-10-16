@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve, join, parse } from 'path';
 import { convertPixelBender } from './index.js';
 
-const pixelTypes = [ 'u8', 'u16', 'u32', 'f32', ];
+const pixelTypes = [ 'u8', 'i16', 'u16', 'f32' ];
 
 function processArguments(args) {
   let target = '';
@@ -16,9 +16,11 @@ function processArguments(args) {
             throw new Error(`Output directory does not exists: ${arg}`);
           }
           break;
-        case 'inputPixelType':
-          break;
         case 'outputPixelType':
+        case 'inputPixelType':
+          if (!pixelTypes.includes(arg)) {
+            throw new Error(`Invalid pixel type: ${arg}`);
+          }
           break;
       }
       options[target] = arg;

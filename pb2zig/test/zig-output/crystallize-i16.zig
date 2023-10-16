@@ -1,30 +1,137 @@
+// Pixel Bender kernel "Crystallize" (translated using pb2zig)
 const std = @import("std");
-const kernel = @import("./painting.zig").kernel;
 
-test "createOutput" {
-    const src_pixels: [1]@Vector(4, u8) = .{.{ 0, 0, 0, 0 }};
-    const input: Input = .{
-        .src = .{
-            .data = &src_pixels,
-            .width = 1,
-            .height = 1,
+pub const kernel = struct {
+    // kernel information
+    pub const namespace = "by Petri Leskinen";
+    pub const vendor = "";
+    pub const version = 1;
+    pub const description = "Crystallize -filter";
+    pub const parameters = .{
+        .size = .{
+            .type = f32,
+            .minValue = 1.0,
+            .maxValue = 300.0,
+            .defaultValue = 20.0,
+            .description = "size",
         },
     };
-    const params: Parameters = .{};
-    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = general_purpose_allocator.allocator();
-    const output = try createOutput(allocator, 1, 1, input, params);
-    std.debug.assert(output.dst.width == 1);
-    std.debug.assert(output.dst.height == 1);
-    std.debug.assert(output.dst.data.len == 1);
-}
+    pub const inputImages = .{
+        .src = .{ .channels = 4 },
+    };
+    pub const outputImages = .{
+        .dst = .{ .channels = 4 },
+    };
 
-const InputPixelType = u8;
-const OutputPixelType = u8;
+    // generic kernel instance type
+    fn Instance(comptime InputStruct: type, comptime OutputStruct: type, comptime ParameterStruct: type) type {
+        return struct {
+            params: ParameterStruct,
+            input: InputStruct,
+            output: OutputStruct,
+            outputCoord: @Vector(2, u32) = @splat(0),
 
-//---start of code
-pub const Input = KernelInput(InputPixelType, kernel);
-pub const Output = KernelOutput(OutputPixelType, kernel);
+            // output pixel
+            dst: @Vector(4, f32) = undefined,
+
+            // constants
+            const rot1: [2]@Vector(2, f32) = [2]@Vector(2, f32){
+                .{ 0.951, 0.309 },
+                .{ -0.309, 0.951 },
+            };
+            const rot1r: [2]@Vector(2, f32) = [2]@Vector(2, f32){
+                .{ 0.951, -0.309 },
+                .{ 0.309, 0.951 },
+            };
+            const base1: @Vector(2, f32) = @Vector(2, f32){ 2400.0, -100.0 };
+            const rot2: [2]@Vector(2, f32) = [2]@Vector(2, f32){
+                .{ 0.866, 0.5 },
+                .{ -0.5, 0.866 },
+            };
+            const rot2r: [2]@Vector(2, f32) = [2]@Vector(2, f32){
+                .{ 0.866, -0.5 },
+                .{ 0.5, 0.866 },
+            };
+            const base2: @Vector(2, f32) = @Vector(2, f32){ -100.0, 2400.0 };
+
+            // functions defined in kernel
+            pub fn evaluatePixel(self: *@This()) void {
+                const size = self.params.size;
+                const src = self.input.src;
+                const dst = self.output.dst;
+                self.dst = @splat(0.0);
+
+                var div: f32 = size;
+                var newP: @Vector(2, f32) = base1 + @"M * V"(@"M * S"(rot1r, div), (floor(@"M * V"(rot1, (self.outCoord() - base1)) / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5))));
+                div = 21.0 / 20.0 * size;
+                var p: @Vector(2, f32) = base2 + @"M * V"(@"M * S"(rot2r, div), (floor(@"M * V"(rot2, (self.outCoord() - base2)) / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5))));
+                newP = if (length(p - self.outCoord()) < length(newP - self.outCoord())) p else newP;
+                div = 19.0 / 20.0 * size;
+                p = @as(@Vector(2, f32), @splat(div)) * (floor(self.outCoord() / @as(@Vector(2, f32), @splat(div))) + @as(@Vector(2, f32), @splat(0.5)));
+                newP = if (length(p - self.outCoord()) < length(newP - self.outCoord())) p else newP;
+                self.dst = src.sampleNearest(newP);
+
+                dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
+            }
+
+            pub fn outCoord(self: *@This()) @Vector(2, f32) {
+                return .{ @as(f32, @floatFromInt(self.outputCoord[0])) + 0.5, @as(f32, @floatFromInt(self.outputCoord[1])) + 0.5 };
+            }
+        };
+    }
+
+    // kernel instance creation function
+    pub fn create(input: anytype, output: anytype, params: anytype) Instance(@TypeOf(input), @TypeOf(output), @TypeOf(params)) {
+        return .{
+            .input = input,
+            .output = output,
+            .params = params,
+        };
+    }
+
+    // built-in Pixel Bender functions
+    fn floor(v: anytype) @TypeOf(v) {
+        return @floor(v);
+    }
+
+    fn length(v: anytype) f32 {
+        // return switch (@typeInfo(@TypeOf(v))) {
+            //     .Vector => @sqrt(@reduce(.Add, v * v)),
+            //     else => @abs(v),
+            // };
+        return switch (@typeInfo(@TypeOf(v))) {
+            .Vector => @sqrt(@reduce(.Add, v * v)),
+            else => @fabs(v),
+        };
+    }
+
+    fn @"M * V"(m1: anytype, v2: anytype) @TypeOf(v2) {
+        const ar = @typeInfo(@TypeOf(m1)).Array;
+        var t1: @TypeOf(m1) = undefined;
+        inline for (m1, 0..) |column, c| {
+            comptime var r = 0;
+            inline while (r < ar.len) : (r += 1) {
+                t1[r][c] = column[r];
+            }
+        }
+        var result: @TypeOf(v2) = undefined;
+        inline for (t1, 0..) |column, c| {
+            result[c] = @reduce(.Add, column * v2);
+        }
+        return result;
+    }
+
+    fn @"M * S"(m1: anytype, s2: anytype) @TypeOf(m1) {
+        var result: @TypeOf(m1) = undefined;
+        inline for (m1, 0..) |column, c| {
+            result[c] = column * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+        }
+        return result;
+    }
+};
+
+pub const Input = KernelInput(i16, kernel);
+pub const Output = KernelOutput(i16, kernel);
 pub const Parameters = KernelParameters(kernel);
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
@@ -103,12 +210,12 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             // requires newest version of zig, which has issues
             //
             // const numerator: FPixel = switch (len) {
-            //     1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
-            //     2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
-            //     3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
-            //     4 => @floatFromInt(pixel),
-            //     else => @compileError("Unsupported number of channels: " ++ len),
-            // };
+                //     1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
+                //     2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
+                //     3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
+                //     4 => @floatFromInt(pixel),
+                //     else => @compileError("Unsupported number of channels: " ++ len),
+                // };
             // const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             // return numerator / denominator;
             var numerator: FPixel = undefined;
@@ -149,12 +256,12 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             // const product: FPixel = constrain(pixel * multiplier, max);
             // const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
             // const result: Pixel = switch (len) {
-            //     1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
-            //     2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
-            //     3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
-            //     4 => @intFromFloat(product),
-            //     else => @compileError("Unsupported number of channels: " ++ len),
-            // };
+                //     1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
+                //     2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
+                //     3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
+                //     4 => @intFromFloat(product),
+                //     else => @compileError("Unsupported number of channels: " ++ len),
+                // };
             // return result;
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
@@ -325,7 +432,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
         const param = @field(Kernel.parameters, field.name);
         const default_value: ?*const anyopaque = get_def: {
             const value: param.type = if (@hasField(@TypeOf(param), "defaultValue"))
-                param.defaultValue
+            param.defaultValue
             else switch (@typeInfo(param.type)) {
                 .Int, .Float => 0,
                 .Bool => false,

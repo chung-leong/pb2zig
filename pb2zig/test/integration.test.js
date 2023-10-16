@@ -944,6 +944,96 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
+  it('should correctly work correctly with i16 pixels', async function() {
+    this.timeout(60000);
+    const name = 'crystallize';
+    const filenameIn = 'malgorzata-socha.png';
+    const filenameOut = 'crystallize-i16';
+    const pbkCode = await readFile(`${pkbDir}/${name}.pbk`, 'utf8');
+    const zigCode = convertPixelBender(pbkCode, { inputPixelType: 'i16', outputPixelType: 'i16'});
+    const path = `${zigDir}/${name}-i16.zig`;
+    if (isNewContent(path, zigCode)) {
+      await writeFile(path, zigCode);
+    }
+    const { createOutput } = await import(path);
+    const img = sharp(`${imgInDir}/${filenameIn}`).ensureAlpha().raw({ depth: 'short' });
+    const { data, info } = await img.toBuffer({ resolveWithObject: true });
+    const srcPixels = new Int16Array(data.buffer);
+    for (let i = 0; i < srcPixels.length; i++) {
+      srcPixels[i] = srcPixels[i] * ((2 ** 15 - 1) / (2 ** 8 - 1));
+    }
+    const { width, height, channels, depth } = info;
+    const input = { src: { data: srcPixels, width, height } };
+    const output = createOutput(width, height, input, {});
+    const { dst } = output;
+    const dstPixels = dst.data.typedArray;
+    for (let i = 0; i < dstPixels.length; i++) {
+      dstPixels[i] = dstPixels[i] * ((2 ** 8 - 1) / (2 ** 15 - 1));
+    }
+    sharp(dstPixels, {
+       raw: { width, height, channels, depth, premultiplied: false },
+    }).png().toFile(`${imgOutDir}/${filenameOut}.png`);
+  })
+  it('should correctly work correctly with u16 pixels', async function() {
+    this.timeout(60000);
+    const name = 'crystallize';
+    const filenameIn = 'malgorzata-socha.png';
+    const filenameOut = 'crystallize-u16';
+    const pbkCode = await readFile(`${pkbDir}/${name}.pbk`, 'utf8');
+    const zigCode = convertPixelBender(pbkCode, { inputPixelType: 'u16', outputPixelType: 'u16'});
+    const path = `${zigDir}/${name}-u16.zig`;
+    if (isNewContent(path, zigCode)) {
+      await writeFile(path, zigCode);
+    }
+    const { createOutput } = await import(path);
+    const img = sharp(`${imgInDir}/${filenameIn}`).ensureAlpha().raw({ depth: 'ushort' });
+    const { data, info } = await img.toBuffer({ resolveWithObject: true });
+    const srcPixels = new Uint16Array(data.buffer);
+    for (let i = 0; i < srcPixels.length; i++) {
+      srcPixels[i] = srcPixels[i] * ((2 ** 16 - 1) / (2 ** 8 - 1));
+    }
+    const { width, height, channels, depth } = info;
+    const input = { src: { data: srcPixels, width, height } };
+    const output = createOutput(width, height, input, {});
+    const { dst } = output;
+    const dstPixels = dst.data.typedArray;
+    for (let i = 0; i < dstPixels.length; i++) {
+      dstPixels[i] = dstPixels[i] * ((2 ** 8 - 1) / (2 ** 16 - 1));
+    }
+    sharp(dstPixels, {
+       raw: { width, height, channels, depth, premultiplied: false },
+    }).png().toFile(`${imgOutDir}/${filenameOut}.png`);
+  })
+  it('should correctly work correctly with f32 pixels', async function() {
+    this.timeout(60000);
+    const name = 'crystallize';
+    const filenameIn = 'malgorzata-socha.png';
+    const filenameOut = 'crystallize-f32';
+    const pbkCode = await readFile(`${pkbDir}/${name}.pbk`, 'utf8');
+    const zigCode = convertPixelBender(pbkCode, { inputPixelType: 'f32', outputPixelType: 'f32'});
+    const path = `${zigDir}/${name}-f32.zig`;
+    if (isNewContent(path, zigCode)) {
+      await writeFile(path, zigCode);
+    }
+    const { createOutput } = await import(path);
+    const img = sharp(`${imgInDir}/${filenameIn}`).ensureAlpha().raw({ depth: 'float' });
+    const { data, info } = await img.toBuffer({ resolveWithObject: true });
+    const srcPixels = new Float32Array(data.buffer);
+    for (let i = 0; i < srcPixels.length; i++) {
+      srcPixels[i] = srcPixels[i] * (1 / 255);
+    }
+    const { width, height, channels, depth } = info;
+    const input = { src: { data: srcPixels, width, height } };
+    const output = createOutput(width, height, input, {});
+    const { dst } = output;
+    const dstPixels = dst.data.typedArray;
+    for (let i = 0; i < dstPixels.length; i++) {
+      dstPixels[i] = dstPixels[i] * 255;
+    }
+    sharp(dstPixels, {
+       raw: { width, height, channels, depth, premultiplied: false },
+    }).png().toFile(`${imgOutDir}/${filenameOut}.png`);
+  })
 })
 
 function resolve(relPath) {
@@ -959,13 +1049,17 @@ async function translate(name) {
   const pbkCode = await readFile(`${pkbDir}/${name}.pbk`, 'utf8');
   const zigCode = convertPixelBender(pbkCode);
   const path = `${zigDir}/${name}.zig`;
-  let oldZigCode = '';
-  try {
-    oldZigCode = await readFile(path, 'utf-8');
-  } catch (err) {
-  }
-  if (zigCode !== oldZigCode) {
+  if (isNewContent(path, zigCode)) {
     await writeFile(path, zigCode);
+  }
+}
+
+async function isNewContent(path, content) {
+  try {
+    const oldContent = await readFile(path, 'utf-8');
+    return (oldContent !== content);
+  } catch (err) {
+    return true;
   }
 }
 

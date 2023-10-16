@@ -903,8 +903,8 @@ export class PixelBenderToZigTranslator {
     const marker = '//---start of code';
     const index = content.indexOf(marker);
     let code = content.substring(index + marker.length);
-    code = code.replace('InputPixelType', inputPixelType);
-    code = code.replace('OutputPixelType', outputPixelType);
+    code = code.replace(/InputPixelType/g, inputPixelType);
+    code = code.replace(/OutputPixelType/g, outputPixelType);
     return code;
   }
 
