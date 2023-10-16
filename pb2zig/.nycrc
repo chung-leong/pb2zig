@@ -4,7 +4,8 @@
     "text",
     "html"
   ],
-  "lines": 98,
-  "branches": 95,
-  "statements": 98
+  "lines": 99,
+  "branches": 96,
+  "statements": 99,
+  "functions": 100
 }

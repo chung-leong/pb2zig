@@ -106,7 +106,7 @@ pub const kernel = struct {
                 {
                     var i: i32 = SPHERE_PARAMETER_COUNT * 2;
                     while (i < NUM_SPHERES * SPHERE_PARAMETER_COUNT) {
-                        var ifloat: f32 = @as(f32, @floatFromInt(i));
+                        var ifloat: f32 = @floatFromInt(i);
                         self.sphereArray[@intCast(i)] = sin(ifloat / 5.0) * 6.0;
                         self.sphereArray[@intCast(i + 1)] = sin(ifloat / 4.1) * 2.5;
                         self.sphereArray[@intCast(i + 2)] = -18.0 - sin(ifloat / 3.1 + 1.2) * 10.0;

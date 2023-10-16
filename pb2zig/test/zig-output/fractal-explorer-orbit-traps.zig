@@ -290,7 +290,7 @@ pub const kernel = struct {
                 const orbitRotation = self.orbitRotation;
                 const orbitSpin = self.orbitSpin;
                 var color: @Vector(4, f32) = .{ 0.0, 0.0, 0.0, 0.0 };
-                var sp: @Vector(2, f32) = @as(@Vector(2, f32), floatVectorFromIntVector(sizeInput / @as(@Vector(2, i32), @splat(2)))) + @"V * M"((@"V * M"(w, orbitSpin) + orbitTrapOffset), orbitRotation) * bitmap2complex;
+                var sp: @Vector(2, f32) = floatVectorFromIntVector(sizeInput / @as(@Vector(2, i32), @splat(2))) + @"V * M"((@"V * M"(w, orbitSpin) + orbitTrapOffset), orbitRotation) * bitmap2complex;
                 var s: @Vector(4, f32) = src.sampleLinear(sp);
                 if (s[3] > 0.0) {
                     color = mix(c, s, s[3]);

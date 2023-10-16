@@ -49,8 +49,8 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var sizef: f32 = @as(f32, @floatFromInt(size));
-                var charCountf: f32 = @as(f32, @floatFromInt(charCount));
+                var sizef: f32 = @floatFromInt(size);
+                var charCountf: f32 = @floatFromInt(charCount);
                 var offset2: @Vector(2, f32) = mod(self.outCoord(), sizef);
                 var mosaicPixel4: @Vector(4, f32) = src.sampleNearest(self.outCoord() - offset2);
                 var luma: f32 = 0.2126 * mosaicPixel4[0] + 0.7152 * mosaicPixel4[1] + 0.0722 * mosaicPixel4[2];

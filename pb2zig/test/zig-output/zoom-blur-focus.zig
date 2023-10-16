@@ -16,9 +16,9 @@ pub const kernel = struct {
         },
         .center = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(0.0)),
-            .maxValue = @as(@Vector(2, f32), @splat(900.0)),
-            .defaultValue = @as(@Vector(2, f32), @splat(200.0)),
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 900.0, 900.0 },
+            .defaultValue = .{ 200.0, 200.0 },
         },
         .focalSize = .{
             .type = f32,
@@ -80,7 +80,7 @@ pub const kernel = struct {
                 var coord: @Vector(2, f32) = self.outCoord();
                 var cur_radius: f32 = length(coord - center);
                 var color: @Vector(4, f32) = src.sampleNearest(coord);
-                var cond1: i32 = @as(i32, if ((cur_radius > focalSize)) 1 else 0);
+                var cond1: i32 = if ((cur_radius > focalSize)) 1 else 0;
                 if (invert == 1) {
                     if (cond1 == 0) {
                         cond1 = 1;
@@ -96,7 +96,7 @@ pub const kernel = struct {
                 }
                 var tmpAmount: f32 = strength * amount;
                 coord -= center;
-                var tmpDst: @Vector(4, f32) = @as(@Vector(4, f32), @splat(0.0));
+                var tmpDst: @Vector(4, f32) = .{ 0.0, 0.0, 0.0, 0.0 };
                 var scale: f32 = undefined;
                 scale = 1.0;
                 tmpDst += src.sampleNearest(coord * @as(@Vector(2, f32), @splat(scale)) + center);

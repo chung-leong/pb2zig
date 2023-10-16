@@ -266,10 +266,6 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     }
   }
 
-  assignmentOperator(ctx) {
-    return this.anyName(ctx);
-  }
-
   ternaryOperation(ctx) {
     const expr = this.visit(ctx.binaryOperation);
     if (ctx.Question) {
@@ -291,9 +287,6 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
     } else if (ctx.comparisonOperator) {
       operator = this.visit(ctx.comparisonOperator);
       type = PB.ComparisonOperation;
-    } else if (ctx.assignmentOperator) {
-      operator = this.visit(ctx.assignmentOperator);
-      type = PB.AssignmentOperation;
     } else {
       return expr;
     }

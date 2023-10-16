@@ -26,7 +26,7 @@ pub const kernel = struct {
         },
         .basepoint = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(0.01)),
+            .minValue = .{ 0.01, 0.01 },
             .maxValue = .{ 496.01, 496.01 },
             .defaultValue = .{ 150.01, 150.01 },
         },

@@ -40,7 +40,7 @@ pub const kernel = struct {
                 const outputPixel = self.output.outputPixel;
                 self.outputPixel = @splat(0.0);
 
-                var dimAsFloat: f32 = @as(f32, @floatFromInt(dimension));
+                var dimAsFloat: f32 = @floatFromInt(dimension);
                 var sc: @Vector(2, f32) = floor(self.outCoord() / @Vector(2, f32){
                     dimAsFloat,
                     dimAsFloat,

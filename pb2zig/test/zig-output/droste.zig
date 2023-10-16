@@ -224,7 +224,7 @@ pub const kernel = struct {
                 }
                 self.tileBasedOnTransparency = @as(bool, if ((transparentInside or !transparentOutside)) true else false);
                 self._shift = @as(@Vector(2, f32), @splat(1.0)) + centerShift / @as(@Vector(2, f32), @splat(100.0));
-                self._center = (@as(@Vector(2, f32), floatVectorFromIntVector(size)) / @as(@Vector(2, f32), @splat(2.0))) + center * (@as(@Vector(2, f32), floatVectorFromIntVector(size)) / @as(@Vector(2, f32), @splat(2.0))) / @as(@Vector(2, f32), @splat(100.0));
+                self._center = (floatVectorFromIntVector(size) / @as(@Vector(2, f32), @splat(2.0))) + center * (floatVectorFromIntVector(size) / @as(@Vector(2, f32), @splat(2.0))) / @as(@Vector(2, f32), @splat(100.0));
                 self.w = @as(f32, @floatFromInt(size[0]));
                 self.h = @as(f32, @floatFromInt(size[1]));
                 self.minDimension = @as(@Vector(2, f32), @splat(min(self.w, self.h) / 2.0));

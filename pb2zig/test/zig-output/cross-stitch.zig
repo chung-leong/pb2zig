@@ -46,8 +46,8 @@ pub const kernel = struct {
                 tlPos[0] = floor(cPos[0] / @as(f32, @floatFromInt(size)));
                 tlPos[1] = floor(cPos[1] / @as(f32, @floatFromInt(size)));
                 tlPos *= @as(@Vector(2, f32), @splat(@as(f32, @floatFromInt(size))));
-                var remX: i32 = @as(i32, @intFromFloat(mod(cPos[0], @as(f32, @floatFromInt(size)))));
-                var remY: i32 = @as(i32, @intFromFloat(mod(cPos[1], @as(f32, @floatFromInt(size)))));
+                var remX: i32 = @intFromFloat(mod(cPos[0], @as(f32, @floatFromInt(size))));
+                var remY: i32 = @intFromFloat(mod(cPos[1], @as(f32, @floatFromInt(size))));
                 if (remX == 0 and remY == 0) {
                     tlPos = cPos;
                 }

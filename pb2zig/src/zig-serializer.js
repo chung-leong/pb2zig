@@ -58,12 +58,7 @@ export class ZigSerializer {
     }
     const fname = `serialize${statement.constructor.name}`;
     const f = this[fname];
-    if (f) {
-      return f.call(this, statement);
-    } else {
-      console.log(statement);
-      throw new Error(`TODO: ${fname}`);
-    }
+    return f.call(this, statement);
   }
 
   serializeVariableDeclaration({ type, isPublic, isConstant, name, initializer }) {
@@ -173,11 +168,11 @@ export class ZigSerializer {
   }
 
   serializeReturnStatement({ expression }) {
-    return `return ${this.serializeExpression(expression)};`;
-  }
-
-  serializeEmptyStatement() {
-    return ``;
+    if (expression) {
+      return `return ${this.serializeExpression(expression)};`;
+    } else {
+      return `return;`;
+    }
   }
 
   serializeBlankLine() {
@@ -186,9 +181,6 @@ export class ZigSerializer {
 
   serializeExpressionStatement({ expression }) {
     const code = this.serializeExpression(expression);
-    if (!code) {
-      return undefined;
-    }
     return `${code};`;
   }
 
@@ -196,18 +188,9 @@ export class ZigSerializer {
     if (typeof(expression) === 'string') {
       return expression;
     }
-    if (typeof(expression) === 'undefined') {
-      throw new Error(`Expression is undefined`);
-    }
     const fname = `serialize${expression.constructor.name}`;
     const f = this[fname];
-    if (f) {
-      return f.call(this, expression);
-    } else {
-      console.log(expression);
-      console.log('WTF?');
-      throw new Error(`TODO: ${fname}`);
-    }
+    return f.call(this, expression);
   }
 
   serializeTupleLiteral({ type, initializers }) {
@@ -275,7 +258,7 @@ export class ZigSerializer {
   serializeUnaryOperation({ operator, operand }) {
     const op = this.serializeExpression(operand);
     if (operand instanceof ZIG.BinaryOperation || operand instanceof ZIG.Conditional) {
-      // need parentheses
+      // need parentheses--only happens when casting number to bool
       return `${operator}(${op})`;
     } else {
       return `${operator}${op}`;

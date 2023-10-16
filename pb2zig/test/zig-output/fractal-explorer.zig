@@ -553,7 +553,7 @@ pub const kernel = struct {
                     }
                     v += colorCycleOffset;
                     if (colorCycleMirror) {
-                        var even: bool = @as(bool, if (mod(v, 2.0) < 1.0) true else false);
+                        var even: bool = if (mod(v, 2.0) < 1.0) true else false;
                         if (even) {
                             v = 1.0 - mod(v, 1.0);
                         } else {

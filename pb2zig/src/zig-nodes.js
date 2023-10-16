@@ -64,11 +64,6 @@ export class WhileStatement extends Node {
   statement;
 }
 
-export class DoWhileStatement extends Node {
-  condition;
-  statement;
-}
-
 export class BreakStatement extends Node {
 }
 

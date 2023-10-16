@@ -439,7 +439,7 @@ pub const kernel = struct {
                     var min_dist: f32 = 4.0;
                     var ray_length: f32 = tmin;
                     var eps: f32 = MIN_EPSILON;
-                    var max_steps: i32 = @as(i32, @intFromFloat(@as(f32, @floatFromInt(stepLimit)) / epsilonScale));
+                    var max_steps: i32 = @intFromFloat(@as(f32, @floatFromInt(stepLimit)) / epsilonScale);
                     var i: i32 = undefined;
                     var f: f32 = undefined;
                     {

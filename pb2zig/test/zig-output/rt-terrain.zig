@@ -42,8 +42,16 @@ pub const kernel = struct {
         },
         .camPosition = .{
             .type = @Vector(3, f32),
-            .minValue = @as(@Vector(3, f32), @splat(-1000.0)),
-            .maxValue = @as(@Vector(3, f32), @splat(1000.0)),
+            .minValue = .{
+                -1000.0,
+                -1000.0,
+                -1000.0,
+            },
+            .maxValue = .{
+                1000.0,
+                1000.0,
+                1000.0,
+            },
             .defaultValue = .{ 110.0, 100.0, -300.0 },
         },
         .rotationX = .{
@@ -60,26 +68,26 @@ pub const kernel = struct {
         },
         .light = .{
             .type = @Vector(3, f32),
-            .minValue = @as(@Vector(3, f32), @splat(-1.0)),
-            .maxValue = @as(@Vector(3, f32), @splat(1.0)),
+            .minValue = .{ -1.0, -1.0, -1.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0 },
             .defaultValue = .{ -1.0, -1.0, 1.0 },
         },
         .diffuseColor = .{
             .type = @Vector(4, f32),
-            .minValue = @as(@Vector(4, f32), @splat(0.0)),
-            .maxValue = @as(@Vector(4, f32), @splat(1.0)),
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
             .defaultValue = .{ 1.0, 0.8, 0.5, 1.0 },
         },
         .specularColor = .{
             .type = @Vector(4, f32),
-            .minValue = @as(@Vector(4, f32), @splat(0.0)),
-            .maxValue = @as(@Vector(4, f32), @splat(1.0)),
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
             .defaultValue = .{ 1.0, 1.0, 1.0, 0.0 },
         },
         .ambient = .{
             .type = @Vector(4, f32),
-            .minValue = @as(@Vector(4, f32), @splat(0.0)),
-            .maxValue = @as(@Vector(4, f32), @splat(1.0)),
+            .minValue = .{ 0.0, 0.0, 0.0, 0.0 },
+            .maxValue = .{ 1.0, 1.0, 1.0, 1.0 },
             .defaultValue = .{ 0.05, 0.05, 0.1, 0.0 },
         },
     };

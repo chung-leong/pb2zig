@@ -10,15 +10,15 @@ pub const kernel = struct {
     pub const parameters = .{
         .size = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(0.0)),
-            .maxValue = @as(@Vector(2, f32), @splat(4096.0)),
-            .defaultValue = @as(@Vector(2, f32), @splat(500.0)),
+            .minValue = .{ 0.0, 0.0 },
+            .maxValue = .{ 4096.0, 4096.0 },
+            .defaultValue = .{ 500.0, 500.0 },
             .description = "image width/-height",
         },
         .radians = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-1000.0)),
-            .maxValue = @as(@Vector(2, f32), @splat(1000.0)),
+            .minValue = .{ -1000.0, -1000.0 },
+            .maxValue = .{ 1000.0, 1000.0 },
             .defaultValue = .{ 50.0, 150.0 },
             .description = "setup radians",
         },
@@ -38,16 +38,16 @@ pub const kernel = struct {
         },
         .center = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-2100.0)),
-            .maxValue = @as(@Vector(2, f32), @splat(2100.0)),
-            .defaultValue = @as(@Vector(2, f32), @splat(0.0)),
+            .minValue = .{ -2100.0, -2100.0 },
+            .maxValue = .{ 2100.0, 2100.0 },
+            .defaultValue = .{ 0.0, 0.0 },
             .description = "sets xy.center",
         },
         .range = .{
             .type = @Vector(2, f32),
-            .minValue = @as(@Vector(2, f32), @splat(-2100.0)),
-            .maxValue = @as(@Vector(2, f32), @splat(2100.0)),
-            .defaultValue = @as(@Vector(2, f32), @splat(160.0)),
+            .minValue = .{ -2100.0, -2100.0 },
+            .maxValue = .{ 2100.0, 2100.0 },
+            .defaultValue = .{ 160.0, 160.0 },
             .description = "sets xy.range",
         },
         .xPos = .{

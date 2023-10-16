@@ -70,7 +70,7 @@ pub const kernel = struct {
 
                 var coord: @Vector(2, f32) = self.outCoord();
                 var px: @Vector(4, f32) = inputImage.sampleNearest(coord);
-                var blankPx: @Vector(4, f32) = @as(@Vector(4, f32), @splat(0.0));
+                var blankPx: @Vector(4, f32) = .{ 0.0, 0.0, 0.0, 0.0 };
                 if (coord[1] < line) {
                     self.outputPixel = px;
                 } else if (coord[1] < (line + height)) {

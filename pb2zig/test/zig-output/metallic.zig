@@ -10,8 +10,16 @@ pub const kernel = struct {
     pub const parameters = .{
         .lightsource = .{
             .type = @Vector(3, f32),
-            .minValue = @as(@Vector(3, f32), @splat(-1000.0)),
-            .maxValue = @as(@Vector(3, f32), @splat(1000.0)),
+            .minValue = .{
+                -1000.0,
+                -1000.0,
+                -1000.0,
+            },
+            .maxValue = .{
+                1000.0,
+                1000.0,
+                1000.0,
+            },
             .defaultValue = .{ 200.0, 60.0, 40.0 },
             .description = "xyz-location of the light source",
         },

@@ -371,30 +371,25 @@ export class PixelBenderToZigTranslator {
   translateStatement(statement) {
     const fname = `translate${statement.constructor.name}`;
     const f = this[fname];
-    if (f) {
-      // capture side effects caused by statement
-      const { sideEffects: sePrev, variableAliases: vaPrev } = this;
-      this.sideEffects = [];
-      this.variableAliases = [];
-      let result = f.call(this, statement);
-      const { sideEffects } = this;
-      this.sideEffects = sePrev;
-      this.variableAliases = vaPrev;
-      if (result instanceof ZIG.ExpressionStatement) {
-        if (result.expression instanceof ZIG.Literal && result.expression.type === 'void') {
-          result = null;
-        }
+    // capture side effects caused by statement
+    const { sideEffects: sePrev, variableAliases: vaPrev } = this;
+    this.sideEffects = [];
+    this.variableAliases = [];
+    let result = f.call(this, statement);
+    const { sideEffects } = this;
+    this.sideEffects = sePrev;
+    this.variableAliases = vaPrev;
+    if (result instanceof ZIG.ExpressionStatement) {
+      if (result.expression instanceof ZIG.Literal && result.expression.type === 'void') {
+        result = null;
       }
-      if (result) {
-        // side effects come first
-        return (sideEffects.length === 0) ? result : [ ...sideEffects, result ];
-      } else {
-        // no result, all side effects
-        return sideEffects;
-      }
+    }
+    if (result) {
+      // side effects come first
+      return (sideEffects.length === 0) ? result : [ ...sideEffects, result ];
     } else {
-      console.log(statement);
-      throw new Error(`TODO: ${fname}`);
+      // no result, all side effects
+      return sideEffects;
     }
   }
 
@@ -653,9 +648,6 @@ export class PixelBenderToZigTranslator {
 
   translateDefinedFunctions() {
     const defs = find(this.pbAST, PB.FunctionDefinition);
-    if (defs.length === 0) {
-      return [];
-    }
     // set the function prototype first
     for (const pb of defs) {
       if (PB.isUnsupported(pb.type) || pb.args.some(pb => PB.isUnsupported(pb.type))) {
@@ -987,7 +979,10 @@ export class PixelBenderToZigTranslator {
     // need to scape loop in a block
     this.startScope();
     const initializers = this.translateStatements(pb.initializers);
-    const condition = this.translateExpression(pb.condition);
+    const condition = (pb.condition) ? this.translateExpression(pb.condition) : ZIG.Literal.create({
+      type: 'bool',
+      value: true,
+    });
     const statement = this.translateStatement(pb.statement);
     const incrementals = this.translateStatements(pb.incrementals);
     const innerBlock = this.createStatementBlock(statement, true);
@@ -1035,7 +1030,7 @@ export class PixelBenderToZigTranslator {
   }
 
   translateReturnStatement(pb) {
-    const expression = this.translateExpression(pb.expression);
+    const expression = (pb.expression) ? this.translateExpression(pb.expression) : undefined;
     return ZIG.ReturnStatement.create({ expression });
   }
 
@@ -1047,12 +1042,7 @@ export class PixelBenderToZigTranslator {
   translateExpression(expression, typeExpected) {
     const fname = `translate${expression.constructor.name}`;
     const f = this[fname];
-    if (f) {
-      return f.call(this, expression, typeExpected);
-    } else {
-      console.log(expression);
-      throw new Error(`TODO: ${fname}`);
-    }
+    return f.call(this, expression, typeExpected);
   }
 
   translateLiteral(pb) {
@@ -1105,6 +1095,13 @@ export class PixelBenderToZigTranslator {
     if (expression instanceof ZIG.Literal) {
       // a number
       return expression;
+    }
+    if (expression instanceof ZIG.VariableAccess) {
+      const variable = this.variables[expression.name];
+      if (variable.scope === 'global') {
+        // a constant--don't need to cast since value is comptime known
+        return expression;
+      }
     }
     // need to use @intCast() on int, since usize is required
     return ZIG.FunctionCall.create({ name: '@intCast', args: [ expression ], type: 'u32' });
@@ -1243,14 +1240,18 @@ export class PixelBenderToZigTranslator {
       const width = ZIG.getVectorWidth(typeV);
       const initializers = [];
       if (args[0].isVector())  {
-        initializers.push(...args.map(a => this.convertExpression(a, typeV)));
+        initializers.push(...args.map(a => this.convertExpression(a, typeV, 'comptime')));
       } else if (args.length === 1) {
         let arg = args[0];
         if (arg.isMatrix(arg)) {
-          arg = this.convertExpression(arg, type);
+          return arg;
         } else {
-          if (arg.isVector()) {
-            arg = this.convertExpression(arg, typeV);
+          if (typeExpected === 'comptime' && arg instanceof ZIG.Literal) {
+            const initializers = [];
+            for (let i = 0; i < width; i++) {
+              initializers.push(arg);
+            }
+            arg = ZIG.TupleLiteral.create({ type: '.', initializers });
           } else {
             arg = this.promoteExpression(this.convertExpression(arg, typeE), typeV);
           }
@@ -1269,8 +1270,17 @@ export class PixelBenderToZigTranslator {
       const typeE = ZIG.getChildType(type);
       if (args.length === 1) {
         const arg = args[0];
+        const width = ZIG.getVectorWidth(type);
         if (!ZIG.isVector(arg.type)) {
-          return this.promoteExpression(this.convertExpression(arg, typeE), type, typeExpected !== 'comptime');
+          if (typeExpected === 'comptime' && arg instanceof ZIG.Literal) {
+            const initializers = [];
+            for (let i = 0; i < width; i++) {
+              initializers.push(this.convertExpression(arg, typeE));
+            }
+            return ZIG.TupleLiteral.create({ initializers, type: (typeExpected !== 'comptime') ? type : '.' });
+          } else {
+            return this.promoteExpression(this.convertExpression(arg, typeE), type, typeExpected !== 'comptime');
+          }
         } else {
           return this.convertExpression(arg, type, typeExpected);
         }
@@ -1287,6 +1297,12 @@ export class PixelBenderToZigTranslator {
 
   convertExpression(value, type, typeExpected) {
     if (type === value.type) {
+      if (typeExpected === 'comptime') {
+        if (value instanceof ZIG.TupleLiteral) {
+          const { initializers } = value;
+          return ZIG.TupleLiteral.create({ type: '.', initializers });
+        }
+      }
       return value;
     }
     if (value instanceof ZIG.Literal) {

@@ -215,6 +215,17 @@ describe('Translator tests', function() {
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('a = @"M / S"(a, 2.0);');
     })
+    it('should replace modified variable with temp variable in expression', function() {
+      const pbkCode = addPBKWrapper(`
+        float a = 0.0;
+        float b = (a = 3.0) * a + (a = 4.0);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('const tmp1 = a;');
+      expect(result).to.contain('const tmp2 = a;');
+      expect(result).to.contain('var b: f32 = tmp1 * tmp1 + tmp2;');
+    })
+
   })
   describe('Constructor calls', function() {
     it('should correctly translate boolean constructor calls with literal numbers', function() {
@@ -284,7 +295,7 @@ describe('Translator tests', function() {
         bool2 c = bool2(float2(1.0, 2.0));
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contains('var a: @Vector(2, bool) = @splat(false);')
+      expect(result).to.contains('var a: @Vector(2, bool) = .{ false, false };')
       expect(result).to.contains('var b: @Vector(2, bool) = .{ false, true };')
       expect(result).to.contains('var c: @Vector(2, bool) = .{ true, true };')
     })
@@ -306,7 +317,7 @@ describe('Translator tests', function() {
         float2 c = float2(int2(1, 2));
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('var a: @Vector(2, f32) = @splat(2.0);');
+      expect(result).to.contain('var a: @Vector(2, f32) = .{ 2.0, 2.0 };');
       expect(result).to.contain('var b: @Vector(2, f32) = .{ 1.0, 0.0 };');
       expect(result).to.contain('var c: @Vector(2, f32) = .{ 1.0, 2.0 };');
     })
@@ -331,7 +342,7 @@ describe('Translator tests', function() {
         int2 c = int2(float2(1.2, 2.2));
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('var a: @Vector(2, i32) = @splat(2);');
+      expect(result).to.contain('var a: @Vector(2, i32) = .{ 2, 2 };');
       expect(result).to.contain('var b: @Vector(2, i32) = .{ 1, 0 };');
       expect(result).to.contain('var c: @Vector(2, i32) = .{ 1, 2 };');
     })
@@ -348,6 +359,45 @@ describe('Translator tests', function() {
       expect(result).to.contain('var a: @Vector(2, i32) = @splat(@as(i32, @intFromFloat(f)));');
       expect(result).to.contain('var b: @Vector(2, i32) = intVectorFromFloatVector(fv);');
       expect(result).to.contain('var c: @Vector(2, i32) = intVectorFromBoolVector(bv);');
+    })
+    it('should correctly translate matrix constructor calls with vector literals', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m = float2x2(float2(0.0, 1.0), float2(2.0, 3.0));
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var m: [2]@Vector(2, f32) = .{');
+      expect(result).to.contain('.{ 0.0, 1.0 },');
+      expect(result).to.contain('.{ 2.0, 3.0 },');
+    })
+    it('should correctly translate matrix constructor calls with single literal', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m = float2x2(0.0);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('.{ 0.0, 0.0 },');
+    })
+    it('should correctly translate matrix constructor calls with literal numbers', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m = float2x2(0.1, 0.2, 0.3, 0.4);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var m: [2]@Vector(2, f32) = .{');
+      expect(result).to.contain('.{ 0.1, 0.2 },');
+      expect(result).to.contain('.{ 0.3, 0.4 },');
+    })
+    it('should correctly translate matrix constructor calls with variables', function() {
+      const pbkCode = addPBKWrapper(`
+        float a = 1.0;
+        float2 b = float2(1.0, 1.0);
+        float2x2 c = float2x2(0.1, 0.2, 0.3, 0.4);
+        float2x2 m1 = float2x2(a);
+        float2x2 m2 = float2x2(b, b);
+        float2x2 m3 = float2x2(c);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('@as(@Vector(2, f32), @splat(a)),');
+      expect(result).to.contain('var m2: [2]@Vector(2, f32) = .{ b, b };');
+      expect(result).to.contain('var m3: [2]@Vector(2, f32) = c;');
     })
   })
   describe('Element access', function() {
@@ -367,6 +417,15 @@ describe('Translator tests', function() {
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('var f: f32 = v[0];');
+    })
+    it('should correctly translate element access involving return values', function() {
+      const pbkCode = addPBKWrapper(`
+        float a = sample(src, outCoord()).a;
+        float b = sample(src, outCoord())[1];
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: f32 = src.sampleLinear(self.outCoord())[3];');
+      expect(result).to.contain('var b: f32 = src.sampleLinear(self.outCoord())[1];');
     })
   })
   describe('Comparison operations', function() {
@@ -450,6 +509,16 @@ describe('Translator tests', function() {
       expect(result).to.contain('@shuffle(f32, v, @as(@Vector(2, f32), @splat(4.0)), @Vector(4, i32){ 0, -2, -1, 3 })');
       expect(result).to.contain('@shuffle(f32, v, @as(@Vector(3, f32), @splat(3.0)), @Vector(4, i32){ -1, -2, -3, 3 })');
     })
+    it('should correctly translate V.[property] += S', function() {
+      const pbkCode = addPBKWrapper(`
+        float4 v = float4(1, 1, 1, 1);
+        v.bg += 4.0;
+        v.r += 3.0;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('v = @shuffle(f32, v, @shuffle(f32, v, undefined, @Vector(2, i32){ 2, 1 }) + @as(@Vector(2, f32), @splat(4.0)), @Vector(4, i32){ 0, -2, -1, 3 })');
+      expect(result).to.contain('v[0] += 3.0;');
+    })
     it('should correctly translate V = V.[property] * V', function() {
       const pbkCode = addPBKWrapper(`
         float3 v1 = float3(1, 2, 3);
@@ -458,6 +527,15 @@ describe('Translator tests', function() {
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('@as(@Vector(3, f32), @splat(v1[0])) * v2');
+    })
+    it('should correctly translate V.[property] = V.[property]', function() {
+      const pbkCode = addPBKWrapper(`
+        float4 v1 = float4(1, 2, 3, 4);
+        float4 v2 = float4(1, 2, 3, 4);
+        v1.rg = v2.ba;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('v1 = @shuffle(f32, v1, v2, @Vector(4, i32){ -3, -4, 2, 3 });');
     })
   })
   describe('Matrix operations', function() {
@@ -566,6 +644,44 @@ describe('Translator tests', function() {
         .with.property('message').that.equal('Invalid matrix comparison');
     })
   })
+  describe('Unary operation', function() {
+    it('should correctly translate negative operator', function() {
+      const pbkCode = addPBKWrapper(`
+        float a = -1.0;
+        float b = -a;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: f32 = -1.0;')
+      expect(result).to.contain('var b: f32 = -a;')
+    })
+    it('should correctly translate positive operator', function() {
+      const pbkCode = addPBKWrapper(`
+        float a = +1.0;
+        float b = +a;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: f32 = 1.0;')
+      expect(result).to.contain('var b: f32 = a;')
+    })
+    it('should correctly translate logical NOT operator', function() {
+      const pbkCode = addPBKWrapper(`
+        bool a = !true;
+        bool b = !a;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: bool = false;')
+      expect(result).to.contain('var b: bool = !a;')
+    })
+    it('should use parentheses when operand is a binary expression', function() {
+      const pbkCode = addPBKWrapper(`
+        int a = 1;
+        bool b = !bool(a);
+        ;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var b: bool = !(a != 0);');
+    })
+  })
   describe('Conditional', function() {
     it('should correctly translate trenary operator', function() {
       const pbkCode = addPBKWrapper(`
@@ -574,6 +690,15 @@ describe('Translator tests', function() {
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('var a: i32 = if (state) 1 else 7;');
+    })
+    it('should correctly translate trenary operator when type is ambiguous', function() {
+      const pbkCode = addPBKWrapper(`
+        bool state = true;
+        int a = 0;
+        a = (state) ? 1 : 7;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('a = @as(i32, if (state) 1 else 7);');
     })
   })
   describe('Loops', function() {
@@ -588,6 +713,17 @@ describe('Translator tests', function() {
       expect(result).to.contain('var hello: i32 = 0;');
       expect(result).to.contain('hello < 10');
       expect(result).to.contain('hello += 1;');
+    })
+    it('should correctly translate an infinite for loop', function() {
+      const pbkCode = addPBKWrapper(`
+        for (;;) {
+          float2 coord = float2(0, 0);
+          dst = sample(src, coord);
+          break;
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('while (true) {');
     })
     it('should correctly translate a while loop', function() {
       const pbkCode = addPBKWrapper(`
@@ -611,6 +747,42 @@ describe('Translator tests', function() {
       expect(result).to.contain('while (true)');
       expect(result).to.contain('hello += 1;');
       expect(result).to.contain('if (hello < 10) continue else break;');
+    })
+    it('should correctly translate a break statement', function() {
+      const pbkCode = addPBKWrapper(`
+        int hello = 5;
+        while (hello < 10) {
+          hello++;
+          break;
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('while (hello < 10)');
+      expect(result).to.contain('break;');
+    })
+    it('should correctly translate a continue statement', function() {
+      const pbkCode = addPBKWrapper(`
+        int hello = 5;
+        while (hello < 10) {
+          hello++;
+          continue;
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('while (hello < 10)');
+      expect(result).to.contain('continue;');
+    })
+    it('should correctly translate a return statement', function() {
+      const pbkCode = addPBKWrapper(`
+        int hello = 5;
+        while (hello < 10) {
+          hello++;
+          return;
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('while (hello < 10)');
+      expect(result).to.contain('return;');
     })
     it('should correctly translate a if-else statement', function() {
       const pbkCode = addPBKWrapper(`
@@ -771,6 +943,101 @@ describe('Translator tests', function() {
       expect(result).to.contain('fn getPI() f32 {');
       expect(result).to.contain('var v2: f32 = getPI();');
     })
+    it('should ignore function that returns region', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        input image4 src;
+        output pixel4 dst;
+
+        region generated() {
+          return region(float4(0.0, 0.0, 800.0, 400.0));
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.not.contain('generated');
+    })
+    it('should rename arguments when they are modified', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        input image4 src;
+        output pixel4 dst;
+        dependent int number;
+
+        int a(int i) {
+          if (i > 50) {
+            i = 50;
+          }
+          return i;
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('fn a(_i: i32) i32 {');
+    })
+    it('should not fail when functions call each other', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        input image4 src;
+        output pixel4 dst;
+        dependent int number;
+
+        int a() {
+          return number + b();
+        }
+
+        int b() {
+          return number + a();
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('return number + self.a();');
+      expect(result).to.contain('return number + self.b();');
+    })
+    it('should include image processing functions when kernelOnly is not set', function() {
+      const pbkCode = addPBKWrapper(``);
+      const result = convertPixelBender(pbkCode, {});
+      expect(result).to.contain('fn createOutput');
+      expect(result).to.contain('fn createPartialOutput');
+    })
+    it('should correctly translate out and inout arguments', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        input image4 src;
+        output pixel4 dst;
+        dependent int number;
+
+        void change(in int a, inout int b, out int c) {
+          b = a;
+          c = a + 1;
+        }
+
+        void hello() {
+          int a = 0, b = 1, c = 2;
+          change(a, b, c);
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('fn change(a: i32, b: *i32, c: *i32) void {');
+      expect(result).to.contain('b.* = a;')
+      expect(result).to.contain('c.* = a + 1;')
+      expect(result).to.contain('c.* = a + 1;')
+      expect(result).to.contain('change(a, &b, &c);')
+    })
   })
   describe('Function calls', function() {
     it('should import built-in functions', function() {
@@ -802,7 +1069,46 @@ describe('Translator tests', function() {
       `);
       expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error);
     })
+    it('should throw when number of arguments is incorrect', function() {
+      const pbkCode = addPBKWrapper(`
+        float a = 1, b = 2;
+        float c = min(0, a, b);
+      `);
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message').that.equal('min() does not accept these arguments: int, float, float');
+    })
+    it('should throw when function does not exist', function() {
+      const pbkCode = addPBKWrapper(`
+        float a = 1, b = 2;
+        float c = moo(a, b);
+      `);
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message').that.equal('No function by that name: moo');
+    })
+    it('should throw when wrong argument is given to user-defined function', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        input image4 src;
+        output pixel4 dst;
+        dependent int number;
 
+        void change(in int a, inout int b, out int c) {
+          b = a;
+          c = a + 1;
+        }
+
+        void hello() {
+          float a = 0, b = 1, c = 2;
+          change(a, b, c);
+        }
+      }
+      `;
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message').that.equal('change() expects argument 1 to be int, got float');
+    })
   })
   describe('Macros', function() {
     it('should correctly translate a macro', function() {
@@ -931,6 +1237,26 @@ describe('Translator tests', function() {
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('a = 0.0;');
       expect(result).to.contain('b = 0.0;');
+    })
+    it('should throw when macro is called with too few arguments', function() {
+      const pbkCode = addPBKWrapper(`
+        #define addMul(a, c) (a * b + c)
+
+        float b = 2.2;
+        float value = addMul(1.4);
+      `);
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message').that.equal('Macro addMul() expects 2 arguments, received 1');
+    })
+    it('should throw when statement macro is used as expression', function() {
+      const pbkCode = addPBKWrapper(`
+        #define assign a = b;
+
+        float a, b = 2.2;
+        float value = assign();
+      `);
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message').that.equal('Unable to expand macro: assign');
     })
 
   })
