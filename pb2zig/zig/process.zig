@@ -19,9 +19,12 @@ test "createOutput" {
     std.debug.assert(output.dst.data.len == 1);
 }
 
+const InputPixelType = u8;
+const OutputPixelType = u8;
+
 //---start of code
-pub const Input = KernelInput(u8, kernel);
-pub const Output = KernelOutput(u8, kernel);
+pub const Input = KernelInput(InputPixelType, kernel);
+pub const Output = KernelOutput(OutputPixelType, kernel);
 pub const Parameters = KernelParameters(kernel);
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
