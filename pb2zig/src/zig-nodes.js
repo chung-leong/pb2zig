@@ -22,12 +22,6 @@ export class VariableDeclaration extends Node {
   initializer;
 }
 
-export class ConstantDeclaration extends Node {
-  type;
-  name;
-  initializer;
-}
-
 export class StructDefinition extends Node {
   isPublic = true;
   name;
@@ -168,10 +162,6 @@ export function isVector(type) {
 
 export function isMatrix(type) {
   return /^\[\d+\]@Vector\(/.test(type);
-}
-
-export function isArray(type) {
-  return /^\[.*\]/i.test(type);
 }
 
 export function isScalar(type) {

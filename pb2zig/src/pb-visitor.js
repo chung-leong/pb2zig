@@ -74,22 +74,9 @@ export class PixelBenderAstVisitor extends BaseCstVisitor {
           type = 'bool';
           value = false;
           break;
-        case 'Null':
-          value = null;
-          break;
       }
       return PB.Literal.create({ type, value });
     }
-  }
-
-  literalConstructorCall(ctx) {
-    const type = this.visit(ctx.type);
-    const args = this.visit(ctx.literalList);
-    return PB.LiteralConstructorCall.create({ type, args });
-  }
-
-  literalList(ctx) {
-    return ctx.literalValue?.map(v => this.visit(v)) ?? [];
   }
 
   kernel(ctx) {

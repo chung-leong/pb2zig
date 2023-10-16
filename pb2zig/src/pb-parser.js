@@ -99,7 +99,6 @@ const T = {
   Kernel: createToken({ name: 'Kernel', pattern: /kernel\b/ }),
   Parameter: createToken({ name: 'Parameter', pattern: /parameter\b/ }),
 
-  Null: createToken({ name: 'Null', pattern: /null\b/ }),
   True: createToken({ name: 'True', pattern: /true\b/ }),
   False: createToken({ name: 'False', pattern: /false\b/ }),
   QuotedStr: createToken({
@@ -134,7 +133,6 @@ export class PixelBenderParser extends CstParser {
         { ALT: () => $.CONSUME(T.QuotedStr) },
         { ALT: () => $.CONSUME(T.True) },
         { ALT: () => $.CONSUME(T.False) },
-        { ALT: () => $.CONSUME(T.Null) },
       ])
     })
     $.RULE('kernel', () => {

@@ -8,7 +8,7 @@ export function walk(tree, cb) {
           return false;
         }
       }
-    } else if (node instanceof Object) {
+    } else {
       const res = cb(node, key, parent);
       if (res !== undefined) {
         return res;
@@ -17,11 +17,13 @@ export function walk(tree, cb) {
         // object has been swapped out--scan the new object instead
         return f(parent[key], key, parent);
       }
-      // scan sub-nodes if callback doesn't return anything
-      for (const [ key, child ] of Object.entries(node)) {
-        const res = f(child, key, node);
-        if (res === false) {
-          return false;
+      if (node instanceof Object) {
+        // scan sub-nodes if callback doesn't return anything
+        for (const [ key, child ] of Object.entries(node)) {
+          const res = f(child, key, node);
+          if (res === false) {
+            return false;
+          }
         }
       }
     }

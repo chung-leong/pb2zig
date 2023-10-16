@@ -90,6 +90,84 @@ describe('Translator tests', function() {
       expect(result).to.contain('.dst1 = .{ .channels = 4 },');
       expect(result).to.contain('.dst2 = .{ .channels = 1 },');
     })
+    it('should normalize displayname to displayName', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1; displayname: "Hello";>
+      {
+        input image4 src;
+        output pixel4 dst;
+
+        void
+        evaluatePixel()
+        {
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('pub const displayName = "Hello";');
+    })
+  })
+  describe('Parameters', function() {
+    it('should correctly translate boolean parameters', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        parameter bool state1
+        <
+            defaultValue: true;
+        >;
+        parameter bool state2
+        <
+            defaultValue: false;
+        >;
+
+        input image4 src;
+        output pixel4 dst;
+
+        void
+        evaluatePixel()
+        {
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('type = bool,');
+      expect(result).to.contain('.defaultValue = true,');
+      expect(result).to.contain('.defaultValue = false,');
+    })
+  })
+  describe('Input/Output', function() {
+    it('should accept float vector as output pixel', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        parameter bool state1
+        <
+            defaultValue: true;
+        >;
+        parameter bool state2
+        <
+            defaultValue: false;
+        >;
+
+        input image4 src;
+        output float4 dst;
+
+        void
+        evaluatePixel()
+        {
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('dst: @Vector(4, f32) = undefined,');
+    })
   })
   describe('Assignment', function() {
     it('should correctly translate expression involving assignments', function() {
@@ -113,6 +191,230 @@ describe('Translator tests', function() {
       // increments occur one after the other
       expect(result).to.match(/a \+= 1\.0;\s+a \+= 1\.0;/);
       expect(result).to.contain('var b: f32 = tmp1 * tmp2;');
+    })
+    it('should convert pixel2 to float2', function() {
+      const pbkCode = addPBKWrapper(`
+        pixel2 a = float2(1.0, 0.0);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: @Vector(2, f32) = .{ 1.0, 0.0 };');
+    })
+    it('should correctly promote a scalar to a vector', function() {
+      const pbkCode = addPBKWrapper(`
+        float2 a;
+        a = 1.0;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('a = @as(@Vector(2, f32), @splat(1.0));');
+    })
+    it('should correctly expand an combine-assignment operation involving a matrix', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 a;
+        a /= 2.0;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('a = @"M / S"(a, 2.0);');
+    })
+  })
+  describe('Constructor calls', function() {
+    it('should correctly translate boolean constructor calls with literal numbers', function() {
+      const pbkCode = addPBKWrapper(`
+        bool a = bool(0.0);
+        bool b = bool(1);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: bool = false;');
+      expect(result).to.contain('var b: bool = true;');
+    })
+    it('should correctly translate boolean constructor calls with variables', function() {
+      const pbkCode = addPBKWrapper(`
+        float f = 0.0;
+        int i = 1;
+        bool a = bool(f);
+        bool b = bool(i);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: bool = f != 0.0;');
+      expect(result).to.contain('var b: bool = i != 0;');
+    })
+    it('should correctly translate float constructor calls with literals', function() {
+      const pbkCode = addPBKWrapper(`
+        float a = float(0);
+        float b = float(true);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: f32 = 0.0;');
+      expect(result).to.contain('var b: f32 = 1.0;');
+    })
+    it('should correctly translate float constructor calls with variables', function() {
+      const pbkCode = addPBKWrapper(`
+        bool t = true;
+        int i = 1;
+        float a = float(t);
+        float b = float(i);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: f32 = @floatFromInt(@intFromBool(t));');
+      expect(result).to.contain('var b: f32 = @floatFromInt(i);');
+    })
+    it('should correctly translate int constructor calls with literals', function() {
+      const pbkCode = addPBKWrapper(`
+        int a = int(0.5);
+        int b = int(true);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: i32 = 0;');
+      expect(result).to.contain('var b: i32 = 1;');
+    })
+    it('should correctly translate int constructor calls with variables', function() {
+      const pbkCode = addPBKWrapper(`
+        bool t = true;
+        float f = 1.5;
+        int a = int(t);
+        int b = int(f);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: i32 = @intFromBool(t);');
+      expect(result).to.contain('var b: i32 = @intFromFloat(f);');
+    })
+    it('should correctly translate bool vector constructor calls with literals', function() {
+      const pbkCode = addPBKWrapper(`
+        bool2 a = bool2(false);
+        bool2 b = bool2(int2(0, 1));
+        bool2 c = bool2(float2(1.0, 2.0));
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contains('var a: @Vector(2, bool) = @splat(false);')
+      expect(result).to.contains('var b: @Vector(2, bool) = .{ false, true };')
+      expect(result).to.contains('var c: @Vector(2, bool) = .{ true, true };')
+    })
+    it('should correctly translate bool vector constructor calls with variables', function() {
+      const pbkCode = addPBKWrapper(`
+        int2 iv = int2(0, 1);
+        float2 fv = float2(1.0, 2.0);
+        bool2 a = bool2(iv);
+        bool2 b = bool2(fv);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contains('var a: @Vector(2, bool) = iv != @as(@Vector(2, i32), @splat(0));');
+      expect(result).to.contains('var b: @Vector(2, bool) = fv != @as(@Vector(2, f32), @splat(0.0));');
+    })
+    it('should correctly translate float vector constructor calls with literals', function() {
+      const pbkCode = addPBKWrapper(`
+        float2 a = float2(2);
+        float2 b = float2(bool2(true, false));
+        float2 c = float2(int2(1, 2));
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: @Vector(2, f32) = @splat(2.0);');
+      expect(result).to.contain('var b: @Vector(2, f32) = .{ 1.0, 0.0 };');
+      expect(result).to.contain('var c: @Vector(2, f32) = .{ 1.0, 2.0 };');
+    })
+    it('should correctly translate float vector constructor calls with variables', function() {
+      const pbkCode = addPBKWrapper(`
+        int i = 7;
+        int2 iv = int2(1, 2);
+        bool2 bv = bool2(true, false);
+        float2 a = float2(i);
+        float2 b = float2(iv);
+        float2 c = float2(bv);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: @Vector(2, f32) = @splat(@as(f32, @floatFromInt(i)));');
+      expect(result).to.contain('var b: @Vector(2, f32) = floatVectorFromIntVector(iv);');
+      expect(result).to.contain('var c: @Vector(2, f32) = floatVectorFromIntVector(intVectorFromBoolVector(bv));');
+    })
+    it('should correctly translate int vector constructor calls with literals', function() {
+      const pbkCode = addPBKWrapper(`
+        int2 a = int2(2.1);
+        int2 b = int2(bool2(true, false));
+        int2 c = int2(float2(1.2, 2.2));
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: @Vector(2, i32) = @splat(2);');
+      expect(result).to.contain('var b: @Vector(2, i32) = .{ 1, 0 };');
+      expect(result).to.contain('var c: @Vector(2, i32) = .{ 1, 2 };');
+    })
+    it('should correctly translate int vector constructor calls with variables', function() {
+      const pbkCode = addPBKWrapper(`
+        float f = 7.2;
+        float2 fv = float2(1.2, 2.1);
+        bool2 bv = bool2(true, false);
+        int2 a = int2(f);
+        int2 b = int2(fv);
+        int2 c = int2(bv);
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: @Vector(2, i32) = @splat(@as(i32, @intFromFloat(f)));');
+      expect(result).to.contain('var b: @Vector(2, i32) = intVectorFromFloatVector(fv);');
+      expect(result).to.contain('var c: @Vector(2, i32) = intVectorFromBoolVector(bv);');
+    })
+  })
+  describe('Element access', function() {
+    it('should correctly translate element access using a global constant', function() {
+      const pbkCode = addPBKWrapper(`
+        float4 v = float4(1, 1, 1, 1);
+        int i = 0;
+        float f = v[i];
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var f: f32 = v[@intCast(i)];');
+    })
+    it('should correctly translate element access using a literal', function() {
+      const pbkCode = addPBKWrapper(`
+        float4 v = float4(1, 1, 1, 1);
+        float f = v[0];
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var f: f32 = v[0];');
+    })
+  })
+  describe('Comparison operations', function() {
+    it('should correctly translate AND operator', function() {
+      const pbkCode = addPBKWrapper(`
+        float f = 1;
+        if (f > 0 && f < 1) {
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('if (f > 0 and f < 1) {')
+    })
+    it('should correctly translate OR operator', function() {
+      const pbkCode = addPBKWrapper(`
+        float f = 1;
+        if (f > 0 || f < 1) {
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('if (f > 0 or f < 1) {')
+    })
+    it('should correctly translate XOR operator', function() {
+      const pbkCode = addPBKWrapper(`
+        float f = 1;
+        if (f > 0 ^^ f < 1) {
+        }
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('if (f > 0 != f < 1) {')
+    })
+    it('should throw when comparing vector with scalar', function() {
+      const pbkCode = addPBKWrapper(`
+        float2 f = 1;
+        if (f == 1) {
+        }
+      `);
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message').that.equals('Invalid vector comparison');
+    })
+  })
+  describe('Arithmetic operations', function() {
+    it('should correctly promote a scalar to a vector', function() {
+      const pbkCode = addPBKWrapper(`
+        float2 a;
+        float2 b = a * 2.0;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var b: @Vector(2, f32) = a * @as(@Vector(2, f32), @splat(2.0));');
     })
   })
   describe('Swizzling operations', function() {
@@ -254,6 +556,25 @@ describe('Translator tests', function() {
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('m[0] = v;')
     })
+    it('should throw when comparison is performed on matrix and scalar', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m = float2x2(1, 2, 3, 4);
+        if (m == 1.0) {
+        }
+      `);
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message').that.equal('Invalid matrix comparison');
+    })
+  })
+  describe('Conditional', function() {
+    it('should correctly translate trenary operator', function() {
+      const pbkCode = addPBKWrapper(`
+        bool state = true;
+        int a = (state) ? 1 : 7;
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('var a: i32 = if (state) 1 else 7;');
+    })
   })
   describe('Loops', function() {
     it('should correctly translate a for loop', function() {
@@ -323,7 +644,6 @@ describe('Translator tests', function() {
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('');
     })
-
   })
   describe('Function definition', function() {
     it('should transfer input and output images into the scope of function', function() {
@@ -615,6 +935,23 @@ describe('Translator tests', function() {
 
   })
   describe('Error handling', function() {
+    it('should fail when version is not 1.0', function() {
+      const pbkCode = `
+      <languageVersion : 1.1;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        input image4 src;
+        output pixel4 dst;
+
+        void
+        evaluatePixel()
+        {
+        }
+      }
+      `;
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error);
+    })
     it('should throw when lexer fails', function() {
       const pbkCode = addPBKWrapper(`
         $cow
@@ -657,7 +994,7 @@ describe('Translator tests', function() {
   })
 })
 
-function addPBKWrapper(statements) {
+function addPBKWrapper(statements, decls = '') {
   return `
 <languageVersion : 1.0;>
 kernel test
@@ -672,6 +1009,8 @@ kernel test
 
   input image4 src;
   output pixel4 dst;
+
+  ${decls}
 
   void
   evaluatePixel()
