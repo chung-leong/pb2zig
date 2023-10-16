@@ -257,12 +257,7 @@ export class ZigSerializer {
 
   serializeUnaryOperation({ operator, operand }) {
     const op = this.serializeExpression(operand);
-    if (operand instanceof ZIG.BinaryOperation || operand instanceof ZIG.Conditional) {
-      // need parentheses--only happens when casting number to bool
-      return `${operator}(${op})`;
-    } else {
-      return `${operator}${op}`;
-    }
+    return `${operator}${op}`;
   }
 }
 

@@ -245,8 +245,8 @@ describe('Translator tests', function() {
         bool b = bool(i);
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contain('var a: bool = f != 0.0;');
-      expect(result).to.contain('var b: bool = i != 0;');
+      expect(result).to.contain('var a: bool = (f != 0.0);');
+      expect(result).to.contain('var b: bool = (i != 0);');
     })
     it('should correctly translate float constructor calls with literals', function() {
       const pbkCode = addPBKWrapper(`
@@ -307,8 +307,8 @@ describe('Translator tests', function() {
         bool2 b = bool2(fv);
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
-      expect(result).to.contains('var a: @Vector(2, bool) = iv != @as(@Vector(2, i32), @splat(0));');
-      expect(result).to.contains('var b: @Vector(2, bool) = fv != @as(@Vector(2, f32), @splat(0.0));');
+      expect(result).to.contains('var a: @Vector(2, bool) = (iv != @as(@Vector(2, i32), @splat(0)));');
+      expect(result).to.contains('var b: @Vector(2, bool) = (fv != @as(@Vector(2, f32), @splat(0.0)));');
     })
     it('should correctly translate float vector constructor calls with literals', function() {
       const pbkCode = addPBKWrapper(`
@@ -360,6 +360,15 @@ describe('Translator tests', function() {
       expect(result).to.contain('var b: @Vector(2, i32) = intVectorFromFloatVector(fv);');
       expect(result).to.contain('var c: @Vector(2, i32) = intVectorFromBoolVector(bv);');
     })
+    it('should throw when vector constructor is given a matrix', function() {
+      const pbkCode = addPBKWrapper(`
+        float2x2 m = float2x2(float2(0.0, 1.0), float2(2.0, 3.0));
+        float2 v = float2(m);
+      `);
+      expect(() => convertPixelBender(pbkCode, { kernelOnly: true })).to.throw(Error)
+        .with.property('message').that.contains('from float2x2 to float2');
+    })
+
     it('should correctly translate matrix constructor calls with vector literals', function() {
       const pbkCode = addPBKWrapper(`
         float2x2 m = float2x2(float2(0.0, 1.0), float2(2.0, 3.0));
@@ -426,6 +435,27 @@ describe('Translator tests', function() {
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('var a: f32 = src.sampleLinear(self.outCoord())[3];');
       expect(result).to.contain('var b: f32 = src.sampleLinear(self.outCoord())[1];');
+    })
+    it('should omit cast when index is a global constant', function() {
+      const pbkCode = `
+      <languageVersion : 1.0;>
+      kernel test
+      <namespace : "Test"; vendor : "Vendor"; version : 1;>
+      {
+        input image4 src;
+        output pixel4 dst;
+        const int INDEX = 2;
+
+        void
+        evaluatePixel()
+        {
+          float2 v;
+          v[INDEX] = 1.0;
+        }
+      }
+      `;
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('v[INDEX] = 1.0;');
     })
   })
   describe('Comparison operations', function() {
@@ -1203,6 +1233,21 @@ describe('Translator tests', function() {
       `);
       const result = convertPixelBender(pbkCode, { kernelOnly: true });
       expect(result).to.contain('fn min(v1: anytype, v2: anytype) @TypeOf(v1) {');
+    })
+    it('should correctly expand property access', function() {
+      const pbkCode = addPBKWrapper(`
+        #define SET(dest, src) dest.rgb = src.rgb; dest.a = src.a * factor;
+
+        float factor = 0.5;
+        float4 v1, v2;
+        SET(v1, v2);
+        SET(v1, sample(src, outCoord()));
+      `);
+      const result = convertPixelBender(pbkCode, { kernelOnly: true });
+      expect(result).to.contain('v1 = @shuffle(f32, v1, v2, @Vector(4, i32){ -1, -2, -3, 3 });');
+      expect(result).to.contain('v1[3] = v2[3] * factor;');
+      expect(result).to.contain('v1 = @shuffle(f32, v1, @shuffle(f32, src.sampleLinear(self.outCoord()), undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });');
+      expect(result).to.contain('v1[3] = src.sampleLinear(self.outCoord())[3] * factor;');
     })
     it('should correctly translate a macro containing multiple statements', function() {
       const pbkCode = addPBKWrapper(`

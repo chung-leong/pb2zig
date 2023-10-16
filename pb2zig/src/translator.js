@@ -284,7 +284,11 @@ export class PixelBenderToZigTranslator {
           if (arg) {
             if (property || index) {
               // access the prop of the argument
-              return PB.ElementAccess.create({ expression: arg, property, index });
+              if (arg instanceof PB.VariableAccess) {
+                return PB.VariableAccess.create({ name: arg.name, property, index });
+              } else {
+                return PB.ElementAccess.create({ expression: arg, property, index });
+              }
             } else {
               return arg;
             }
@@ -975,14 +979,24 @@ export class PixelBenderToZigTranslator {
     return ZIG.IfStatement.create({ condition, statement, elseClause });
   }
 
+  translateCondition(pb) {
+    if (!pb) {
+      // always true then
+      return ZIG.Literal.create({ type: 'bool', value: true });
+    }
+    const result = this.translateExpression(pb);
+    if (result instanceof ZIG.Parentheses) {
+      // don't need parentheses
+      return result.expression;
+    }
+    return result;
+  }
+
   translateForStatement(pb) {
     // need to scape loop in a block
     this.startScope();
     const initializers = this.translateStatements(pb.initializers);
-    const condition = (pb.condition) ? this.translateExpression(pb.condition) : ZIG.Literal.create({
-      type: 'bool',
-      value: true,
-    });
+    const condition = this.translateCondition(pb.condition);
     const statement = this.translateStatement(pb.statement);
     const incrementals = this.translateStatements(pb.incrementals);
     const innerBlock = this.createStatementBlock(statement, true);
@@ -997,7 +1011,7 @@ export class PixelBenderToZigTranslator {
   }
 
   translateWhileStatement(pb) {
-    const condition = this.translateExpression(pb.condition);
+    const condition = this.translateCondition(pb.condition);
     const statement = this.translateStatement(pb.statement);
     return ZIG.WhileStatement.create({ condition, statement })
   }
@@ -1005,7 +1019,7 @@ export class PixelBenderToZigTranslator {
   translateDoWhileStatement(pb) {
     // Zig doesn't actually have do-while, but it's easier to structure
     // the loop in the serialize than here
-    const condition = this.translateExpression(pb.condition);
+    const condition = this.translateCondition(pb.condition);
     const statement = this.translateExpression(pb.statement);
     const block = this.createStatementBlock(statement, true);
     block.statements.push(ZIG.IfStatement.create({
@@ -1016,7 +1030,7 @@ export class PixelBenderToZigTranslator {
       }),
     }));
     return ZIG.WhileStatement.create({
-      condition: ZIG.Literal.create({ value: true, type: 'bool' }),
+      condition: this.translateCondition(null),
       statement: block,
     });
   }
@@ -1271,7 +1285,7 @@ export class PixelBenderToZigTranslator {
       if (args.length === 1) {
         const arg = args[0];
         const width = ZIG.getVectorWidth(type);
-        if (!ZIG.isVector(arg.type)) {
+        if (arg.isScalar()) {
           if (typeExpected === 'comptime' && arg instanceof ZIG.Literal) {
             const initializers = [];
             for (let i = 0; i < width; i++) {
@@ -1344,7 +1358,9 @@ export class PixelBenderToZigTranslator {
         const width = value.getVectorWidth();
         const zero = ZIG.Literal.create({ value: 0, type: valueTypeE });
         const zeroV = this.promoteExpression(zero, `@Vector(${width}, ${zero.type})`, true);
-        return ZIG.BinaryOperation.create({ operand1: value, operator: '!=', operand2: zeroV });
+        const expression = ZIG.BinaryOperation.create({ operand1: value, operator: '!=', operand2: zeroV });
+        // need parentheses in the expression is operated upon
+        return ZIG.Parentheses.create({ expression });
       } else if (typeE === 'f32') {
         // if (value.getChildType() === 'i32') {
         //   return this.forceType(ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ value ], type }));
@@ -1377,7 +1393,8 @@ export class PixelBenderToZigTranslator {
     } else if (ZIG.isScalar(type) && value.isScalar()) {
       if (type === 'bool') {
         const zero = ZIG.Literal.create({ value: 0, type: value.type });
-        return ZIG.BinaryOperation.create({ operand1: value, operator: '!=', operand2: zero });
+        const expression = ZIG.BinaryOperation.create({ operand1: value, operator: '!=', operand2: zero });
+        return ZIG.Parentheses.create({ expression });
       } else if (type === 'f32') {
         if (value.type === 'i32') {
           const result = ZIG.FunctionCall.create({ name: '@floatFromInt', args: [ value ], type });
