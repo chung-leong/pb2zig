@@ -527,7 +527,7 @@ you configed).
 
 | Source image                               | Result |
 |--------------------------------------------|--------|
-| ![source image](./img/malgorzata-socha.jpg)|![result](./img/jitter.jpg)|
+| ![source image](./img/malgorzata-socha.jpg)|![result](./img/jitter.png)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=jitter) |
 [Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/jitter.pbk)
