@@ -266,9 +266,6 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const multiplier: FPixel = @splat(max);
             const product: FPixel = constrain(pixel * multiplier, max);
             var result: Pixel = undefined;
-            if (@reduce(.Or, product > FPixel{ 255, 255, 255, 255 })) {
-                std.debug.print("Negative: {d}", .{product});
-            }
             switch (len) {
                 1 => {
                     result[0] = @intFromFloat(product[0]);
@@ -308,6 +305,9 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         fn getPixel(self: @This(), ix: i32, iy: i32) FPixel {
             const x = unsign(ix);
             const y = unsign(iy);
+            if (x >= self.width or y >= self.height) {
+                return @as(FPixel, @splat(0));
+            }
             const index = (y * self.width) + x - self.offset;
             const src_pixel = self.data[index];
             const pixel: FPixel = switch (@typeInfo(T)) {
