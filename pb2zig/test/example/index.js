@@ -6,11 +6,13 @@ const img = sharp(`./socha.jpg`).ensureAlpha().raw();
 // extract raw data
 const { data, info } = await img.toBuffer({ resolveWithObject: true });
 const { width, height, channels } = info;
-// call createOutput with input image and params
+// call createOutput() with input image and params
 const input = { src: { data, width, height } };
 const params = { size: 25 };
 const output = createOutput(width, height, input, params);
-// obtain Uint8Array from image 'dst'; its data property is of the type `[]@Vector(4, u8)`
+// obtain Uint8Array from image "dst"; its data property is of the type `[]@Vector(4, u8)`
+// since an array of x4 u8 vector has the same memory layout as an array of u8, Zigar
+// attaches a "typedArray" property to the object for our convenience
 const { typedArray } = output.dst.data;
 // save the raw data as a PNG file
 sharp(typedArray, { raw: { width, height, channels } }).png().toFile(`./crystallize.png`);
