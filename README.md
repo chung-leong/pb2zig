@@ -2,10 +2,10 @@
 
 pb2zig is a source-to-source translater that takes a Pixel Bender kernel (PBK) and translate it
 into the [Zig language](https://ziglang.org/). That code can then be compiled using the Zig
-compiler into WASM binary, making the code available for use in a web environment.
+compiler into WASM, making the code available for use in a web environment.
 
 The base project, [pb2zig](./pb2zug/README.md), is a library that performs the translation. It
-comes with a CLI program.
+comes with a CLI program for turning .pbk files into .zig.
 
 Meanwhile, [rollup-plugin-pb2zig](./rollup-plugin-pb2zig/README.md) is a Vite-compatible
 [Rollup](https://rollupjs.org/) plugin that fully automates the compilation process, such that
@@ -26,7 +26,7 @@ products, from Photoshop to Flash. Adobe's documentation describes it as follows
 > pixel whose color is the result of the function call.
 
 Check out the [Pixel Bender specification](https://www.mcjones.org/paul/PixelBenderReference.pdf)
-for a complete low-down on this language.
+for a complete low-down on this domain-specific language.
 
 The Adobe Pixel Bender Toolkit cames with a nice interactive tool that helps you develop PB
 kernels:

@@ -72,7 +72,7 @@ Options:
   --output-dir,   -od [DIR]       Set output directory
   --input-pixel,  -ip [TYPE]      Set input pixel type (default: u8)
   --output-pixel, -op [TYPE]      Set output pixel type (default: u8)
-  --version,     -v               Show version number
+  --version,      -v              Show version number
 `.trimStart());
 }
 
