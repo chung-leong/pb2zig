@@ -59,6 +59,16 @@ pb2zig simple.pbk --input-pixel u16 --output-pixel u16
 Valid pixel types are `u8`, `i16`, `u16`, and `f32`. Floating points should contain values between
 0.0 and 1.0. This is the representation used internally by Pixel Bender.
 
+## Using API
+
+The library exports a single function:
+
+```ts
+function convertPixelBender(code: string, options: object): string
+```
+
+Options are `kernelOnly`, `inputPixelType`, and `outputPixelType`.
+
 ## Function and types in translated code
 
 ### Functions
@@ -73,6 +83,9 @@ pub fn createOutput(
 ) !Output;
 ```
 
+Create an image of the specified size using the provided input images and parameters, allocating
+memory from `allocator`.
+
 ```zig
 pub fn createPartialOutput(
     allocator: std.mem.Allocator,
@@ -84,6 +97,8 @@ pub fn createPartialOutput(
     params: Parameters,
 ) !Output;
 ```
+
+Create a slice of the output image with `count` scanlines, starting from `start`.
 
 ### Input and output structures
 
