@@ -157,3 +157,35 @@ only the R channel is used.
 [`ImageData`](https://developer.mozilla.org/en-US/docs/Web/API/ImageData) object.
 
 `offset` is employed when the structure holds data for only some part of the full image.
+
+### Using Zig code in Node.js
+
+With the help of [`node-zigar`](https://github.com/chung-leong/zigar), you can run Zig code in
+Node.js. This offer some advantage over the using WebAssembly. Native code generally run faster
+than WASM (though the difference is not huge). Native code can also access memory of buffers in
+JavaScript directly whereas WASM instances have their own memory space and image data must be
+copied into it.
+
+The following example uses [sharp](https://www.npmjs.com/package/sharp) to open a JPEG file
+and obtains it pixel data, apply the effect from the translated kernel
+"crystalize" ([zig](./test/zig-output/crystallize.zig)|[pbk](./test/pbk-samples/crystallize.pbk)),
+then saves the result to a PNG file:
+
+```js
+import { createOutput } from 'crystallize.zig';
+import sharp from 'sharp';
+
+// create image object, ensure that it has an alpha channel
+const img = sharp(`./socha.jpg`).ensureAlpha().raw();
+// extract raw data
+const { data, info } = await img.toBuffer({ resolveWithObject: true });
+const { width, height, channels } = info;
+// call createOutput() with input image and params
+const input = { src: { data, width, height } };
+const params = {};
+const output = createOutput(width, height, input, params);
+// obtain Uint8Array from image 'dst'; its data property is of the type `[]@Vector(4, u8)`
+const { typedArray } = output.dst.data;
+// save the raw data as a PNG file
+sharp(typedArray, { raw: { width, height, channels } }).png().toFile(`./crystallize.png`);
+```

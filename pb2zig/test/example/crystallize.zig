@@ -96,9 +96,9 @@ pub const kernel = struct {
 
     fn length(v: anytype) f32 {
         // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
+        //     .Vector => @sqrt(@reduce(.Add, v * v)),
+        //     else => @abs(v),
+        // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
             else => @fabs(v),
@@ -209,12 +209,12 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             // requires newest version of zig, which has issues
             //
             // const numerator: FPixel = switch (len) {
-                //     1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
-                //     2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
-                //     3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
-                //     4 => @floatFromInt(pixel),
-                //     else => @compileError("Unsupported number of channels: " ++ len),
-                // };
+            //     1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
+            //     2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
+            //     3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
+            //     4 => @floatFromInt(pixel),
+            //     else => @compileError("Unsupported number of channels: " ++ len),
+            // };
             // const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             // return numerator / denominator;
             var numerator: FPixel = undefined;
@@ -255,17 +255,20 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             // const product: FPixel = constrain(pixel * multiplier, max);
             // const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
             // const result: Pixel = switch (len) {
-                //     1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
-                //     2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
-                //     3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
-                //     4 => @intFromFloat(product),
-                //     else => @compileError("Unsupported number of channels: " ++ len),
-                // };
+            //     1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
+            //     2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
+            //     3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
+            //     4 => @intFromFloat(product),
+            //     else => @compileError("Unsupported number of channels: " ++ len),
+            // };
             // return result;
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
             const product: FPixel = constrain(pixel * multiplier, max);
             var result: Pixel = undefined;
+            if (@reduce(.Or, product > FPixel{ 255, 255, 255, 255 })) {
+                std.debug.print("Negative: {d}", .{product});
+            }
             switch (len) {
                 1 => {
                     result[0] = @intFromFloat(product[0]);
@@ -305,9 +308,6 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         fn getPixel(self: @This(), ix: i32, iy: i32) FPixel {
             const x = unsign(ix);
             const y = unsign(iy);
-            if (x >= self.width or y >= self.height) {
-                return @as(FPixel, @splat(0));
-            }
             const index = (y * self.width) + x - self.offset;
             const src_pixel = self.data[index];
             const pixel: FPixel = switch (@typeInfo(T)) {
@@ -431,7 +431,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
         const param = @field(Kernel.parameters, field.name);
         const default_value: ?*const anyopaque = get_def: {
             const value: param.type = if (@hasField(@TypeOf(param), "defaultValue"))
-            param.defaultValue
+                param.defaultValue
             else switch (@typeInfo(param.type)) {
                 .Int, .Float => 0,
                 .Bool => false,
