@@ -109,5 +109,45 @@ function App() {
 
 ### Using multi-image kernels
 
+When a kernel requires multiple images as input, you can either place the two in an array:
+
+```js
+  async function updateDestinationImage() {
+    const src1Canvas = src1CanvasRef.current;
+    const src2Canvas = src2CanvasRef.current;
+    const dstCanvas = dstCanvasRef.current;
+    const src1CTX = src1Canvas.getContext('2d', { willReadFrequently: true });
+    const src2CTX = src1Canvas.getContext('2d', { willReadFrequently: true });
+    const dstCTX = dstCanvas.getContext('2d');
+    const { width, height } = srcCanvas;
+    const src1ImageData = src1CTX.getImageData(0, 0, width, height);
+    const src2ImageData = src2CTX.getImageData(0, 0, width, height);
+    const params = { size: 25 };
+    const input = [ src1ImageData, src2ImageData ];
+    const dstImageData = await createImageData(width, height, input, params);
+    dstCTX.putImageData(dstImageData, 0, 0);
+  }
+```
+
+Or specify them by name in an object:
+
+```js
+  async function updateDestinationImage() {
+    const src1Canvas = src1CanvasRef.current;
+    const src2Canvas = src2CanvasRef.current;
+    const dstCanvas = dstCanvasRef.current;
+    const src1CTX = src1Canvas.getContext('2d', { willReadFrequently: true });
+    const src2CTX = src1Canvas.getContext('2d', { willReadFrequently: true });
+    const dstCTX = dstCanvas.getContext('2d');
+    const { width, height } = srcCanvas;
+    const src1ImageData = src1CTX.getImageData(0, 0, width, height);
+    const src2ImageData = src2CTX.getImageData(0, 0, width, height);
+    const params = { size: 25 };
+    const input = { src1: src1ImageData src2: src2ImageData };
+    const dstImageData = await createImageData(width, height, input, params);
+    dstCTX.putImageData(dstImageData, 0, 0);
+  }
+```
+
 ### Processing across multiple web workers
 
