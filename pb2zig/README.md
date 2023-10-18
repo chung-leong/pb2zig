@@ -190,5 +190,4 @@ const output = createOutput(width, height, input, params);
 const { typedArray } = output.dst.data;
 // save the raw data as a PNG file
 sharp(typedArray, { raw: { width, height, channels } }).png().toFile(`./crystallize.png`);
-
 ```
