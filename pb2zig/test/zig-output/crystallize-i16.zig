@@ -176,7 +176,6 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         width: u32,
         height: u32,
         colorSpace: ColorSpace = .srgb,
-        premultiplied: bool = false,
         offset: usize = 0,
 
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {

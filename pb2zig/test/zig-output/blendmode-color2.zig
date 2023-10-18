@@ -68,15 +68,11 @@ pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
-    return createPartialOutputOf(u8, allocator, width, height, 0, height, input, params);
+    return createPartialOutput(allocator, width, height, 0, height, input, params);
 }
 
 pub fn createPartialOutput(allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: Input, params: Parameters) !Output {
-    return createPartialOutputOf(u8, allocator, width, height, start, count, input, params);
-}
-
-fn createPartialOutputOf(comptime T: type, allocator: std.mem.Allocator, width: u32, height: u32, start: u32, count: u32, input: KernelInput(T, kernel), params: Parameters) !KernelOutput(u8, kernel) {
-    var output: KernelOutput(u8, kernel) = undefined;
+    var output: Output = undefined;
     inline for (std.meta.fields(Output)) |field| {
         const ImageT = @TypeOf(@field(output, field.name));
         @field(output, field.name) = .{
@@ -113,7 +109,6 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         width: u32,
         height: u32,
         colorSpace: ColorSpace = .srgb,
-        premultiplied: bool = false,
         offset: usize = 0,
 
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
@@ -179,7 +174,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             return numerator / denominator;
         }
 
-        fn contrain(pixel: FPixel, max: f32) FPixel {
+        fn constrain(pixel: FPixel, max: f32) FPixel {
             const lower: FPixel = @splat(0);
             const upper: FPixel = @splat(max);
             const pixel2 = @select(f32, pixel > lower, pixel, lower);
@@ -190,7 +185,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         fn intPixelFromPBPixel(pixel: FPixel) Pixel {
             // const max: f32 = @floatFromInt(std.math.maxInt(T));
             // const multiplier: FPixel = @splat(max);
-            // const product: FPixel = contrain(pixel * multiplier, max);
+            // const product: FPixel = constrain(pixel * multiplier, max);
             // const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
             // const result: Pixel = switch (len) {
                 //     1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
@@ -202,7 +197,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             // return result;
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
-            const product: FPixel = contrain(pixel * multiplier, max);
+            const product: FPixel = constrain(pixel * multiplier, max);
             var result: Pixel = undefined;
             switch (len) {
                 1 => {
