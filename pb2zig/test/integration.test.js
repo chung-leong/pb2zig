@@ -700,6 +700,12 @@ describe('Integration tests', function() {
     };
     await apply(name, {}, params);
   })
+  it('should correctly translate rgb-adjustment.pbk', async function() {
+    this.timeout(60000);
+    const name = 'rgb-adjustment';
+    await translate(name);
+    await apply(name, { src: 'malgorzata-socha.png' });
+  })
   it('should correctly translate rt-julia.pbk', async function() {
     this.timeout(60000);
     const name = 'rt-julia';

@@ -1,0 +1,27 @@
+<languageVersion : 1.0;>
+
+kernel adjust
+<
+    namespace : "example";
+    vendor : "example";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    parameter float3 multipliers
+    <
+       minValue:     float3(0.0, 0.0, 0.0);
+       maxValue:     float3(5.0, 5.0, 5.0);
+       defaultValue: float3(1.5, 1.0, 1.0);
+       description:  "multiplier for RGB channels";
+    >;
+
+    void
+    evaluatePixel()
+    {
+        dst = sampleNearest(src, outCoord());
+        dst.rgb *= multipliers;
+    }
+}

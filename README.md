@@ -38,6 +38,45 @@ product is sadly no longer available for download from Adobe's website. If you l
 though, you can still find it somewhere on the Internet. And yes, the Windows version does run
 properly under Wine.
 
+## Basic example
+
+The following is a simple example of a PB kernel:
+
+```
+<languageVersion : 1.0;>
+
+kernel adjust
+<
+    namespace : "example";
+    vendor : "example";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    parameter float3 multipliers
+    <
+       minValue:     float3(0.0, 0.0, 0.0);
+       maxValue:     float3(5.0, 5.0, 5.0);
+       defaultValue: float3(1.5, 1.0, 1.0);
+       description:  "multiplier for RGB channels";
+    >;
+
+    void
+    evaluatePixel()
+    {
+        dst = sampleNearest(src, outCoord());
+        dst.rgb *= multipliers;
+    }
+}
+```
+
+The kernel accepts one parameter, `multipliers`, is a vector of three floating point numbers.
+The `evaluatePixel()` function samples the input image at the same coordinates as the output
+pixel. It then multiplies the RGB channels by `multipliers`, leaving alone the alpha channel.
+The default value of `multipliers` would make an image more reddish.
+
 ## Pixel Bender Highlights
 
 Here are some examples of what can be done using Pixel Bender. Click on the "Live Demo" links to
