@@ -94,6 +94,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/crystallize.png)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=crystallize) |
+[Live Video Demo](https://chung-leong.github.io/pb2zig/demo-5/?f=crystallize) |
 [Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/crystallize.pbk)
 
 ### droste
@@ -133,6 +134,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/pencil.jpg)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=pencil) |
+[Live Video Demo](https://chung-leong.github.io/pb2zig/demo-5/?f=pencil) |
 [Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/pencil.pbk)
 
 ### posterize
@@ -186,6 +188,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/fontmap.png)         |        |
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=asciimii&i2=fontmap&i2=fontmap) |
+[Live Video Demo](https://chung-leong.github.io/pb2zig/demo-6/?f=asciimii&i2=fontmap) |
 [Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/asciimii.pbk)
 
 ### bumpmap

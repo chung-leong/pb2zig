@@ -202,6 +202,7 @@ you configed).
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/crystallize.png)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=crystallize) |
+[Live Video Demo](https://chung-leong.github.io/pb2zig/demo-5/?f=crystallize) |
 [Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/crystallize.pbk)
 
 ### cubes-03
@@ -606,6 +607,7 @@ you configed).
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/pencil.jpg)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=pencil) |
+[Live Video Demo](https://chung-leong.github.io/pb2zig/demo-5/?f=pencil) |
 [Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/pencil.pbk)
 
 ### pixelate

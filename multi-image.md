@@ -15,7 +15,8 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/asciimii.jpg)|
 | ![source image](./img/fontmap.png)         |        |
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=asciimii&i2=fontmap&i2=fontmap) |
+[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=asciimii&i2=fontmap) |
+[Live Video Demo](https://chung-leong.github.io/pb2zig/demo-6/?f=asciimii&i2=fontmap) |
 [Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/asciimii.pbk)
 
 ### bezier-aligner
