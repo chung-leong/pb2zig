@@ -16,7 +16,7 @@ function App() {
     const srcCTX = srcCanvas.getContext('2d', { willReadFrequently: true });
     const { width, height } = srcCanvas;
     const srcImageData = srcCTX.getImageData(0, 0, width, height);
-    const dstCTX = dstCanvas.getContext('2d', { willReadFrequently: true });
+    const dstCTX = dstCanvas.getContext('2d');
     purgeQueue();
     const dstImageData = await createImageData(width, height, srcImageData, parameters);
     dstCTX.putImageData(dstImageData, 0, 0);

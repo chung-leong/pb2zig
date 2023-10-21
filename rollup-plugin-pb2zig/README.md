@@ -1,9 +1,10 @@
 # rollup-plugin-pb2zig
 
 Rollup-plugin-pb2zig is a [Rollup](https://rollupjs.org/) plugin that uses pb2zig to translate a
-Pixel Bender kernel into Zig, then with the help of [Zigar]'s Rollup plugin compile the resulting
-code to WebAssembly, which then can be use in a web project. It also provides additional functions
-for offloading processing to web workers.
+Pixel Bender kernel into Zig, then with the help of
+[Zigar](https://github.com/chung-leong/zigar/tree/main/rollup-plugin-zigar#rollup-plugin-zigar)'s
+Rollup plugin compile the resulting code to WebAssembly, which then can be use in a web project.
+It also provides additional functions for offloading processing to web workers.
 
 The plugin is Vite-compatible and is designed to work correctly when in serve mode.
 
@@ -12,6 +13,17 @@ The plugin is Vite-compatible and is designed to work correctly when in serve mo
 ```sh
 npm install --save-dev rollup-plugin-pb2zig
 ```
+
+You must install the Zig compiler onto your computer separately. Follow the instructions outlined
+in the official [Getting Started](https://ziglang.org/learn/getting-started/) guide. Alternately,
+you can let [ZVM](https://github.com/tristanisham/zvm) help manage the installation process.
+
+This library assumes that the compiler is in the search path.
+
+## Versioning
+
+The major and minor version numbers of this plugin correspond to the version of the Zig compiler
+it's designed for. The current version is 0.11.0. It works with Zig 0.11.0.
 
 ## Usage
 
@@ -51,7 +63,7 @@ export default defineConfig({
 
 ### Creating output
 
-All you have to do is import `createImageData` from a .pbk file, provide it with an
+All you have to do is import `createImageData()` from a .pbk file, provide it with an
 [ImageData](https://developer.mozilla.org/en-US/docs/Web/API/ImageData) object from a canvas along
 with parameters specific to the kernel:
 
@@ -87,7 +99,7 @@ on the call:
 import { useState, useRef, useEffect } from 'react'
 import { createOutput } from './pbk/crystallize.pbk';
 
-function App() {
+export function App() {
   const srcCanvasRef = useRef();
   const dstCanvasRef = useRef();
 
@@ -106,6 +118,8 @@ function App() {
   // ...
 }
 ```
+
+Note that once an ImageData object has been transferred to a web worker, it cannot be used again.
 
 ### Using multi-image kernels
 
@@ -150,4 +164,98 @@ Or specify them by name in an object:
 ```
 
 ### Processing across multiple web workers
+
+For kernels that are computationally intensive, you might wish to speed up the process by spreading
+the work across multiple CPU cores. This plugin provides you with a second function for this
+purpose: `createPartialOutput()`. Given a scanline offset and a scanline count, the function
+returns a slice of the output image:
+
+```js
+import { useState, useRef, useEffect } from 'react'
+import { createPartialOutput, purgeQueue } from './pbk/raytracer.pbk';
+
+export function App() {
+  const srcCanvasRef = useRef();
+  const dstCanvasRef = useRef();
+  const [ params, setParams ] = useState();
+
+  function updateDestinationImage() {
+    const dstCanvas = dstCanvasRef.current;
+    const { width, height } = dstCanvas;
+    const dstCTX = dstCanvas.getContext('2d');
+    const perWorker = Math.ceil(height / 8);
+    purgeQueue();
+    for (let i = 0, offset = 0, remaining = height; offset < height; i++, offset += perWorker, remaining -= perWorker) {
+      const scanlines = Math.min(perWorker, remaining);
+      createPartialImageData(width, height, offset, scanlines, {}, params).then((data) => {
+        dstCTX.putImageData(data, 0, start);
+      });
+    }
+  }
+
+  // ...
+}
+```
+
+The example above divides the work into 8 chunks. If your computer has 8 cores or more, processing
+would commence immediately on all chunks. Otherwise, some chunks would end up in a queue awaiting
+the completion of earlier ones. The `purgeQueue()` function causes all pending work orders to be
+abandoned. Calling it is essential in situation where the user can make rapid changes to the kernel
+parameters.
+
+The maximum number of workers is, by default,
+[`navigator.hardwareConcurrency`](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/hardwareConcurrency).
+You can change this by calling `manageWorkers()` with the setting `{ maxCount: [number of workers] }`.
+
+By default, workers are kept around after they've completed their worker. This makes subsequent
+calls to `createImageData` or `createPartialImageData` much quicker. You may want to release the
+workers when the user exits the a section of your app using the kernel. You can accomplish this by
+calling `manageWorkers()` with the setting `{ keepAlive: false }`:
+
+```js
+import { useState, useRef, useEffect } from 'react'
+import { createPartialOutput, purgeQueue, manageWorkers } from './pbk/raytracer.pbk';
+
+export function App() {
+  // ...
+
+  useEffect(() => {
+    // on mount
+    manageWorkers({ keepAlive: true });
+    return () => {
+      // on unmount
+      manageWorkers({ keepAlive: false });
+    };
+  }, []);
+}
+```
+
+## Plugin options
+
+* `webWorker` - Offload processing to web workers (default: `false`)
+
+The following options are for
+[rollup-plugin-zigar](https://github.com/chung-leong/zigar/tree/main/rollup-plugin-zigar#rollup-plugin-zigar):
+
+* `optimize` - Optimization level (default: `ReleaseSmall`)
+* `topLevelAwait` - Use top-level await to wait for compilation of WASM code (default: `false`
+unless `webWorker` is `false`)
+* `embedWASM` - Embed WASM binary as base64 in JavaScript code (default: `false`)
+* `omitFunctions` - Exclude all functions and produce no WASM code (default: `false`)
+* `stripWASM` - Remove extraneous code from WASM binary, including debugging information (default:
+`true` unless optimize is `Debug`)
+* `keepNames` - Keep names of function in WASM binary when stripping (default: `false`)
+* `useReadFile` - Enable the use of readFile() to Load WASM file when library is used in Node.js
+(default: `false`)
+* `clean` - Remove temporary build folder after building (default: `false`)
+* `zigCmd` - Zig build command (default: `zig build -Doptimize=${optimize}`)
+* `cacheDir` - Directory where compiled shared libraries are placed (default: `${CWD}/zigar-cache`)
+* `buildDir` - Root directory where temporary build folder are placed (default: `${os.tmpdir()}`)
+* `staleTime` - Maximum amount of time to wait for a file lock, in milliseconds (default: `60000`)
+
+## Live demos
+
+* [Single-image kernels](../single-image.md)
+* [Multi-image kernels](../multi-image.md)
+* [Rendering kernels](../rendering.md)
 

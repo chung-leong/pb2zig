@@ -8,6 +8,11 @@ pb2zig is a CLI utility for translating Pixel Bender kernel into [Zig language](
 npm install -g pb2zig
 ```
 
+## Versioning
+
+The major and minor version numbers of this program correspond to the version of the Zig compiler
+it's designed for. The current version is 0.11.0. It works with Zig 0.11.0.
+
 ## Usage
 
 ```

@@ -21,14 +21,13 @@ function App() {
       const data = new Uint8ClampedArray(srcImageData.data);
       srcImageList.push(new ImageData(data, width, height));
     }
-    const dstCTX = dstCanvas.getContext('2d', { willReadFrequently: true });
+    const dstCTX = dstCanvas.getContext('2d');
     const perWorker = Math.ceil(height / 8);
     purgeQueue();
     for (let i = 0, offset = 0, remaining = height; offset < height; i++, offset += perWorker, remaining -= perWorker) {
-      const start = offset;
       const scanlines = Math.min(perWorker, remaining);
-      createPartialImageData(width, height, start, scanlines, srcImageList[i], parameters).then((data) => {
-        dstCTX.putImageData(data, 0, start);
+      createPartialImageData(width, height, offset, scanlines, srcImageList[i], parameters).then((data) => {
+        dstCTX.putImageData(data, 0, offset);
       });
     }
   }

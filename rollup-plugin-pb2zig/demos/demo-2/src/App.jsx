@@ -22,7 +22,7 @@ function App() {
     const { width: width2, height: height2 } = src2Canvas;
     const src1ImageData = src1CTX.getImageData(0, 0, width1, height1);
     const src2ImageData = src2CTX.getImageData(0, 0, width2, height2);
-    const dstCTX = dstCanvas.getContext('2d', { willReadFrequently: true });
+    const dstCTX = dstCanvas.getContext('2d');
     const sources = [ src1ImageData, src2ImageData ];
     purgeQueue();
     const dstImageData = await createImageData(width1, height1, sources, parameters);

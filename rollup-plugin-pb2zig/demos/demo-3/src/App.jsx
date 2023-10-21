@@ -11,14 +11,13 @@ function App() {
     const { createPartialImageData, purgeQueue } = library;
     const dstCanvas = dstCanvasRef.current;
     const { width, height } = dstCanvas;
-    const dstCTX = dstCanvas.getContext('2d', { willReadFrequently: true });
+    const dstCTX = dstCanvas.getContext('2d');
     const perWorker = Math.ceil(height / 8);
     purgeQueue();
     for (let i = 0, offset = 0, remaining = height; offset < height; i++, offset += perWorker, remaining -= perWorker) {
-      const start = offset;
       const scanlines = Math.min(perWorker, remaining);
-      createPartialImageData(width, height, start, scanlines, {}, parameters).then((data) => {
-        dstCTX.putImageData(data, 0, start);
+      createPartialImageData(width, height, offset, scanlines, {}, parameters).then((data) => {
+        dstCTX.putImageData(data, 0, offset);
       });
     }
   }

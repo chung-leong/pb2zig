@@ -20,11 +20,14 @@ export async function createPartialImageData(width, height, start, count, source
 }
 
 export function manageWorkers(settings) {
-  keepAlive = settings.keepAlive;
-  maxCount = settings.maxCount;
-  if (!keepAlive) {
-    idleWorkers.splice(0);
-  } else {
+  if ('keepAlive' in settings) {
+    keepAlive = settings.keepAlive;
+    if (!keepAlive) {
+      idleWorkers.splice(0);
+    }
+  }
+  if ('maxCount' in settings) {
+    maxCount = settings.maxCount;
     const extra = (idleWorkers.length + activeWorkers.length) - maxCount;
     if (extra > 0) {
       idleWorkers.splice(0, extra);
