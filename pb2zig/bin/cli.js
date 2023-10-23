@@ -2511,8 +2511,8 @@ class PixelBenderToZigTranslator {
     const marker = '//---start of code';
     const index = content.indexOf(marker);
     let code = content.substring(index + marker.length);
-    code = code.replace('InputPixelType', inputPixelType);
-    code = code.replace('OutputPixelType', outputPixelType);
+    code = code.replace(/InputPixelType/g, inputPixelType);
+    code = code.replace(/OutputPixelType/g, outputPixelType);
     return code;
   }
 
@@ -3836,6 +3836,8 @@ function convertPixelBender(code, options) {
   return serialize(zigAST);
 }
 
+const pixelTypes = [ 'u8', 'i16', 'u16', 'f32' ];
+
 function processArguments(args) {
   let target = '';
   const list = [];
@@ -3846,6 +3848,12 @@ function processArguments(args) {
         case 'outputDir':
           if (!existsSync(arg)) {
             throw new Error(`Output directory does not exists: ${arg}`);
+          }
+          break;
+        case 'outputPixelType':
+        case 'inputPixelType':
+          if (!pixelTypes.includes(arg)) {
+            throw new Error(`Invalid pixel type: ${arg}`);
           }
           break;
       }
@@ -3898,7 +3906,7 @@ Options:
   --output-dir,   -od [DIR]       Set output directory
   --input-pixel,  -ip [TYPE]      Set input pixel type (default: u8)
   --output-pixel, -op [TYPE]      Set output pixel type (default: u8)
-  --version,     -v               Show version number
+  --version,      -v              Show version number
 `.trimStart());
 }
 
