@@ -1,6 +1,7 @@
 # pb2zig
 
-pb2zig is a CLI utility for translating Pixel Bender kernel into [Zig language](https://ziglang.org/) code. You can also access its functionality through an API.
+CLI utility for translating Pixel Bender kernel into [Zig language](https://ziglang.org/) code.
+You can also access its functionality through an API.
 
 ## Installation
 
@@ -45,9 +46,9 @@ Use the `--output-dir` or `-od` option to set the destination directory:
 pb2zig simple.pbk --output-dir ~/my-zig-project
 ```
 
-By default, pb2zig includes image processing functions in the output code for making use of the
-kernel. If you want to work with the kernel directly, you can specify the `--kernel-only` option
-to omit these functions:
+By default, pb2zig includes image processing functions for making use of the kernel
+in the output code. If you want to work with the kernel directly, you can specify the
+`--kernel-only` option to omit these functions:
 
 ```sh
 pb2zig simple.pbk --kernel-only
@@ -119,8 +120,8 @@ A namespace containing information about the kernel and a function for creating 
 pub const Input = KernelInput(u8, kernel);
 ```
 
-A structure that holds input images for the kernel. It can be empty if a kernel generates
-an image from parameters alone.
+A structure that holds input images for the kernel. It is empty if a kernel generates an image
+based on parameters alone.
 
 ```zig
 pub const Output = KernelOutput(u8, kernel);
@@ -154,7 +155,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
 }
 ```
 
-Four channel pixel data is always expected, even when the kernel asks for fewer. For `image3`, the
+Four channel pixel data is always expected even when the kernel calls for fewer. For `image3`, the
 first three channels are used, that is R, G, and B. For `image2`, R and A are used. For `image1`
 only the R channel is used.
 
@@ -166,15 +167,15 @@ only the R channel is used.
 ### Using Zig code in Node.js
 
 With the help of [`node-zigar`](https://github.com/chung-leong/zigar), you can run Zig code in
-Node.js. This offer some advantage over the using WebAssembly. Native code generally run faster
-than WASM (though the difference is not huge). Native code can also access memory of buffers in
+Node.js. This offer some advantage over using WebAssembly. Native code generally run faster than
+WASM (though the difference is not huge). Native code can also access memory of buffers in
 JavaScript directly whereas WASM instances have their own memory space and image data must be
 copied into it.
 
 The following example uses [sharp](https://www.npmjs.com/package/sharp) to open a JPEG file
-and obtains it pixel data, apply the effect from the translated kernel
-"crystalize" ([zig](./test/zig-output/crystallize.zig)|[pbk](./test/pbk-samples/crystallize.pbk)),
-then saves the result to a PNG file:
+and obtain its pixel data. It then applies the effect from the translated kernel
+"crystalize" ([zig](./test/zig-output/crystallize.zig)|[pbk](./test/pbk-samples/crystallize.pbk))
+and saves the result to a PNG file:
 
 ```js
 import { createOutput } from 'crystallize.zig';

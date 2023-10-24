@@ -1,10 +1,10 @@
 # rollup-plugin-pb2zig
 
-Rollup-plugin-pb2zig is a [Rollup](https://rollupjs.org/) plugin that uses pb2zig to translate a
-Pixel Bender kernel into Zig, then with the help of
+[Rollup](https://rollupjs.org/) plugin that uses pb2zig to translate a Pixel Bender kernel into
+Zig, then with the help of
 [Zigar](https://github.com/chung-leong/zigar/tree/main/rollup-plugin-zigar#rollup-plugin-zigar)'s
-Rollup plugin compile the resulting code to WebAssembly, which then can be use in a web project.
-It also provides additional functions for offloading processing to web workers.
+Rollup plugin, compiles the resulting code into WebAssembly. It also provides additional functions
+for offloading image processing to web workers.
 
 The plugin is Vite-compatible and is designed to work correctly when in serve mode.
 
@@ -188,7 +188,7 @@ export function App() {
     for (let i = 0, offset = 0, remaining = height; offset < height; i++, offset += perWorker, remaining -= perWorker) {
       const scanlines = Math.min(perWorker, remaining);
       createPartialImageData(width, height, offset, scanlines, {}, params).then((data) => {
-        dstCTX.putImageData(data, 0, start);
+        dstCTX.putImageData(data, 0, offset);
       });
     }
   }
@@ -200,16 +200,16 @@ export function App() {
 The example above divides the work into 8 chunks. If your computer has 8 cores or more, processing
 would commence immediately on all chunks. Otherwise, some chunks would end up in a queue awaiting
 the completion of earlier ones. The `purgeQueue()` function causes all pending work orders to be
-abandoned. Calling it is essential in situation where the user can make rapid changes to the kernel
-parameters.
+abandoned. Calling it is essential in a situation where the user can make rapid changes to the
+kernel parameters.
 
-The maximum number of workers is, by default,
+The maximum number of workers by default equals
 [`navigator.hardwareConcurrency`](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/hardwareConcurrency).
 You can change this by calling `manageWorkers()` with the setting `{ maxCount: [number of workers] }`.
 
-By default, workers are kept around after they've completed their worker. This makes subsequent
+By default, workers are kept around after they've completed their task. This makes subsequent
 calls to `createImageData` or `createPartialImageData` much quicker. You may want to release the
-workers when the user exits the a section of your app using the kernel. You can accomplish this by
+workers when the user exits the section of your app using the kernel. You can accomplish this by
 calling `manageWorkers()` with the setting `{ keepAlive: false }`:
 
 ```js
@@ -235,7 +235,7 @@ export function App() {
 * `webWorker` - Offload processing to web workers (default: `false`)
 
 The following options are for
-[rollup-plugin-zigar](https://github.com/chung-leong/zigar/tree/main/rollup-plugin-zigar#rollup-plugin-zigar):
+[rollup-plugin-zigar](https://github.com/chung-leong/zigar/tree/main/rollup-plugin-zigar#readme):
 
 * `optimize` - Optimization level (default: `ReleaseSmall`)
 * `topLevelAwait` - Use top-level await to wait for compilation of WASM code (default: `false`
