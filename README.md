@@ -1,14 +1,14 @@
 # pb2zig
 
-Pb2zig is a source-to-source translater that takes a Pixel Bender kernel (PBK) and translates it
-into the [Zig language](https://ziglang.org/). That code can then be compiled using the Zig
-compiler into WASM, making the code available for use in a web environment.
+A source-to-source translater that takes a Pixel Bender kernel (PBK) and translates it into the
+[Zig language](https://ziglang.org/). That code can then be compiled using the Zig compiler into
+WASM, making the code available for use in a web environment.
 
 The base project, [pb2zig](./pb2zig/README.md), is a library that performs the translation. It
 comes with a CLI program for turning .pbk files into .zig.
 
 Meanwhile, [rollup-plugin-pb2zig](./rollup-plugin-pb2zig/README.md) is a
-[Rollup](https://rollupjs.org/) plugin that fully automates the compilation process, such that
+[Rollup](https://rollupjs.org/) plugin that fully automates the compilation process so that
 all you have to do is write an import statement in your JavaScript file to make use of a PB kernel
 in your React or Svelt project.
 
@@ -35,8 +35,8 @@ kernels:
 
 GPU acceleration meant that even complicated kernels could execute in the blink of an eye. This
 product is sadly no longer available for download from Adobe's website. If you look hard enough
-though, you can still find it somewhere on the Internet. And yes, the Windows version does run
-properly under Wine.
+though, you can still find it somewhere on the Internet[.](http://mirror1.filefacts.com/cd91cb8bf088781a962822f72c93e1f2/pixelbender_toolkit_2.5.zip)
+And yes, the Windows version does run properly under Wine.
 
 ## Basic example
 
