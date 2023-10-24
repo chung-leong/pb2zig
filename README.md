@@ -1,6 +1,6 @@
 # pb2zig
 
-Pb2zig is a source-to-source translater that takes a Pixel Bender kernel (PBK) and translate it
+Pb2zig is a source-to-source translater that takes a Pixel Bender kernel (PBK) and translates it
 into the [Zig language](https://ziglang.org/). That code can then be compiled using the Zig
 compiler into WASM, making the code available for use in a web environment.
 
@@ -94,7 +94,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/chihuly.png)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=chihuly) |
-[Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/chihuly.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-1/pbk/chihuly.pbk)
 
 ### circle-pattern
 
@@ -107,7 +107,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/circle-pattern.png)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=circle-pattern) |
-[Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/circle-pattern.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-1/pbk/circle-pattern.pbk)
 
 ### complex-rational
 
@@ -120,7 +120,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/complex-rational.jpg)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=complex-rational) |
-[Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/complex-rational.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-1/pbk/complex-rational.pbk)
 
 ### crystallize
 
@@ -134,7 +134,7 @@ demo web-apps should work on any non-ancient mobile phone.
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=crystallize) |
 [Live Video Demo](https://chung-leong.github.io/pb2zig/demo-5/?f=crystallize) |
-[Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/crystallize.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-1/pbk/crystallize.pbk)
 
 ### droste
 
@@ -147,7 +147,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/ipad.png)|![result](./img/droste.jpg)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-4/?f=droste) |
-[Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/droste.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-1/pbk/droste.pbk)
 
 ### hex-cells
 
@@ -160,7 +160,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/hex-cells.png)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=hex-cells) |
-[Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/hex-cells.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-1/pbk/hex-cells.pbk)
 
 ### pencil
 
@@ -174,7 +174,7 @@ demo web-apps should work on any non-ancient mobile phone.
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=pencil) |
 [Live Video Demo](https://chung-leong.github.io/pb2zig/demo-5/?f=pencil) |
-[Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/pencil.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-1/pbk/pencil.pbk)
 
 ### posterize
 
@@ -187,7 +187,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/posterize.jpg)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=posterize) |
-[Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/posterize.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-1/pbk/posterize.pbk)
 
 ### sepia
 
@@ -200,7 +200,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/sepia.jpg)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=sepia) |
-[Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/sepia.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-1/pbk/sepia.pbk)
 
 ### wave
 
@@ -213,7 +213,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/wave.png)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-1/?f=wave) |
-[Source](../rollup-plugin-pb2zig/demos/demo-1/pbk/wave.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-1/pbk/wave.pbk)
 
 ### asciimii
 
@@ -228,7 +228,7 @@ demo web-apps should work on any non-ancient mobile phone.
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=asciimii&i2=fontmap&i2=fontmap) |
 [Live Video Demo](https://chung-leong.github.io/pb2zig/demo-6/?f=asciimii&i2=fontmap) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/asciimii.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/asciimii.pbk)
 
 ### bumpmap
 
@@ -242,7 +242,7 @@ demo web-apps should work on any non-ancient mobile phone.
 | ![source image](./img/wood.jpg)    |        |
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=bumpmap&i1=zig-logo&i2=wood) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/bumpmap.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/bumpmap.pbk)
 
 ### metallic
 
@@ -257,7 +257,7 @@ demo web-apps should work on any non-ancient mobile phone.
 
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=metallic&i1=zig-logo&i2=stripe) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/metallic.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/metallic.pbk)
 
 ### mandelbulb-quick
 
@@ -270,7 +270,7 @@ demo web-apps should work on any non-ancient mobile phone.
 |![result](./img/mandelbulb-quick.jpg)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=mandelbulb-quick) |
-[Source](../rollup-plugin-pb2zig/demos/demo-3/pbk/mandelbulb-quick.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/mandelbulb-quick.pbk)
 
 ### newton-raphson
 
@@ -283,7 +283,7 @@ demo web-apps should work on any non-ancient mobile phone.
 |![result](./img/newton-raphson.jpg)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=newton-raphson) |
-[Source](../rollup-plugin-pb2zig/demos/demo-3/pbk/newton-raphson.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/newton-raphson.pbk)
 
 ### raytracer
 
@@ -296,7 +296,7 @@ demo web-apps should work on any non-ancient mobile phone.
 |![result](./img/raytracer.jpg)|
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=raytracer) |
-[Source](../rollup-plugin-pb2zig/demos/demo-3/pbk/raytracer.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/raytracer.pbk)
 
 ---
 

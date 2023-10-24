@@ -17,7 +17,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=asciimii&i2=fontmap) |
 [Live Video Demo](https://chung-leong.github.io/pb2zig/demo-6/?f=asciimii&i2=fontmap) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/asciimii.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/asciimii.pbk)
 
 ### bezier-aligner
 
@@ -31,7 +31,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/telephone-cord.png)  |        |
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=bezier-aligner&i2=telephone-cord&w2=imagewidth) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/bezier-aligner.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/bezier-aligner.pbk)
 
 ### blendmode-color
 
@@ -45,7 +45,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/mandelbrot.jpg)      |        |
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=blendmode-color) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/blendmode-color.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/blendmode-color.pbk)
 
 ### blendmode-color2
 
@@ -59,7 +59,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/mandelbrot.jpg)      |        |
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=blendmode-color2) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/blendmode-color2.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/blendmode-color2.pbk)
 
 ### bumpmap
 
@@ -73,7 +73,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/wood.jpg)    |        |
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=bumpmap&i1=zig-logo&i2=wood) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/bumpmap.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/bumpmap.pbk)
 
 ### color
 
@@ -88,7 +88,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=color) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/color.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/color.pbk)
 
 ### color-burn
 
@@ -103,7 +103,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=color-burn) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/color-burn.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/color-burn.pbk)
 
 ### color-dodge
 
@@ -118,7 +118,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=color-dodge) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/color-dodge.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/color-dodge.pbk)
 
 ### crossfade
 
@@ -133,7 +133,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=crossfade&i2=malgorzata-socha2) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/crossfade.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/crossfade.pbk)
 
 ### displace
 
@@ -148,7 +148,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=displace) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/displace.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/displace.pbk)
 
 ### exclusion
 
@@ -163,7 +163,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=exclusion) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/exclusion.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/exclusion.pbk)
 
 ### luminosity
 
@@ -178,7 +178,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=luminosity) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/luminosity.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/luminosity.pbk)
 
 ### metallic
 
@@ -193,7 +193,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=metallic&i1=zig-logo&i2=stripe) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/metallic.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/metallic.pbk)
 
 ### saturation
 
@@ -208,7 +208,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=saturation) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/saturation.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/saturation.pbk)
 
 ### soft-light
 
@@ -223,5 +223,5 @@ Processing is performed in one web worker. The code of the demo app can be found
 
 
 [Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=soft-light) |
-[Source](../rollup-plugin-pb2zig/demos/demo-2/pbk/soft-light.pbk)
+[Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/soft-light.pbk)
 
