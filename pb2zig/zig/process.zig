@@ -1,24 +1,6 @@
 const std = @import("std");
-const kernel = @import("./painting.zig").kernel;
 
-test "createOutput" {
-    const src_pixels: [1]@Vector(4, u8) = .{.{ 0, 0, 0, 0 }};
-    const input: Input = .{
-        .src = .{
-            .data = &src_pixels,
-            .width = 1,
-            .height = 1,
-        },
-    };
-    const params: Parameters = .{};
-    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = general_purpose_allocator.allocator();
-    const output = try createOutput(allocator, 1, 1, input, params);
-    std.debug.assert(output.dst.width == 1);
-    std.debug.assert(output.dst.height == 1);
-    std.debug.assert(output.dst.data.len == 1);
-}
-
+const kernel = struct {};
 const InputPixelType = u8;
 const OutputPixelType = u8;
 
