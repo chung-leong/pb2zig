@@ -84,12 +84,12 @@ export default function createPlugin(options = {}) {
         const pbkCode = await readFile(pbkPath, 'utf-8');
         const zigCode = convertPixelBender(pbkCode);
         // save it to a file in a temp location
-        const file = parse(id);
+        const pbkFile = parse(pbkPath);
         const zigDir = join(tmpdir(), md5(id));
         await mkdirp(zigDir);
-        const zigPath = join(zigDir, file.name + '.zig');
+        const zigPath = join(zigDir, pbkFile.name + '.zig');
         await writeFile(zigPath, zigCode);
-        // rollup-plugin-zigar to transcode it to WASM
+        // ask rollup-plugin-zigar to transcode it to WASM
         const { code } = await zigarPlugin.load.call(this, zigPath);
         await rmdirp(zigDir);
         // the transpiler places exported field in the output script's own scope,
@@ -103,7 +103,7 @@ export default function createPlugin(options = {}) {
           const workerJSPath = fileURLToPath(new URL('./worker.js', import.meta.url));
           const workerJS = await readFile(workerJSPath, 'utf-8');
           const workerCode = `${imageCode}\n${workerJS}`;
-          const workerName = `${parse(pbkPath).name}-worker`;
+          const workerName = `${pbkFile.name}-worker`;
           let workerURL;
           if (serving) {
             const virtualPath = `/pb2zig/${md5(pbkPath).slice(0, 8)}/${workerName}.js`;
