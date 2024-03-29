@@ -97,29 +97,29 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var pos: @Vector(2, f32) = self.outCoord();
-                var PI: f32 = 3.1415926535;
+                const pos: @Vector(2, f32) = self.outCoord();
+                const PI: f32 = 3.1415926535;
                 var r1: f32 = 0.0;
                 var r2: f32 = 0.0;
-                var logRad: f32 = log(radians[1] / radians[0]);
-                var alfa: f32 = atan(logRad / (PI * 2.0));
-                var xShift: f32 = cos(alfa);
-                var yShift: f32 = sin(alfa);
-                var cosAngle: f32 = cos(rotate * PI / 180.0);
-                var sinAngle: f32 = sin(rotate * PI / 180.0);
-                var xZoom: f32 = cosAngle * zoom;
-                var yZoom: f32 = sinAngle * zoom;
-                var startX: f32 = center[0] - (xPos * cosAngle + yPos * sinAngle) * zoom;
-                var startY: f32 = center[1] + (-xPos * sinAngle + yPos * cosAngle) * zoom;
-                var ix: f32 = startX + xZoom * ceil(pos[0]) + yZoom * ceil(pos[1]);
-                var iy: f32 = startY + yZoom * ceil(pos[0]) - xZoom * ceil(pos[1]);
-                var distRad: f32 = log(ix * ix + iy * iy) / 2.0;
-                var f: f32 = atan2(iy, ix) + PI;
+                const logRad: f32 = log(radians[1] / radians[0]);
+                const alfa: f32 = atan(logRad / (PI * 2.0));
+                const xShift: f32 = cos(alfa);
+                const yShift: f32 = sin(alfa);
+                const cosAngle: f32 = cos(rotate * PI / 180.0);
+                const sinAngle: f32 = sin(rotate * PI / 180.0);
+                const xZoom: f32 = cosAngle * zoom;
+                const yZoom: f32 = sinAngle * zoom;
+                const startX: f32 = center[0] - (xPos * cosAngle + yPos * sinAngle) * zoom;
+                const startY: f32 = center[1] + (-xPos * sinAngle + yPos * cosAngle) * zoom;
+                const ix: f32 = startX + xZoom * ceil(pos[0]) + yZoom * ceil(pos[1]);
+                const iy: f32 = startY + yZoom * ceil(pos[0]) - xZoom * ceil(pos[1]);
+                const distRad: f32 = log(ix * ix + iy * iy) / 2.0;
+                const f: f32 = atan2(iy, ix) + PI;
                 var i: f32 = (distRad * xShift + f * yShift) / xShift;
                 var j: f32 = (f * xShift - distRad * yShift) / xShift;
                 i = mod(i, logRad);
                 j = mod(j, PI * 2.0);
-                var z: f32 = exp(i) * radians[0];
+                const z: f32 = exp(i) * radians[0];
                 r1 = range[0] + z * cos(j);
                 r2 = range[1] - z * sin(j);
                 if (r1 < 0.0) {
@@ -187,7 +187,10 @@ pub const kernel = struct {
                 }
                 break :calc result;
             },
-            else => std.math.atan2(@TypeOf(v1), v1, v2),
+            else => switch (@typeInfo(@TypeOf(std.math.atan2)).Fn.params.len) {
+                2 => std.math.atan2(v1, v2),
+                else => std.math.atan2(@TypeOf(v1), v1, v2),
+            },
         };
     }
 
@@ -217,6 +220,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -475,7 +481,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -500,7 +506,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -534,7 +540,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

@@ -47,15 +47,15 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var coord: @Vector(2, f32) = self.outCoord();
-                var inputColor: @Vector(4, f32) = src.sampleLinear(coord);
+                const coord: @Vector(2, f32) = self.outCoord();
+                const inputColor: @Vector(4, f32) = src.sampleLinear(coord);
                 self.dst = @shuffle(f32, self.dst, inputColor, @Vector(4, i32){ -1, -2, -3, 3 });
-                var hOffset: @Vector(2, f32) = .{ radius, 0.0 };
-                var vOffset: @Vector(2, f32) = .{ 0.0, radius };
-                var left: @Vector(4, f32) = src.sampleLinear(coord - hOffset) * @as(@Vector(4, f32), @splat(amount));
-                var right: @Vector(4, f32) = src.sampleLinear(coord + hOffset) * @as(@Vector(4, f32), @splat(amount));
-                var top: @Vector(4, f32) = src.sampleLinear(coord - vOffset) * @as(@Vector(4, f32), @splat(amount));
-                var bottom: @Vector(4, f32) = src.sampleLinear(coord + vOffset) * @as(@Vector(4, f32), @splat(amount));
+                const hOffset: @Vector(2, f32) = .{ radius, 0.0 };
+                const vOffset: @Vector(2, f32) = .{ 0.0, radius };
+                const left: @Vector(4, f32) = src.sampleLinear(coord - hOffset) * @as(@Vector(4, f32), @splat(amount));
+                const right: @Vector(4, f32) = src.sampleLinear(coord + hOffset) * @as(@Vector(4, f32), @splat(amount));
+                const top: @Vector(4, f32) = src.sampleLinear(coord - vOffset) * @as(@Vector(4, f32), @splat(amount));
+                const bottom: @Vector(4, f32) = src.sampleLinear(coord + vOffset) * @as(@Vector(4, f32), @splat(amount));
                 self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) + @shuffle(f32, top, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
                 self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) - @shuffle(f32, bottom, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
                 self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) + @shuffle(f32, left, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
@@ -84,6 +84,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -342,7 +345,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -367,7 +370,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -401,7 +404,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

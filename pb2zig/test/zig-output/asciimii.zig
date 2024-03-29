@@ -49,18 +49,18 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var sizef: f32 = @floatFromInt(size);
-                var charCountf: f32 = @floatFromInt(charCount);
+                const sizef: f32 = @floatFromInt(size);
+                const charCountf: f32 = @floatFromInt(charCount);
                 var offset2: @Vector(2, f32) = mod(self.outCoord(), sizef);
-                var mosaicPixel4: @Vector(4, f32) = src.sampleNearest(self.outCoord() - offset2);
-                var luma: f32 = 0.2126 * mosaicPixel4[0] + 0.7152 * mosaicPixel4[1] + 0.0722 * mosaicPixel4[2];
-                var range: f32 = (1.0 / (charCountf - 1.0));
-                var fontOffset: f32 = sizef * floor(luma / range);
-                var fontmapsize: f32 = (sizef * floor(sqrt(charCountf)));
-                var yRow: f32 = floor(fontOffset / fontmapsize);
+                const mosaicPixel4: @Vector(4, f32) = src.sampleNearest(self.outCoord() - offset2);
+                const luma: f32 = 0.2126 * mosaicPixel4[0] + 0.7152 * mosaicPixel4[1] + 0.0722 * mosaicPixel4[2];
+                const range: f32 = (1.0 / (charCountf - 1.0));
+                const fontOffset: f32 = sizef * floor(luma / range);
+                const fontmapsize: f32 = (sizef * floor(sqrt(charCountf)));
+                const yRow: f32 = floor(fontOffset / fontmapsize);
                 offset2[1] = offset2[1] + (sizef * yRow);
                 offset2[0] = offset2[0] + (fontOffset - (fontmapsize * yRow));
-                var charPixel4: @Vector(4, f32) = text.sampleLinear(offset2);
+                const charPixel4: @Vector(4, f32) = text.sampleLinear(offset2);
                 self.dst = @shuffle(f32, self.dst, @shuffle(f32, mosaicPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }) * @shuffle(f32, charPixel4, undefined, @Vector(3, i32){ 0, 1, 2 }), @Vector(4, i32){ -1, -2, -3, 3 });
                 self.dst[3] = mosaicPixel4[3];
 
@@ -105,6 +105,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -363,7 +366,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -388,7 +391,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -422,7 +425,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

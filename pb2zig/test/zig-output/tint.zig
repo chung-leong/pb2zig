@@ -51,10 +51,10 @@ pub const kernel = struct {
                 var r: f32 = undefined;
                 var g: f32 = undefined;
                 var b: f32 = undefined;
-                var a: f32 = undefined;
+                const a: f32 = undefined;
                 _ = a;
                 rgba = src.sampleNearest(self.outCoord());
-                var luminance: f32 = rgba[0] * 0.3086 + rgba[1] * 0.6094 + rgba[2] * 0.082;
+                const luminance: f32 = rgba[0] * 0.3086 + rgba[1] * 0.6094 + rgba[2] * 0.082;
                 r = (color[0] + luminance) * amount + rgba[0] * (1.0 - amount);
                 g = (color[1] + luminance) * amount + rgba[1] * (1.0 - amount);
                 b = (color[2] + luminance) * amount + rgba[2] * (1.0 - amount);
@@ -109,6 +109,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -367,7 +370,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -392,7 +395,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -426,7 +429,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

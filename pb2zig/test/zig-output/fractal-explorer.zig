@@ -271,10 +271,10 @@ pub const kernel = struct {
 
             // functions defined in kernel
             fn rgb2hsv(color: @Vector(4, f32)) @Vector(3, f32) {
-                var rgb_min: f32 = min(color[0], min(color[1], color[2]));
-                var rgb_max: f32 = max(color[0], max(color[1], color[2]));
-                var rgb_delta: f32 = rgb_max - rgb_min;
-                var v: f32 = rgb_max;
+                const rgb_min: f32 = min(color[0], min(color[1], color[2]));
+                const rgb_max: f32 = max(color[0], max(color[1], color[2]));
+                const rgb_delta: f32 = rgb_max - rgb_min;
+                const v: f32 = rgb_max;
                 var h: f32 = undefined;
                 var s: f32 = undefined;
                 if (rgb_delta == 0.0) {
@@ -282,9 +282,9 @@ pub const kernel = struct {
                     s = 0.0;
                 } else {
                     s = rgb_delta / rgb_max;
-                    var r_delta: f32 = (((rgb_max - color[0]) / 6.0) + (rgb_delta / 2.0)) / rgb_delta;
-                    var g_delta: f32 = (((rgb_max - color[1]) / 6.0) + (rgb_delta / 2.0)) / rgb_delta;
-                    var b_delta: f32 = (((rgb_max - color[2]) / 6.0) + (rgb_delta / 2.0)) / rgb_delta;
+                    const r_delta: f32 = (((rgb_max - color[0]) / 6.0) + (rgb_delta / 2.0)) / rgb_delta;
+                    const g_delta: f32 = (((rgb_max - color[1]) / 6.0) + (rgb_delta / 2.0)) / rgb_delta;
+                    const b_delta: f32 = (((rgb_max - color[2]) / 6.0) + (rgb_delta / 2.0)) / rgb_delta;
                     if (color[0] == rgb_max) {
                         h = b_delta - g_delta;
                     } else if (color[1] == rgb_max) {
@@ -417,13 +417,13 @@ pub const kernel = struct {
                 self.x1 += centerFineTune[0] * self.spanX;
                 self.y1 += centerFineTune[1] * self.spanY;
                 if (rotate != 0.0) {
-                    var rc: f32 = cos(radians(rotate));
-                    var rs: f32 = sin(radians(rotate));
+                    const rc: f32 = cos(radians(rotate));
+                    const rs: f32 = sin(radians(rotate));
                     self.rotation = [2]@Vector(2, f32){
                         .{ rc, rs },
                         .{ -rs, rc },
                     };
-                    var xy: @Vector(2, f32) = @"V * M"(@Vector(2, f32){ self.x1, self.y1 }, self.rotation);
+                    const xy: @Vector(2, f32) = @"V * M"(@Vector(2, f32){ self.x1, self.y1 }, self.rotation);
                     self.x1 = xy[0];
                     self.y1 = xy[1];
                 }
@@ -495,7 +495,7 @@ pub const kernel = struct {
                 var c1: @Vector(4, f32) = undefined;
                 var c2: @Vector(4, f32) = undefined;
                 var v: f32 = abs(1.0 - (n - @as(f32, @floatFromInt(iterationsOffset))) / @as(f32, @floatFromInt(iterations - iterationsOffset)));
-                var v0: f32 = v;
+                const v0: f32 = v;
                 if (hsbColor and colorMode > 0) {
                     c1 = hsv2rgb(@Vector(3, f32){
                         color_1[0],
@@ -519,8 +519,8 @@ pub const kernel = struct {
                     color = if (abs(z[0]) < bailout / 2.0 or abs(z[1]) < bailout / 2.0) c1 else c2;
                 } else {
                     if (colorMode != 2) {
-                        var vp: f32 = (log2Bailout - log(log(abs(length(z))))) / logPower;
-                        var v1: f32 = abs(1.0 - (n + 1.0 - @as(f32, @floatFromInt(iterationsOffset))) / @as(f32, @floatFromInt(iterations - iterationsOffset)));
+                        const vp: f32 = (log2Bailout - log(log(abs(length(z))))) / logPower;
+                        const v1: f32 = abs(1.0 - (n + 1.0 - @as(f32, @floatFromInt(iterationsOffset))) / @as(f32, @floatFromInt(iterations - iterationsOffset)));
                         if (colorMode == 1) {
                             if (n == 0.0) {
                                 v = v - (v - v1) * abs(vp);
@@ -553,7 +553,7 @@ pub const kernel = struct {
                     }
                     v += colorCycleOffset;
                     if (colorCycleMirror) {
-                        var even: bool = if (mod(v, 2.0) < 1.0) true else false;
+                        const even: bool = if (mod(v, 2.0) < 1.0) true else false;
                         if (even) {
                             v = 1.0 - mod(v, 1.0);
                         } else {
@@ -596,8 +596,8 @@ pub const kernel = struct {
                 } else {
                     z = @Vector(2, f32){ x1, y1 } + p * scale;
                 }
-                var c: @Vector(2, f32) = if (mandelbrotMode) z else (mu + muFineTune);
-                var e: f32 = exponent_power;
+                const c: @Vector(2, f32) = if (mandelbrotMode) z else (mu + muFineTune);
+                const e: f32 = exponent_power;
                 var blend: f32 = 1.0;
                 var n: i32 = 0;
                 while (n < iterations) {
@@ -759,7 +759,10 @@ pub const kernel = struct {
                 }
                 break :calc result;
             },
-            else => std.math.atan2(@TypeOf(v1), v1, v2),
+            else => switch (@typeInfo(@TypeOf(std.math.atan2)).Fn.params.len) {
+                2 => std.math.atan2(v1, v2),
+                else => std.math.atan2(@TypeOf(v1), v1, v2),
+            },
         };
     }
 
@@ -786,8 +789,7 @@ pub const kernel = struct {
     }
 
     fn abs(v: anytype) @TypeOf(v) {
-        // return @abs(v);
-        return @fabs(v);
+        return if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v);
     }
 
     fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
@@ -854,13 +856,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 
@@ -876,6 +874,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -1134,7 +1135,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -1159,7 +1160,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -1193,7 +1194,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

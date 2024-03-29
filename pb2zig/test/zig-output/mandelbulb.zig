@@ -287,9 +287,9 @@ pub const kernel = struct {
                 const phase = self.params.phase;
                 const julia_c = self.params.julia_c;
                 const maxIterations = self.params.maxIterations;
-                var c: @Vector(3, f32) = if (julia) julia_c else z0;
+                const c: @Vector(3, f32) = if (julia) julia_c else z0;
                 var z: @Vector(3, f32) = z0;
-                var pd: f32 = power - 1.0;
+                const pd: f32 = power - 1.0;
                 var r: f32 = length(z);
                 var th: f32 = atan2(z[1], z[0]);
                 var ph: f32 = asin(z[2] / r);
@@ -338,24 +338,24 @@ pub const kernel = struct {
             fn intersectBoundingSphere(self: *@This(), origin: @Vector(3, f32), direction: @Vector(3, f32), tmin: *f32, tmax: *f32) bool {
                 const bounding = self.params.bounding;
                 var hit: bool = false;
-                var b: f32 = dot(origin, direction);
-                var c: f32 = dot(origin, origin) - bounding;
-                var disc: f32 = b * b - c;
+                const b: f32 = dot(origin, direction);
+                const c: f32 = dot(origin, origin) - bounding;
+                const disc: f32 = b * b - c;
                 tmax.* = 0.0;
                 const tmp1 = tmax.*;
                 tmin.* = tmp1;
                 if (disc > 0.0) {
-                    var sdisc: f32 = sqrt(disc);
-                    var t0: f32 = -b - sdisc;
-                    var t1: f32 = -b + sdisc;
+                    const sdisc: f32 = sqrt(disc);
+                    const t0: f32 = -b - sdisc;
+                    const t1: f32 = -b + sdisc;
                     if (t0 >= 0.0) {
                         var min_dist: f32 = undefined;
-                        var z: @Vector(3, f32) = origin + @as(@Vector(3, f32), @splat(t0)) * direction;
+                        const z: @Vector(3, f32) = origin + @as(@Vector(3, f32), @splat(t0)) * direction;
                         tmin.* = self.DE(z, &min_dist);
                         tmax.* = t0 + t1;
                     } else if (t0 < 0.0) {
                         var min_dist: f32 = undefined;
-                        var z: @Vector(3, f32) = origin;
+                        const z: @Vector(3, f32) = origin;
                         tmin.* = self.DE(z, &min_dist);
                         tmax.* = t1;
                     }
@@ -366,15 +366,15 @@ pub const kernel = struct {
 
             fn estimate_normal(self: *@This(), z: @Vector(3, f32), e: f32) @Vector(3, f32) {
                 var min_dst: f32 = undefined;
-                var z1: @Vector(3, f32) = z + @Vector(3, f32){ e, 0.0, 0.0 };
-                var z2: @Vector(3, f32) = z - @Vector(3, f32){ e, 0.0, 0.0 };
-                var z3: @Vector(3, f32) = z + @Vector(3, f32){ 0.0, e, 0.0 };
-                var z4: @Vector(3, f32) = z - @Vector(3, f32){ 0.0, e, 0.0 };
-                var z5: @Vector(3, f32) = z + @Vector(3, f32){ 0.0, 0.0, e };
-                var z6: @Vector(3, f32) = z - @Vector(3, f32){ 0.0, 0.0, e };
-                var dx: f32 = self.DE(z1, &min_dst) - self.DE(z2, &min_dst);
-                var dy: f32 = self.DE(z3, &min_dst) - self.DE(z4, &min_dst);
-                var dz: f32 = self.DE(z5, &min_dst) - self.DE(z6, &min_dst);
+                const z1: @Vector(3, f32) = z + @Vector(3, f32){ e, 0.0, 0.0 };
+                const z2: @Vector(3, f32) = z - @Vector(3, f32){ e, 0.0, 0.0 };
+                const z3: @Vector(3, f32) = z + @Vector(3, f32){ 0.0, e, 0.0 };
+                const z4: @Vector(3, f32) = z - @Vector(3, f32){ 0.0, e, 0.0 };
+                const z5: @Vector(3, f32) = z + @Vector(3, f32){ 0.0, 0.0, e };
+                const z6: @Vector(3, f32) = z - @Vector(3, f32){ 0.0, 0.0, e };
+                const dx: f32 = self.DE(z1, &min_dst) - self.DE(z2, &min_dst);
+                const dy: f32 = self.DE(z3, &min_dst) - self.DE(z4, &min_dst);
+                const dz: f32 = self.DE(z5, &min_dst) - self.DE(z6, &min_dst);
                 return normalize(@Vector(3, f32){ dx, dy, dz } / @as(@Vector(3, f32), @splat((2.0 * e))));
             }
 
@@ -391,17 +391,17 @@ pub const kernel = struct {
                 const eye = self.eye;
                 const objRotation = self.objRotation;
                 var diffuse: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
-                var color: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
+                const color: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
                 _ = color;
                 specular.* = 0.0;
-                var L: @Vector(3, f32) = normalize(@"V * M"(light, objRotation) - pt);
-                var NdotL: f32 = dot(N, L);
+                const L: @Vector(3, f32) = normalize(@"V * M"(light, objRotation) - pt);
+                const NdotL: f32 = dot(N, L);
                 if (NdotL > 0.0) {
                     diffuse = colorDiffuse + abs(N) * @as(@Vector(3, f32), @splat(colorSpread));
                     diffuse *= colorLight * @as(@Vector(3, f32), @splat(NdotL));
-                    var E: @Vector(3, f32) = normalize(eye - pt);
-                    var R: @Vector(3, f32) = L - @as(@Vector(3, f32), @splat(2.0 * NdotL)) * N;
-                    var RdE: f32 = dot(R, E);
+                    const E: @Vector(3, f32) = normalize(eye - pt);
+                    const R: @Vector(3, f32) = L - @as(@Vector(3, f32), @splat(2.0 * NdotL)) * N;
+                    const RdE: f32 = dot(R, E);
                     if (RdE <= 0.0) {
                         specular.* = specularity * pow(abs(RdE), specularExponent);
                     }
@@ -417,7 +417,7 @@ pub const kernel = struct {
                 const aspectRatio = self.aspectRatio;
                 const viewRotation = self.viewRotation;
                 const objRotation = self.objRotation;
-                var direction: @Vector(3, f32) = .{
+                const direction: @Vector(3, f32) = .{
                     2.0 * aspectRatio * p[0] / @as(f32, @floatFromInt(size[0])) - aspectRatio,
                     -2.0 * p[1] / @as(f32, @floatFromInt(size[1])) + 1.0,
                     -2.0 * exp(cameraZoom),
@@ -442,7 +442,7 @@ pub const kernel = struct {
                 const objRotation = self.objRotation;
                 var tmin: f32 = undefined;
                 var tmax: f32 = undefined;
-                var ray_direction: @Vector(3, f32) = self.rayDirection(pixel);
+                const ray_direction: @Vector(3, f32) = self.rayDirection(pixel);
                 var color: @Vector(4, f32) = undefined;
                 color = @shuffle(f32, color, colorBackground, @Vector(4, i32){ -1, -2, -3, 3 });
                 color[3] = colorBackgroundTransparency;
@@ -453,7 +453,7 @@ pub const kernel = struct {
                     var min_dist: f32 = 4.0;
                     var ray_length: f32 = tmin;
                     var eps: f32 = MIN_EPSILON;
-                    var max_steps: i32 = @intFromFloat(@as(f32, @floatFromInt(stepLimit)) / epsilonScale);
+                    const max_steps: i32 = @intFromFloat(@as(f32, @floatFromInt(stepLimit)) / epsilonScale);
                     var i: i32 = undefined;
                     var f: f32 = undefined;
                     {
@@ -471,11 +471,11 @@ pub const kernel = struct {
                     if (dist < eps) {
                         ao = 1.0 - clamp(1.0 - min_dist * min_dist, 0.0, 1.0) * ambientOcclusion;
                         if (phong) {
-                            var normal: @Vector(3, f32) = self.estimate_normal(ray, eps / 2.0);
+                            const normal: @Vector(3, f32) = self.estimate_normal(ray, eps / 2.0);
                             var specular: f32 = 0.0;
                             color = @shuffle(f32, color, self.Phong(ray, normal, &specular), @Vector(4, i32){ -1, -2, -3, 3 });
                             if (shadows > 0.0) {
-                                var light_direction: @Vector(3, f32) = normalize(@"V * M"((light - ray), objRotation));
+                                const light_direction: @Vector(3, f32) = normalize(@"V * M"((light - ray), objRotation));
                                 ray += normal * @as(@Vector(3, f32), @splat(eps)) * @as(@Vector(3, f32), @splat(2.0));
                                 var min_dist2: f32 = undefined;
                                 dist = 4.0;
@@ -518,21 +518,21 @@ pub const kernel = struct {
                 self.aspectRatio = @as(f32, @floatFromInt(size[0])) / @as(f32, @floatFromInt(size[1]));
                 var c1: f32 = cos(radians(-cameraRotation[0]));
                 var s1: f32 = sin(radians(-cameraRotation[0]));
-                var viewRotationY: [3]@Vector(3, f32) = .{
+                const viewRotationY: [3]@Vector(3, f32) = .{
                     .{ c1, 0.0, s1 },
                     .{ 0.0, 1.0, 0.0 },
                     .{ -s1, 0.0, c1 },
                 };
                 var c2: f32 = cos(radians(-cameraRotation[1]));
                 var s2: f32 = sin(radians(-cameraRotation[1]));
-                var viewRotationZ: [3]@Vector(3, f32) = .{
+                const viewRotationZ: [3]@Vector(3, f32) = .{
                     .{ c2, -s2, 0.0 },
                     .{ s2, c2, 0.0 },
                     .{ 0.0, 0.0, 1.0 },
                 };
                 var c3: f32 = cos(radians(-cameraRotation[2]));
                 var s3: f32 = sin(radians(-cameraRotation[2]));
-                var viewRotationX: [3]@Vector(3, f32) = .{
+                const viewRotationX: [3]@Vector(3, f32) = .{
                     .{ 1.0, 0.0, 0.0 },
                     .{ 0.0, c3, -s3 },
                     .{ 0.0, s3, c3 },
@@ -540,21 +540,21 @@ pub const kernel = struct {
                 self.viewRotation = @"M * M"(@"M * M"(viewRotationX, viewRotationY), viewRotationZ);
                 c1 = cos(radians(-rotation[0]));
                 s1 = sin(radians(-rotation[0]));
-                var objRotationY: [3]@Vector(3, f32) = .{
+                const objRotationY: [3]@Vector(3, f32) = .{
                     .{ c1, 0.0, s1 },
                     .{ 0.0, 1.0, 0.0 },
                     .{ -s1, 0.0, c1 },
                 };
                 c2 = cos(radians(-rotation[1]));
                 s2 = sin(radians(-rotation[1]));
-                var objRotationZ: [3]@Vector(3, f32) = .{
+                const objRotationZ: [3]@Vector(3, f32) = .{
                     .{ c2, -s2, 0.0 },
                     .{ s2, c2, 0.0 },
                     .{ 0.0, 0.0, 1.0 },
                 };
                 c3 = cos(radians(-rotation[2]));
                 s3 = sin(radians(-rotation[2]));
-                var objRotationX: [3]@Vector(3, f32) = .{
+                const objRotationX: [3]@Vector(3, f32) = .{
                     .{ 1.0, 0.0, 0.0 },
                     .{ 0.0, c3, -s3 },
                     .{ 0.0, s3, c3 },
@@ -671,7 +671,10 @@ pub const kernel = struct {
                 }
                 break :calc result;
             },
-            else => std.math.atan2(@TypeOf(v1), v1, v2),
+            else => switch (@typeInfo(@TypeOf(std.math.atan2)).Fn.params.len) {
+                2 => std.math.atan2(v1, v2),
+                else => std.math.atan2(@TypeOf(v1), v1, v2),
+            },
         };
     }
 
@@ -702,8 +705,7 @@ pub const kernel = struct {
     }
 
     fn abs(v: anytype) @TypeOf(v) {
-        // return @abs(v);
-        return @fabs(v);
+        return if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v);
     }
 
     fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
@@ -740,13 +742,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 
@@ -792,6 +790,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -1050,7 +1051,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -1075,7 +1076,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -1109,7 +1110,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

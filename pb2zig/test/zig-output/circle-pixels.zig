@@ -57,19 +57,19 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var inP: @Vector(2, f32) = self.outCoord();
-                var xPos: f32 = (floor((inP[0]) / dist) * dist);
-                var yPos: f32 = (floor((inP[1]) / dist) * dist);
-                var difX: f32 = inP[0] - xPos;
+                const inP: @Vector(2, f32) = self.outCoord();
+                const xPos: f32 = (floor((inP[0]) / dist) * dist);
+                const yPos: f32 = (floor((inP[1]) / dist) * dist);
+                const difX: f32 = inP[0] - xPos;
                 _ = difX;
-                var difY: f32 = inP[1] - yPos;
+                const difY: f32 = inP[1] - yPos;
                 _ = difY;
                 var newP: @Vector(2, f32) = undefined;
                 newP[0] = xPos;
                 newP[1] = yPos;
-                var distt: f32 = distance(inP - @as(@Vector(2, f32), @splat((dist / 2.0))), newP);
+                const distt: f32 = distance(inP - @as(@Vector(2, f32), @splat((dist / 2.0))), newP);
                 self.dst = src.sampleNearest(newP);
-                var ssize: f32 = size * self.dst[3];
+                const ssize: f32 = size * self.dst[3];
                 if (2.0 * distt / ssize > dist) {
                     self.dst[3] = 0.0;
                 } else if (2.0 * distt / ssize > dist - edgeAlpha) {
@@ -100,13 +100,9 @@ pub const kernel = struct {
     }
 
     fn distance(v1: anytype, v2: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v1))) {
-            //     .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-            //     else => @abs(v1 - v2),
-            // };
         return switch (@typeInfo(@TypeOf(v1))) {
             .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-            else => @fabs(v1 - v2),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v1 - v2) else @abs(v1 - v2),
         };
     }
 };
@@ -114,6 +110,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -372,7 +371,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -397,7 +396,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -431,7 +430,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

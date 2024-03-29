@@ -64,18 +64,18 @@ pub const kernel = struct {
                 const outputColor = self.output.outputColor;
                 self.outputColor = @splat(0.0);
 
-                var twirlAngleRadians: f32 = radians(twirlAngle);
+                const twirlAngleRadians: f32 = radians(twirlAngle);
                 var relativePos: @Vector(2, f32) = self.outCoord() - center;
                 var distFromCenter: f32 = length(relativePos);
                 distFromCenter /= radius;
                 var adjustedRadians: f32 = undefined;
-                var sincWeight: f32 = sin(distFromCenter) * twirlAngleRadians / distFromCenter;
-                var gaussWeight: f32 = exp(-1.0 * distFromCenter * distFromCenter) * twirlAngleRadians;
+                const sincWeight: f32 = sin(distFromCenter) * twirlAngleRadians / distFromCenter;
+                const gaussWeight: f32 = exp(-1.0 * distFromCenter * distFromCenter) * twirlAngleRadians;
                 adjustedRadians = if ((distFromCenter == 0.0)) twirlAngleRadians else sincWeight;
                 adjustedRadians = if ((gaussOrSinc == 1)) adjustedRadians else gaussWeight;
-                var cosAngle: f32 = cos(adjustedRadians);
-                var sinAngle: f32 = sin(adjustedRadians);
-                var rotationMat: [2]@Vector(2, f32) = .{
+                const cosAngle: f32 = cos(adjustedRadians);
+                const sinAngle: f32 = sin(adjustedRadians);
+                const rotationMat: [2]@Vector(2, f32) = .{
                     .{ cosAngle, sinAngle },
                     .{ -sinAngle, cosAngle },
                 };
@@ -122,13 +122,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 
@@ -152,6 +148,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -410,7 +409,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -435,7 +434,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -469,7 +468,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

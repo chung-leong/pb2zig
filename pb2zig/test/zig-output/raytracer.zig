@@ -106,7 +106,7 @@ pub const kernel = struct {
                 {
                     var i: i32 = SPHERE_PARAMETER_COUNT * 2;
                     while (i < NUM_SPHERES * SPHERE_PARAMETER_COUNT) {
-                        var ifloat: f32 = @floatFromInt(i);
+                        const ifloat: f32 = @floatFromInt(i);
                         self.sphereArray[@intCast(i)] = sin(ifloat / 5.0) * 6.0;
                         self.sphereArray[@intCast(i + 1)] = sin(ifloat / 4.1) * 2.5;
                         self.sphereArray[@intCast(i + 2)] = -18.0 - sin(ifloat / 3.1 + 1.2) * 10.0;
@@ -246,7 +246,7 @@ pub const kernel = struct {
                             sphereColor *= @as(@Vector(3, f32), @splat(@as(f32, if ((mod(floor(uv[0] * 2000.0) + floor(uv[1] * 2000.0), 2.0) == 0.0)) 0.5 else 1.0)));
                         }
                         lightVal = (sphereMaterial[0] + @as(f32, @floatFromInt(shadowTest)) * (diffuse * sphereMaterial[1] + specular * sphereMaterial[2]));
-                        var res: @Vector(3, f32) = colorScale * @as(@Vector(3, f32), @splat(lightVal)) * sphereColor;
+                        const res: @Vector(3, f32) = colorScale * @as(@Vector(3, f32), @splat(lightVal)) * sphereColor;
                         self.dst += @Vector(4, f32){
                             res[0],
                             res[1],
@@ -352,13 +352,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 
@@ -380,6 +376,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -638,7 +637,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -663,7 +662,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -697,7 +696,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

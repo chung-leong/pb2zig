@@ -84,7 +84,7 @@ pub const kernel = struct {
 
                 var axis1: @Vector(3, f32) = .{ 1.0, 0.0, 0.0 };
                 var axis2: @Vector(3, f32) = .{ 0.0, 1.0, 0.0 };
-                var elevR: [3]@Vector(3, f32) = .{
+                const elevR: [3]@Vector(3, f32) = .{
                     .{ 1.0, 0.0, 0.0 },
                     .{
                         0.0,
@@ -97,7 +97,7 @@ pub const kernel = struct {
                         cos(spin[0]),
                     },
                 };
-                var bearR: [3]@Vector(3, f32) = .{
+                const bearR: [3]@Vector(3, f32) = .{
                     .{
                         cos(spin[1]),
                         sin(spin[1]),
@@ -110,7 +110,7 @@ pub const kernel = struct {
                     },
                     .{ 0.0, 0.0, 1.0 },
                 };
-                var yamR: [3]@Vector(3, f32) = .{
+                const yamR: [3]@Vector(3, f32) = .{
                     .{
                         cos(spin[2]),
                         0.0,
@@ -125,7 +125,7 @@ pub const kernel = struct {
                 };
                 axis1 = @"V * M"(axis1, @"M * M"(@"M * M"(elevR, bearR), yamR));
                 axis2 = @"V * M"(axis2, @"M * M"(@"M * M"(elevR, bearR), yamR));
-                var oc: @Vector(2, f32) = (self.outCoord() - center) * @as(@Vector(2, f32), @splat(cellDensity));
+                const oc: @Vector(2, f32) = (self.outCoord() - center) * @as(@Vector(2, f32), @splat(cellDensity));
                 var p: @Vector(3, f32) = @as(@Vector(3, f32), @splat(oc[0])) * axis1 + @as(@Vector(3, f32), @splat(oc[1])) * axis2;
                 var perp: @Vector(3, f32) = cross(axis1, axis2);
                 var plungeMore: f32 = radius * radius * cellDensity * cellDensity - oc[0] * oc[0] - oc[1] * oc[1];
@@ -134,14 +134,14 @@ pub const kernel = struct {
                 }
                 plungeMore = sqrt(plungeMore);
                 p += @as(@Vector(3, f32), @splat((plunge - plungeMore))) * perp;
-                var pCell: @Vector(3, f32) = floor(p);
+                const pCell: @Vector(3, f32) = floor(p);
                 _ = pCell;
                 p = mod(p, 1.0);
-                var perpStep: @Vector(3, f32) = @as(@Vector(3, f32), @splat(1.0)) - step(0.0, perp);
+                const perpStep: @Vector(3, f32) = @as(@Vector(3, f32), @splat(1.0)) - step(0.0, perp);
                 p = perpStep - p;
                 p = abs(p);
                 perp = abs(perp);
-                var t: @Vector(3, f32) = p / perp;
+                const t: @Vector(3, f32) = p / perp;
                 var co: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
                 var z: f32 = undefined;
                 if (t[0] >= 0.0) {
@@ -194,8 +194,7 @@ pub const kernel = struct {
     }
 
     fn abs(v: anytype) @TypeOf(v) {
-        // return @abs(v);
-        return @fabs(v);
+        return if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v);
     }
 
     fn floor(v: anytype) @TypeOf(v) {
@@ -261,6 +260,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -519,7 +521,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -544,7 +546,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -578,7 +580,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

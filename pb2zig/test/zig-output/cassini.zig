@@ -69,21 +69,21 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var center: @Vector(2, f32) = .{
+                const center: @Vector(2, f32) = .{
                     imageWH[0] / 2.0,
                     imageWH[1] / 2.0,
                 };
-                var po: @Vector(2, f32) = self.outCoord() - center;
-                var radius: f32 = sqrt(po[0] * po[0] + po[1] * po[1]);
+                const po: @Vector(2, f32) = self.outCoord() - center;
+                const radius: f32 = sqrt(po[0] * po[0] + po[1] * po[1]);
                 _ = radius;
-                var zm: f32 = 10.0 / zoom;
-                var l1: f32 = lambda;
-                var xx: f32 = zm * (po[0]) / (imageWH[0] / 2.0) * PI;
-                var d: f32 = zm * po[1] / (poi[1] / 2.0) * (PI / 2.0);
-                var phi: f32 = asin(sin(d) * cos(xx));
-                var l: f32 = l1 + atan2(tan(xx), cos(d));
-                var nx: f32 = mod((l * (poi[0] / 2.0) / PI + (poi[0] / 2.0)), (poi[0] - 1.0) - (poi[0] / 2.0));
-                var ny: f32 = phi * ((poi[1] / 2.0)) / (PI / 2.0);
+                const zm: f32 = 10.0 / zoom;
+                const l1: f32 = lambda;
+                const xx: f32 = zm * (po[0]) / (imageWH[0] / 2.0) * PI;
+                const d: f32 = zm * po[1] / (poi[1] / 2.0) * (PI / 2.0);
+                const phi: f32 = asin(sin(d) * cos(xx));
+                const l: f32 = l1 + atan2(tan(xx), cos(d));
+                const nx: f32 = mod((l * (poi[0] / 2.0) / PI + (poi[0] / 2.0)), (poi[0] - 1.0) - (poi[0] / 2.0));
+                const ny: f32 = phi * ((poi[1] / 2.0)) / (PI / 2.0);
                 self.dst = src.sampleLinear(center + @Vector(2, f32){ nx, ny });
 
                 dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
@@ -141,7 +141,10 @@ pub const kernel = struct {
                 }
                 break :calc result;
             },
-            else => std.math.atan2(@TypeOf(v1), v1, v2),
+            else => switch (@typeInfo(@TypeOf(std.math.atan2)).Fn.params.len) {
+                2 => std.math.atan2(v1, v2),
+                else => std.math.atan2(@TypeOf(v1), v1, v2),
+            },
         };
     }
 
@@ -163,6 +166,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -421,7 +427,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -446,7 +452,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -480,7 +486,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

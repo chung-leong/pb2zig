@@ -152,15 +152,15 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var po: @Vector(2, f32) = self.outCoord() - center;
-                var theta: f32 = po[0] / focallength;
-                var viewdir: @Vector(3, f32) = @as(@Vector(3, f32), @splat(focallength)) * (@as(@Vector(3, f32), @splat(cos(theta))) * @shuffle(f32, orientation[0], undefined, @Vector(3, i32){ 0, 1, 2 }) + @as(@Vector(3, f32), @splat(sin(theta))) * @shuffle(f32, orientation[1], undefined, @Vector(3, i32){ 0, 1, 2 })) + @as(@Vector(3, f32), @splat(po[1])) * @shuffle(f32, orientation[2], undefined, @Vector(3, i32){ 0, 1, 2 });
+                const po: @Vector(2, f32) = self.outCoord() - center;
+                const theta: f32 = po[0] / focallength;
+                const viewdir: @Vector(3, f32) = @as(@Vector(3, f32), @splat(focallength)) * (@as(@Vector(3, f32), @splat(cos(theta))) * @shuffle(f32, orientation[0], undefined, @Vector(3, i32){ 0, 1, 2 }) + @as(@Vector(3, f32), @splat(sin(theta))) * @shuffle(f32, orientation[1], undefined, @Vector(3, i32){ 0, 1, 2 })) + @as(@Vector(3, f32), @splat(po[1])) * @shuffle(f32, orientation[2], undefined, @Vector(3, i32){ 0, 1, 2 });
                 var v: @Vector(3, f32) = @shuffle(f32, orientation[3], undefined, @Vector(3, i32){ 0, 1, 2 }) / @as(@Vector(3, f32), @splat(size));
                 var currentAlpha: f32 = 1.0;
                 self.dst = @Vector(4, f32){ 0.0, 0.0, 0.0, 0.0 };
                 var dst2: @Vector(4, f32) = undefined;
                 var t: @Vector(3, f32) = undefined;
-                var n: i32 = 5;
+                const n: i32 = 5;
                 {
                     var i: i32 = 0;
                     while (i < n) {
@@ -214,8 +214,7 @@ pub const kernel = struct {
     }
 
     fn abs(v: anytype) @TypeOf(v) {
-        // return @abs(v);
-        return @fabs(v);
+        return if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v);
     }
 
     fn floor(v: anytype) @TypeOf(v) {
@@ -240,6 +239,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -498,7 +500,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -523,7 +525,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -557,7 +559,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

@@ -62,7 +62,7 @@ pub const kernel = struct {
                 self.dst = @splat(0.0);
 
                 self.dst = src.sampleNearest(self.outCoord());
-                var ycbcr: @Vector(3, f32) = @"V * M"(@shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }), [3]@Vector(3, f32){
+                const ycbcr: @Vector(3, f32) = @"V * M"(@shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }), [3]@Vector(3, f32){
                     .{ 0.0, 0.0, 0.0 },
                     .{
                         -0.168736,
@@ -112,6 +112,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -370,7 +373,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -395,7 +398,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -429,7 +432,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

@@ -57,21 +57,21 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var srcpos: @Vector(2, f32) = self.outCoord();
-                var dst0: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ srcpos[0], srcpos[1] });
-                var dst1: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){
+                const srcpos: @Vector(2, f32) = self.outCoord();
+                const dst0: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){ srcpos[0], srcpos[1] });
+                const dst1: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){
                     srcpos[0] + 1.0,
                     srcpos[1],
                 });
-                var dst2: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){
+                const dst2: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){
                     srcpos[0],
                     srcpos[1] + 1.0,
                 });
-                var dst3: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){
+                const dst3: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){
                     srcpos[0] + 1.0,
                     srcpos[1] + 1.0,
                 });
-                var dst4: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){
+                const dst4: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){
                     srcpos[0] - 1.0,
                     srcpos[1] + 1.0,
                 });
@@ -91,7 +91,7 @@ pub const kernel = struct {
                 if (dst4[3] != 0.0) {
                     distance4 = distance(dst0, dst4);
                 }
-                var maxdistance: f32 = max(max(distance1, distance2), max(distance3, distance4));
+                const maxdistance: f32 = max(max(distance1, distance2), max(distance3, distance4));
                 if (maxdistance > difference[0]) {
                     self.dst = color;
                 } else if (maxdistance > difference[1]) {
@@ -130,13 +130,9 @@ pub const kernel = struct {
     }
 
     fn distance(v1: anytype, v2: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v1))) {
-            //     .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-            //     else => @abs(v1 - v2),
-            // };
         return switch (@typeInfo(@TypeOf(v1))) {
             .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-            else => @fabs(v1 - v2),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v1 - v2) else @abs(v1 - v2),
         };
     }
 };
@@ -144,6 +140,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -402,7 +401,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -427,7 +426,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -461,7 +460,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

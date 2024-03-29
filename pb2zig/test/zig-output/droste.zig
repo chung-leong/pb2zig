@@ -232,8 +232,8 @@ pub const kernel = struct {
                     self.p1 = self.p2 / 2.0 * (1.0 + sqrt(1.0 - pow(log(self.r2 / self.r1) / PI, 2.0)));
                 }
                 self._rotate = if (self.p1 > 0.0) @Vector(2, f32){ -PI180 * rotate, 0.0 } else @Vector(2, f32){ PI180 * rotate, 0.0 };
-                var sc: f32 = cos(radians(rotateSpin));
-                var ss: f32 = sin(radians(rotateSpin));
+                const sc: f32 = cos(radians(rotateSpin));
+                const ss: f32 = sin(radians(rotateSpin));
                 self.imageSpin = [2]@Vector(2, f32){
                     .{ sc, ss },
                     .{ -ss, sc },
@@ -277,10 +277,10 @@ pub const kernel = struct {
                 const _shift = self._shift;
                 const minDimension = self.minDimension;
                 const tileBasedOnTransparency = self.tileBasedOnTransparency;
-                var d: @Vector(2, f32) = minDimension * (z + _shift);
+                const d: @Vector(2, f32) = minDimension * (z + _shift);
                 sign.* = 0;
                 if (tileBasedOnTransparency or iteration.* == 0) {
-                    var color: @Vector(4, f32) = src.sampleLinear(d);
+                    const color: @Vector(4, f32) = src.sampleLinear(d);
                     colorSoFar.* += color * @as(@Vector(4, f32), @splat((color[3] * alphaRemaining.*)));
                     alphaRemaining.* *= (1.0 - colorSoFar.*[3]);
                 }
@@ -295,7 +295,7 @@ pub const kernel = struct {
                     if (iteration.* > 0) {
                         colorSoFar.* = src.sampleLinear(d);
                     }
-                    var radius: f32 = length(z);
+                    const radius: f32 = length(z);
                     sign.* = if ((radius < r1)) -1 else @as(i32, if (radius > r2) 1 else 0);
                 }
                 iteration.* += 1;
@@ -325,10 +325,10 @@ pub const kernel = struct {
                 const imageSpin = self.imageSpin;
                 const tileBasedOnTransparency = self.tileBasedOnTransparency;
                 var z: @Vector(2, f32) = undefined;
-                var d: @Vector(2, f32) = undefined;
+                const d: @Vector(2, f32) = undefined;
                 _ = d;
                 var ratio: @Vector(2, f32) = undefined;
-                var radius: f32 = undefined;
+                const radius: f32 = undefined;
                 _ = radius;
                 var theta: f32 = undefined;
                 var div: f32 = undefined;
@@ -360,12 +360,12 @@ pub const kernel = struct {
                 if (twist) {
                     z = complexLog(complexDivision(z, @Vector(2, f32){ r1, 0.0 }));
                 }
-                var alpha: @Vector(2, f32) = .{
+                const alpha: @Vector(2, f32) = .{
                     atan((p2 / p1) * (log(r2 / r1) / TWOPI)),
                     0.0,
                 };
-                var f: @Vector(2, f32) = .{ cos(alpha[0]), 0.0 };
-                var beta: @Vector(2, f32) = complexMult(f, complexExp(complexMult(alpha, I)));
+                const f: @Vector(2, f32) = .{ cos(alpha[0]), 0.0 };
+                const beta: @Vector(2, f32) = complexMult(f, complexExp(complexMult(alpha, I)));
                 var angle: @Vector(2, f32) = .{ -TWOPI * p1, 0.0 };
                 if (p2 > 0.0) {
                     angle = -angle;
@@ -392,7 +392,7 @@ pub const kernel = struct {
                     ratio = complexMult(@Vector(2, f32){ r1 / r2, 0.0 }, complexExp(complexMult(angle, -I)));
                 }
                 iteration = levelStart;
-                var maxIteration: i32 = levels + levelStart - 1;
+                const maxIteration: i32 = levels + levelStart - 1;
                 while (sign != 0 and iteration < maxIteration) {
                     z = complexMult(z, ratio);
                     self.render(z, &alphaRemaining, &sign, &iteration, &colorSoFar);
@@ -565,7 +565,10 @@ pub const kernel = struct {
                 }
                 break :calc result;
             },
-            else => std.math.atan2(@TypeOf(v1), v1, v2),
+            else => switch (@typeInfo(@TypeOf(std.math.atan2)).Fn.params.len) {
+                2 => std.math.atan2(v1, v2),
+                else => std.math.atan2(@TypeOf(v1), v1, v2),
+            },
         };
     }
 
@@ -616,13 +619,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 
@@ -648,6 +647,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -906,7 +908,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -931,7 +933,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -965,7 +967,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

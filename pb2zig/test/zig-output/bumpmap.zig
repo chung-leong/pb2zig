@@ -122,12 +122,12 @@ pub const kernel = struct {
                     if (invert == 0) {
                         height = 1.0 - height;
                     }
-                    var ray: @Vector(3, f32) = @Vector(3, f32){
+                    const ray: @Vector(3, f32) = @Vector(3, f32){
                         self.outCoord()[0],
                         self.outCoord()[1],
                         height,
                     } - light;
-                    var tmp_ray_len: f32 = length(ray);
+                    const tmp_ray_len: f32 = length(ray);
                     if (tmp_ray_len > lightwidth) {
                         self.dst = @Vector(4, f32){
                             0.0,
@@ -154,9 +154,9 @@ pub const kernel = struct {
                             yvec[2] = -yvec[2];
                             hvec[2] = -hvec[2];
                         }
-                        var norm: @Vector(3, f32) = cross(hvec, yvec);
-                        var tmp_dot: f32 = dot(ray, norm);
-                        var refl_low: f32 = 0.99 - refl_tolerance / 10000.0;
+                        const norm: @Vector(3, f32) = cross(hvec, yvec);
+                        const tmp_dot: f32 = dot(ray, norm);
+                        const refl_low: f32 = 0.99 - refl_tolerance / 10000.0;
                         var clightrefl: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
                         if (tmp_dot < 0.0) {
                             fac = 1.0 - fract(tmp_dot / (tmp_ray_len * length(norm)));
@@ -219,13 +219,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 
@@ -247,6 +243,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -505,7 +504,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -530,7 +529,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -564,7 +563,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

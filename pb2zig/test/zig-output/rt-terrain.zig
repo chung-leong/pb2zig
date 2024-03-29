@@ -136,21 +136,21 @@ pub const kernel = struct {
 
                 var pos: @Vector(3, f32) = undefined;
                 var dir: @Vector(3, f32) = undefined;
-                var coord: @Vector(2, f32) = self.outCoord();
-                var cx: f32 = cos(-rotationX);
-                var sx: f32 = sin(-rotationX);
-                var cy: f32 = cos(-rotationY);
-                var sy: f32 = sin(-rotationY);
+                const coord: @Vector(2, f32) = self.outCoord();
+                const cx: f32 = cos(-rotationX);
+                const sx: f32 = sin(-rotationX);
+                const cy: f32 = cos(-rotationY);
+                const sy: f32 = sin(-rotationY);
                 var h: f32 = undefined;
                 var lh: f32 = undefined;
                 var lp: @Vector(3, f32) = undefined;
-                var transMatX: @Vector(3, f32) = .{ cy, 0.0, sy };
-                var transMatY: @Vector(3, f32) = .{
+                const transMatX: @Vector(3, f32) = .{ cy, 0.0, sy };
+                const transMatY: @Vector(3, f32) = .{
                     sx * sy,
                     cx,
                     -sx * cy,
                 };
-                var transMatZ: @Vector(3, f32) = .{
+                const transMatZ: @Vector(3, f32) = .{
                     -cx * sy,
                     sx,
                     cx * cy,
@@ -162,7 +162,7 @@ pub const kernel = struct {
                 dir[0] = dot(transMatX, dirT);
                 dir[1] = dot(transMatY, dirT);
                 dir[2] = dot(transMatZ, dirT);
-                var cur: f32 = heightMap.sampleLinear(mod(@shuffle(f32, camPosition, undefined, @Vector(2, i32){ 0, 2 }) / mapScale, 2048.0))[1] * elevation + 20.0;
+                const cur: f32 = heightMap.sampleLinear(mod(@shuffle(f32, camPosition, undefined, @Vector(2, i32){ 0, 2 }) / mapScale, 2048.0))[1] * elevation + 20.0;
                 pos = dir + camPosition;
                 if (cur > camPosition[1]) {
                     pos[1] += cur - camPosition[1];
@@ -2691,10 +2691,10 @@ pub const kernel = struct {
                     rayStep += 0.02;
                 }
                 self.dst[3] = 1.0;
-                var ld: f32 = lp[1] - lh;
+                const ld: f32 = lp[1] - lh;
                 pos = lp + (lp - pos) * @as(@Vector(3, f32), @splat(ld)) / @as(@Vector(3, f32), @splat((dist - ld)));
-                var tlight: @Vector(3, f32) = light / @as(@Vector(3, f32), @splat(length(light)));
-                var coord2D: @Vector(2, f32) = mod(@shuffle(f32, pos, undefined, @Vector(2, i32){ 0, 2 }) / mapScale, 2048.0);
+                const tlight: @Vector(3, f32) = light / @as(@Vector(3, f32), @splat(length(light)));
+                const coord2D: @Vector(2, f32) = mod(@shuffle(f32, pos, undefined, @Vector(2, i32){ 0, 2 }) / mapScale, 2048.0);
                 var normal: @Vector(3, f32) = @shuffle(f32, normalMap.sampleLinear(coord2D), undefined, @Vector(3, i32){ 0, 2, 1 }) - @as(@Vector(3, f32), @splat(0.5));
                 normal /= @as(@Vector(3, f32), @splat(length(normal)));
                 var diffuse: @Vector(4, f32) = @as(@Vector(4, f32), @splat(max(-dot(normal, tlight), 0.0))) * diffuseColor;
@@ -2705,7 +2705,7 @@ pub const kernel = struct {
                     specular = 0.0;
                 }
                 specular = pow(specular, 5.0) * h / elevation;
-                var tex: @Vector(4, f32) = diffuseMap.sampleLinear(coord2D);
+                const tex: @Vector(4, f32) = diffuseMap.sampleLinear(coord2D);
                 if (dist < 0.0) {
                     pos[1] += 1.0;
                     rayStep = 1.0;
@@ -2885,13 +2885,13 @@ pub const kernel = struct {
                         diffuse *= @as(@Vector(4, f32), @splat(0.25));
                     }
                     self.dst = (diffuse + ambient) * tex + @as(@Vector(4, f32), @splat(specular)) * specularColor;
-                    var d: @Vector(3, f32) = camPosition - pos;
-                    var atmos: f32 = smoothStep(minFogDist, fogDist, length(d));
+                    const d: @Vector(3, f32) = camPosition - pos;
+                    const atmos: f32 = smoothStep(minFogDist, fogDist, length(d));
                     self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat((1.0 - atmos))) + @Vector(3, f32){ 0.59, 0.73, 0.886 } * @as(@Vector(3, f32), @splat(atmos)), @Vector(4, i32){ -1, -2, -3, 3 });
                 } else {
-                    var angle: f32 = atan2(dir[2], dir[0]);
-                    var rad: f32 = abs(dir[1] - 1.0);
-                    var coord2d: @Vector(2, f32) = .{
+                    const angle: f32 = atan2(dir[2], dir[0]);
+                    const rad: f32 = abs(dir[1] - 1.0);
+                    const coord2d: @Vector(2, f32) = .{
                         cos(angle) * rad,
                         sin(angle) * rad,
                     };
@@ -2945,7 +2945,10 @@ pub const kernel = struct {
                 }
                 break :calc result;
             },
-            else => std.math.atan2(@TypeOf(v1), v1, v2),
+            else => switch (@typeInfo(@TypeOf(std.math.atan2)).Fn.params.len) {
+                2 => std.math.atan2(v1, v2),
+                else => std.math.atan2(@TypeOf(v1), v1, v2),
+            },
         };
     }
 
@@ -2964,8 +2967,7 @@ pub const kernel = struct {
     }
 
     fn abs(v: anytype) @TypeOf(v) {
-        // return @abs(v);
-        return @fabs(v);
+        return if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v);
     }
 
     fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
@@ -3021,13 +3023,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 
@@ -3042,6 +3040,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -3300,7 +3301,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -3325,7 +3326,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -3359,7 +3360,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

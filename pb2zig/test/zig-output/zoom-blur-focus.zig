@@ -75,11 +75,11 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var str: f32 = 1.0 - vignette;
+                const str: f32 = 1.0 - vignette;
                 _ = str;
                 var coord: @Vector(2, f32) = self.outCoord();
-                var cur_radius: f32 = length(coord - center);
-                var color: @Vector(4, f32) = src.sampleNearest(coord);
+                const cur_radius: f32 = length(coord - center);
+                const color: @Vector(4, f32) = src.sampleNearest(coord);
                 var cond1: i32 = if ((cur_radius > focalSize)) 1 else 0;
                 if (invert == 1) {
                     if (cond1 == 0) {
@@ -94,7 +94,7 @@ pub const kernel = struct {
                 } else {
                     strength = focalSize / cur_radius;
                 }
-                var tmpAmount: f32 = strength * amount;
+                const tmpAmount: f32 = strength * amount;
                 coord -= center;
                 var tmpDst: @Vector(4, f32) = .{ 0.0, 0.0, 0.0, 0.0 };
                 var scale: f32 = undefined;
@@ -157,13 +157,9 @@ pub const kernel = struct {
 
     // built-in Pixel Bender functions
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 };
@@ -171,6 +167,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -429,7 +428,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -454,7 +453,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -488,7 +487,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

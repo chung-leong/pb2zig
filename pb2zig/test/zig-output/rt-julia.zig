@@ -83,8 +83,8 @@ pub const kernel = struct {
                 var pos: @Vector(3, f32) = undefined;
                 var tdir: @Vector(3, f32) = undefined;
                 var dir: @Vector(3, f32) = undefined;
-                var coord: @Vector(2, f32) = self.outCoord();
-                var tlight: @Vector(3, f32) = .{
+                const coord: @Vector(2, f32) = self.outCoord();
+                const tlight: @Vector(3, f32) = .{
                     0.57735,
                     0.57735,
                     0.57735,
@@ -96,8 +96,8 @@ pub const kernel = struct {
                 tdir /= @as(@Vector(3, f32), @splat(length(tdir)));
                 var tpos: @Vector(3, f32) = tdir;
                 tpos[2] -= camDistance;
-                var cr: f32 = cos(rotationY);
-                var sr: f32 = sin(rotationY);
+                const cr: f32 = cos(rotationY);
+                const sr: f32 = sin(rotationY);
                 pos[0] = tpos[0] * cr + tpos[2] * sr;
                 pos[1] = tpos[1];
                 pos[2] = tpos[2] * cr - tpos[0] * sr;
@@ -3211,10 +3211,10 @@ pub const kernel = struct {
                 len2 = length(dz);
                 dist = len / (2.0 * len2) * log2(len);
                 pos += @as(@Vector(3, f32), @splat(dist)) * dir;
-                var eps: f32 = 0.0001;
-                var r: @Vector(3, f32) = pos + @Vector(3, f32){ eps, 0.0, 0.0 };
-                var b: @Vector(3, f32) = pos + @Vector(3, f32){ 0.0, eps, 0.0 };
-                var f: @Vector(3, f32) = pos + @Vector(3, f32){ 0.0, 0.0, eps };
+                const eps: f32 = 0.0001;
+                const r: @Vector(3, f32) = pos + @Vector(3, f32){ eps, 0.0, 0.0 };
+                const b: @Vector(3, f32) = pos + @Vector(3, f32){ 0.0, eps, 0.0 };
+                const f: @Vector(3, f32) = pos + @Vector(3, f32){ 0.0, 0.0, eps };
                 dz = @Vector(4, f32){ 1.0, 0.0, 0.0, 0.0 };
                 z = @shuffle(f32, z, pos, @Vector(4, i32){ -1, -2, -3, 3 });
                 z[3] = w;
@@ -3285,7 +3285,7 @@ pub const kernel = struct {
                 dz = dzn;
                 len = length(z);
                 len2 = length(dz);
-                var dc: f32 = len / (2.0 * len2) * log2(len);
+                const dc: f32 = len / (2.0 * len2) * log2(len);
                 dz = @Vector(4, f32){ 1.0, 0.0, 0.0, 0.0 };
                 z = @shuffle(f32, z, r, @Vector(4, i32){ -1, -2, -3, 3 });
                 z[3] = w;
@@ -3356,7 +3356,7 @@ pub const kernel = struct {
                 dz = dzn;
                 len = length(z);
                 len2 = length(dz);
-                var dr: f32 = len / (2.0 * len2) * log2(len);
+                const dr: f32 = len / (2.0 * len2) * log2(len);
                 dz = @Vector(4, f32){ 1.0, 0.0, 0.0, 0.0 };
                 z = @shuffle(f32, z, b, @Vector(4, i32){ -1, -2, -3, 3 });
                 z[3] = w;
@@ -3427,7 +3427,7 @@ pub const kernel = struct {
                 dz = dzn;
                 len = length(z);
                 len2 = length(dz);
-                var db: f32 = len / (2.0 * len2) * log2(len);
+                const db: f32 = len / (2.0 * len2) * log2(len);
                 dz = @Vector(4, f32){ 1.0, 0.0, 0.0, 0.0 };
                 z = @shuffle(f32, z, f, @Vector(4, i32){ -1, -2, -3, 3 });
                 z[3] = w;
@@ -3498,7 +3498,7 @@ pub const kernel = struct {
                 dz = dzn;
                 len = length(z);
                 len2 = length(dz);
-                var df: f32 = len / (2.0 * len2) * log2(len);
+                const df: f32 = len / (2.0 * len2) * log2(len);
                 var normal: @Vector(3, f32) = .{
                     dr - dc,
                     db - dc,
@@ -3516,7 +3516,7 @@ pub const kernel = struct {
                     specular = 0.0;
                 }
                 specular = pow(specular, 150.0);
-                var color: @Vector(3, f32) = .{ 0.4, 0.2, 1.0 };
+                const color: @Vector(3, f32) = .{ 0.4, 0.2, 1.0 };
                 tpos[2] = pos[2] * cr + pos[0] * sr;
                 self.dst = @shuffle(f32, self.dst, (color * @as(@Vector(3, f32), @splat(diffuse)) + @Vector(3, f32){ 1.0, 1.0, 0.5 } * @as(@Vector(3, f32), @splat(specular)) + @Vector(3, f32){ 0.05, 0.025, 0.025 }), @Vector(4, i32){ -1, -2, -3, 3 });
                 self.dst = @shuffle(f32, self.dst, @shuffle(f32, self.dst, undefined, @Vector(3, i32){ 0, 1, 2 }) * @as(@Vector(3, f32), @splat(clamp(@as(f32, 0.0), 1.5, -tpos[2] * 0.5 + 0.3))), @Vector(4, i32){ -1, -2, -3, 3 });
@@ -3596,13 +3596,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 
@@ -3617,6 +3613,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -3875,7 +3874,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -3900,7 +3899,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -3934,7 +3933,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

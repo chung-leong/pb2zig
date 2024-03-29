@@ -34,8 +34,8 @@ pub const kernel = struct {
                 const result = self.output.result;
                 self.result = @splat(0.0);
 
-                var a: @Vector(4, f32) = dst.sampleNearest(self.outCoord());
-                var b: @Vector(4, f32) = src.sampleNearest(self.outCoord());
+                const a: @Vector(4, f32) = dst.sampleNearest(self.outCoord());
+                const b: @Vector(4, f32) = src.sampleNearest(self.outCoord());
                 var cb: @Vector(3, f32) = undefined;
                 var cs: @Vector(3, f32) = undefined;
                 if (a[3] > 0.0) {
@@ -46,7 +46,7 @@ pub const kernel = struct {
                 }
                 self.result[3] = (1.0 - b[3]) * a[3] + b[3];
                 var color: @Vector(3, f32) = @shuffle(f32, cs, undefined, @Vector(3, i32){ 0, 1, 2 });
-                var satVal: f32 = saturation(cb);
+                const satVal: f32 = saturation(cb);
                 if (color[0] <= color[1]) {
                     if (color[1] <= color[2]) {
                         color[1] -= color[0];
@@ -104,12 +104,12 @@ pub const kernel = struct {
                         }
                     }
                 }
-                var adjVec: @Vector(3, f32) = (cb - color);
-                var adjustment: f32 = luminance(adjVec);
-                var adjustedcs: @Vector(3, f32) = color + @as(@Vector(3, f32), @splat(adjustment));
+                const adjVec: @Vector(3, f32) = (cb - color);
+                const adjustment: f32 = luminance(adjVec);
+                const adjustedcs: @Vector(3, f32) = color + @as(@Vector(3, f32), @splat(adjustment));
                 var color_cl: @Vector(3, f32) = adjustedcs;
-                var lum_cl: f32 = luminance(color_cl);
-                var lumVec: @Vector(3, f32) = .{
+                const lum_cl: f32 = luminance(color_cl);
+                const lumVec: @Vector(3, f32) = .{
                     lum_cl,
                     lum_cl,
                     lum_cl,
@@ -194,6 +194,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -452,7 +455,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -477,7 +480,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -511,7 +514,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

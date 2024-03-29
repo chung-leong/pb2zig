@@ -93,19 +93,19 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var pos: @Vector(2, f32) = self.outCoord() - center;
-                var r: f32 = sqrt(pos[0] * pos[0] + pos[1] * pos[1]);
-                var theta: f32 = atan(pos[1] / pos[0]);
-                var spectral: f32 = scale * r;
-                var damp: f32 = -sin(warp) * 1.0 + cos(warp);
-                var rad: f32 = xy_replication[1] * zoom;
-                var maxpi: f32 = 2.0 * atan(scale);
-                var edgewise: f32 = 2.0 * atan(spectral / rad);
-                var meridian: f32 = theta + DOUPLEPI * turn;
-                var ny: f32 = (xy_replication[1]) * (2.0 * edgewise / maxpi) - (xy_replication[1]);
-                var nx: f32 = (xy_replication[0] - 1.0) * meridian / PI - (xy_replication[0]);
-                var vx: f32 = radius * cos(nx);
-                var vy: f32 = radius * sin(ny);
+                const pos: @Vector(2, f32) = self.outCoord() - center;
+                const r: f32 = sqrt(pos[0] * pos[0] + pos[1] * pos[1]);
+                const theta: f32 = atan(pos[1] / pos[0]);
+                const spectral: f32 = scale * r;
+                const damp: f32 = -sin(warp) * 1.0 + cos(warp);
+                const rad: f32 = xy_replication[1] * zoom;
+                const maxpi: f32 = 2.0 * atan(scale);
+                const edgewise: f32 = 2.0 * atan(spectral / rad);
+                const meridian: f32 = theta + DOUPLEPI * turn;
+                const ny: f32 = (xy_replication[1]) * (2.0 * edgewise / maxpi) - (xy_replication[1]);
+                const nx: f32 = (xy_replication[0] - 1.0) * meridian / PI - (xy_replication[0]);
+                const vx: f32 = radius * cos(nx);
+                const vy: f32 = radius * sin(ny);
                 self.dst = src.sampleLinear(center + @Vector(2, f32){ vx, vy * damp });
 
                 dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
@@ -157,6 +157,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -415,7 +418,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -440,7 +443,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -474,7 +477,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

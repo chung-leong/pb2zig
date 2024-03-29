@@ -64,35 +64,35 @@ pub const kernel = struct {
                 self.dst = @splat(0.0);
 
                 var c: @Vector(2, f32) = self.outCoord();
-                var p11: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                const p11: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
                 c[0] -= 1.0;
-                var p01: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                const p01: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
                 c[1] -= 1.0;
-                var p00: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                const p00: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
                 c[0] += 1.0;
-                var p10: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                const p10: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
                 c[0] += 1.0;
-                var p20: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                const p20: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
                 c[1] += 1.0;
-                var p21: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                const p21: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
                 c[1] += 1.0;
-                var p22: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                const p22: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
                 c[0] -= 1.0;
-                var p12: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                const p12: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
                 c[0] -= 1.0;
-                var p02: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
-                var f1: f32 = 1.0 / (2.0 * 1.41421356);
-                var g1: f32 = f1 * (p00 + sqrt2 * p10 + p20 - p02 - sqrt2 * p12 - p22);
-                var g2: f32 = f1 * (p00 + sqrt2 * p01 + p02 - p20 - sqrt2 * p21 - p22);
-                var g3: f32 = f1 * (p01 + sqrt2 * p20 + p12 - p10 - sqrt2 * p02 - p21);
-                var g4: f32 = f1 * (p11 + sqrt2 * p00 + p12 - p10 - sqrt2 * p22 - p01);
-                var g5: f32 = 0.5 * (p10 + p12 - p01 - p21);
-                var g6: f32 = 0.5 * (p20 + p02 - p00 - p22);
-                var g7: f32 = 0.166666667 * (p00 + p20 + 4.0 * p11 + p02 + p22 - 2.0 * p10 - 2.0 * p12 - 2.0 * p01 - 2.0 * p21);
-                var g8: f32 = 0.166666667 * (p10 + p12 + 4.0 * p11 + p01 + p21 - 2.0 * p00 - 2.0 * p20 - 2.0 * p02 - 2.0 * p22);
-                var g9: f32 = 0.333333333 * (p00 + p10 + p20 + p01 + p11 + p21 + p02 + p12 + p22);
-                var M: f32 = g1 * g1 + g2 * g2 + g3 * g3 + g4 * g4;
-                var S: f32 = g5 * g5 + g6 * g6 + g7 * g7 + g8 * g8 + g9 * g9 + M;
+                const p02: f32 = length(@shuffle(f32, src.sampleNearest(c), undefined, @Vector(3, i32){ 0, 1, 2 }));
+                const f1: f32 = 1.0 / (2.0 * 1.41421356);
+                const g1: f32 = f1 * (p00 + sqrt2 * p10 + p20 - p02 - sqrt2 * p12 - p22);
+                const g2: f32 = f1 * (p00 + sqrt2 * p01 + p02 - p20 - sqrt2 * p21 - p22);
+                const g3: f32 = f1 * (p01 + sqrt2 * p20 + p12 - p10 - sqrt2 * p02 - p21);
+                const g4: f32 = f1 * (p11 + sqrt2 * p00 + p12 - p10 - sqrt2 * p22 - p01);
+                const g5: f32 = 0.5 * (p10 + p12 - p01 - p21);
+                const g6: f32 = 0.5 * (p20 + p02 - p00 - p22);
+                const g7: f32 = 0.166666667 * (p00 + p20 + 4.0 * p11 + p02 + p22 - 2.0 * p10 - 2.0 * p12 - 2.0 * p01 - 2.0 * p21);
+                const g8: f32 = 0.166666667 * (p10 + p12 + 4.0 * p11 + p01 + p21 - 2.0 * p00 - 2.0 * p20 - 2.0 * p02 - 2.0 * p22);
+                const g9: f32 = 0.333333333 * (p00 + p10 + p20 + p01 + p11 + p21 + p02 + p12 + p22);
+                const M: f32 = g1 * g1 + g2 * g2 + g3 * g3 + g4 * g4;
+                const S: f32 = g5 * g5 + g6 * g6 + g7 * g7 + g8 * g8 + g9 * g9 + M;
                 var v: f32 = pow(sqrt(M / S), gamma);
                 v *= (step(v, threshold) - threshold) * factor;
                 v = mix(v, 1.0 - v, invert);
@@ -160,13 +160,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 };
@@ -174,6 +170,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -432,7 +431,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -457,7 +456,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -491,7 +490,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

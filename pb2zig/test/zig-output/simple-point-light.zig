@@ -61,8 +61,8 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var out_pixel_coord: @Vector(2, f32) = self.outCoord();
-                var attenuation: f32 = pow(attenuationDelta / pow(distance(out_pixel_coord, center), attenuationDecay), attenuationSpeed);
+                const out_pixel_coord: @Vector(2, f32) = self.outCoord();
+                const attenuation: f32 = pow(attenuationDelta / pow(distance(out_pixel_coord, center), attenuationDecay), attenuationSpeed);
                 self.dst = @as(@Vector(4, f32), @splat(attenuation)) * src.sampleNearest(out_pixel_coord);
 
                 dst.setPixel(self.outputCoord[0], self.outputCoord[1], self.dst);
@@ -99,13 +99,9 @@ pub const kernel = struct {
     }
 
     fn distance(v1: anytype, v2: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v1))) {
-            //     .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-            //     else => @abs(v1 - v2),
-            // };
         return switch (@typeInfo(@TypeOf(v1))) {
             .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-            else => @fabs(v1 - v2),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v1 - v2) else @abs(v1 - v2),
         };
     }
 };
@@ -113,6 +109,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -371,7 +370,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -396,7 +395,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -430,7 +429,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

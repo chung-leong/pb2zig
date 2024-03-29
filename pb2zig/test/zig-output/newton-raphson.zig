@@ -147,14 +147,14 @@ pub const kernel = struct {
                 const c5 = self.params.c5;
                 const c6 = self.params.c6;
                 const c7 = self.params.c7;
-                var z2: @Vector(2, f32) = muli(z, z);
-                var z3: @Vector(2, f32) = muli(z2, z);
-                var z4: @Vector(2, f32) = muli(z3, z);
-                var z5: @Vector(2, f32) = muli(z4, z);
-                var z6: @Vector(2, f32) = muli(z5, z);
-                var z7: @Vector(2, f32) = muli(z6, z);
+                const z2: @Vector(2, f32) = muli(z, z);
+                const z3: @Vector(2, f32) = muli(z2, z);
+                const z4: @Vector(2, f32) = muli(z3, z);
+                const z5: @Vector(2, f32) = muli(z4, z);
+                const z6: @Vector(2, f32) = muli(z5, z);
+                const z7: @Vector(2, f32) = muli(z6, z);
                 fz.* = muli(c7, z7) + muli(c6, z6) + muli(c5, z5) + muli(c4, z4) + muli(c3, z3) + muli(c2, z2) + muli(c1, z) + c0;
-                var fdiffz: @Vector(2, f32) = @as(@Vector(2, f32), @splat(7.0)) * muli(c7, z6) + @as(@Vector(2, f32), @splat(6.0)) * muli(c6, z5) + @as(@Vector(2, f32), @splat(5.0)) * muli(c5, z4) + @as(@Vector(2, f32), @splat(4.0)) * muli(c4, z3) + @as(@Vector(2, f32), @splat(3.0)) * muli(c3, z2) + @as(@Vector(2, f32), @splat(2.0)) * muli(c2, z) + c1;
+                const fdiffz: @Vector(2, f32) = @as(@Vector(2, f32), @splat(7.0)) * muli(c7, z6) + @as(@Vector(2, f32), @splat(6.0)) * muli(c6, z5) + @as(@Vector(2, f32), @splat(5.0)) * muli(c5, z4) + @as(@Vector(2, f32), @splat(4.0)) * muli(c4, z3) + @as(@Vector(2, f32), @splat(3.0)) * muli(c3, z2) + @as(@Vector(2, f32), @splat(2.0)) * muli(c2, z) + c1;
                 return divi(fz.*, fdiffz);
             }
 
@@ -232,13 +232,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 };
@@ -246,6 +242,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -504,7 +503,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -529,7 +528,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -563,7 +562,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

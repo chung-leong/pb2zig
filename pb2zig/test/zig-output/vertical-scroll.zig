@@ -105,8 +105,8 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var pi: f32 = 3.14159265358979;
-                var pos: @Vector(2, f32) = self.outCoord();
+                const pi: f32 = 3.14159265358979;
+                const pos: @Vector(2, f32) = self.outCoord();
                 var yFract: f32 = undefined;
                 var xFract: f32 = undefined;
                 var yDir: f32 = undefined;
@@ -132,17 +132,17 @@ pub const kernel = struct {
                     self.dst = src.sampleNearest(pos);
                 }
                 if (doRoll) {
-                    var ySin: f32 = 1.0 - sqrt(1.0 - (yFract * yFract));
-                    var rollVisible: f32 = rollRadius * pi / 2.0;
-                    var posX: f32 = pos[0] + (xFract * ySin * rollRadius);
+                    const ySin: f32 = 1.0 - sqrt(1.0 - (yFract * yFract));
+                    const rollVisible: f32 = rollRadius * pi / 2.0;
+                    const posX: f32 = pos[0] + (xFract * ySin * rollRadius);
                     if (posX > rollOffsetX and posX < rollOffsetX + rollWidth) {
                         var colour: @Vector(4, f32) = src.sampleNearest(@Vector(2, f32){
                             posX,
                             pos[1] + ySin * rollVisible * yDir,
                         });
                         if (fogInfluence > 0.0) {
-                            var inf: f32 = fogInfluence * ySin;
-                            var invInf: f32 = 1.0 - inf;
+                            const inf: f32 = fogInfluence * ySin;
+                            const invInf: f32 = 1.0 - inf;
                             colour[0] = colour[0] * invInf + fogColour[0] * inf;
                             colour[1] = colour[1] * invInf + fogColour[1] * inf;
                             colour[2] = colour[2] * invInf + fogColour[2] * inf;
@@ -183,6 +183,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -441,7 +444,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -466,7 +469,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -500,7 +503,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

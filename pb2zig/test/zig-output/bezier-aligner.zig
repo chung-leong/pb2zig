@@ -124,22 +124,22 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var p: @Vector(2, f32) = self.outCoord();
+                const p: @Vector(2, f32) = self.outCoord();
                 self.dst = background.sampleLinear(p);
-                var fx: @Vector(4, f32) = .{
+                const fx: @Vector(4, f32) = .{
                     startpoint[0],
                     3.0 * (control1[0] - startpoint[0]),
                     3.0 * (startpoint[0] - 2.0 * control1[0] + control2[0]),
                     endpoint[0] - startpoint[0] + 3.0 * (control1[0] - control2[0]),
                 };
-                var fy: @Vector(4, f32) = .{
+                const fy: @Vector(4, f32) = .{
                     startpoint[1],
                     3.0 * (control1[1] - startpoint[1]),
                     3.0 * (startpoint[1] - 2.0 * control1[1] + control2[1]),
                     endpoint[1] - startpoint[1] + 3.0 * (control1[1] - control2[1]),
                 };
-                var dfx: @Vector(4, f32) = derivative(fx);
-                var dfy: @Vector(4, f32) = derivative(fy);
+                const dfx: @Vector(4, f32) = derivative(fx);
+                const dfy: @Vector(4, f32) = derivative(fy);
                 var ta: f32 = tstart;
                 var tb: f32 = tend;
                 var d: @Vector(2, f32) = @"M * V"(rotation, @Vector(2, f32){
@@ -228,7 +228,7 @@ pub const kernel = struct {
                     if (imagewidth > 0.1) {
                         p2[0] = mod(p2[0], imagewidth);
                     }
-                    var dst2: @Vector(4, f32) = texture.sampleLinear(p2);
+                    const dst2: @Vector(4, f32) = texture.sampleLinear(p2);
                     self.dst += @as(@Vector(4, f32), @splat(dst2[3])) * (dst2 - self.dst);
                 }
 
@@ -280,13 +280,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 
@@ -310,6 +306,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -568,7 +567,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -593,7 +592,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -627,7 +626,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

@@ -83,10 +83,10 @@ pub const kernel = struct {
                 const dst = self.output.dst;
                 self.dst = @splat(0.0);
 
-                var pRGBA: @Vector(4, f32) = src.sampleNearest(self.outCoord());
+                const pRGBA: @Vector(4, f32) = src.sampleNearest(self.outCoord());
                 var pYIQA: @Vector(4, f32) = @"M * V"(YIQMatrix, pRGBA);
                 if (pYIQA[1] < 0.0 and pYIQA[2] < 0.0 and pYIQA[0] > 0.01) {
-                    var alpha: f32 = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
+                    const alpha: f32 = 1.0 - hypot(pYIQA[1], pYIQA[2]) * pYIQA[0] * strength;
                     pYIQA[1] = 0.0;
                     pYIQA[2] = 0.0;
                     self.dst = @"M * V"(inverseYIQ, pYIQA) * @as(@Vector(4, f32), @splat(alpha));
@@ -137,6 +137,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -395,7 +398,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -420,7 +423,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -454,7 +457,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

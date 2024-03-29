@@ -129,7 +129,7 @@ pub const kernel = struct {
                 const buildings = self.params.buildings;
                 const waterLevel = self.params.waterLevel;
                 const terrainHeight = self.params.terrainHeight;
-                var alt: f32 = undefined;
+                const alt: f32 = undefined;
                 _ = alt;
                 var hills: f32 = 0.0;
                 var structures: f32 = 0.0;
@@ -170,7 +170,7 @@ pub const kernel = struct {
                 const size = self.params.size;
                 const aspectRatio = self.aspectRatio;
                 const viewRotation = self.viewRotation;
-                var direction: @Vector(3, f32) = .{
+                const direction: @Vector(3, f32) = .{
                     2.0 * aspectRatio * p[0] / @as(f32, @floatFromInt(size[0])) - aspectRatio,
                     -2.0 * p[1] / @as(f32, @floatFromInt(size[1])) + 1.0,
                     -2.0,
@@ -180,11 +180,11 @@ pub const kernel = struct {
 
             fn intersectionNormal(self: *@This(), p: @Vector(3, f32), epsilon: f32) @Vector(3, f32) {
                 var n: @Vector(3, f32) = undefined;
-                var e: f32 = epsilon;
-                var p1: @Vector(3, f32) = .{ p[0] - e, p[1], p[2] };
-                var p2: @Vector(3, f32) = .{ p[0] + e, p[1], p[2] };
-                var p3: @Vector(3, f32) = .{ p[0], p[1], p[2] - e };
-                var p4: @Vector(3, f32) = .{ p[0], p[1], p[2] + e };
+                const e: f32 = epsilon;
+                const p1: @Vector(3, f32) = .{ p[0] - e, p[1], p[2] };
+                const p2: @Vector(3, f32) = .{ p[0] + e, p[1], p[2] };
+                const p3: @Vector(3, f32) = .{ p[0], p[1], p[2] - e };
+                const p4: @Vector(3, f32) = .{ p[0], p[1], p[2] + e };
                 n = @Vector(3, f32){
                     self.displacement(p1)[0] - self.displacement(p2)[0],
                     2.0 * e,
@@ -201,8 +201,8 @@ pub const kernel = struct {
                 const cameraEye = self.cameraEye;
                 var dt: f32 = EPSILON;
                 ray.* = @Vector(3, f32){ 0.0, 0.0, 0.0 };
-                var start_d: f32 = t;
-                var basic_ray: @Vector(3, f32) = undefined;
+                const start_d: f32 = t;
+                const basic_ray: @Vector(3, f32) = undefined;
                 _ = basic_ray;
                 var prev_ray: @Vector(3, f32) = undefined;
                 var prev_alt: f32 = undefined;
@@ -212,7 +212,7 @@ pub const kernel = struct {
                     if (ray.*[1] > terrainHeight * 2.0 and ray.*[1] > prev_ray[1] and t > start_d) break;
                     surface.* = self.displacement(ray.*);
                     if (ray.*[1] <= surface.*[0]) {
-                        var id: f32 = (prev_alt - prev_ray[1]) / (ray.*[1] - prev_ray[1] - surface.*[0] + prev_alt);
+                        const id: f32 = (prev_alt - prev_ray[1]) / (ray.*[1] - prev_ray[1] - surface.*[0] + prev_alt);
                         ray_distance.* = mix(t, (t - dt), id);
                         surface.*[0] = mix(surface.*[0], ray.*[1], id);
                         ray.*[1] = surface.*[0];
@@ -231,7 +231,7 @@ pub const kernel = struct {
                 var origin = _origin;
                 const terrainHeight = self.params.terrainHeight;
                 var t: f32 = EPSILON;
-                var epsilon: f32 = t;
+                const epsilon: f32 = t;
                 var surface: @Vector(3, f32) = self.displacement(origin);
                 origin[1] = surface[0];
                 var ray: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
@@ -251,7 +251,7 @@ pub const kernel = struct {
             fn fog(self: *@This(), c: @Vector(3, f32), d: f32) @Vector(3, f32) {
                 const terrainHorizon = self.params.terrainHorizon;
                 const fogColor = self.fogColor;
-                var r: f32 = abs(d) / terrainHorizon;
+                const r: f32 = abs(d) / terrainHorizon;
                 return mix(c, fogColor, r);
             }
 
@@ -270,8 +270,8 @@ pub const kernel = struct {
                 const sunPosition = self.sunPosition;
                 const skyColor = self.skyColor;
                 const sunColor = self.sunColor;
-                var a: f32 = clamp((abs(acos(dot(ray_direction, sunPosition) / (length(ray_direction) * length(sunPosition)))) / 3.14) / sunSize, 0.0, 1.0);
-                var s: @Vector(3, f32) = sunColor * @as(@Vector(3, f32), @splat((1.0 - a)));
+                const a: f32 = clamp((abs(acos(dot(ray_direction, sunPosition) / (length(ray_direction) * length(sunPosition)))) / 3.14) / sunSize, 0.0, 1.0);
+                const s: @Vector(3, f32) = sunColor * @as(@Vector(3, f32), @splat((1.0 - a)));
                 return skyColor * @as(@Vector(3, f32), @splat(ambient)) + s;
             }
 
@@ -279,7 +279,7 @@ pub const kernel = struct {
                 const contours = self.params.contours;
                 const contourInterval = self.contourInterval;
                 _ = o;
-                var contour: f32 = mod(h * 100.0, contourInterval) - mod((h * 100.0 - 1.5), contourInterval);
+                const contour: f32 = mod(h * 100.0, contourInterval) - mod((h * 100.0 - 1.5), contourInterval);
                 return @as(bool, if (contours and contour < 0.5) true else false);
             }
 
@@ -306,9 +306,9 @@ pub const kernel = struct {
                 var spec: f32 = undefined;
                 var surface: @Vector(3, f32) = undefined;
                 var shadow_length: f32 = undefined;
-                var t: f32 = start_dst[@intCast(@as(i32, @intFromFloat(p[0] / 5.0)))];
-                var ray_direction: @Vector(3, f32) = self.rayDirection(p);
-                var contour: f32 = undefined;
+                const t: f32 = start_dst[@intCast(@as(i32, @intFromFloat(p[0] / 5.0)))];
+                const ray_direction: @Vector(3, f32) = self.rayDirection(p);
+                const contour: f32 = undefined;
                 _ = contour;
                 self.castRay(ray_direction, t, &ray, &n, &ray_distance, &surface);
                 if (ray_distance >= 0.0) {
@@ -321,7 +321,7 @@ pub const kernel = struct {
                             diffuse = self.shadow(diffuse, shadow_length);
                         }
                         if (shadow_length == 0.0) {
-                            var cf: f32 = (surface[0] - surface[1]) / (waterLevel * terrainHeight);
+                            const cf: f32 = (surface[0] - surface[1]) / (waterLevel * terrainHeight);
                             if (cf < 0.35) {
                                 diffuse *= 1.35 - cf;
                             }
@@ -377,8 +377,8 @@ pub const kernel = struct {
                 const waterLevel = self.params.waterLevel;
                 const sun = self.params.sun;
                 const terrainHeight = self.params.terrainHeight;
-                var c: f32 = cos(radians(-cameraRotation));
-                var s: f32 = sin(radians(-cameraRotation));
+                const c: f32 = cos(radians(-cameraRotation));
+                const s: f32 = sin(radians(-cameraRotation));
                 self.viewRotation = [3]@Vector(3, f32){
                     .{ c, 0.0, s },
                     .{ 0.0, 1.0, 0.0 },
@@ -388,7 +388,7 @@ pub const kernel = struct {
                 if (self.cameraEye[1] <= (waterLevel * terrainHeight)) {
                     self.cameraEye[1] = (waterLevel * terrainHeight) + 0.1;
                 }
-                var sd: f32 = 1000.0;
+                const sd: f32 = 1000.0;
                 self.sunPosition = @Vector(3, f32){
                     sd * cos(radians(sun[1])) * sin(radians(90.0 - sun[0])),
                     sd * cos(radians(90.0 - sun[0])),
@@ -404,7 +404,7 @@ pub const kernel = struct {
                 var n: @Vector(3, f32) = undefined;
                 var surface: @Vector(3, f32) = undefined;
                 var ray_distance: f32 = undefined;
-                var h: f32 = undefined;
+                const h: f32 = undefined;
                 _ = h;
                 {
                     var x: f32 = 0.0;
@@ -548,8 +548,7 @@ pub const kernel = struct {
     }
 
     fn abs(v: anytype) @TypeOf(v) {
-        // return @abs(v);
-        return @fabs(v);
+        return if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v);
     }
 
     fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
@@ -606,13 +605,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
         };
     }
 
@@ -642,6 +637,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -900,7 +898,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -925,7 +923,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -959,7 +957,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
