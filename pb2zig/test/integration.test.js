@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { readFile, writeFile } from 'fs/promises';
 import sharp from 'sharp';
 import 'mocha-skip-if';
@@ -1100,7 +1099,10 @@ async function apply(name, sources, options = {}) {
     height = outputHeight;
   }
   const output = createOutput(width, height, input, params);
-  const outputImages = Object.values(output);
+  const outputImages = [];
+  for (const [ name, image ] of output)  {
+    outputImages.push(image);
+  }
   for (const [ index, image ] of outputImages.entries())  {
     const filename = (outputImages.length > 1) ? name + index : name;
     const dstPixels = image.data.typedArray;
