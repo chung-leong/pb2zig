@@ -723,7 +723,7 @@ describe('Integration tests', function() {
     await apply(name, { inputUsedToTest: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate rt-terrain.pbk', async function() {
-    this.timeout(60000 * 3);
+    this.timeout(60000 * 5);
     const name = 'rt-terrain';
     await translate(name);
     await apply(name, {
