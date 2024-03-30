@@ -362,7 +362,7 @@ test "inverseSqrt" {
 }
 
 pub fn abs(v: anytype) @TypeOf(v) {
-    return if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v);
+    return if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else @abs(v);
 }
 
 test "abs" {
@@ -601,7 +601,7 @@ test "smoothStep" {
 pub fn length(v: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v))) {
         .Vector => @sqrt(@reduce(.Add, v * v)),
-        else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v) else @abs(v),
+        else => if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else @abs(v),
     };
 }
 
@@ -617,7 +617,7 @@ test "length" {
 pub fn distance(v1: anytype, v2: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v1))) {
         .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-        else => if (comptime @hasField(std.math, "fabs")) std.math.fabs(v1 - v2) else @abs(v1 - v2),
+        else => if (@hasDecl(std.math, "fabs")) std.math.fabs(v1 - v2) else @abs(v1 - v2),
     };
 }
 
