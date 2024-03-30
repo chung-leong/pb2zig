@@ -403,7 +403,6 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { i: 'malgorzata-socha.png' });
   })
-  skip.
   it('should correctly translate escherizer.pbk', async function() {
     this.timeout(60000);
     const name = 'escherizer';
@@ -434,7 +433,6 @@ describe('Integration tests', function() {
     };
     await apply(name, {}, params);
   })
-  skip.
   it('should correctly translate fractal-explorer-orbit-traps.pbk', async function() {
     this.timeout(60000);
     const name = 'fractal-explorer-orbit-traps';
@@ -724,7 +722,6 @@ describe('Integration tests', function() {
     };
     await apply(name, { inputUsedToTest: 'malgorzata-socha.png' }, params);
   })
-  skip.
   it('should correctly translate rt-terrain.pbk', async function() {
     this.timeout(60000 * 3);
     const name = 'rt-terrain';
@@ -821,7 +818,6 @@ describe('Integration tests', function() {
       src: 'mandelbrot.png',
     });
   })
-  skip.
   it('should correctly translate sphere.pbk', async function() {
     this.timeout(60000);
     const name = 'sphere';

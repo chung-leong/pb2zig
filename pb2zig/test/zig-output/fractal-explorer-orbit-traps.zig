@@ -594,6 +594,13 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         colorSpace: ColorSpace = .srgb,
         offset: usize = 0,
 
+        fn constrain(v: anytype, min: f32, max: f32) @TypeOf(v) {
+            const lower: @TypeOf(v) = @splat(min);
+            const upper: @TypeOf(v) = @splat(max);
+            const v2 = @select(f32, v > lower, v, lower);
+            return @select(f32, v2 < upper, v2, upper);
+        }
+
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
             if (len == 4) {
                 return pixel;
@@ -655,18 +662,10 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             return numerator / denominator;
         }
 
-        fn constrain(pixel: FPixel, max: f32) FPixel {
-            const lower: FPixel = @splat(0);
-            const upper: FPixel = @splat(max);
-            const pixel2 = @select(f32, pixel > lower, pixel, lower);
-            const pixel3 = @select(f32, pixel2 < upper, pixel2, upper);
-            return pixel3;
-        }
-
         fn intPixelFromPBPixel(pixel: FPixel) Pixel {
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
-            const product: FPixel = constrain(pixel * multiplier, max);
+            const product: FPixel = constrain(pixel * multiplier, 0, max);
             const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
             return if (@hasDecl(std.math, "fabs")) switch (len) {
                 // Zig 0.11.0
@@ -751,13 +750,14 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
 
         fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
-            const x: i32 = @intFromFloat(coord[0]);
-            const y: i32 = @intFromFloat(coord[1]);
+            const c = constrain(coord, std.math.minInt(i32) / 2, std.math.maxInt(i32) / 2);
+            const x: i32 = @intFromFloat(c[0]);
+            const y: i32 = @intFromFloat(c[1]);
             return self.getPixel(x, y);
         }
 
         fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
-            const c = coord - @as(@Vector(2, f32), @splat(0.5));
+            const c = constrain(coord - @as(@Vector(2, f32), @splat(0.5)), std.math.minInt(i32) / 2, std.math.maxInt(i32) / 2);
             const x: i32 = @intFromFloat(c[0]);
             const y: i32 = @intFromFloat(c[1]);
             const f0 = c - @floor(c);
