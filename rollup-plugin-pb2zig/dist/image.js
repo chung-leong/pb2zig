@@ -1,17 +1,26 @@
+const { createPartialOutput, Input, kernel } = constructor;
+
 export function createImageData(width, height, source = {}, params = {}) {
   return createPartialImageData(width, height, 0, height, source, params);
 }
 
 export function createPartialImageData(width, height, start, count, source = {}, params = {}) {
+  const inputKeys = [];
+  for (const [ key ] of kernel.inputImages) {
+    inputKeys.push(key);
+  }
+  const outputKeys = [];
+  for (const [ key ] of kernel.outputImages) {
+    outputKeys.push(key);
+  }
   if (Array.isArray(source)) {
     const list = source;
     source = {};
-    for (const [ index, key ] of Object.keys(kernel.inputImages).entries()) {
+    for (const [ index, key ] of inputKeys.entries()) {
       source[key] = list[index];
     }
   }
   const input = new Input(undefined);
-  const inputKeys = Object.keys(kernel.inputImages);
   const missing = [];
   let colorSpace;
   for (const key of inputKeys) {
@@ -38,7 +47,6 @@ export function createPartialImageData(width, height, start, count, source = {},
   }
   const output = createPartialOutput(width, height, start, count, input, params);
   const createResult = (output) => {
-    const outputKeys = Object.keys(output);
     const resultSet = {};
     for (const key of outputKeys) {
       const { data: { typedArray: ta }, width, height } = output[key];
@@ -68,12 +76,12 @@ export function createPartialImageData(width, height, start, count, source = {},
 
 export function getKernelInfo() {
   const info = {};
-  for (let [ name, value ] of Object.entries(kernel)) {
+  for (let [ name, value ] of kernel) {
     if (name === 'parameters') {
       const params = {};
-      for (const [ pname, pvalue ] of Object.entries(value)) {
+      for (const [ pname, pvalue ] of value) {
         const param = params[pname] = {};
-        for (let [ aname, avalue ] of Object.entries(pvalue)) {
+        for (let [ aname, avalue ] of pvalue) {
           if (typeof(avalue) === 'object') {
             if ('string' in avalue) {
               avalue = avalue.string;
@@ -103,7 +111,7 @@ export function getKernelInfo() {
 
 function toArray(tuple) {
   const result = [];
-  for (let [ index, value ] of Object.entries(tuple)) {
+  for (let [ index, value ] of tuple) {
     if (typeof(value) === 'object') {
       value = toArray(value);
     }

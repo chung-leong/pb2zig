@@ -35,7 +35,7 @@
   },
   "homepage": "https://github.com/chung-leong/pb2zig#readme",
   "dependencies": {
-    "pb2zig": "^0.11.0",
+    "pb2zig": "^0.11.1-alpha.0",
     "rollup-plugin-zigar": "^0.11.1-alpha.5"
   },
   "devDependencies": {

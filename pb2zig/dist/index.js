@@ -1414,7 +1414,7 @@ class FieldDeclaration extends Node {
 
 class VariableDeclaration extends Node {
   isPublic = false;
-  isConstant = false;
+  isConstant = true;
   type;
   name;
   initializer;
@@ -1681,7 +1681,7 @@ class PixelBenderToZigTranslator {
     } while(this.variables[name]);
     const { type } = initializer;
     this.variables[name] = { type, scope: 'local', mutable: false, pointer: false, used: true };
-    this.sideEffects.push(VariableDeclaration.create({ name, initializer, isConstant: true }));
+    this.sideEffects.push(VariableDeclaration.create({ name, initializer }));
     const tmp = VariableAccess.create({ name, type });
     if (aliasing) {
       this.variableAliases.unshift({ pb, tmp });
@@ -1708,7 +1708,6 @@ class PixelBenderToZigTranslator {
       initializer: FunctionCall.create({ name: '@import', args: [
         Literal.create({ value: name, type: '[]const u8' }),
       ]}),
-      isConstant: true,
     });
   }
 
@@ -1724,14 +1723,19 @@ class PixelBenderToZigTranslator {
     });
   }
 
-  insertIgnoreStatements(statements, args) {
-    for (const [ name, { used } ] of Object.entries(this.variables)) {
+  adjustVariableDeclarations(statements, args) {
+    for (const [ name, { used, modified } ] of Object.entries(this.variables)) {
       if (!used) {
         const index = statements.findIndex(s => s instanceof VariableDeclaration && s.name === name);
         if (index !== -1 || args?.find(a => a.name === name)) {
           const value = VariableAccess.create({ name });
           const ignore = this.createIgnoreStatement(value);
           statements.splice(index + 1, 0, ignore);
+        }
+      } else if (modified) {
+        const decl = statements.find(s => s instanceof VariableDeclaration && s.name === name);
+        if (decl) {
+          decl.isConstant = false;
         }
       }
     }
@@ -2024,7 +2028,6 @@ class PixelBenderToZigTranslator {
     return VariableDeclaration.create({
       name: 'kernel',
       isPublic: true,
-      isConstant: true,
       initializer: StructDefinition.create({ statements }),
     });
   }
@@ -2041,7 +2044,7 @@ class PixelBenderToZigTranslator {
             statements.push(this.createComment('constants'));
           }
           const { type } = initializer;
-          statements.push(VariableDeclaration.create({ name, type, initializer, isConstant: true }));
+          statements.push(VariableDeclaration.create({ name, type, initializer }));
           this.variables[name] = { name, type, scope: 'global', mutable: false, pointer: false };
         } catch (err) {
           // if the expression uses variables not defined in the global
@@ -2062,7 +2065,6 @@ class PixelBenderToZigTranslator {
         statements.push(VariableDeclaration.create({
           name: field,
           isPublic: true,
-          isConstant: true,
           initializer: this.translateExpression(literal),
         }));
       }
@@ -2090,7 +2092,6 @@ class PixelBenderToZigTranslator {
     return VariableDeclaration.create({
       name: 'parameters',
       isPublic: true,
-      isConstant: true,
       initializer: StructLiteral.create({
         type: '.',
         initializers,
@@ -2114,7 +2115,6 @@ class PixelBenderToZigTranslator {
     return VariableDeclaration.create({
       name: 'inputImages',
       isPublic: true,
-      isConstant: true,
       initializer: StructLiteral.create({
         type: '.',
         initializers,
@@ -2138,7 +2138,6 @@ class PixelBenderToZigTranslator {
     return VariableDeclaration.create({
       name: 'outputImages',
       isPublic: true,
-      isConstant: true,
       initializer: StructLiteral.create({
         type: '.',
         initializers,
@@ -2454,8 +2453,8 @@ class PixelBenderToZigTranslator {
       }
       args.push(FunctionArgument.create({ name, type }));
     }
-    // deal with unused variables/return values
-    this.insertIgnoreStatements(statements, args);
+    // deal with unused or unmutated variables
+    this.adjustVariableDeclarations(statements, args);
     // get the shadow variables before exiting scope
     const shadowVariables = map(this.variables, v => (v.shadow) ? v : undefined);
     this.endScope();
@@ -2467,7 +2466,7 @@ class PixelBenderToZigTranslator {
         // don't create constant copy of dependent variables for evaluateDependents()
         if (scope !== 'dependent' || name !== 'evaluateDependents') {
           const initializer = this.resolveVariable(varname, 'Image');
-          const assignment = VariableDeclaration.create({ name: varname, initializer, isConstant: true });
+          const assignment = VariableDeclaration.create({ name: varname, initializer });
           statements.splice(offset++, 0, assignment);
         }
         if (!receiver) {
@@ -2531,7 +2530,7 @@ class PixelBenderToZigTranslator {
       this.variables[name] = { type, scope: 'global', mutable: false, pointer: false };
     }
     // omit the initializer for now, we'll add it after functions are defined
-    const decl = VariableDeclaration.create({ name, type, isConstant: true });
+    const decl = VariableDeclaration.create({ name, type });
     this.constants.push({ decl, initializer });
     return decl;
   }
@@ -2574,7 +2573,7 @@ class PixelBenderToZigTranslator {
     this.sideEffects;
     this.startScope();
     const statements = this.translateStatements(pb.statements);
-    this.insertIgnoreStatements(statements);
+    this.adjustVariableDeclarations(statements);
     this.endScope();
     return StatementBlock.create({ statements });
   }
@@ -2616,7 +2615,7 @@ class PixelBenderToZigTranslator {
       ...initializers,
       WhileStatement.create({ condition, statement: innerBlock  }),
     ];
-    this.insertIgnoreStatements(statements);
+    this.adjustVariableDeclarations(statements);
     this.endScope();
     return StatementBlock.create({ statements });
   }
@@ -2787,6 +2786,7 @@ class PixelBenderToZigTranslator {
       operator: pb.operator.charAt(0) + '=',
       rvalue: Literal$1.create({ value: 1, type: typeP })
     });
+    this.variables[pb.lvalue.name].modified = true;
     if (typeExpected !== 'void' && pb.post) {
       // save copy of variable when it's postfix and the return value is used
       const tmp = this.createTempVariable(pb.lvalue, lvalue);
