@@ -22,7 +22,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
     "react-media-capture": "^0.0.13",
-    "rollup-plugin-pb2zig": "^0.0.1",
+    "rollup-plugin-pb2zig": "^0.11.1-alpha.0",
     "vite": "^4.4.5"
   }
 }
