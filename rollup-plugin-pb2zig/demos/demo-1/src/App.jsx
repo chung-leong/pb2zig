@@ -47,6 +47,7 @@ function App() {
     if (!kernelInfo) {
       return;
     }
+    console.log(kernelInfo);
     const controls = Object.entries(kernelInfo.parameters).map(([ name, info ], index) => {
       const {
         type,

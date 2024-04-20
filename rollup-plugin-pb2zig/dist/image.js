@@ -83,11 +83,7 @@ export function getKernelInfo() {
         const param = params[pname] = {};
         for (let [ aname, avalue ] of pvalue) {
           if (typeof(avalue) === 'object') {
-            if ('string' in avalue) {
-              avalue = avalue.string;
-            } else {
-              avalue = toArray(avalue);
-            }
+            value = avalue.string ?? avalue.valueOf();
           } else if (typeof(avalue) === 'function') {
             avalue = getPBType(avalue.name);
           }
@@ -97,27 +93,12 @@ export function getKernelInfo() {
       value = params;
     } else {
       if (typeof(value) === 'object') {
-        if ('string' in value) {
-          value = value.string;
-        } else {
-          value = value.valueOf();
-        }
+        value = value.string ?? value.valueOf();
       }
     }
     info[name] = value;
   }
   return info;
-}
-
-function toArray(tuple) {
-  const result = [];
-  for (let [ index, value ] of tuple) {
-    if (typeof(value) === 'object') {
-      value = toArray(value);
-    }
-    result[index] = value;
-  }
-  return result;
 }
 
 function getPBType(zigType) {
