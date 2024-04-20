@@ -83,7 +83,7 @@ export function getKernelInfo() {
         const param = params[pname] = {};
         for (let [ aname, avalue ] of pvalue) {
           if (typeof(avalue) === 'object') {
-            value = avalue.string ?? avalue.valueOf();
+            avalue = avalue.string ?? avalue.valueOf();
           } else if (typeof(avalue) === 'function') {
             avalue = getPBType(avalue.name);
           }
