@@ -340,13 +340,13 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
 
         inline fn getPixelAt(self: @This(), coord: @Vector(2, f32)) FPixel {
             const left_top: @Vector(2, f32) = .{ 0, 0 };
-            const bottom_right: @Vector(2, f32) = .{ @floatFromInt(self.width), @floatFromInt(self.height) };
-            if (@reduce(.And, coord >= left_top) and @reduce(.And, coord < bottom_right)) {
+            const bottom_right: @Vector(2, f32) = .{ @floatFromInt(self.width - 1), @floatFromInt(self.height - 1) };
+            if (@reduce(.And, coord >= left_top) and @reduce(.And, coord <= bottom_right)) {
                 const ic: @Vector(2, u32) = switch (@hasDecl(std.math, "fabs")) {
                     // Zig 0.12.0
                     false => @intFromFloat(coord),
                     // Zig 0.11.0
-                    true => .{ @intFromFloat(coord[0]), @intFromFloat(coord[0]) },
+                    true => .{ @intFromFloat(coord[0]), @intFromFloat(coord[1]) },
                 };
                 return self.getPixel(ic[0], ic[1]);
             } else {
