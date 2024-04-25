@@ -362,7 +362,28 @@ test "inverseSqrt" {
 }
 
 pub fn abs(v: anytype) @TypeOf(v) {
-    return if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else @abs(v);
+    return if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else switch (@typeInfo(@TypeOf(v))) {
+        .Float => if (v < 0) -v else v,
+        .Vector => |ve| switch (ve.len) {
+            2 => .{
+                if (v[0] < 0) -v[0] else v[0],
+                if (v[1] < 0) -v[1] else v[1],
+            },
+            3 => .{
+                if (v[0] < 0) -v[0] else v[0],
+                if (v[1] < 0) -v[1] else v[1],
+                if (v[2] < 0) -v[2] else v[2],
+            },
+            4 => .{
+                if (v[0] < 0) -v[0] else v[0],
+                if (v[1] < 0) -v[1] else v[1],
+                if (v[2] < 0) -v[2] else v[2],
+                if (v[3] < 0) -v[3] else v[3],
+            },
+            else => @compileError("Unsupported"),
+        },
+        else => @compileError("Unsupported"),
+    };
 }
 
 test "abs" {
@@ -601,7 +622,7 @@ test "smoothStep" {
 pub fn length(v: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v))) {
         .Vector => @sqrt(@reduce(.Add, v * v)),
-        else => if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else @abs(v),
+        else => abs(v),
     };
 }
 
@@ -617,7 +638,7 @@ test "length" {
 pub fn distance(v1: anytype, v2: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v1))) {
         .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-        else => if (@hasDecl(std.math, "fabs")) std.math.fabs(v1 - v2) else @abs(v1 - v2),
+        else => abs(v1 - v2),
     };
 }
 
