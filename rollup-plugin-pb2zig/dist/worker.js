@@ -1,10 +1,14 @@
-onmessage = (evt) => {
-  const [ name, jobID, ...args ] = evt.data;
-  runFunction(name, args).then(([ result, transfer ]) => {
-    postMessage([ name, jobID, result ], { transfer });
-  }).catch((err) => {
-    postMessage([ 'error', jobID, err ]);
-  });
+onmessage = async (evt) => {
+  if (!Array.isArray(evt.data)) {
+    return;
+  }
+  const [ name, jobId, ...args ] = evt.data;
+  try {
+    const [ result, transfer ] = await runFunction(name, args);
+    postMessage([ name, jobId, result ], { transfer });
+  } catch (err) {
+    postMessage([ 'error', jobId, err ]);
+  }
 };
 
 async function runFunction(name, args) {
@@ -29,3 +33,5 @@ async function runFunction(name, args) {
       throw new Error(`Unknown function: ${name}`);
   }
 }
+
+postMessage('ready');

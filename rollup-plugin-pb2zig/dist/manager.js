@@ -49,7 +49,7 @@ const idleWorkers = [];
 const pendingRequests = [];
 const jobs = [];
 
-let nextJobID = 1;
+let nextJobId = 1;
 
 async function acquireWorker() {
   let worker = idleWorkers.shift();
@@ -60,13 +60,16 @@ async function acquireWorker() {
     if (activeWorkers.length < maxCount) {
       // start a new one
       worker = new Worker(workerURL, { type: 'module' });
+      // wait for start-up message from worker
+      await new Promise((resolve, reject) => {
+        worker.onmessage = resolve;
+        worker.onerror = reject;
+      });     
       worker.onmessage = handleMessage;
       worker.onerror = (evt) => console.error(evt);
     } else {
       // wait for the next worker to become available again
-      return new Promise((resolve) => {
-        pendingRequests.push(resolve);
-      });
+      return new Promise(resolve => pendingRequests.push(resolve));
     }
   }
   activeWorkers.push(worker);
@@ -76,7 +79,7 @@ async function acquireWorker() {
 async function startJob(name, args = [], transfer = []) {
   const worker = await acquireWorker();
   const job = {
-    id: nextJobID++,
+    id: nextJobId++,
     promise: null,
     resolve: null,
     reject: null,
@@ -93,8 +96,8 @@ async function startJob(name, args = [], transfer = []) {
 }
 
 function handleMessage(evt) {
-  const [ name, jobID, result ] = evt.data;
-  const jobIndex = jobs.findIndex(j => j.id === jobID);
+  const [ name, jobId, result ] = evt.data;
+  const jobIndex = jobs.findIndex(j => j.id === jobId);
   const job = jobs[jobIndex];
   jobs.splice(jobIndex, 1);
   const { worker, resolve, reject } = job;
