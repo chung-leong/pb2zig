@@ -548,7 +548,8 @@ pub const kernel = struct {
     }
 
     fn abs(v: anytype) @TypeOf(v) {
-        return if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else @abs(v);
+        // avoiding @abs() for the sake of Zig 0.11.0
+        return if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else std.math.sign(v) * v;
     }
 
     fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
@@ -607,7 +608,7 @@ pub const kernel = struct {
     fn length(v: anytype) f32 {
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else @abs(v),
+            else => if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else std.math.sign(v) * v,
         };
     }
 

@@ -162,7 +162,7 @@ pub const kernel = struct {
     fn length(v: anytype) f32 {
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else @abs(v),
+            else => if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else std.math.sign(v) * v,
         };
     }
 };

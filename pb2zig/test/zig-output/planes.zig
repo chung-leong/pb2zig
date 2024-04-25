@@ -138,7 +138,8 @@ pub const kernel = struct {
     }
 
     fn abs(v: anytype) @TypeOf(v) {
-        return if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else @abs(v);
+        // avoiding @abs() for the sake of Zig 0.11.0
+        return if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else std.math.sign(v) * v;
     }
 
     fn floor(v: anytype) @TypeOf(v) {
