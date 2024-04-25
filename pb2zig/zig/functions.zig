@@ -362,28 +362,8 @@ test "inverseSqrt" {
 }
 
 pub fn abs(v: anytype) @TypeOf(v) {
-    return if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else switch (@typeInfo(@TypeOf(v))) {
-        .Float => if (v < 0) -v else v,
-        .Vector => |ve| switch (ve.len) {
-            2 => .{
-                if (v[0] < 0) -v[0] else v[0],
-                if (v[1] < 0) -v[1] else v[1],
-            },
-            3 => .{
-                if (v[0] < 0) -v[0] else v[0],
-                if (v[1] < 0) -v[1] else v[1],
-                if (v[2] < 0) -v[2] else v[2],
-            },
-            4 => .{
-                if (v[0] < 0) -v[0] else v[0],
-                if (v[1] < 0) -v[1] else v[1],
-                if (v[2] < 0) -v[2] else v[2],
-                if (v[3] < 0) -v[3] else v[3],
-            },
-            else => @compileError("Unsupported"),
-        },
-        else => @compileError("Unsupported"),
-    };
+    // avoiding @abs() for the sake of Zig 0.11.0
+    return if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else std.math.sign(v) * v;
 }
 
 test "abs" {
