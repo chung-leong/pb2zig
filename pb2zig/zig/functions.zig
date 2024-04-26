@@ -363,7 +363,7 @@ test "inverseSqrt" {
 
 pub fn abs(v: anytype) @TypeOf(v) {
     // avoiding @abs() for the sake of Zig 0.11.0
-    return if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else std.math.sign(v) * v;
+    return @max(-v, v);
 }
 
 test "abs" {
@@ -602,7 +602,7 @@ test "smoothStep" {
 pub fn length(v: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v))) {
         .Vector => @sqrt(@reduce(.Add, v * v)),
-        else => if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else std.math.sign(v) * v,
+        else => @max(-v, v),
     };
 }
 
@@ -618,7 +618,7 @@ test "length" {
 pub fn distance(v1: anytype, v2: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v1))) {
         .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-        else => if (@hasDecl(std.math, "fabs")) std.math.fabs(v1 - v2) else std.math.sign(v1 - v2) * (v1 - v2),
+        else => @max(-(v1 - v2), (v1 - v2)),
     };
 }
 

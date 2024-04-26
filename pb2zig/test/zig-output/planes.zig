@@ -139,7 +139,7 @@ pub const kernel = struct {
 
     fn abs(v: anytype) @TypeOf(v) {
         // avoiding @abs() for the sake of Zig 0.11.0
-        return if (@hasDecl(std.math, "fabs")) std.math.fabs(v) else std.math.sign(v) * v;
+        return @max(-v, v);
     }
 
     fn floor(v: anytype) @TypeOf(v) {
