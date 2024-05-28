@@ -257,7 +257,10 @@ pub fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
             }
             break :calc result;
         },
-        else => std.math.atan2(@TypeOf(v1), v1, v2),
+        else => switch (@typeInfo(@TypeOf(std.math.atan2)).Fn.params.len) {
+            2 => std.math.atan2(v1, v2),
+            else => std.math.atan2(@TypeOf(v1), v1, v2),
+        },
     };
 }
 
@@ -359,8 +362,8 @@ test "inverseSqrt" {
 }
 
 pub fn abs(v: anytype) @TypeOf(v) {
-    // return @abs(v);
-    return @fabs(v);
+    // avoiding @abs() for the sake of Zig 0.11.0
+    return @max(-v, v);
 }
 
 test "abs" {
@@ -597,13 +600,9 @@ test "smoothStep" {
 }
 
 pub fn length(v: anytype) f32 {
-    // return switch (@typeInfo(@TypeOf(v))) {
-    //     .Vector => @sqrt(@reduce(.Add, v * v)),
-    //     else => @abs(v),
-    // };
     return switch (@typeInfo(@TypeOf(v))) {
         .Vector => @sqrt(@reduce(.Add, v * v)),
-        else => @fabs(v),
+        else => @max(-v, v),
     };
 }
 
@@ -617,13 +616,9 @@ test "length" {
 }
 
 pub fn distance(v1: anytype, v2: anytype) f32 {
-    // return switch (@typeInfo(@TypeOf(v1))) {
-    //     .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-    //     else => @abs(v1 - v2),
-    // };
     return switch (@typeInfo(@TypeOf(v1))) {
         .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-        else => @fabs(v1 - v2),
+        else => @max(-(v1 - v2), (v1 - v2)),
     };
 }
 

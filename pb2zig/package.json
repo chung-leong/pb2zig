@@ -1,14 +1,14 @@
 {
   "name": "pb2zig",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Pixel Bender to Zig code translator",
   "main": "./dist/index.js",
   "bin": "./bin/cli.js",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-loader node-zigar --no-warnings ./node_modules/mocha/bin/mocha.js --parallel -- test/*.test.js",
+    "test": "node --experimental-loader node-zigar --no-warnings ./node_modules/mocha/bin/mocha.js -- test/*.test.js",
     "debug": "node --experimental-loader node-zigar --no-warnings --inspect-brk ./node_modules/mocha/bin/mocha.js -- test/*.test.js",
-    "coverage": "node ./node_modules/c8/bin/c8.js ./node_modules/mocha/bin/mocha.js --parallel -- test/*.test.js",
+    "coverage": "node ./node_modules/c8/bin/c8.js ./node_modules/mocha/bin/mocha.js -- test/*.test.js",
     "rollup": "rollup -c rollup.config.js"
   },
   "files": [
@@ -19,14 +19,15 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "chevrotain": "^10.5.0"
+    "chevrotain": "^11.0.3"
   },
   "devDependencies": {
-    "c8": "^8.0.1",
-    "chai": "^4.3.8",
-    "mocha": "^10.2.0",
+    "c8": "^9.1.0",
+    "chai": "^5.1.0",
+    "mocha": "^10.4.0",
     "mocha-skip-if": "^1.0.4",
-    "node-zigar": "^0.11.0",
-    "sharp": "^0.32.5"
+    "node-zigar": "^0.11.1",
+    "rollup": "^4.16.1",
+    "sharp": "^0.33.3"
   }
 }

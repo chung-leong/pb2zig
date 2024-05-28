@@ -23,7 +23,7 @@ This library assumes that the compiler is in the search path.
 ## Versioning
 
 The major and minor version numbers of this plugin correspond to the version of the Zig compiler
-it's designed for. The current version is 0.11.0. It works with Zig 0.11.0.
+it's designed for. The current version is 0.11.0. It works with Zig 0.11.0 and 0.12.0.
 
 ## Usage
 

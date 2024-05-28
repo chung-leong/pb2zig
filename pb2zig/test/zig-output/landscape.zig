@@ -129,7 +129,7 @@ pub const kernel = struct {
                 const buildings = self.params.buildings;
                 const waterLevel = self.params.waterLevel;
                 const terrainHeight = self.params.terrainHeight;
-                var alt: f32 = undefined;
+                const alt: f32 = undefined;
                 _ = alt;
                 var hills: f32 = 0.0;
                 var structures: f32 = 0.0;
@@ -170,7 +170,7 @@ pub const kernel = struct {
                 const size = self.params.size;
                 const aspectRatio = self.aspectRatio;
                 const viewRotation = self.viewRotation;
-                var direction: @Vector(3, f32) = .{
+                const direction: @Vector(3, f32) = .{
                     2.0 * aspectRatio * p[0] / @as(f32, @floatFromInt(size[0])) - aspectRatio,
                     -2.0 * p[1] / @as(f32, @floatFromInt(size[1])) + 1.0,
                     -2.0,
@@ -180,11 +180,11 @@ pub const kernel = struct {
 
             fn intersectionNormal(self: *@This(), p: @Vector(3, f32), epsilon: f32) @Vector(3, f32) {
                 var n: @Vector(3, f32) = undefined;
-                var e: f32 = epsilon;
-                var p1: @Vector(3, f32) = .{ p[0] - e, p[1], p[2] };
-                var p2: @Vector(3, f32) = .{ p[0] + e, p[1], p[2] };
-                var p3: @Vector(3, f32) = .{ p[0], p[1], p[2] - e };
-                var p4: @Vector(3, f32) = .{ p[0], p[1], p[2] + e };
+                const e: f32 = epsilon;
+                const p1: @Vector(3, f32) = .{ p[0] - e, p[1], p[2] };
+                const p2: @Vector(3, f32) = .{ p[0] + e, p[1], p[2] };
+                const p3: @Vector(3, f32) = .{ p[0], p[1], p[2] - e };
+                const p4: @Vector(3, f32) = .{ p[0], p[1], p[2] + e };
                 n = @Vector(3, f32){
                     self.displacement(p1)[0] - self.displacement(p2)[0],
                     2.0 * e,
@@ -201,8 +201,8 @@ pub const kernel = struct {
                 const cameraEye = self.cameraEye;
                 var dt: f32 = EPSILON;
                 ray.* = @Vector(3, f32){ 0.0, 0.0, 0.0 };
-                var start_d: f32 = t;
-                var basic_ray: @Vector(3, f32) = undefined;
+                const start_d: f32 = t;
+                const basic_ray: @Vector(3, f32) = undefined;
                 _ = basic_ray;
                 var prev_ray: @Vector(3, f32) = undefined;
                 var prev_alt: f32 = undefined;
@@ -212,7 +212,7 @@ pub const kernel = struct {
                     if (ray.*[1] > terrainHeight * 2.0 and ray.*[1] > prev_ray[1] and t > start_d) break;
                     surface.* = self.displacement(ray.*);
                     if (ray.*[1] <= surface.*[0]) {
-                        var id: f32 = (prev_alt - prev_ray[1]) / (ray.*[1] - prev_ray[1] - surface.*[0] + prev_alt);
+                        const id: f32 = (prev_alt - prev_ray[1]) / (ray.*[1] - prev_ray[1] - surface.*[0] + prev_alt);
                         ray_distance.* = mix(t, (t - dt), id);
                         surface.*[0] = mix(surface.*[0], ray.*[1], id);
                         ray.*[1] = surface.*[0];
@@ -231,7 +231,7 @@ pub const kernel = struct {
                 var origin = _origin;
                 const terrainHeight = self.params.terrainHeight;
                 var t: f32 = EPSILON;
-                var epsilon: f32 = t;
+                const epsilon: f32 = t;
                 var surface: @Vector(3, f32) = self.displacement(origin);
                 origin[1] = surface[0];
                 var ray: @Vector(3, f32) = .{ 0.0, 0.0, 0.0 };
@@ -251,7 +251,7 @@ pub const kernel = struct {
             fn fog(self: *@This(), c: @Vector(3, f32), d: f32) @Vector(3, f32) {
                 const terrainHorizon = self.params.terrainHorizon;
                 const fogColor = self.fogColor;
-                var r: f32 = abs(d) / terrainHorizon;
+                const r: f32 = abs(d) / terrainHorizon;
                 return mix(c, fogColor, r);
             }
 
@@ -270,8 +270,8 @@ pub const kernel = struct {
                 const sunPosition = self.sunPosition;
                 const skyColor = self.skyColor;
                 const sunColor = self.sunColor;
-                var a: f32 = clamp((abs(acos(dot(ray_direction, sunPosition) / (length(ray_direction) * length(sunPosition)))) / 3.14) / sunSize, 0.0, 1.0);
-                var s: @Vector(3, f32) = sunColor * @as(@Vector(3, f32), @splat((1.0 - a)));
+                const a: f32 = clamp((abs(acos(dot(ray_direction, sunPosition) / (length(ray_direction) * length(sunPosition)))) / 3.14) / sunSize, 0.0, 1.0);
+                const s: @Vector(3, f32) = sunColor * @as(@Vector(3, f32), @splat((1.0 - a)));
                 return skyColor * @as(@Vector(3, f32), @splat(ambient)) + s;
             }
 
@@ -279,7 +279,7 @@ pub const kernel = struct {
                 const contours = self.params.contours;
                 const contourInterval = self.contourInterval;
                 _ = o;
-                var contour: f32 = mod(h * 100.0, contourInterval) - mod((h * 100.0 - 1.5), contourInterval);
+                const contour: f32 = mod(h * 100.0, contourInterval) - mod((h * 100.0 - 1.5), contourInterval);
                 return @as(bool, if (contours and contour < 0.5) true else false);
             }
 
@@ -306,9 +306,9 @@ pub const kernel = struct {
                 var spec: f32 = undefined;
                 var surface: @Vector(3, f32) = undefined;
                 var shadow_length: f32 = undefined;
-                var t: f32 = start_dst[@intCast(@as(i32, @intFromFloat(p[0] / 5.0)))];
-                var ray_direction: @Vector(3, f32) = self.rayDirection(p);
-                var contour: f32 = undefined;
+                const t: f32 = start_dst[@intCast(@as(i32, @intFromFloat(p[0] / 5.0)))];
+                const ray_direction: @Vector(3, f32) = self.rayDirection(p);
+                const contour: f32 = undefined;
                 _ = contour;
                 self.castRay(ray_direction, t, &ray, &n, &ray_distance, &surface);
                 if (ray_distance >= 0.0) {
@@ -321,7 +321,7 @@ pub const kernel = struct {
                             diffuse = self.shadow(diffuse, shadow_length);
                         }
                         if (shadow_length == 0.0) {
-                            var cf: f32 = (surface[0] - surface[1]) / (waterLevel * terrainHeight);
+                            const cf: f32 = (surface[0] - surface[1]) / (waterLevel * terrainHeight);
                             if (cf < 0.35) {
                                 diffuse *= 1.35 - cf;
                             }
@@ -377,8 +377,8 @@ pub const kernel = struct {
                 const waterLevel = self.params.waterLevel;
                 const sun = self.params.sun;
                 const terrainHeight = self.params.terrainHeight;
-                var c: f32 = cos(radians(-cameraRotation));
-                var s: f32 = sin(radians(-cameraRotation));
+                const c: f32 = cos(radians(-cameraRotation));
+                const s: f32 = sin(radians(-cameraRotation));
                 self.viewRotation = [3]@Vector(3, f32){
                     .{ c, 0.0, s },
                     .{ 0.0, 1.0, 0.0 },
@@ -388,7 +388,7 @@ pub const kernel = struct {
                 if (self.cameraEye[1] <= (waterLevel * terrainHeight)) {
                     self.cameraEye[1] = (waterLevel * terrainHeight) + 0.1;
                 }
-                var sd: f32 = 1000.0;
+                const sd: f32 = 1000.0;
                 self.sunPosition = @Vector(3, f32){
                     sd * cos(radians(sun[1])) * sin(radians(90.0 - sun[0])),
                     sd * cos(radians(90.0 - sun[0])),
@@ -404,7 +404,7 @@ pub const kernel = struct {
                 var n: @Vector(3, f32) = undefined;
                 var surface: @Vector(3, f32) = undefined;
                 var ray_distance: f32 = undefined;
-                var h: f32 = undefined;
+                const h: f32 = undefined;
                 _ = h;
                 {
                     var x: f32 = 0.0;
@@ -548,8 +548,8 @@ pub const kernel = struct {
     }
 
     fn abs(v: anytype) @TypeOf(v) {
-        // return @abs(v);
-        return @fabs(v);
+        // avoiding @abs() for the sake of Zig 0.11.0
+        return @max(-v, v);
     }
 
     fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
@@ -606,13 +606,9 @@ pub const kernel = struct {
     }
 
     fn length(v: anytype) f32 {
-        // return switch (@typeInfo(@TypeOf(v))) {
-            //     .Vector => @sqrt(@reduce(.Add, v * v)),
-            //     else => @abs(v),
-            // };
         return switch (@typeInfo(@TypeOf(v))) {
             .Vector => @sqrt(@reduce(.Add, v * v)),
-            else => @fabs(v),
+            else => @max(-v, v),
         };
     }
 
@@ -642,6 +638,9 @@ pub const kernel = struct {
 pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
+
+// support both 0.11 and 0.12
+const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
 
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
@@ -687,6 +686,13 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         colorSpace: ColorSpace = .srgb,
         offset: usize = 0,
 
+        fn constrain(v: anytype, min: f32, max: f32) @TypeOf(v) {
+            const lower: @TypeOf(v) = @splat(min);
+            const upper: @TypeOf(v) = @splat(max);
+            const v2 = @select(f32, v > lower, v, lower);
+            return @select(f32, v2 < upper, v2, upper);
+        }
+
         fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
             if (len == 4) {
                 return pixel;
@@ -715,108 +721,88 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
 
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
-            // requires newest version of zig, which has issues
-            //
-            // const numerator: FPixel = switch (len) {
-                //     1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
-                //     2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
-                //     3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
-                //     4 => @floatFromInt(pixel),
-                //     else => @compileError("Unsupported number of channels: " ++ len),
-                // };
-            // const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
-            // return numerator / denominator;
-            var numerator: FPixel = undefined;
-            switch (len) {
-                1 => numerator[0] = @floatFromInt(pixel[0]),
-                2 => {
-                    numerator[0] = @floatFromInt(pixel[0]);
-                    numerator[3] = @floatFromInt(pixel[3]);
+            const numerator: FPixel = switch (@hasDecl(std.math, "fabs")) {
+                // Zig 0.12.0
+                false => switch (len) {
+                    1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
+                    2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
+                    3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
+                    4 => @floatFromInt(pixel),
+                    else => @compileError("Unsupported number of channels: " ++ len),
                 },
-                3 => {
-                    numerator[0] = @floatFromInt(pixel[0]);
-                    numerator[1] = @floatFromInt(pixel[1]);
-                    numerator[2] = @floatFromInt(pixel[2]);
+                // Zig 0.11.0
+                true => switch (len) {
+                    1 => .{
+                        @floatFromInt(pixel[0]),
+                    },
+                    2 => .{
+                        @floatFromInt(pixel[0]),
+                        @floatFromInt(pixel[3]),
+                    },
+                    3 => .{
+                        @floatFromInt(pixel[0]),
+                        @floatFromInt(pixel[1]),
+                        @floatFromInt(pixel[2]),
+                    },
+                    4 => .{
+                        @floatFromInt(pixel[0]),
+                        @floatFromInt(pixel[1]),
+                        @floatFromInt(pixel[2]),
+                        @floatFromInt(pixel[3]),
+                    },
+                    else => @compileError("Unsupported number of channels: " ++ len),
                 },
-                4 => {
-                    numerator[0] = @floatFromInt(pixel[0]);
-                    numerator[1] = @floatFromInt(pixel[1]);
-                    numerator[2] = @floatFromInt(pixel[2]);
-                    numerator[3] = @floatFromInt(pixel[3]);
-                },
-                else => @compileError("Unsupported number of channels: " ++ len),
-            }
+            };
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
         }
 
-        fn constrain(pixel: FPixel, max: f32) FPixel {
-            const lower: FPixel = @splat(0);
-            const upper: FPixel = @splat(max);
-            const pixel2 = @select(f32, pixel > lower, pixel, lower);
-            const pixel3 = @select(f32, pixel2 < upper, pixel2, upper);
-            return pixel3;
-        }
-
         fn intPixelFromPBPixel(pixel: FPixel) Pixel {
-            // const max: f32 = @floatFromInt(std.math.maxInt(T));
-            // const multiplier: FPixel = @splat(max);
-            // const product: FPixel = constrain(pixel * multiplier, max);
-            // const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
-            // const result: Pixel = switch (len) {
-                //     1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
-                //     2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
-                //     3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
-                //     4 => @intFromFloat(product),
-                //     else => @compileError("Unsupported number of channels: " ++ len),
-                // };
-            // return result;
             const max: f32 = @floatFromInt(std.math.maxInt(T));
             const multiplier: FPixel = @splat(max);
-            const product: FPixel = constrain(pixel * multiplier, max);
-            var result: Pixel = undefined;
-            switch (len) {
-                1 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[0]);
-                    result[2] = @intFromFloat(product[0]);
-                    result[3] = std.math.maxInt(T);
+            const product: FPixel = constrain(pixel * multiplier, 0, max);
+            const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
+            return switch (@hasDecl(std.math, "fabs")) {
+                // Zig 0.12.0
+                false => switch (len) {
+                    1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
+                    2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
+                    3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
+                    4 => @intFromFloat(product),
+                    else => @compileError("Unsupported number of channels: " ++ len),
                 },
-                2 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[0]);
-                    result[2] = @intFromFloat(product[0]);
-                    result[3] = @intFromFloat(product[1]);
+                // Zig 0.11.0
+                true => switch (len) {
+                    1 => .{
+                        @intFromFloat(product[0]),
+                        @intFromFloat(product[0]),
+                        @intFromFloat(product[0]),
+                        maxAlpha[0],
+                    },
+                    2 => .{
+                        @intFromFloat(product[0]),
+                        @intFromFloat(product[0]),
+                        @intFromFloat(product[0]),
+                        @intFromFloat(product[1]),
+                    },
+                    3 => .{
+                        @intFromFloat(product[0]),
+                        @intFromFloat(product[1]),
+                        @intFromFloat(product[2]),
+                        maxAlpha[0],
+                    },
+                    4 => .{
+                        @intFromFloat(product[0]),
+                        @intFromFloat(product[1]),
+                        @intFromFloat(product[2]),
+                        @intFromFloat(product[3]),
+                    },
+                    else => @compileError("Unsupported number of channels: " ++ len),
                 },
-                3 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[1]);
-                    result[2] = @intFromFloat(product[2]);
-                    result[3] = std.math.maxInt(T);
-                },
-                4 => {
-                    result[0] = @intFromFloat(product[0]);
-                    result[1] = @intFromFloat(product[1]);
-                    result[2] = @intFromFloat(product[2]);
-                    result[3] = @intFromFloat(product[3]);
-                },
-                else => @compileError("Unsupported number of channels: " ++ len),
-            }
-            return result;
+            };
         }
 
-        inline fn unsign(value: i32) u32 {
-            // allow negative values to be interpreted as large integers to simplify bound-checking
-            @setRuntimeSafety(false);
-            return @as(u32, @intCast(value));
-        }
-
-        fn getPixel(self: @This(), ix: i32, iy: i32) FPixel {
-            const x = unsign(ix);
-            const y = unsign(iy);
-            if (x >= self.width or y >= self.height) {
-                return @as(FPixel, @splat(0));
-            }
+        fn getPixel(self: @This(), x: u32, y: u32) FPixel {
             const index = (y * self.width) + x - self.offset;
             const src_pixel = self.data[index];
             const pixel: FPixel = switch (@typeInfo(T)) {
@@ -850,17 +836,30 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             return 1;
         }
 
+        inline fn getPixelAt(self: @This(), coord: @Vector(2, f32)) FPixel {
+            const left_top: @Vector(2, f32) = .{ 0, 0 };
+            const bottom_right: @Vector(2, f32) = .{ @floatFromInt(self.width - 1), @floatFromInt(self.height - 1) };
+            if (@reduce(.And, coord >= left_top) and @reduce(.And, coord <= bottom_right)) {
+                const ic: @Vector(2, u32) = switch (@hasDecl(std.math, "fabs")) {
+                    // Zig 0.12.0
+                    false => @intFromFloat(coord),
+                    // Zig 0.11.0
+                    true => .{ @intFromFloat(coord[0]), @intFromFloat(coord[1]) },
+                };
+                return self.getPixel(ic[0], ic[1]);
+            } else {
+                return @splat(0);
+            }
+        }
+
         fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
-            const x: i32 = @intFromFloat(coord[0]);
-            const y: i32 = @intFromFloat(coord[1]);
-            return self.getPixel(x, y);
+            return self.getPixelAt(@floor(coord));
         }
 
         fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
             const c = coord - @as(@Vector(2, f32), @splat(0.5));
-            const x: i32 = @intFromFloat(c[0]);
-            const y: i32 = @intFromFloat(c[1]);
-            const f0 = c - @floor(c);
+            const c0 = @floor(c);
+            const f0 = c - c0;
             const f1 = @as(@Vector(2, f32), @splat(1)) - f0;
             const w: @Vector(4, f32) = .{
                 f1[0] * f1[1],
@@ -868,10 +867,10 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
                 f1[0] * f0[1],
                 f0[0] * f0[1],
             };
-            const p00 = self.getPixel(x, y);
-            const p01 = self.getPixel(x, y + 1);
-            const p10 = self.getPixel(x + 1, y);
-            const p11 = self.getPixel(x + 1, y + 1);
+            const p00 = self.getPixelAt(c0);
+            const p01 = self.getPixelAt(c0 + @as(@Vector(2, f32), .{ 0, 1 }));
+            const p10 = self.getPixelAt(c0 + @as(@Vector(2, f32), .{ 1, 0 }));
+            const p11 = self.getPixelAt(c0 + @as(@Vector(2, f32), .{ 1, 1 }));
             var result: FPixel = undefined;
             comptime var i = 0;
             inline while (i < len) : (i += 1) {
@@ -900,7 +899,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -925,7 +924,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -959,7 +958,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = enum_auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

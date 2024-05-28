@@ -16,7 +16,7 @@ export class FieldDeclaration extends Node {
 
 export class VariableDeclaration extends Node {
   isPublic = false;
-  isConstant = false;
+  isConstant = true;
   type;
   name;
   initializer;
