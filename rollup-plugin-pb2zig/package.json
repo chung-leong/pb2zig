@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-pb2zig",
-  "version": "0.11.1",
+  "version": "0.11.2-beta.0",
   "description": "Rollup plugin for creating images filters from Pixel Bender kernels",
   "main": "./dist/index.js",
   "type": "module",
@@ -35,8 +35,8 @@
   },
   "homepage": "https://github.com/chung-leong/pb2zig#readme",
   "dependencies": {
-    "pb2zig": "^0.11.2-alpha.0",
-    "rollup-plugin-zigar": "^0.11.2-alpha.2"
+    "pb2zig": "^0.11.2-beta.0",
+    "rollup-plugin-zigar": "^0.11.2-beta.0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.2.3",
