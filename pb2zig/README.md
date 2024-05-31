@@ -12,7 +12,7 @@ npm install -g pb2zig
 ## Versioning
 
 The major and minor version numbers of this program correspond to the version of the Zig compiler
-it's designed for. The current version is 0.11.1. It works with Zig 0.11.0 and 0.12.0.
+it's designed for. The current version is 0.12.0. It works with Zig 0.12.0.
 
 ## Usage
 
