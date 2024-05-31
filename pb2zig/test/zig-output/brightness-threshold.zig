@@ -82,9 +82,6 @@ pub const Input = KernelInput(u8, kernel);
 pub const Output = KernelOutput(u8, kernel);
 pub const Parameters = KernelParameters(kernel);
 
-// support both 0.11 and 0.12
-const enum_auto = if (@hasField(std.builtin.Type.ContainerLayout, "Auto")) .Auto else .auto;
-
 pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
     return createPartialOutput(allocator, width, height, 0, height, input, params);
 }
@@ -164,37 +161,12 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
         }
 
         fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
-            const numerator: FPixel = switch (@hasDecl(std.math, "fabs")) {
-                // Zig 0.12.0
-                false => switch (len) {
-                    1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
-                    2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
-                    3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
-                    4 => @floatFromInt(pixel),
-                    else => @compileError("Unsupported number of channels: " ++ len),
-                },
-                // Zig 0.11.0
-                true => switch (len) {
-                    1 => .{
-                        @floatFromInt(pixel[0]),
-                    },
-                    2 => .{
-                        @floatFromInt(pixel[0]),
-                        @floatFromInt(pixel[3]),
-                    },
-                    3 => .{
-                        @floatFromInt(pixel[0]),
-                        @floatFromInt(pixel[1]),
-                        @floatFromInt(pixel[2]),
-                    },
-                    4 => .{
-                        @floatFromInt(pixel[0]),
-                        @floatFromInt(pixel[1]),
-                        @floatFromInt(pixel[2]),
-                        @floatFromInt(pixel[3]),
-                    },
-                    else => @compileError("Unsupported number of channels: " ++ len),
-                },
+            const numerator: FPixel = switch (len) {
+                1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
+                2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
+                3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
+                4 => @floatFromInt(pixel),
+                else => @compileError("Unsupported number of channels: " ++ len),
             };
             const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
             return numerator / denominator;
@@ -205,43 +177,12 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const multiplier: FPixel = @splat(max);
             const product: FPixel = constrain(pixel * multiplier, 0, max);
             const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
-            return switch (@hasDecl(std.math, "fabs")) {
-                // Zig 0.12.0
-                false => switch (len) {
-                    1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
-                    2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
-                    3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
-                    4 => @intFromFloat(product),
-                    else => @compileError("Unsupported number of channels: " ++ len),
-                },
-                // Zig 0.11.0
-                true => switch (len) {
-                    1 => .{
-                        @intFromFloat(product[0]),
-                        @intFromFloat(product[0]),
-                        @intFromFloat(product[0]),
-                        maxAlpha[0],
-                    },
-                    2 => .{
-                        @intFromFloat(product[0]),
-                        @intFromFloat(product[0]),
-                        @intFromFloat(product[0]),
-                        @intFromFloat(product[1]),
-                    },
-                    3 => .{
-                        @intFromFloat(product[0]),
-                        @intFromFloat(product[1]),
-                        @intFromFloat(product[2]),
-                        maxAlpha[0],
-                    },
-                    4 => .{
-                        @intFromFloat(product[0]),
-                        @intFromFloat(product[1]),
-                        @intFromFloat(product[2]),
-                        @intFromFloat(product[3]),
-                    },
-                    else => @compileError("Unsupported number of channels: " ++ len),
-                },
+            return switch (len) {
+                1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
+                2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
+                3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
+                4 => @intFromFloat(product),
+                else => @compileError("Unsupported number of channels: " ++ len),
             };
         }
 
@@ -283,12 +224,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const left_top: @Vector(2, f32) = .{ 0, 0 };
             const bottom_right: @Vector(2, f32) = .{ @floatFromInt(self.width - 1), @floatFromInt(self.height - 1) };
             if (@reduce(.And, coord >= left_top) and @reduce(.And, coord <= bottom_right)) {
-                const ic: @Vector(2, u32) = switch (@hasDecl(std.math, "fabs")) {
-                    // Zig 0.12.0
-                    false => @intFromFloat(coord),
-                    // Zig 0.11.0
-                    true => .{ @intFromFloat(coord[0]), @intFromFloat(coord[1]) },
-                };
+                const ic: @Vector(2, u32) = @intFromFloat(coord);
                 return self.getPixel(ic[0], ic[1]);
             } else {
                 return @splat(0);
@@ -342,7 +278,7 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = enum_auto,
+            .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -367,7 +303,7 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = enum_auto,
+            .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,
@@ -401,7 +337,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     }
     return @Type(.{
         .Struct = .{
-            .layout = enum_auto,
+            .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},
             .is_tuple = false,

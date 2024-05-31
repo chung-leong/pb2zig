@@ -188,8 +188,7 @@ pub fn asin(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
         .Vector => calc: {
             var result: @TypeOf(v) = undefined;
-            comptime var i = 0;
-            inline while (i < @typeInfo(@TypeOf(v)).Vector.len) : (i += 1) {
+            inline for (0..@typeInfo(@TypeOf(v)).Vector.len) |i| {
                 result[i] = asin(v[i]);
             }
             break :calc result;
@@ -209,8 +208,7 @@ pub fn acos(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
         .Vector => calc: {
             var result: @TypeOf(v) = undefined;
-            comptime var i = 0;
-            inline while (i < @typeInfo(@TypeOf(v)).Vector.len) : (i += 1) {
+            inline for (0..@typeInfo(@TypeOf(v)).Vector.len) |i| {
                 result[i] = acos(v[i]);
             }
             break :calc result;
@@ -230,8 +228,7 @@ pub fn atan(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
         .Vector => calc: {
             var result: @TypeOf(v) = undefined;
-            comptime var i = 0;
-            inline while (i < @typeInfo(@TypeOf(v)).Vector.len) : (i += 1) {
+            inline for (0..@typeInfo(@TypeOf(v)).Vector.len) |i| {
                 result[i] = atan(v[i]);
             }
             break :calc result;
@@ -251,8 +248,7 @@ pub fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
     return switch (@typeInfo(@TypeOf(v1))) {
         .Vector => calc: {
             var result: @TypeOf(v1) = undefined;
-            comptime var i = 0;
-            inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+            inline for (0..@typeInfo(@TypeOf(v1)).Vector.len) |i| {
                 result[i] = atan2(v1[i], v2[i]);
             }
             break :calc result;
@@ -275,8 +271,7 @@ pub fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
     return switch (@typeInfo(@TypeOf(v1))) {
         .Vector => calc: {
             var result: @TypeOf(v1) = undefined;
-            comptime var i = 0;
-            inline while (i < @typeInfo(@TypeOf(v1)).Vector.len) : (i += 1) {
+            inline for (0..@typeInfo(@TypeOf(v1)).Vector.len) |i| {
                 result[i] = pow(v1[i], v2[i]);
             }
             break :calc result;
@@ -362,8 +357,7 @@ test "inverseSqrt" {
 }
 
 pub fn abs(v: anytype) @TypeOf(v) {
-    // avoiding @abs() for the sake of Zig 0.11.0
-    return @max(-v, v);
+    return @abs(v);
 }
 
 test "abs" {
@@ -602,7 +596,7 @@ test "smoothStep" {
 pub fn length(v: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v))) {
         .Vector => @sqrt(@reduce(.Add, v * v)),
-        else => @max(-v, v),
+        else => @abs(v),
     };
 }
 
@@ -618,7 +612,7 @@ test "length" {
 pub fn distance(v1: anytype, v2: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v1))) {
         .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
-        else => @max(-(v1 - v2), (v1 - v2)),
+        else => @abs(v1 - v2),
     };
 }
 
@@ -696,8 +690,7 @@ test "matrixCompMult" {
 pub fn @"M * M"(m1: anytype, m2: anytype) @TypeOf(m1) {
     const ar = @typeInfo(@TypeOf(m2)).Array;
     var result: @TypeOf(m2) = undefined;
-    comptime var r = 0;
-    inline while (r < ar.len) : (r += 1) {
+    inline for (0..ar.len) |r| {
         var row: ar.child = undefined;
         inline for (m1, 0..) |column, c| {
             row[c] = column[r];
@@ -721,8 +714,7 @@ pub fn @"M * V"(m1: anytype, v2: anytype) @TypeOf(v2) {
     const ar = @typeInfo(@TypeOf(m1)).Array;
     var t1: @TypeOf(m1) = undefined;
     inline for (m1, 0..) |column, c| {
-        comptime var r = 0;
-        inline while (r < ar.len) : (r += 1) {
+        inline for (0..ar.len) |r| {
             t1[r][c] = column[r];
         }
     }
@@ -899,8 +891,7 @@ test "matrix functions" {
 pub fn floatVectorFromIntVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector.len, f32) {
     const len = @typeInfo(@TypeOf(v)).Vector.len;
     var result: @Vector(len, f32) = undefined;
-    comptime var i = 0;
-    inline while (i < len) : (i += 1) {
+    inline for (0..len) |i| {
         result[i] = @floatFromInt(v[i]);
     }
     return result;
@@ -909,8 +900,7 @@ pub fn floatVectorFromIntVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector
 pub fn intVectorFromFloatVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector.len, i32) {
     const len = @typeInfo(@TypeOf(v)).Vector.len;
     var result: @Vector(len, f32) = undefined;
-    comptime var i = 0;
-    inline while (i < len) : (i += 1) {
+    inline for (0..len) |i| {
         result[i] = @intFromFloat(v[i]);
     }
     return result;
@@ -919,8 +909,7 @@ pub fn intVectorFromFloatVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector
 pub fn intVectorFromBoolVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector.len, i32) {
     const len = @typeInfo(@TypeOf(v)).Vector.len;
     var result: @Vector(len, f32) = undefined;
-    comptime var i = 0;
-    inline while (i < len) : (i += 1) {
+    inline for (0..len) |i| {
         result[i] = @intFromBool(v[i]);
     }
     return result;
