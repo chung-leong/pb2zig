@@ -367,13 +367,14 @@ pub fn KernelParameters(comptime Kernel: type) type {
     inline for (param_fields, 0..) |field, index| {
         const param = @field(Kernel.parameters, field.name);
         const default_value: ?*const anyopaque = get_def: {
-            const value: param.type = if (@hasField(@TypeOf(param), "defaultValue"))
-            param.defaultValue
-            else switch (@typeInfo(param.type)) {
-                .Int, .Float => 0,
-                .Bool => false,
-                .Vector => @splat(0),
-                else => @compileError("Unrecognized parameter type: " ++ @typeName(param.type)),
+            const value: param.type = switch (@hasField(@TypeOf(param), "defaultValue")) {
+                true => param.defaultValue,
+                false => switch (@typeInfo(param.type)) {
+                    .Int, .Float => 0,
+                    .Bool => false,
+                    .Vector => @splat(0),
+                    else => @compileError("Unrecognized parameter type: " ++ @typeName(param.type)),
+                },
             };
             break :get_def @ptrCast(&value);
         };
