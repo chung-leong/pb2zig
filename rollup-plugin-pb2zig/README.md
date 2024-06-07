@@ -248,10 +248,10 @@ unless `webWorker` is `false`)
 * `useReadFile` - Enable the use of readFile() to Load WASM file when library is used in Node.js
 (default: `false`)
 * `clean` - Remove temporary build folder after building (default: `false`)
-* `zigCmd` - Zig build command (default: `zig build -Doptimize=${optimize}`)
-* `cacheDir` - Directory where compiled shared libraries are placed (default: `${CWD}/zigar-cache`)
+* `zigPath` - Path to zig compiler command (default: `zig`)
+* `zigArgs` - Additional compiler arguments (default: ``)
+* `cacheDir` - Directory where compiled shared libraries are placed (default: `${CWD}/.zigar-cache`)
 * `buildDir` - Root directory where temporary build folder are placed (default: `${os.tmpdir()}`)
-* `staleTime` - Maximum amount of time to wait for a file lock, in milliseconds (default: `60000`)
 
 ## Live demos
 
