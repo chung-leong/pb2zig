@@ -128,4 +128,4 @@ out
 .yarn/install-state.gz
 .pnp.*
 
-zigar-cache
+.zigar-cache
