@@ -23,7 +23,7 @@ This library assumes that the compiler is in the search path.
 ## Versioning
 
 The major and minor version numbers of this program correspond to the version of the Zig compiler
-it's designed for. The current version is 0.13.0. It works with Zig 0.13.0 and is backwards
+it's designed for. The current version is 0.13.1. It works with Zig 0.13.0 and is backwards
 compatible with 0.12.0.
 
 ## Usage
