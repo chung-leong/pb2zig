@@ -1038,7 +1038,7 @@ describe('Translator tests', function() {
       const pbkCode = addPBKWrapper(``);
       const result = convertPixelBender(pbkCode, {});
       expect(result).to.contain('fn createOutput');
-      expect(result).to.contain('fn createPartialOutput');
+      expect(result).to.contain('fn createOutputAsync');
     })
     it('should correctly translate out and inout arguments', function() {
       const pbkCode = `

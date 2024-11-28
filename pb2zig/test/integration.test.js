@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'fs/promises';
 import sharp from 'sharp';
+import { availableParallelism } from 'os';
 import 'mocha-skip-if';
 
 import { convertPixelBender } from '../src/index.js';
@@ -1074,7 +1075,7 @@ async function apply(name, sources, options = {}) {
     outputHeight,
     ...params
   } = options;
-  const { Input, createOutput } = await import(`${zigDir}/${name}.zig`);
+  const { Input, createOutput, startThreadPool, stopThreadPool, createOutputAsync } = await import(`${zigDir}/${name}.zig`);
   const input = new Input(undefined);
   let width = 400, height = 400, channels = 4, depth = 'uchar', srcCount = 0;
   for (const [ srcName, filename ] of Object.entries(sources)) {
@@ -1098,7 +1099,9 @@ async function apply(name, sources, options = {}) {
   if (outputHeight !== undefined) {
     height = outputHeight;
   }
-  const output = createOutput(width, height, input, params);
+  startThreadPool(availableParallelism());
+  const output = await createOutputAsync(width, height, input, params);
+  stopThreadPool();
   const outputImages = [];
   for (const [ name, image ] of output)  {
     outputImages.push(image);
