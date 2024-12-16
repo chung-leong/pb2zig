@@ -12,37 +12,37 @@ describe('Integration tests', function() {
     process.env.ZIGAR_CLEAN = '';
   })
   it('should correctly perform nearest pixel sampling', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'sample-nearest';
     await translate(name);
     await apply(name, { src: 'red-dot.png' });
   })
   it('should correctly perform linear sampling', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'sample-linear';
     await translate(name);
     await apply(name, { src: 'red-dot.png' });
   })
   it('should correctly handle alpha channel', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'alpha-channel';
     await translate(name);
     await apply(name, { src: 'helicopter.png' });
   })
   it('should correctly translate advanced-stereographic.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'advanced-stereographic';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate alpha-from-max-color.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'alpha-from-max-color';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate asciimii.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'asciimii';
     await translate(name);
     const params = {
@@ -55,7 +55,7 @@ describe('Integration tests', function() {
     }, params);
   })
   it('should correctly translate bezier-aligner.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'bezier-aligner';
     await translate(name);
     const params = {
@@ -72,13 +72,13 @@ describe('Integration tests', function() {
     }, params);
   })
   it('should correctly translate bilateral-blur.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'bilateral-blur';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate blendmode-color.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'blendmode-color';
     await translate(name);
     await apply(name, {
@@ -87,7 +87,7 @@ describe('Integration tests', function() {
     });
   })
   it('should correctly translate blendmode-color2.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'blendmode-color2';
     await translate(name);
     await apply(name, {
@@ -96,7 +96,7 @@ describe('Integration tests', function() {
     });
   })
   it('should correctly translate brightness-threshold.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'brightness-threshold';
     await translate(name);
     const params = {
@@ -105,7 +105,7 @@ describe('Integration tests', function() {
     await apply(name, { source: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate bulge.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'bulge';
     await translate(name);
     const params = {
@@ -115,7 +115,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate bumpmap.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'bumpmap';
     await translate(name);
     const params = {
@@ -129,13 +129,13 @@ describe('Integration tests', function() {
     }, params);
   })
   it('should correctly translate cassini.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'cassini';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate channel-threshold.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'channel-threshold';
     await translate(name);
     const params = {
@@ -144,19 +144,19 @@ describe('Integration tests', function() {
     await apply(name, { source: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate checker-fill.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'checker-fill';
     await translate(name);
     await apply(name, {});
   })
   it('should correctly translate chihuly.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'chihuly';
     await translate(name);
     await apply(name, { inputImage: 'malgorzata-socha.png' });
   })
   it('should correctly translate circle-pattern.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'circle-pattern';
     await translate(name);
     const params = {
@@ -170,7 +170,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate circle-pixels.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'circle-pixels';
     await translate(name);
     const params = {
@@ -181,7 +181,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate circular-disks.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'circular-disks';
     await translate(name);
     const params = {
@@ -192,7 +192,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate color-burn.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'color-burn';
     await translate(name);
     await apply(name, {
@@ -201,7 +201,7 @@ describe('Integration tests', function() {
     });
   })
   it('should correctly translate color-dodge.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'color-dodge';
     await translate(name);
     await apply(name, {
@@ -210,7 +210,7 @@ describe('Integration tests', function() {
     });
   })
   it('should correctly translate color.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'color';
     await translate(name);
     await apply(name, {
@@ -219,7 +219,7 @@ describe('Integration tests', function() {
     });
   })
   it('should correctly translate complex-inverse.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'complex-inverse';
     await translate(name);
     const params = {
@@ -237,7 +237,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate complex-rational.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'complex-rational';
     await translate(name);
     const params = {
@@ -251,7 +251,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate crossfade.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'crossfade';
     await translate(name);
     const params = { intensity: 0.5 };
@@ -261,19 +261,19 @@ describe('Integration tests', function() {
     }, params);
   })
   it('should correctly translate cross-stitch.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'cross-stitch';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate crystallize.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'crystallize';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate cubes-03.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'cubes-03';
     await translate(name);
     const params = {
@@ -286,13 +286,13 @@ describe('Integration tests', function() {
     await apply(name, { unused: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate cubic-space.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'cubic-space';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate deformer.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'deformer';
     await translate(name);
     const params = {
@@ -304,14 +304,14 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate difference-key.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'difference-key';
     await translate(name);
     const params = { tolerance: 0.5 }
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate displace.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'displace';
     await translate(name);
     const params = { amplitude: [ 100, -100 ] };
@@ -321,37 +321,37 @@ describe('Integration tests', function() {
     }, params);
   })
   it('should correctly translate dilate-circle.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'dilate-circle';
     await translate(name);
     await apply(name, { i: 'malgorzata-socha.png' });
   })
   it('should correctly translate dilate-cross.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'dilate-cross';
     await translate(name);
     await apply(name, { i: 'malgorzata-socha.png' });
   })
   it('should correctly translate dilate-diamond.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'dilate-diamond';
     await translate(name);
     await apply(name, { i: 'malgorzata-socha.png' });
   })
   it('should correctly translate dilate-quad.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'dilate-quad';
     await translate(name);
     await apply(name, { i: 'malgorzata-socha.png' });
   })
   it('should correctly translate disks.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'disks';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate droste.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'droste';
     await translate(name);
     const params = {
@@ -372,7 +372,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'ipad.png' }, params);
   })
   it('should correctly translate dynamic-palette.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'dynamic-palette';
     await translate(name);
     const params = {
@@ -381,37 +381,37 @@ describe('Integration tests', function() {
     await apply(name, { src1: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate erode-circle.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'erode-circle';
     await translate(name);
     await apply(name, { i: 'malgorzata-socha.png' });
   })
   it('should correctly translate erode-cross.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'erode-cross';
     await translate(name);
     await apply(name, { i: 'malgorzata-socha.png' });
   })
   it('should correctly translate erode-diamond.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'erode-diamond';
     await translate(name);
     await apply(name, { i: 'malgorzata-socha.png' });
   })
   it('should correctly translate erode-quad.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'erode-quad';
     await translate(name);
     await apply(name, { i: 'malgorzata-socha.png' });
   })
   it('should correctly translate escherizer.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'escherizer';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate exclusion.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'exclusion';
     await translate(name);
     await apply(name, {
@@ -420,13 +420,13 @@ describe('Integration tests', function() {
     });
   })
   it('should correctly translate focus-linear-blur.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'focus-linear-blur';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate fractal-explorer.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'fractal-explorer';
     await translate(name);
     const params = {
@@ -435,13 +435,13 @@ describe('Integration tests', function() {
     await apply(name, {}, params);
   })
   it('should correctly translate fractal-explorer-orbit-traps.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'fractal-explorer-orbit-traps';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate frei-chen.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'frei-chen';
     await translate(name);
     const params = {
@@ -451,26 +451,26 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate green-screen.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'green-screen';
     await translate(name);
     await apply(name, { src: 'helicopter.png' });
   })
   it('should correctly translate hex-cells.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'hex-cells';
     await translate(name);
     const params = { size: 10 };
     await apply(name, { img: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate high-contrast.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'high-contrast';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate hue.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'hue';
     await translate(name);
     await apply(name, {
@@ -479,7 +479,7 @@ describe('Integration tests', function() {
     });
   })
   it('should correctly translate hypno.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'hypno';
     await translate(name);
     const params = {
@@ -489,25 +489,25 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate invert-rgb.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'invert-rgb';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate jitter.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'jitter';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate landscape.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'landscape';
     await translate(name);
     await apply(name, {});
   })
   it('should correctly translate levels.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'levels';
     await translate(name);
     const params = {
@@ -517,7 +517,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate luminosity.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'luminosity';
     await translate(name);
     await apply(name, {
@@ -526,7 +526,7 @@ describe('Integration tests', function() {
     });
   })
   it('should correctly translate mandelbulb-quick.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'mandelbulb-quick';
     await translate(name);
     const params = {
@@ -535,7 +535,7 @@ describe('Integration tests', function() {
     await apply(name, {}, params);
   })
   it('should correctly translate mandelbulb.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'mandelbulb';
     await translate(name);
     const params = {
@@ -544,7 +544,7 @@ describe('Integration tests', function() {
     await apply(name, {}, params);
   })
   it('should correctly translate mercator.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'mercator';
     await translate(name);
     const params = {
@@ -554,7 +554,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate metallic.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'metallic';
     await translate(name);
     const params = {
@@ -571,7 +571,7 @@ describe('Integration tests', function() {
     }, params);
   })
   it('should correctly translate newton-raphson.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'newton-raphson';
     await translate(name);
     const params = {
@@ -587,38 +587,38 @@ describe('Integration tests', function() {
     await apply(name, {}, params);
   })
   it('should correctly translate outline.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'outline';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate outline2.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'outline2';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate painting.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'painting';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate pencil.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'pencil';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate pixelate.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'pixelate';
     await translate(name);
     const params = { dimension: 10 };
     await apply(name, { inputImage: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate plasma.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'plasma';
     await translate(name);
     const params = {
@@ -629,7 +629,7 @@ describe('Integration tests', function() {
     await apply(name, {}, params);
   })
   it('should correctly translate planes.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'planes';
     await translate(name);
     const params = {
@@ -639,13 +639,13 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate posterize.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'posterize';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate quaternion-julia.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'quaternion-julia';
     await translate(name);
     const params = {
@@ -654,7 +654,7 @@ describe('Integration tests', function() {
     await apply(name, {}, params);
   })
   it('should correctly translate radial-caleidoscope.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'radial-caleidoscope';
     await translate(name);
     const params = {
@@ -665,13 +665,13 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate random-pixelation.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'random-pixelation';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate rays.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'rays';
     await translate(name);
     const params = {
@@ -681,7 +681,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate rays2.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'rays2';
     await translate(name);
     const params = {
@@ -691,7 +691,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate raytracer.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'raytracer';
     await translate(name);
     const params = {
@@ -701,13 +701,13 @@ describe('Integration tests', function() {
     await apply(name, {}, params);
   })
   it('should correctly translate rgb-adjustment.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'rgb-adjustment';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate rt-julia.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'rt-julia';
     await translate(name);
     const params = {
@@ -735,13 +735,13 @@ describe('Integration tests', function() {
     });
   })
   it('should correctly translate ripple-blocks.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'ripple-blocks';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate saturation.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'saturation';
     await translate(name);
     await apply(name, {
@@ -750,68 +750,68 @@ describe('Integration tests', function() {
     });
   })
   it('should correctly translate sepia.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'sepia';
     await translate(name);
     const params = { intensity: 0.2 };
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate sharpen.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'sharpen';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate simple.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'simple';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate simple-box-blur.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'simple-box-blur';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate simple-point-light.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'simple-point-light';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate skin-color-filter.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'skin-color-filter';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate smart-ssao.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'smart-ssao';
     await translate(name);
     await apply(name, { depthmap: 'malgorzata-socha.png' });
   })
   it('should correctly translate slices.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'slices';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate smart-normal-map.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'smart-normal-map';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate smudger.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'smudger';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate soft-light.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'soft-light';
     await translate(name);
     await apply(name, {
@@ -820,7 +820,7 @@ describe('Integration tests', function() {
     });
   })
   it('should correctly translate sphere.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'sphere';
     await translate(name);
     const params = {
@@ -831,7 +831,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate star.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'star';
     await translate(name);
     const params = {
@@ -842,7 +842,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate tint.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'tint';
     await translate(name);
     const params = {
@@ -852,7 +852,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate tunnel.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'tunnel';
     await translate(name);
     const params = {
@@ -862,7 +862,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate tunnel2.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'tunnel2';
     await translate(name);
     const params = {
@@ -872,7 +872,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate tunnel3.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'tunnel3';
     await translate(name);
     const params = {
@@ -882,7 +882,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate tunnel4.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'tunnel4';
     await translate(name);
     const params = {
@@ -892,7 +892,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate twirl.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'twirl';
     await translate(name);
     const params = {
@@ -905,13 +905,13 @@ describe('Integration tests', function() {
     await apply(name, { oImage: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate vertical-scroll.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'vertical-scroll';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly translate vortex.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'vortex';
     await translate(name);
     const params = {
@@ -922,7 +922,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate warp.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'warp';
     await translate(name);
     const params = {
@@ -934,7 +934,7 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate wave.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'wave';
     await translate(name);
     const params = {
@@ -945,13 +945,13 @@ describe('Integration tests', function() {
     await apply(name, { src: 'malgorzata-socha.png' }, params);
   })
   it('should correctly translate zoom-blur-focus.pbk', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'zoom-blur-focus';
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
   it('should correctly work correctly with i16 pixels', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'crystallize';
     const filenameIn = 'malgorzata-socha.png';
     const filenameOut = 'crystallize-i16';
@@ -981,7 +981,7 @@ describe('Integration tests', function() {
     }).png().toFile(`${imgOutDir}/${filenameOut}.png`);
   })
   it('should correctly work correctly with u16 pixels', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'crystallize';
     const filenameIn = 'malgorzata-socha.png';
     const filenameOut = 'crystallize-u16';
@@ -1011,7 +1011,7 @@ describe('Integration tests', function() {
     }).png().toFile(`${imgOutDir}/${filenameOut}.png`);
   })
   it('should correctly work correctly with f32 pixels', async function() {
-    this.timeout(300000);
+    this.timeout(0);
     const name = 'crystallize';
     const filenameIn = 'malgorzata-socha.png';
     const filenameOut = 'crystallize-f32';
