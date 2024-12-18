@@ -6,23 +6,26 @@ import './App.css'
 function App() {
   const srcCanvasRef = useRef(document.createElement('CANVAS'));
   const dstCanvasRef = useRef();
+  const updateRef = useRef();
   const [ library, setLibrary ] = useState();
   const [ kernelInfo, setKernelInfo ] = useState();
   const [ parameters, setParameters ] = useState({});
   const { liveVideo } = useMediaCapture({ watchVolume: true });
 
-  function updateDestinationImage() {
-    const { createImageData, purgeQueue } = library;
-    const srcCanvas = srcCanvasRef.current;
-    const dstCanvas = dstCanvasRef.current;
-    const srcCTX = srcCanvas.getContext('2d', { willReadFrequently: true });
-    const { width, height } = srcCanvas;
-    const srcImageData = srcCTX.getImageData(0, 0, width, height);
-    const dstCTX = dstCanvas.getContext('2d');
-    purgeQueue();
-    createImageData(width, height, srcImageData, parameters).then((data) => {
+  async function updateDestinationImage() {
+    try {
+      const { createImageDataAsync } = library;
+      const srcCanvas = srcCanvasRef.current;
+      const dstCanvas = dstCanvasRef.current;
+      const srcCTX = srcCanvas.getContext('2d', { willReadFrequently: true });
+      const { width, height } = srcCanvas;
+      const srcImageData = srcCTX.getImageData(0, 0, width, height);
+      const dstCTX = dstCanvas.getContext('2d');
+      const data = await createImageDataAsync(width, height, srcImageData, parameters);
       dstCTX.putImageData(data, 0, 0);
-    });
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   function updateCanvasDimensions() {
@@ -220,23 +223,32 @@ function App() {
   }, []);
   useEffect(() => {
     if (library) {
-      const { getKernelInfo } = library;
-      getKernelInfo().then(setKernelInfo);
+      const { getKernelInfo, startThreadPool, stopThreadPool } = library;
+      setKernelInfo(getKernelInfo());
+      startThreadPool(navigator.hardwareConcurrency);
+      return () => stopThreadPool();
     }
   }, [ library ]);
   useEffect(() => {
     updateCanvasDimensions();
   }, [ liveVideo ])
   useEffect(() => {
-    if (liveVideo && library) {
-      const update = () => {
-        updateSourceImage();
-        updateDestinationImage();
-      };
-      const interval = setInterval(update, 1000 / 24);
-      return () => clearInterval(interval);
-    }
+    updateRef.current = (liveVideo && library && parameters) ? async () => {
+      updateSourceImage();
+      await updateDestinationImage();
+    } : null;
   }, [ liveVideo, library, parameters ]);
+  useEffect(() => {
+    let updating = false;
+    const interval = setInterval(() => {
+      const update = updateRef.current;
+      if (!updating && update) {
+        updating = true;
+        update().then(() => updating = false);
+      }
+    }, 1000 / 24);
+    return () => clearInterval(interval);
+  }, []);
   useEffect(() => {
     if (kernelInfo) {
       document.title += `: ${kernelInfo.description}`;

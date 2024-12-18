@@ -6,6 +6,7 @@ function App() {
   const src1CanvasRef = useRef(document.createElement('CANVAS'));
   const src2CanvasRef = useRef();
   const dstCanvasRef = useRef();
+  const updateRef = useRef();
   const [ bitmap2, setBitmap2 ] = useState();
   const [ library, setLibrary ] = useState();
   const [ kernelInfo, setKernelInfo ] = useState();
@@ -13,21 +14,24 @@ function App() {
   const { liveVideo } = useMediaCapture({ watchVolume: true });
 
   async function updateDestinationImage() {
-    const { createImageData, purgeQueue } = library;
-    const src1Canvas = src1CanvasRef.current;
-    const src2Canvas = src2CanvasRef.current;
-    const dstCanvas = dstCanvasRef.current;
-    const src1CTX = src1Canvas.getContext('2d', { willReadFrequently: true });
-    const src2CTX = src2Canvas.getContext('2d', { willReadFrequently: true });
-    const { width: width1, height: height1 } = src1Canvas;
-    const { width: width2, height: height2 } = src2Canvas;
-    const src1ImageData = src1CTX.getImageData(0, 0, width1, height1);
-    const src2ImageData = src2CTX.getImageData(0, 0, width2, height2);
-    const dstCTX = dstCanvas.getContext('2d');
-    const sources = [ src1ImageData, src2ImageData ];
-    purgeQueue();
-    const dstImageData = await createImageData(width1, height1, sources, parameters);
-    dstCTX.putImageData(dstImageData, 0, 0);
+    try {
+      const { createImageDataAsync } = library;
+      const src1Canvas = src1CanvasRef.current;
+      const src2Canvas = src2CanvasRef.current;
+      const dstCanvas = dstCanvasRef.current;
+      const src1CTX = src1Canvas.getContext('2d', { willReadFrequently: true });
+      const src2CTX = src2Canvas.getContext('2d', { willReadFrequently: true });
+      const { width: width1, height: height1 } = src1Canvas;
+      const { width: width2, height: height2 } = src2Canvas;
+      const src1ImageData = src1CTX.getImageData(0, 0, width1, height1);
+      const src2ImageData = src2CTX.getImageData(0, 0, width2, height2);
+      const dstCTX = dstCanvas.getContext('2d');
+      const sources = [ src1ImageData, src2ImageData ];
+      const dstImageData = await createImageDataAsync(width1, height1, sources, parameters);
+      dstCTX.putImageData(dstImageData, 0, 0);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   function updateCanvasDimensions() {
@@ -266,21 +270,32 @@ function App() {
   }, [ bitmap2 ]);
   useEffect(() => {
     if (library) {
-      const { getKernelInfo } = library;
-      getKernelInfo().then(setKernelInfo);
+      const { getKernelInfo, startThreadPool, stopThreadPool } = library;
+      setKernelInfo(getKernelInfo());
+      startThreadPool(navigator.hardwareConcurrency);
+      return () => stopThreadPool();
     }
   }, [ library ]);
   useEffect(() => {
     updateCanvasDimensions();
-    if (liveVideo && library) {
-      const update = () => {
-        updateSourceImage1();
-        updateDestinationImage();
-      };
-      const interval = setInterval(update, 1000 / 24);
-      return () => clearInterval(interval);
-    }
-  }, [ liveVideo, bitmap2, library, parameters ]);
+  }, [ liveVideo ])
+  useEffect(() => {
+    updateRef.current = (liveVideo && library && parameters) ? async () => {
+      updateSourceImage1();
+      await updateDestinationImage();
+    } : null;
+  }, [ liveVideo, library, parameters ]);
+  useEffect(() => {
+    let updating = false;
+    const interval = setInterval(() => {
+      const update = updateRef.current;
+      if (!updating && update) {
+        updating = true;
+        update().then(() => updating = false);
+      }
+    }, 1000 / 24);
+    return () => clearInterval(interval);
+  }, []);
   useEffect(() => {
     if (kernelInfo) {
       document.title += `: ${kernelInfo.description}`;
