@@ -1,42 +1,74 @@
-import { usePrimitive, useType, useUint, useArray, usePointer, useObject, useComptime, useInt, useFloat, useStruct, useVector, useSlice, useEnumeration, useExtendedUint, useErrorSet, useErrorUnion, useArgStruct, createEnvironment } from 'zigar-runtime';
-
-// activate features
-usePrimitive();
-useType();
-useUint();
-useArray();
-usePointer();
-useObject();
-useComptime();
-useInt();
-useFloat();
-useStruct();
-useVector();
-useSlice();
-useEnumeration();
-useExtendedUint();
-useErrorSet();
-useErrorUnion();
-useArgStruct();
+import { createEnvironment } from 'zigar-runtime';
+import 'zigar-runtime/accessors/all.js';
+import 'zigar-runtime/accessors/bool.js';
+import 'zigar-runtime/accessors/uint.js';
+import 'zigar-runtime/features/allocator-methods.js';
+import 'zigar-runtime/features/call-marshaling-inbound.js';
+import 'zigar-runtime/features/call-marshaling-outbound.js';
+import 'zigar-runtime/features/data-copying.js';
+import 'zigar-runtime/features/int-conversion.js';
+import 'zigar-runtime/features/memory-mapping.js';
+import 'zigar-runtime/features/module-loading.js';
+import 'zigar-runtime/features/object-linkage.js';
+import 'zigar-runtime/features/pointer-synchronization.js';
+import 'zigar-runtime/features/runtime-safety.js';
+import 'zigar-runtime/features/stream-redirection.js';
+import 'zigar-runtime/features/view-management.js';
+import 'zigar-runtime/features/write-protection.js';
+import 'zigar-runtime/members/all.js';
+import 'zigar-runtime/members/base64.js';
+import 'zigar-runtime/members/bool.js';
+import 'zigar-runtime/members/clamped-array.js';
+import 'zigar-runtime/members/data-view.js';
+import 'zigar-runtime/members/float.js';
+import 'zigar-runtime/members/object.js';
+import 'zigar-runtime/members/primitive.js';
+import 'zigar-runtime/members/sentinel.js';
+import 'zigar-runtime/members/string.js';
+import 'zigar-runtime/members/to-json.js';
+import 'zigar-runtime/members/type.js';
+import 'zigar-runtime/members/typed-array.js';
+import 'zigar-runtime/members/uint.js';
+import 'zigar-runtime/members/value-of.js';
+import 'zigar-runtime/members/void.js';
+import 'zigar-runtime/structures/all.js';
+import 'zigar-runtime/structures/arg-struct.js';
+import 'zigar-runtime/structures/array.js';
+import 'zigar-runtime/structures/array-like.js';
+import 'zigar-runtime/structures/enum.js';
+import 'zigar-runtime/structures/error-set.js';
+import 'zigar-runtime/structures/error-union.js';
+import 'zigar-runtime/structures/function.js';
+import 'zigar-runtime/structures/optional.js';
+import 'zigar-runtime/structures/pointer.js';
+import 'zigar-runtime/structures/primitive.js';
+import 'zigar-runtime/structures/slice.js';
+import 'zigar-runtime/structures/struct.js';
+import 'zigar-runtime/structures/struct-like.js';
+import 'zigar-runtime/structures/vector.js';
+import 'zigar-runtime/visitors/all.js';
+import 'zigar-runtime/visitors/in-arg-struct.js';
+import 'zigar-runtime/visitors/in-error-union.js';
+import 'zigar-runtime/visitors/in-optional.js';
+import 'zigar-runtime/visitors/in-struct.js';
+import 'zigar-runtime/features/baseline.js';
+import 'zigar-runtime/features/thunk-allocation.js';
+import 'zigar-runtime/features/default-allocator.js';
 
 // structure defaults
 const s = {
   constructor: null,
-  typedArray: null,
   type: 0,
+  flags: 0,
   name: undefined,
   byteSize: 0,
   align: 0,
-  isConst: false,
-  hasPointer: false,
   instance: {
     members: [],
-    methods: [],
     template: null,
   },
   static: {
     members: [],
-    methods: [],
     template: null,
   },
 };
@@ -44,14 +76,20 @@ const s = {
 // member defaults
 const m = {
   type: 0,
-  isRequired: false,
+  flags: 0,
 };
 
+// declare structure objects
 const s0 = {}, s1 = {}, s2 = {}, s3 = {}, s4 = {}, s5 = {}, s6 = {}, s7 = {}, s8 = {}, s9 = {};
 const s10 = {}, s11 = {}, s12 = {}, s13 = {}, s14 = {}, s15 = {}, s16 = {}, s17 = {}, s18 = {}, s19 = {};
 const s20 = {}, s21 = {}, s22 = {}, s23 = {}, s24 = {}, s25 = {}, s26 = {}, s27 = {}, s28 = {}, s29 = {};
 const s30 = {}, s31 = {}, s32 = {}, s33 = {}, s34 = {}, s35 = {}, s36 = {}, s37 = {}, s38 = {}, s39 = {};
-const s40 = {}, s41 = {}, s42 = {}, s43 = {}, s44 = {}, s45 = {}, s46 = {};
+const s40 = {}, s41 = {}, s42 = {}, s43 = {}, s44 = {}, s45 = {}, s46 = {}, s47 = {}, s48 = {}, s49 = {};
+const s50 = {}, s51 = {}, s52 = {}, s53 = {}, s54 = {}, s55 = {}, s56 = {}, s57 = {}, s58 = {}, s59 = {};
+const s60 = {}, s61 = {}, s62 = {}, s63 = {}, s64 = {}, s65 = {}, s66 = {}, s67 = {}, s68 = {}, s69 = {};
+const s70 = {}, s71 = {}, s72 = {}, s73 = {};
+
+// declare objects
 const o0 = {}, o1 = {}, o2 = {}, o3 = {}, o4 = {}, o5 = {}, o6 = {}, o7 = {}, o8 = {}, o9 = {};
 const o10 = {}, o11 = {}, o12 = {}, o13 = {}, o14 = {}, o15 = {}, o16 = {}, o17 = {}, o18 = {}, o19 = {};
 const o20 = {}, o21 = {}, o22 = {}, o23 = {}, o24 = {}, o25 = {}, o26 = {}, o27 = {}, o28 = {}, o29 = {};
@@ -63,814 +101,890 @@ const o70 = {}, o71 = {}, o72 = {}, o73 = {}, o74 = {}, o75 = {}, o76 = {}, o77 
 const o80 = {}, o81 = {}, o82 = {}, o83 = {}, o84 = {}, o85 = {}, o86 = {}, o87 = {}, o88 = {}, o89 = {};
 const o90 = {}, o91 = {}, o92 = {}, o93 = {}, o94 = {}, o95 = {}, o96 = {}, o97 = {}, o98 = {}, o99 = {};
 const o100 = {}, o101 = {}, o102 = {}, o103 = {}, o104 = {}, o105 = {}, o106 = {}, o107 = {}, o108 = {}, o109 = {};
-const o110 = {}, o111 = {}, o112 = {};
-const a0 = new Uint8Array();
-const a1 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 240, 191 ]);
-const a2 = new Uint8Array();
-const a3 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 240, 191 ]);
-const a4 = new Uint8Array();
-const a5 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 240, 191 ]);
-const a6 = new Uint8Array();
-const a7 = new Uint8Array();
-const a8 = new Uint8Array();
-const a9 = new Uint8Array();
-const a10 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 240, 63 ]);
-const a11 = new Uint8Array();
-const a12 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 240, 63 ]);
-const a13 = new Uint8Array();
-const a14 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 240, 63 ]);
-const a15 = new Uint8Array();
-const a16 = new Uint8Array();
-const a17 = new Uint8Array();
-const a18 = new Uint8Array();
-const a19 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 224, 63 ]);
-const a20 = new Uint8Array();
-const a21 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0 ]);
-const a22 = new Uint8Array();
-const a23 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0 ]);
-const a24 = new Uint8Array();
-const a25 = new Uint8Array([ 51, 51, 51, 51, 51, 51, 211, 63 ]);
-const a26 = new Uint8Array();
-const a27 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 240, 63 ]);
-const a28 = new Uint8Array();
-const a29 = new Uint8Array([ 102, 102, 102, 102, 102, 102, 230, 63 ]);
-const a30 = new Uint8Array();
-const a31 = new Uint8Array([ 154, 153, 153, 153, 153, 153, 185, 63 ]);
-const a32 = new Uint8Array();
-const a33 = new Uint8Array([ 51, 51, 51, 51, 51, 51, 211, 63 ]);
-const a34 = new Uint8Array();
-const a35 = new Uint8Array([ 154, 153, 153, 153, 153, 153, 233, 63 ]);
-const a36 = new Uint8Array();
-const a37 = new Uint8Array();
-const a38 = new Uint8Array();
-const a39 = new Uint8Array();
-const a40 = new Uint8Array();
-const a41 = new Uint8Array();
-const a42 = new Uint8Array();
-const a43 = new Uint8Array();
-const a44 = new Uint8Array();
-const a45 = new Uint8Array([ 3 ]);
-const a46 = new Uint8Array();
-const a47 = new Uint8Array();
-const a48 = new Uint8Array([ 20, 5, 0, 1 ]);
-const a49 = new Uint8Array([ 89, 111, 117, 114, 32, 78, 97, 109, 101, 115, 112, 97, 99, 101, 0 ]);
-const a50 = new Uint8Array([ 46, 5, 0, 1 ]);
-const a51 = new Uint8Array([ 89, 111, 117, 114, 32, 86, 101, 110, 100, 111, 114, 0 ]);
-const a52 = new Uint8Array();
-const a53 = new Uint8Array([ 1 ]);
-const a54 = new Uint8Array();
-const a55 = new Uint8Array();
-const a56 = new Uint8Array();
-const a57 = new Uint8Array([ 0 ]);
-const a58 = new Uint8Array([ 1 ]);
-const a59 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
-const a61 = new Uint8Array();
-const a62 = new Uint8Array();
-const a63 = new Uint8Array();
-const a64 = new Uint8Array();
-const a65 = new Uint8Array([ 3 ]);
-const a66 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
-const a69 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
-const a71 = new Uint8Array();
-const a72 = new Uint8Array();
-const a73 = new Uint8Array();
-const a74 = new Uint8Array();
-const a75 = new Uint8Array([ 3 ]);
-const a76 = new Uint8Array([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
-const a79 = new Uint8Array([ 0, 0, 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 154, 153, 153, 62, 0, 0, 128, 63, 51, 51, 51, 63, 0, 0, 0, 0, 205, 204, 204, 61, 154, 153, 153, 62, 205, 204, 76, 63, 0, 0, 0, 0 ]);
-const a80 = new Uint8Array([ 27, 0 ]);
-const a81 = new Uint8Array([ 27, 0 ]);
-const a82 = new Uint8Array();
-const a83 = new Uint8Array();
-const a84 = new Uint8Array();
-const a85 = new Uint8Array();
+const o110 = {}, o111 = {}, o112 = {}, o113 = {}, o114 = {}, o115 = {}, o116 = {}, o117 = {}, o118 = {}, o119 = {};
+const o120 = {}, o121 = {}, o122 = {}, o123 = {}, o124 = {}, o125 = {}, o126 = {}, o127 = {}, o128 = {}, o129 = {};
+const o130 = {}, o131 = {}, o132 = {}, o133 = {}, o134 = {}, o135 = {}, o136 = {}, o137 = {}, o138 = {}, o139 = {};
+const o140 = {}, o141 = {}, o142 = {}, o143 = {}, o144 = {}, o145 = {}, o146 = {}, o147 = {}, o148 = {}, o149 = {};
 
-// define objects
-Object.assign(o0, {
-  slots: {
-    0: o1, 1: o3, 2: o5,
-  },
-});
-Object.assign(o1, {
-  structure: s8,
+// define byte arrays
+const U = i => new Uint8Array(i);
+const a0 = U(1);
+const a1 = U(1);
+const a2 = U(0);
+const a3 = U([ 0, 0, 0, 0, 0, 0, 240, 191 ]);
+const a4 = U(a3);
+const a5 = U(a3);
+const a6 = U([ 0, 0, 0, 0, 0, 0, 240, 63 ]);
+const a7 = U(a6);
+const a8 = U(a6);
+const a9 = U([ 0, 0, 0, 0, 0, 0, 224, 63 ]);
+const a10 = U(8);
+const a11 = U(8);
+const a12 = U([ 51, 51, 51, 51, 51, 51, 211, 63 ]);
+const a13 = U(a6);
+const a14 = U([ 102, 102, 102, 102, 102, 102, 230, 63 ]);
+const a15 = U([ 154, 153, 153, 153, 153, 153, 185, 63 ]);
+const a16 = U(a12);
+const a17 = U([ 154, 153, 153, 153, 153, 153, 233, 63 ]);
+const a18 = U([ 3 ]);
+const a19 = U([ 114, 6, 0, 1 ]);
+const a20 = U([ 89, 111, 117, 114, 32, 78, 97, 109, 101, 115, 112, 97, 99, 101, 0 ]);
+const a21 = U([ 144, 2, 0, 1 ]);
+const a22 = U([ 89, 111, 117, 114, 32, 86, 101, 110, 100, 111, 114, 0 ]);
+const a23 = U([ 1 ]);
+const a24 = U(1);
+const a25 = U(a23);
+const a26 = U(20);
+const a27 = U(a18);
+const a28 = U(20);
+const a29 = U(20);
+const a30 = U(20);
+const a31 = U(a18);
+const a32 = U(20);
+const a33 = U(20);
+const a34 = U([ 0, 0, 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 154, 153, 153, 62, 0, 0, 128, 63, 51, 51, 51, 63, 0, 0, 0, 0, 205, 204, 204, 61, 154, 153, 153, 62, 205, 204, 76, 63, 0, 0, 0, 0 ]);
+const a35 = U([ 1, 0 ]);
+const a36 = U(12);
+const a37 = U(a35);
+const a38 = U(8);
+
+// fill in object properties
+const $ = Object.assign;
+$(o0, {
   memory: { array: a0 },
-  const: true,
+});
+$(o1, {
+  memory: { array: a1 },
+});
+$(o2, {
   slots: {
-    0: o2,
+    0: o3, 1: o5, 2: o7,
   },
 });
-Object.assign(o2, {
-  structure: s9,
-  memory: { array: a1 },
-  const: true,
-});
-Object.assign(o3, {
-  structure: s8,
+$(o3, {
+  structure: s7,
   memory: { array: a2 },
-  const: true,
   slots: {
     0: o4,
   },
 });
-Object.assign(o4, {
-  structure: s9,
+$(o4, {
+  structure: s8,
   memory: { array: a3 },
   const: true,
 });
-Object.assign(o5, {
-  structure: s8,
-  memory: { array: a4 },
-  const: true,
+$(o5, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
     0: o6,
   },
 });
-Object.assign(o6, {
-  structure: s9,
+$(o6, {
+  structure: s8,
+  memory: { array: a4 },
+  const: true,
+});
+$(o7, {
+  structure: s7,
+  memory: { array: a2 },
+  slots: {
+    0: o8,
+  },
+});
+$(o8, {
+  structure: s8,
   memory: { array: a5 },
   const: true,
 });
-Object.assign(o7, {
+$(o9, {
   slots: {
-    0: o8, 1: o9, 2: o10,
+    0: o10, 1: o11, 2: o12,
   },
 });
-Object.assign(o8, {
-  structure: s10,
-  memory: { array: a6 },
-  const: true,
-  slots: {
-    0: o1, 1: o3, 2: o5,
-  },
-});
-Object.assign(o9, {
-  structure: s10,
-  memory: { array: a7 },
-  const: true,
-  slots: {
-    0: o1, 1: o3, 2: o5,
-  },
-});
-Object.assign(o10, {
-  structure: s10,
-  memory: { array: a8 },
-  const: true,
-  slots: {
-    0: o1, 1: o3, 2: o5,
-  },
-});
-Object.assign(o11, {
-  slots: {
-    0: o12, 1: o14, 2: o16,
-  },
-});
-Object.assign(o12, {
-  structure: s8,
-  memory: { array: a9 },
-  const: true,
-  slots: {
-    0: o13,
-  },
-});
-Object.assign(o13, {
+$(o10, {
   structure: s9,
-  memory: { array: a10 },
-  const: true,
+  memory: { array: a2 },
+  slots: {
+    0: o3, 1: o5, 2: o7,
+  },
 });
-Object.assign(o14, {
-  structure: s8,
-  memory: { array: a11 },
-  const: true,
+$(o11, {
+  structure: s9,
+  memory: { array: a2 },
+  slots: {
+    0: o3, 1: o5, 2: o7,
+  },
+});
+$(o12, {
+  structure: s9,
+  memory: { array: a2 },
+  slots: {
+    0: o3, 1: o5, 2: o7,
+  },
+});
+$(o13, {
+  slots: {
+    0: o14, 1: o16, 2: o18,
+  },
+});
+$(o14, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
     0: o15,
   },
 });
-Object.assign(o15, {
-  structure: s9,
-  memory: { array: a12 },
+$(o15, {
+  structure: s8,
+  memory: { array: a6 },
   const: true,
 });
-Object.assign(o16, {
-  structure: s8,
-  memory: { array: a13 },
-  const: true,
+$(o16, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
     0: o17,
   },
 });
-Object.assign(o17, {
-  structure: s9,
-  memory: { array: a14 },
-  const: true,
-});
-Object.assign(o18, {
-  slots: {
-    0: o19, 1: o20, 2: o21,
-  },
-});
-Object.assign(o19, {
-  structure: s12,
-  memory: { array: a15 },
-  const: true,
-  slots: {
-    0: o12, 1: o14, 2: o16,
-  },
-});
-Object.assign(o20, {
-  structure: s12,
-  memory: { array: a16 },
-  const: true,
-  slots: {
-    0: o12, 1: o14, 2: o16,
-  },
-});
-Object.assign(o21, {
-  structure: s12,
-  memory: { array: a17 },
-  const: true,
-  slots: {
-    0: o12, 1: o14, 2: o16,
-  },
-});
-Object.assign(o22, {
-  slots: {
-    0: o23, 1: o25, 2: o27,
-  },
-});
-Object.assign(o23, {
+$(o17, {
   structure: s8,
-  memory: { array: a18 },
+  memory: { array: a7 },
   const: true,
+});
+$(o18, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
-    0: o24,
+    0: o19,
   },
 });
-Object.assign(o24, {
-  structure: s9,
-  memory: { array: a19 },
+$(o19, {
+  structure: s8,
+  memory: { array: a8 },
   const: true,
 });
-Object.assign(o25, {
-  structure: s8,
-  memory: { array: a20 },
-  const: true,
+$(o20, {
+  slots: {
+    0: o21, 1: o22, 2: o23,
+  },
+});
+$(o21, {
+  structure: s11,
+  memory: { array: a2 },
+  slots: {
+    0: o14, 1: o16, 2: o18,
+  },
+});
+$(o22, {
+  structure: s11,
+  memory: { array: a2 },
+  slots: {
+    0: o14, 1: o16, 2: o18,
+  },
+});
+$(o23, {
+  structure: s11,
+  memory: { array: a2 },
+  slots: {
+    0: o14, 1: o16, 2: o18,
+  },
+});
+$(o24, {
+  slots: {
+    0: o25, 1: o27, 2: o29,
+  },
+});
+$(o25, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
     0: o26,
   },
 });
-Object.assign(o26, {
-  structure: s9,
-  memory: { array: a21 },
+$(o26, {
+  structure: s8,
+  memory: { array: a9 },
   const: true,
 });
-Object.assign(o27, {
-  structure: s8,
-  memory: { array: a22 },
-  const: true,
+$(o27, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
     0: o28,
   },
 });
-Object.assign(o28, {
-  structure: s9,
-  memory: { array: a23 },
+$(o28, {
+  structure: s8,
+  memory: { array: a10 },
   const: true,
 });
-Object.assign(o29, {
+$(o29, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
-    0: o30, 1: o32, 2: o34,
+    0: o30,
   },
 });
-Object.assign(o30, {
+$(o30, {
   structure: s8,
-  memory: { array: a24 },
+  memory: { array: a11 },
   const: true,
+});
+$(o31, {
   slots: {
-    0: o31,
+    0: o32, 1: o34, 2: o36,
   },
 });
-Object.assign(o31, {
-  structure: s9,
-  memory: { array: a25 },
-  const: true,
-});
-Object.assign(o32, {
-  structure: s8,
-  memory: { array: a26 },
-  const: true,
+$(o32, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
     0: o33,
   },
 });
-Object.assign(o33, {
-  structure: s9,
-  memory: { array: a27 },
+$(o33, {
+  structure: s8,
+  memory: { array: a12 },
   const: true,
 });
-Object.assign(o34, {
-  structure: s8,
-  memory: { array: a28 },
-  const: true,
+$(o34, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
     0: o35,
   },
 });
-Object.assign(o35, {
-  structure: s9,
-  memory: { array: a29 },
+$(o35, {
+  structure: s8,
+  memory: { array: a13 },
   const: true,
 });
-Object.assign(o36, {
+$(o36, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
-    0: o37, 1: o39, 2: o41,
+    0: o37,
   },
 });
-Object.assign(o37, {
+$(o37, {
   structure: s8,
-  memory: { array: a30 },
+  memory: { array: a14 },
   const: true,
+});
+$(o38, {
   slots: {
-    0: o38,
+    0: o39, 1: o41, 2: o43,
   },
 });
-Object.assign(o38, {
-  structure: s9,
-  memory: { array: a31 },
-  const: true,
-});
-Object.assign(o39, {
-  structure: s8,
-  memory: { array: a32 },
-  const: true,
+$(o39, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
     0: o40,
   },
 });
-Object.assign(o40, {
-  structure: s9,
-  memory: { array: a33 },
+$(o40, {
+  structure: s8,
+  memory: { array: a15 },
   const: true,
 });
-Object.assign(o41, {
-  structure: s8,
-  memory: { array: a34 },
-  const: true,
+$(o41, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
     0: o42,
   },
 });
-Object.assign(o42, {
-  structure: s9,
-  memory: { array: a35 },
+$(o42, {
+  structure: s8,
+  memory: { array: a16 },
   const: true,
 });
-Object.assign(o43, {
+$(o43, {
+  structure: s7,
+  memory: { array: a2 },
   slots: {
-    0: o44, 1: o45, 2: o46,
+    0: o44,
   },
 });
-Object.assign(o44, {
-  structure: s14,
-  memory: { array: a36 },
+$(o44, {
+  structure: s8,
+  memory: { array: a17 },
   const: true,
+});
+$(o45, {
   slots: {
-    0: o23, 1: o25, 2: o27,
+    0: o46, 1: o47, 2: o48,
   },
 });
-Object.assign(o45, {
-  structure: s15,
-  memory: { array: a37 },
-  const: true,
-  slots: {
-    0: o30, 1: o32, 2: o34,
-  },
-});
-Object.assign(o46, {
-  structure: s16,
-  memory: { array: a38 },
-  const: true,
-  slots: {
-    0: o37, 1: o39, 2: o41,
-  },
-});
-Object.assign(o47, {
-  slots: {
-    0: o48, 1: o50, 2: o51, 3: o52,
-  },
-});
-Object.assign(o48, {
-  structure: s0,
-  memory: { array: a39 },
-  const: true,
-  slots: {
-    0: o49,
-  },
-});
-Object.assign(o49, {
-  structure: s20,
-});
-Object.assign(o50, {
-  structure: s11,
-  memory: { array: a40 },
-  const: true,
-  slots: {
-    0: o8, 1: o9, 2: o10,
-  },
-});
-Object.assign(o51, {
+$(o46, {
   structure: s13,
-  memory: { array: a41 },
-  const: true,
+  memory: { array: a2 },
   slots: {
-    0: o19, 1: o20, 2: o21,
+    0: o25, 1: o27, 2: o29,
   },
 });
-Object.assign(o52, {
-  structure: s17,
-  memory: { array: a42 },
-  const: true,
+$(o47, {
+  structure: s14,
+  memory: { array: a2 },
   slots: {
-    0: o44, 1: o45, 2: o46,
+    0: o32, 1: o34, 2: o36,
   },
 });
-Object.assign(o53, {
+$(o48, {
+  structure: s15,
+  memory: { array: a2 },
   slots: {
-    0: o54,
+    0: o39, 1: o41, 2: o43,
   },
 });
-Object.assign(o54, {
-  structure: s21,
-  memory: { array: a43 },
-  const: true,
+$(o49, {
   slots: {
-    0: o48, 1: o50, 2: o51, 3: o52,
+    0: o50, 1: o52, 2: o53, 3: o54,
   },
 });
-Object.assign(o55, {
+$(o50, {
+  structure: s0,
+  memory: { array: a2 },
+  slots: {
+    0: o51,
+  },
+});
+$(o51, {
+  structure: s19,
+});
+$(o52, {
+  structure: s10,
+  memory: { array: a2 },
+  slots: {
+    0: o10, 1: o11, 2: o12,
+  },
+});
+$(o53, {
+  structure: s12,
+  memory: { array: a2 },
+  slots: {
+    0: o21, 1: o22, 2: o23,
+  },
+});
+$(o54, {
+  structure: s16,
+  memory: { array: a2 },
+  slots: {
+    0: o46, 1: o47, 2: o48,
+  },
+});
+$(o55, {
   slots: {
     0: o56,
   },
 });
-Object.assign(o56, {
-  structure: s6,
-  memory: { array: a44 },
-  const: true,
+$(o56, {
+  structure: s20,
+  memory: { array: a2 },
   slots: {
-    0: o57,
+    0: o50, 1: o52, 2: o53, 3: o54,
   },
 });
-Object.assign(o57, {
-  structure: s7,
-  memory: { array: a45 },
-  const: true,
+$(o57, {
+  slots: {
+    0: o58,
+  },
 });
-Object.assign(o58, {
+$(o58, {
+  structure: s6,
+  memory: { array: a2 },
   slots: {
     0: o59,
   },
 });
-Object.assign(o59, {
-  structure: s23,
-  memory: { array: a46 },
+$(o59, {
+  structure: s1,
+  memory: { array: a18 },
   const: true,
-  slots: {
-    0: o56,
-  },
 });
-Object.assign(o60, {
+$(o60, {
   slots: {
     0: o61,
   },
 });
-Object.assign(o61, {
-  structure: s23,
-  memory: { array: a47 },
-  const: true,
+$(o61, {
+  structure: s22,
+  memory: { array: a2 },
   slots: {
-    0: o56,
+    0: o58,
   },
 });
-Object.assign(o62, {
+$(o62, {
   slots: {
-    0: o63, 1: o65, 2: o67, 3: o69, 4: o70, 5: o71,
+    0: o63,
   },
 });
-Object.assign(o63, {
+$(o63, {
+  structure: s22,
+  memory: { array: a2 },
+  slots: {
+    0: o58,
+  },
+});
+$(o64, {
+  slots: {
+    0: o65, 1: o67, 2: o69, 3: o71, 4: o72, 5: o73,
+  },
+});
+$(o65, {
   structure: s3,
-  memory: { array: a48 },
-  const: true,
-  slots: {
-    0: o64,
-  },
-});
-Object.assign(o64, {
-  structure: s2,
-  memory: { array: a49 },
-  reloc: 16778516,
-});
-Object.assign(o65, {
-  structure: s5,
-  memory: { array: a50 },
-  const: true,
+  memory: { array: a19 },
+  handle: 16779584,
   slots: {
     0: o66,
   },
 });
-Object.assign(o66, {
-  structure: s4,
-  memory: { array: a51 },
-  reloc: 16778542,
+$(o66, {
+  structure: s2,
+  memory: { array: a20 },
 });
-Object.assign(o67, {
-  structure: s6,
-  memory: { array: a52 },
-  const: true,
+$(o67, {
+  structure: s5,
+  memory: { array: a21 },
+  handle: 16779588,
   slots: {
     0: o68,
   },
 });
-Object.assign(o68, {
-  structure: s7,
-  memory: { array: a53 },
-  const: true,
+$(o68, {
+  structure: s4,
+  memory: { array: a22 },
 });
-Object.assign(o69, {
-  structure: s22,
-  memory: { array: a54 },
-  const: true,
+$(o69, {
+  structure: s6,
+  memory: { array: a2 },
   slots: {
-    0: o54,
+    0: o70,
   },
 });
-Object.assign(o70, {
-  structure: s24,
-  memory: { array: a55 },
+$(o70, {
+  structure: s1,
+  memory: { array: a23 },
   const: true,
+});
+$(o71, {
+  structure: s21,
+  memory: { array: a2 },
   slots: {
-    0: o59,
+    0: o56,
   },
 });
-Object.assign(o71, {
-  structure: s25,
-  memory: { array: a56 },
-  const: true,
+$(o72, {
+  structure: s23,
+  memory: { array: a2 },
   slots: {
     0: o61,
   },
 });
-Object.assign(o72, {
+$(o73, {
+  structure: s24,
+  memory: { array: a2 },
   slots: {
-    0: o73, 1: o74,
+    0: o63,
   },
 });
-Object.assign(o73, {
-  structure: s31,
-  memory: { array: a57 },
+$(o74, {
+  slots: {
+    0: o75, 1: o76,
+  },
+});
+$(o75, {
+  structure: s30,
+  memory: { array: a24 },
   const: true,
 });
-Object.assign(o74, {
-  structure: s31,
-  memory: { array: a58 },
+$(o76, {
+  structure: s30,
+  memory: { array: a25 },
   const: true,
 });
-Object.assign(o75, {
-  memory: { array: a59 },
+$(o77, {
+  memory: { array: a26 },
+  handle: 16780504,
   slots: {
-    0: o76,
+    0: o78,
   },
 });
-Object.assign(o76, {
-  structure: s29,
-  memory: { array: a59, offset: 0, length: 8 },
-  slots: {
-    0: o77,
-  },
-});
-Object.assign(o77, {
+$(o78, {
   structure: s28,
-  memory: { array: a61 },
-  reloc: 0,
+  memory: { array: a26, offset: 0, length: 8 },
 });
-Object.assign(o78, {
+$(o79, {
   slots: {
-    0: o79, 1: o81, 2: o83,
+    0: o80, 1: o82, 2: o84,
   },
 });
-Object.assign(o79, {
+$(o80, {
   structure: s0,
-  memory: { array: a62 },
-  const: true,
+  memory: { array: a2 },
   slots: {
-    0: o80,
+    0: o81,
   },
 });
-Object.assign(o80, {
-  structure: s27,
+$(o81, {
+  structure: s26,
 });
-Object.assign(o81, {
+$(o82, {
   structure: s0,
-  memory: { array: a63 },
-  const: true,
+  memory: { array: a2 },
   slots: {
-    0: o82,
+    0: o83,
   },
 });
-Object.assign(o82, {
-  structure: s19,
+$(o83, {
+  structure: s18,
 });
-Object.assign(o83, {
+$(o84, {
   structure: s6,
-  memory: { array: a64 },
-  const: true,
+  memory: { array: a2 },
   slots: {
-    0: o84,
+    0: o85,
   },
 });
-Object.assign(o84, {
-  structure: s7,
-  memory: { array: a65 },
+$(o85, {
+  structure: s1,
+  memory: { array: a27 },
   const: true,
 });
-Object.assign(o85, {
-  memory: { array: a66 },
-  slots: {
-    0: o86,
-  },
-});
-Object.assign(o86, {
-  structure: s33,
-  memory: { array: a66 },
+$(o86, {
+  memory: { array: a28 },
+  handle: 16779996,
   slots: {
     0: o87,
   },
 });
-Object.assign(o87, {
-  structure: s29,
-  memory: { array: a66, offset: 0, length: 8 },
+$(o87, {
+  structure: s31,
+  memory: { array: a29 },
+  handle: 16779996,
   slots: {
-    0: o77,
+    0: o88,
   },
 });
-Object.assign(o88, {
-  memory: { array: a69 },
-  slots: {
-    0: o89,
-  },
+$(o88, {
+  structure: s28,
+  memory: { array: a28, offset: 0, length: 8 },
 });
-Object.assign(o89, {
-  structure: s36,
-  memory: { array: a69, offset: 0, length: 8 },
+$(o89, {
+  memory: { array: a30 },
+  handle: 16780680,
   slots: {
     0: o90,
   },
 });
-Object.assign(o90, {
-  structure: s35,
-  memory: { array: a71 },
-  reloc: 0,
+$(o90, {
+  structure: s33,
+  memory: { array: a30, offset: 0, length: 8 },
 });
-Object.assign(o91, {
+$(o91, {
   slots: {
     0: o92, 1: o93, 2: o94,
   },
 });
-Object.assign(o92, {
+$(o92, {
   structure: s0,
-  memory: { array: a72 },
-  const: true,
+  memory: { array: a2 },
   slots: {
-    0: o80,
+    0: o81,
   },
 });
-Object.assign(o93, {
+$(o93, {
   structure: s0,
-  memory: { array: a73 },
-  const: true,
+  memory: { array: a2 },
   slots: {
-    0: o82,
+    0: o83,
   },
 });
-Object.assign(o94, {
+$(o94, {
   structure: s6,
-  memory: { array: a74 },
-  const: true,
+  memory: { array: a2 },
   slots: {
     0: o95,
   },
 });
-Object.assign(o95, {
-  structure: s7,
-  memory: { array: a75 },
+$(o95, {
+  structure: s1,
+  memory: { array: a31 },
   const: true,
 });
-Object.assign(o96, {
-  memory: { array: a76 },
+$(o96, {
+  memory: { array: a32 },
+  handle: 16780052,
   slots: {
     0: o97,
   },
 });
-Object.assign(o97, {
-  structure: s37,
-  memory: { array: a76 },
+$(o97, {
+  structure: s34,
+  memory: { array: a33 },
+  handle: 16780052,
   slots: {
     0: o98,
   },
 });
-Object.assign(o98, {
-  structure: s36,
-  memory: { array: a76, offset: 0, length: 8 },
-  slots: {
-    0: o90,
-  },
+$(o98, {
+  structure: s33,
+  memory: { array: a32, offset: 0, length: 8 },
 });
-Object.assign(o99, {
-  memory: { array: a79 },
+$(o99, {
+  memory: { array: a34 },
 });
-Object.assign(o100, {
+$(o100, {
   slots: {
     0: o101,
   },
 });
-Object.assign(o101, {
-  structure: s40,
-  memory: { array: a80 },
+$(o101, {
+  structure: s37,
+  memory: { array: a35 },
   const: true,
 });
-Object.assign(o102, {
+$(o102, {
+  memory: { array: a2 },
+  handle: 17,
+});
+$(o103, {
+  memory: { array: a2 },
+  handle: 18,
+});
+$(o104, {
+  memory: { array: a2 },
+  handle: 10,
+});
+$(o105, {
+  memory: { array: a2 },
+  handle: 11,
+});
+$(o106, {
+  memory: { array: a2 },
+  handle: 12,
+});
+$(o107, {
+  memory: { array: a2 },
+  handle: 13,
+});
+$(o108, {
+  memory: { array: a36 },
+  handle: 16782676,
   slots: {
-    0: o103,
+    0: o109, 1: o111, 2: o113,
   },
 });
-Object.assign(o103, {
-  structure: s43,
-  memory: { array: a81 },
-  const: true,
-});
-Object.assign(o104, {
-  slots: {
-    0: o105, 1: o107, 2: o109, 3: o111,
-  },
-});
-Object.assign(o105, {
-  structure: s0,
-  memory: { array: a82 },
-  const: true,
-  slots: {
-    0: o106,
-  },
-});
-Object.assign(o106, {
-  structure: s26,
-});
-Object.assign(o107, {
-  structure: s0,
-  memory: { array: a83 },
-  const: true,
-  slots: {
-    0: o108,
-  },
-});
-Object.assign(o108, {
-  structure: s34,
-});
-Object.assign(o109, {
-  structure: s0,
-  memory: { array: a84 },
-  const: true,
+$(o109, {
+  structure: s47,
+  memory: { array: a36, offset: 0, length: 4 },
   slots: {
     0: o110,
   },
 });
-Object.assign(o110, {
-  structure: s38,
+$(o110, {
+  structure: s46,
+  memory: { array: a2 },
 });
-Object.assign(o111, {
-  structure: s0,
-  memory: { array: a85 },
-  const: true,
+$(o111, {
+  structure: s52,
+  memory: { array: a36, offset: 4, length: 4 },
   slots: {
     0: o112,
   },
 });
-Object.assign(o112, {
+$(o112, {
+  structure: s51,
+  memory: { array: a2 },
+});
+$(o113, {
+  structure: s56,
+  memory: { array: a36, offset: 8, length: 4 },
+  slots: {
+    0: o114,
+  },
+});
+$(o114, {
+  structure: s55,
+  memory: { array: a2 },
+});
+$(o115, {
+  slots: {
+    0: o116,
+  },
+});
+$(o116, {
+  structure: s59,
+  memory: { array: a37 },
+  const: true,
+});
+$(o117, {
+  memory: { array: a2 },
+  handle: 14,
+});
+$(o118, {
+  memory: { array: a2 },
+  handle: 14,
+});
+$(o119, {
+  memory: { array: a2 },
+  handle: 15,
+});
+$(o120, {
+  memory: { array: a2 },
+  handle: 15,
+});
+$(o121, {
+  memory: { array: a2 },
+  handle: 16,
+});
+$(o122, {
+  memory: { array: a2 },
+  handle: 16,
+});
+$(o123, {
+  memory: { array: a38 },
+  handle: 16781892,
+  slots: {
+    0: o124, 1: o126,
+  },
+});
+$(o124, {
+  structure: s40,
+  memory: { array: a38, offset: 0, length: 4 },
+  slots: {
+    0: o125,
+  },
+});
+$(o125, {
   structure: s39,
+  memory: { array: a2 },
+});
+$(o126, {
+  structure: s58,
+  memory: { array: a38, offset: 4, length: 4 },
+});
+$(o127, {
+  slots: {
+    0: o128, 1: o130, 2: o132, 3: o134, 4: o135, 5: o136, 6: o137, 7: o138,
+  },
+});
+$(o128, {
+  structure: s0,
+  memory: { array: a2 },
+  slots: {
+    0: o129,
+  },
+});
+$(o129, {
+  structure: s59,
+});
+$(o130, {
+  structure: s0,
+  memory: { array: a2 },
+  slots: {
+    0: o131,
+  },
+});
+$(o131, {
+  structure: s60,
+});
+$(o132, {
+  structure: s0,
+  memory: { array: a2 },
+  slots: {
+    0: o133,
+  },
+});
+$(o133, {
+  structure: s57,
+});
+$(o134, {
+  structure: s51,
+  memory: { array: a2 },
+  handle: 5,
+});
+$(o135, {
+  structure: s55,
+  memory: { array: a2 },
+  handle: 6,
+});
+$(o136, {
+  structure: s63,
+  memory: { array: a2 },
+  handle: 7,
+});
+$(o137, {
+  structure: s66,
+  memory: { array: a2 },
+  handle: 8,
+});
+$(o138, {
+  structure: s69,
+  memory: { array: a2 },
+  handle: 9,
+});
+$(o139, {
+  memory: { array: a2 },
+  handle: 4,
+});
+$(o140, {
+  slots: {
+    0: o141, 1: o143, 2: o145, 3: o147, 4: o149,
+  },
+});
+$(o141, {
+  structure: s0,
+  memory: { array: a2 },
+  slots: {
+    0: o142,
+  },
+});
+$(o142, {
+  structure: s25,
+});
+$(o143, {
+  structure: s0,
+  memory: { array: a2 },
+  slots: {
+    0: o144,
+  },
+});
+$(o144, {
+  structure: s32,
+});
+$(o145, {
+  structure: s0,
+  memory: { array: a2 },
+  slots: {
+    0: o146,
+  },
+});
+$(o146, {
+  structure: s35,
+});
+$(o147, {
+  structure: s0,
+  memory: { array: a2 },
+  slots: {
+    0: o148,
+  },
+});
+$(o148, {
+  structure: s36,
+});
+$(o149, {
+  structure: s72,
+  memory: { array: a2 },
+  handle: 3,
 });
 
-// define functions
-const f0 = {
-  argStruct: s42,
-  thunkId: 2,
-  name: "createOutput",
-};
-const f1 = {
-  argStruct: s45,
-  thunkId: 3,
-  name: "createPartialOutput",
-};
-
-// define structures
-Object.assign(s0, {
+// fill in structure properties
+$(s0, {
   ...s,
+  flags: 9,
   name: "type",
   align: 1,
   instance: {
@@ -885,11 +999,11 @@ Object.assign(s0, {
         structure: s0,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s1, {
+$(s1, {
   ...s,
+  flags: 1,
   name: "u8",
   byteSize: 1,
   align: 1,
@@ -904,13 +1018,13 @@ Object.assign(s1, {
         structure: s1,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s2, {
+$(s2, {
   ...s,
   type: 1,
-  name: "[14:0]u8",
+  flags: 240,
+  name: "[14]u8",
   length: 14,
   byteSize: 15,
   align: 1,
@@ -923,18 +1037,26 @@ Object.assign(s2, {
         byteSize: 1,
         structure: s1,
       },
+      {
+        ...m,
+        type: 3,
+        flags: 33,
+        bitOffset: 0,
+        bitSize: 8,
+        byteSize: 1,
+        structure: s1,
+      },
     ],
-    methods: [],
+    template: o0
   },
 });
-Object.assign(s3, {
+$(s3, {
   ...s,
-  type: 13,
-  name: "*const [14:0]u8",
+  type: 8,
+  flags: 204,
+  name: "*const [14]u8",
   byteSize: 4,
   align: 4,
-  isConst: true,
-  hasPointer: true,
   instance: {
     members: [
       {
@@ -946,13 +1068,13 @@ Object.assign(s3, {
         structure: s2,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s4, {
+$(s4, {
   ...s,
   type: 1,
-  name: "[11:0]u8",
+  flags: 240,
+  name: "[11]u8",
   length: 11,
   byteSize: 12,
   align: 1,
@@ -965,18 +1087,26 @@ Object.assign(s4, {
         byteSize: 1,
         structure: s1,
       },
+      {
+        ...m,
+        type: 3,
+        flags: 33,
+        bitOffset: 0,
+        bitSize: 8,
+        byteSize: 1,
+        structure: s1,
+      },
     ],
-    methods: [],
+    template: o1
   },
 });
-Object.assign(s5, {
+$(s5, {
   ...s,
-  type: 13,
-  name: "*const [11:0]u8",
+  type: 8,
+  flags: 204,
+  name: "*const [11]u8",
   byteSize: 4,
   align: 4,
-  isConst: true,
-  hasPointer: true,
   instance: {
     members: [
       {
@@ -988,18 +1118,18 @@ Object.assign(s5, {
         structure: s4,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s6, {
+$(s6, {
   ...s,
-  name: "comptime_int",
+  flags: 9,
+  name: "comptime",
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
         bitOffset: 0,
         bitSize: 0,
         byteSize: 0,
@@ -1007,49 +1137,30 @@ Object.assign(s6, {
         structure: s6,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s7, {
+$(s7, {
   ...s,
-  name: "i8",
-  byteSize: 1,
+  flags: 9,
+  name: "comptime",
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 2,
-        bitOffset: 0,
-        bitSize: 8,
-        byteSize: 1,
-        structure: s7,
-      },
-    ],
-    methods: [],
-  },
-});
-Object.assign(s8, {
-  ...s,
-  name: "comptime_float",
-  align: 1,
-  instance: {
-    members: [
-      {
-        ...m,
-        type: 7,
+        type: 5,
         bitOffset: 0,
         bitSize: 0,
         byteSize: 0,
         slot: 0,
-        structure: s8,
+        structure: s7,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s9, {
+$(s8, {
   ...s,
+  flags: 1,
   name: "f64",
   byteSize: 8,
   align: 8,
@@ -1061,254 +1172,310 @@ Object.assign(s9, {
         bitOffset: 0,
         bitSize: 64,
         byteSize: 8,
+        structure: s8,
+      },
+    ],
+  },
+});
+$(s9, {
+  ...s,
+  type: 2,
+  flags: 136,
+  name: "S0",
+  length: 3,
+  align: 1,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 0,
+        name: "0",
+        structure: s7,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 1,
+        name: "1",
+        structure: s7,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 2,
+        name: "2",
+        structure: s7,
+      },
+    ],
+    template: o2
+  },
+});
+$(s10, {
+  ...s,
+  type: 2,
+  flags: 138,
+  name: "S1",
+  length: 3,
+  align: 1,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 0,
+        name: "0",
+        structure: s9,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 1,
+        name: "1",
+        structure: s9,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 2,
+        name: "2",
         structure: s9,
       },
     ],
-    methods: [],
+    template: o9
   },
 });
-Object.assign(s10, {
+$(s11, {
   ...s,
   type: 2,
-  name: "Struct3651955411",
+  flags: 136,
+  name: "S2",
+  length: 3,
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
-        structure: s8,
+        name: "0",
+        structure: s7,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 1,
-        structure: s8,
+        name: "1",
+        structure: s7,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 2,
-        structure: s8,
+        name: "2",
+        structure: s7,
       },
     ],
-    methods: [],
-    template: o0
+    template: o13
   },
 });
-Object.assign(s11, {
+$(s12, {
   ...s,
   type: 2,
-  name: "Struct1390697979",
+  flags: 138,
+  name: "S3",
+  length: 3,
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
-        structure: s10,
+        name: "0",
+        structure: s11,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 1,
-        structure: s10,
+        name: "1",
+        structure: s11,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 2,
-        structure: s10,
+        name: "2",
+        structure: s11,
       },
     ],
-    methods: [],
-    template: o7
+    template: o20
   },
 });
-Object.assign(s12, {
+$(s13, {
   ...s,
   type: 2,
-  name: "Struct2060771296",
+  flags: 136,
+  name: "S4",
+  length: 3,
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
-        structure: s8,
+        name: "0",
+        structure: s7,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 1,
-        structure: s8,
+        name: "1",
+        structure: s7,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 2,
-        structure: s8,
+        name: "2",
+        structure: s7,
       },
     ],
-    methods: [],
-    template: o11
+    template: o24
   },
 });
-Object.assign(s13, {
+$(s14, {
   ...s,
   type: 2,
-  name: "Struct644281370",
+  flags: 136,
+  name: "S5",
+  length: 3,
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
-        structure: s12,
+        name: "0",
+        structure: s7,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 1,
-        structure: s12,
+        name: "1",
+        structure: s7,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 2,
-        structure: s12,
+        name: "2",
+        structure: s7,
       },
     ],
-    methods: [],
-    template: o18
+    template: o31
   },
 });
-Object.assign(s14, {
+$(s15, {
   ...s,
   type: 2,
-  name: "Struct3800968537",
+  flags: 136,
+  name: "S6",
+  length: 3,
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
-        structure: s8,
+        name: "0",
+        structure: s7,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 1,
-        structure: s8,
+        name: "1",
+        structure: s7,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 2,
-        structure: s8,
+        name: "2",
+        structure: s7,
       },
     ],
-    methods: [],
-    template: o22
+    template: o38
   },
 });
-Object.assign(s15, {
+$(s16, {
   ...s,
   type: 2,
-  name: "Struct2724820031",
+  flags: 138,
+  name: "S7",
+  length: 3,
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
-        structure: s8,
+        name: "0",
+        structure: s13,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 1,
-        structure: s8,
-      },
-      {
-        ...m,
-        type: 7,
-        slot: 2,
-        structure: s8,
-      },
-    ],
-    methods: [],
-    template: o29
-  },
-});
-Object.assign(s16, {
-  ...s,
-  type: 2,
-  name: "Struct1350969599",
-  align: 1,
-  instance: {
-    members: [
-      {
-        ...m,
-        type: 7,
-        slot: 0,
-        structure: s8,
-      },
-      {
-        ...m,
-        type: 7,
-        slot: 1,
-        structure: s8,
-      },
-      {
-        ...m,
-        type: 7,
-        slot: 2,
-        structure: s8,
-      },
-    ],
-    methods: [],
-    template: o36
-  },
-});
-Object.assign(s17, {
-  ...s,
-  type: 2,
-  name: "Struct2019922924",
-  align: 1,
-  instance: {
-    members: [
-      {
-        ...m,
-        type: 7,
-        slot: 0,
+        name: "1",
         structure: s14,
       },
       {
         ...m,
-        type: 7,
-        slot: 1,
+        type: 5,
+        flags: 2,
+        slot: 2,
+        name: "2",
         structure: s15,
       },
-      {
-        ...m,
-        type: 7,
-        slot: 2,
-        structure: s16,
-      },
     ],
-    methods: [],
-    template: o43
+    template: o45
   },
 });
-Object.assign(s18, {
+$(s17, {
   ...s,
+  flags: 1,
   name: "f32",
   byteSize: 4,
   align: 4,
@@ -1320,15 +1487,15 @@ Object.assign(s18, {
         bitOffset: 0,
         bitSize: 32,
         byteSize: 4,
-        structure: s18,
+        structure: s17,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s19, {
+$(s18, {
   ...s,
-  type: 15,
+  type: 10,
+  flags: 16,
   name: "@Vector(3, f32)",
   length: 3,
   byteSize: 16,
@@ -1340,15 +1507,15 @@ Object.assign(s19, {
         type: 4,
         bitSize: 32,
         byteSize: 4,
-        structure: s18,
+        structure: s17,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s20, {
+$(s19, {
   ...s,
   type: 1,
+  flags: 74,
   name: "[3]@Vector(3, f32)",
   length: 3,
   byteSize: 48,
@@ -1360,185 +1527,198 @@ Object.assign(s20, {
         type: 5,
         bitSize: 96,
         byteSize: 16,
-        structure: s19,
+        structure: s18,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s21, {
+$(s20, {
   ...s,
   type: 2,
-  name: "Struct3448744814",
+  flags: 10,
+  name: "S8",
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
         name: "type",
         structure: s0,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 1,
         name: "minValue",
-        structure: s11,
+        structure: s10,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 2,
         name: "maxValue",
-        structure: s13,
+        structure: s12,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 3,
         name: "defaultValue",
-        structure: s17,
+        structure: s16,
       },
     ],
-    methods: [],
-    template: o47
+    template: o49
   },
 });
-Object.assign(s22, {
+$(s21, {
   ...s,
   type: 2,
-  name: "Struct3437036445",
+  flags: 10,
+  name: "S9",
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
         name: "transform",
-        structure: s21,
+        structure: s20,
       },
     ],
-    methods: [],
-    template: o53
+    template: o55
   },
 });
-Object.assign(s23, {
+$(s22, {
   ...s,
   type: 2,
-  name: "Struct3196272719",
+  flags: 8,
+  name: "S10",
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
         name: "channels",
         structure: s6,
       },
     ],
-    methods: [],
-    template: o55
+    template: o57
   },
 });
-Object.assign(s24, {
+$(s23, {
   ...s,
   type: 2,
-  name: "Struct3897456493",
+  flags: 10,
+  name: "S11",
   align: 1,
   instance: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
         name: "src",
-        structure: s23,
+        structure: s22,
       },
     ],
-    methods: [],
-    template: o58
-  },
-});
-Object.assign(s25, {
-  ...s,
-  type: 2,
-  name: "Struct4047475671",
-  align: 1,
-  instance: {
-    members: [
-      {
-        ...m,
-        type: 7,
-        slot: 0,
-        name: "dst",
-        structure: s23,
-      },
-    ],
-    methods: [],
     template: o60
   },
 });
-Object.assign(s26, {
+$(s24, {
   ...s,
   type: 2,
-  name: "simple.kernel",
+  flags: 10,
+  name: "S12",
+  align: 1,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 0,
+        name: "dst",
+        structure: s22,
+      },
+    ],
+    template: o62
+  },
+});
+$(s25, {
+  ...s,
+  type: 2,
+  name: "kernel",
   align: 1,
   static: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
         name: "namespace",
         structure: s3,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 1,
         name: "vendor",
         structure: s5,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 2,
         name: "version",
         structure: s6,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 3,
         name: "parameters",
-        structure: s22,
+        structure: s21,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 4,
         name: "inputImages",
-        structure: s24,
+        structure: s23,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 5,
         name: "outputImages",
-        structure: s25,
+        structure: s24,
       },
     ],
-    methods: [],
-    template: o62
+    template: o64
   },
 });
-Object.assign(s27, {
+$(s26, {
   ...s,
-  type: 15,
+  type: 10,
+  flags: 16,
   name: "@Vector(4, u8)",
   length: 4,
   byteSize: 4,
@@ -1553,13 +1733,13 @@ Object.assign(s27, {
         structure: s1,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s28, {
+$(s27, {
   ...s,
-  type: 14,
-  name: "[_]const @Vector(4, u8)",
+  type: 9,
+  flags: 202,
+  name: "[_]@Vector(4, u8)",
   byteSize: 4,
   align: 4,
   instance: {
@@ -1569,20 +1749,18 @@ Object.assign(s28, {
         type: 5,
         bitSize: 32,
         byteSize: 4,
-        structure: s27,
+        structure: s26,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s29, {
+$(s28, {
   ...s,
-  type: 13,
+  type: 8,
+  flags: 188,
   name: "[]const @Vector(4, u8)",
   byteSize: 8,
   align: 4,
-  isConst: true,
-  hasPointer: true,
   instance: {
     members: [
       {
@@ -1591,14 +1769,14 @@ Object.assign(s29, {
         bitSize: 64,
         byteSize: 8,
         slot: 0,
-        structure: s28,
+        structure: s27,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s30, {
+$(s29, {
   ...s,
+  flags: 1,
   name: "u32",
   byteSize: 4,
   align: 4,
@@ -1610,16 +1788,16 @@ Object.assign(s30, {
         bitOffset: 0,
         bitSize: 32,
         byteSize: 4,
-        structure: s30,
+        structure: s29,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s31, {
+$(s30, {
   ...s,
-  type: 11,
-  name: "simple.ColorSpace",
+  type: 6,
+  flags: 1,
+  name: "ColorSpace",
   byteSize: 1,
   align: 1,
   instance: {
@@ -1630,195 +1808,147 @@ Object.assign(s31, {
         bitOffset: 0,
         bitSize: 1,
         byteSize: 1,
-        structure: s31,
+        structure: s30,
       },
     ],
-    methods: [],
   },
   static: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 4,
         slot: 0,
         name: "srgb",
-        structure: s31,
+        structure: s30,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 4,
         slot: 1,
         name: "display-p3",
-        structure: s31,
+        structure: s30,
       },
     ],
-    methods: [],
-    template: o72
+    template: o74
   },
 });
-Object.assign(s32, {
-  ...s,
-  name: "usize",
-  byteSize: 4,
-  align: 4,
-  instance: {
-    members: [
-      {
-        ...m,
-        type: 3,
-        bitOffset: 0,
-        bitSize: 32,
-        byteSize: 4,
-        structure: s32,
-      },
-    ],
-    methods: [],
-  },
-});
-Object.assign(s33, {
+$(s31, {
   ...s,
   type: 2,
-  name: "simple.Image(u8,3,false)",
-  byteSize: 24,
+  flags: 14,
+  name: "S13",
+  byteSize: 20,
   align: 4,
-  hasPointer: true,
   instance: {
     members: [
       {
         ...m,
         type: 5,
-        isRequired: true,
+        flags: 1,
         bitOffset: 0,
         bitSize: 64,
         byteSize: 8,
         slot: 0,
         name: "data",
+        structure: s28,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 64,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 1,
+        name: "width",
         structure: s29,
       },
       {
         ...m,
         type: 3,
-        isRequired: true,
-        bitOffset: 64,
-        bitSize: 32,
-        byteSize: 4,
-        slot: 1,
-        name: "width",
-        structure: s30,
-      },
-      {
-        ...m,
-        type: 3,
-        isRequired: true,
+        flags: 1,
         bitOffset: 96,
         bitSize: 32,
         byteSize: 4,
         slot: 2,
         name: "height",
-        structure: s30,
-      },
-      {
-        ...m,
-        type: 3,
-        bitOffset: 160,
-        bitSize: 1,
-        byteSize: 1,
-        slot: 3,
-        name: "colorSpace",
-        structure: s31,
+        structure: s29,
       },
       {
         ...m,
         type: 3,
         bitOffset: 128,
-        bitSize: 32,
-        byteSize: 4,
-        slot: 4,
-        name: "offset",
-        structure: s32,
+        bitSize: 1,
+        byteSize: 1,
+        slot: 3,
+        name: "colorSpace",
+        structure: s30,
       },
     ],
-    methods: [],
-    template: o75
+    template: o77
   },
   static: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
         name: "Pixel",
         structure: s0,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 1,
         name: "FPixel",
         structure: s0,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 2,
         name: "channels",
         structure: s6,
       },
     ],
-    methods: [],
-    template: o78
+    template: o79
   },
 });
-Object.assign(s34, {
+$(s32, {
   ...s,
   type: 2,
-  name: "simple.KernelInput(u8,simple.kernel)",
-  byteSize: 24,
+  flags: 14,
+  name: "S14",
+  byteSize: 20,
   align: 4,
-  hasPointer: true,
   instance: {
     members: [
       {
         ...m,
         type: 5,
         bitOffset: 0,
-        bitSize: 192,
-        byteSize: 24,
+        bitSize: 160,
+        byteSize: 20,
         slot: 0,
         name: "src",
-        structure: s33,
+        structure: s31,
       },
     ],
-    methods: [],
-    template: o85
+    template: o86
   },
 });
-Object.assign(s35, {
+$(s33, {
   ...s,
-  type: 14,
-  name: "[_]@Vector(4, u8)",
-  byteSize: 4,
-  align: 4,
-  instance: {
-    members: [
-      {
-        ...m,
-        type: 5,
-        bitSize: 32,
-        byteSize: 4,
-        structure: s27,
-      },
-    ],
-    methods: [],
-  },
-});
-Object.assign(s36, {
-  ...s,
-  type: 13,
+  type: 8,
+  flags: 60,
   name: "[]@Vector(4, u8)",
   byteSize: 8,
   align: 4,
-  hasPointer: true,
   instance: {
     members: [
       {
@@ -1827,134 +1957,124 @@ Object.assign(s36, {
         bitSize: 64,
         byteSize: 8,
         slot: 0,
-        structure: s35,
+        structure: s27,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s37, {
+$(s34, {
   ...s,
   type: 2,
-  name: "simple.Image(u8,3,true)",
-  byteSize: 24,
+  flags: 14,
+  name: "S15",
+  byteSize: 20,
   align: 4,
-  hasPointer: true,
   instance: {
     members: [
       {
         ...m,
         type: 5,
-        isRequired: true,
+        flags: 1,
         bitOffset: 0,
         bitSize: 64,
         byteSize: 8,
         slot: 0,
         name: "data",
-        structure: s36,
+        structure: s33,
       },
       {
         ...m,
         type: 3,
-        isRequired: true,
+        flags: 1,
         bitOffset: 64,
         bitSize: 32,
         byteSize: 4,
         slot: 1,
         name: "width",
-        structure: s30,
+        structure: s29,
       },
       {
         ...m,
         type: 3,
-        isRequired: true,
+        flags: 1,
         bitOffset: 96,
         bitSize: 32,
         byteSize: 4,
         slot: 2,
         name: "height",
-        structure: s30,
-      },
-      {
-        ...m,
-        type: 3,
-        bitOffset: 160,
-        bitSize: 1,
-        byteSize: 1,
-        slot: 3,
-        name: "colorSpace",
-        structure: s31,
+        structure: s29,
       },
       {
         ...m,
         type: 3,
         bitOffset: 128,
-        bitSize: 32,
-        byteSize: 4,
-        slot: 4,
-        name: "offset",
-        structure: s32,
+        bitSize: 1,
+        byteSize: 1,
+        slot: 3,
+        name: "colorSpace",
+        structure: s30,
       },
     ],
-    methods: [],
-    template: o88
+    template: o89
   },
   static: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
         name: "Pixel",
         structure: s0,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 1,
         name: "FPixel",
         structure: s0,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 2,
         name: "channels",
         structure: s6,
       },
     ],
-    methods: [],
     template: o91
   },
 });
-Object.assign(s38, {
+$(s35, {
   ...s,
   type: 2,
-  name: "simple.KernelOutput(u8,simple.kernel)",
-  byteSize: 24,
+  flags: 14,
+  name: "S16",
+  byteSize: 20,
   align: 4,
-  hasPointer: true,
   instance: {
     members: [
       {
         ...m,
         type: 5,
         bitOffset: 0,
-        bitSize: 192,
-        byteSize: 24,
+        bitSize: 160,
+        byteSize: 20,
         slot: 0,
         name: "dst",
-        structure: s37,
+        structure: s34,
       },
     ],
-    methods: [],
     template: o96
   },
 });
-Object.assign(s39, {
+$(s36, {
   ...s,
   type: 2,
-  name: "simple.KernelParameters(simple.kernel)",
+  flags: 10,
+  name: "S17",
   byteSize: 48,
   align: 16,
   instance: {
@@ -1967,17 +2087,17 @@ Object.assign(s39, {
         byteSize: 48,
         slot: 0,
         name: "transform",
-        structure: s20,
+        structure: s19,
       },
     ],
-    methods: [],
     template: o99
   },
 });
-Object.assign(s40, {
+$(s37, {
   ...s,
-  type: 10,
-  name: "ErrorSet2014799019",
+  type: 5,
+  flags: 1,
+  name: "ES0",
   byteSize: 2,
   align: 2,
   instance: {
@@ -1988,129 +2108,648 @@ Object.assign(s40, {
         bitOffset: 0,
         bitSize: 16,
         byteSize: 2,
-        structure: s40,
+        structure: s37,
       },
     ],
-    methods: [],
   },
   static: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 4,
         slot: 0,
         name: "OutOfMemory",
-        structure: s40,
+        structure: s37,
       },
     ],
-    methods: [],
     template: o100
   },
 });
-Object.assign(s41, {
+$(s38, {
   ...s,
-  type: 9,
-  name: "ErrorSet2014799019!simple.KernelOutput(u8,simple.kernel)",
-  byteSize: 28,
+  type: 4,
+  flags: 15,
+  name: "ES0!S16",
+  byteSize: 24,
   align: 4,
-  hasPointer: true,
   instance: {
     members: [
       {
         ...m,
         type: 5,
         bitOffset: 0,
-        bitSize: 192,
-        byteSize: 24,
+        bitSize: 160,
+        byteSize: 20,
         slot: 0,
-        name: "value",
-        structure: s38,
+        structure: s35,
       },
       {
         ...m,
         type: 3,
-        bitOffset: 192,
+        flags: 8,
+        bitOffset: 160,
         bitSize: 16,
         byteSize: 2,
-        name: "error",
-        structure: s40,
+        structure: s37,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s42, {
+$(s39, {
   ...s,
-  type: 5,
-  name: "createOutput",
-  byteSize: 112,
-  align: 16,
-  hasPointer: true,
+  type: 9,
+  flags: 480,
+  name: "anyopaque",
+  byteSize: undefined,
+  align: undefined,
   instance: {
     members: [
       {
         ...m,
         type: 3,
-        isRequired: true,
-        bitOffset: 384,
+        bitSize: 8,
+        byteSize: 1,
+        structure: s1,
+      },
+    ],
+  },
+});
+$(s40, {
+  ...s,
+  type: 8,
+  flags: 332,
+  name: "*opaque",
+  byteSize: 4,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
         bitSize: 32,
         byteSize: 4,
-        slot: 3,
-        name: "0",
-        structure: s30,
+        slot: 0,
+        structure: s39,
       },
+    ],
+  },
+});
+$(s41, {
+  ...s,
+  type: 9,
+  flags: 224,
+  name: "[_]u8",
+  byteSize: 1,
+  align: 1,
+  instance: {
+    members: [
       {
         ...m,
         type: 3,
-        isRequired: true,
-        bitOffset: 416,
+        bitSize: 8,
+        byteSize: 1,
+        structure: s1,
+      },
+    ],
+  },
+});
+$(s42, {
+  ...s,
+  type: 8,
+  flags: 44,
+  name: "[*]u8",
+  byteSize: 4,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
         bitSize: 32,
         byteSize: 4,
-        slot: 4,
-        name: "1",
-        structure: s30,
-      },
-      {
-        ...m,
-        type: 5,
-        isRequired: true,
-        bitOffset: 448,
-        bitSize: 192,
-        byteSize: 24,
         slot: 0,
-        name: "2",
-        structure: s34,
-      },
-      {
-        ...m,
-        type: 5,
-        isRequired: true,
-        bitOffset: 0,
-        bitSize: 384,
-        byteSize: 48,
-        slot: 1,
-        name: "3",
-        structure: s39,
-      },
-      {
-        ...m,
-        type: 5,
-        isRequired: true,
-        bitOffset: 640,
-        bitSize: 224,
-        byteSize: 28,
-        slot: 2,
-        name: "retval",
         structure: s41,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s43, {
+$(s43, {
   ...s,
-  type: 10,
-  name: "ErrorSet3697547636",
+  flags: 17,
+  name: "usize",
+  byteSize: 4,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 3,
+        bitOffset: 0,
+        bitSize: 32,
+        byteSize: 4,
+        structure: s43,
+      },
+    ],
+  },
+});
+$(s44, {
+  ...s,
+  type: 7,
+  flags: 15,
+  name: "?[*]u8",
+  byteSize: 4,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitOffset: 0,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 0,
+        structure: s42,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 8,
+        bitOffset: 0,
+        bitSize: 32,
+        byteSize: 4,
+        structure: s43,
+      },
+    ],
+  },
+});
+$(s45, {
+  ...s,
+  type: 12,
+  flags: 14,
+  name: "Arg(fn (*opaque, usize, u8, usize) ?[*]u8)",
+  length: 4,
+  byteSize: 20,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 0,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 0,
+        name: "retval",
+        structure: s44,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 32,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 1,
+        name: "0",
+        structure: s40,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 64,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 2,
+        name: "1",
+        structure: s43,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 128,
+        bitSize: 8,
+        byteSize: 1,
+        slot: 3,
+        name: "2",
+        structure: s1,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 96,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 4,
+        name: "3",
+        structure: s43,
+      },
+    ],
+  },
+});
+$(s46, {
+  ...s,
+  type: 14,
+  name: "fn (*opaque, usize, u8, usize) ?[*]u8",
+  length: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 160,
+        byteSize: 20,
+        structure: s45,
+      },
+    ],
+    template: o102
+  },
+  static: {
+    members: [],
+    template: o103
+  },
+});
+$(s47, {
+  ...s,
+  type: 8,
+  flags: 204,
+  name: "*const fn (*opaque, usize, u8, usize) ?[*]u8",
+  byteSize: 4,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 0,
+        structure: s46,
+      },
+    ],
+  },
+});
+$(s48, {
+  ...s,
+  flags: 1,
+  name: "bool",
+  byteSize: 1,
+  align: 1,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 1,
+        bitOffset: 0,
+        bitSize: 1,
+        byteSize: 1,
+        structure: s48,
+      },
+    ],
+  },
+});
+$(s49, {
+  ...s,
+  type: 8,
+  flags: 60,
+  name: "[]u8",
+  byteSize: 8,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 64,
+        byteSize: 8,
+        slot: 0,
+        structure: s41,
+      },
+    ],
+  },
+});
+$(s50, {
+  ...s,
+  type: 12,
+  flags: 14,
+  name: "Arg(fn (*opaque, []u8, u8, usize, usize) bool)",
+  length: 5,
+  byteSize: 24,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 1,
+        flags: 1,
+        bitOffset: 160,
+        bitSize: 1,
+        byteSize: 1,
+        slot: 0,
+        name: "retval",
+        structure: s48,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 0,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 1,
+        name: "0",
+        structure: s40,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 32,
+        bitSize: 64,
+        byteSize: 8,
+        slot: 2,
+        name: "1",
+        structure: s49,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 168,
+        bitSize: 8,
+        byteSize: 1,
+        slot: 3,
+        name: "2",
+        structure: s1,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 96,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 4,
+        name: "3",
+        structure: s43,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 128,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 5,
+        name: "4",
+        structure: s43,
+      },
+    ],
+  },
+});
+$(s51, {
+  ...s,
+  type: 14,
+  name: "fn (*opaque, []u8, u8, usize, usize) bool",
+  length: 5,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 192,
+        byteSize: 24,
+        structure: s50,
+      },
+    ],
+    template: o104
+  },
+  static: {
+    members: [],
+    template: o105
+  },
+});
+$(s52, {
+  ...s,
+  type: 8,
+  flags: 204,
+  name: "*const fn (*opaque, []u8, u8, usize, usize) bool",
+  byteSize: 4,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 0,
+        structure: s51,
+      },
+    ],
+  },
+});
+$(s53, {
+  ...s,
+  flags: 1,
+  name: "void",
+  align: 1,
+  instance: {
+    members: [
+      {
+        ...m,
+        bitOffset: 0,
+        bitSize: 0,
+        byteSize: 0,
+        structure: s53,
+      },
+    ],
+  },
+});
+$(s54, {
+  ...s,
+  type: 12,
+  flags: 14,
+  name: "Arg(fn (*opaque, []u8, u8, usize) void)",
+  length: 4,
+  byteSize: 20,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        flags: 1,
+        bitOffset: 128,
+        bitSize: 0,
+        byteSize: 0,
+        slot: 0,
+        name: "retval",
+        structure: s53,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 0,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 1,
+        name: "0",
+        structure: s40,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 32,
+        bitSize: 64,
+        byteSize: 8,
+        slot: 2,
+        name: "1",
+        structure: s49,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 128,
+        bitSize: 8,
+        byteSize: 1,
+        slot: 3,
+        name: "2",
+        structure: s1,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 96,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 4,
+        name: "3",
+        structure: s43,
+      },
+    ],
+  },
+});
+$(s55, {
+  ...s,
+  type: 14,
+  name: "fn (*opaque, []u8, u8, usize) void",
+  length: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 160,
+        byteSize: 20,
+        structure: s54,
+      },
+    ],
+    template: o106
+  },
+  static: {
+    members: [],
+    template: o107
+  },
+});
+$(s56, {
+  ...s,
+  type: 8,
+  flags: 204,
+  name: "*const fn (*opaque, []u8, u8, usize) void",
+  byteSize: 4,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 0,
+        structure: s55,
+      },
+    ],
+  },
+});
+$(s57, {
+  ...s,
+  type: 2,
+  flags: 14,
+  name: "VTable",
+  byteSize: 12,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 0,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 0,
+        name: "alloc",
+        structure: s47,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 32,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 1,
+        name: "resize",
+        structure: s52,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 64,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 2,
+        name: "free",
+        structure: s56,
+      },
+    ],
+    template: o108
+  },
+});
+$(s58, {
+  ...s,
+  type: 8,
+  flags: 204,
+  name: "*const VTable",
+  byteSize: 4,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 0,
+        structure: s57,
+      },
+    ],
+  },
+});
+$(s59, {
+  ...s,
+  type: 5,
+  flags: 1,
+  name: "ES1",
   byteSize: 2,
   align: 2,
   instance: {
@@ -2121,148 +2760,567 @@ Object.assign(s43, {
         bitOffset: 0,
         bitSize: 16,
         byteSize: 2,
-        structure: s43,
+        structure: s59,
       },
     ],
-    methods: [],
   },
   static: {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 4,
         slot: 0,
         name: "OutOfMemory",
-        structure: s43,
+        structure: s59,
       },
     ],
-    methods: [],
-    template: o102
+    template: o115
   },
 });
-Object.assign(s44, {
+$(s60, {
   ...s,
-  type: 9,
-  name: "ErrorSet3697547636!simple.KernelOutput(u8,simple.kernel)",
-  byteSize: 28,
+  flags: 1,
+  name: "u5",
+  byteSize: 1,
+  align: 1,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 3,
+        bitOffset: 0,
+        bitSize: 5,
+        byteSize: 1,
+        structure: s60,
+      },
+    ],
+  },
+});
+$(s61, {
+  ...s,
+  type: 12,
+  flags: 30,
+  name: "Arg(fn (Allocator, usize, u8, usize) ?[*]u8)",
+  length: 3,
+  byteSize: 24,
   align: 4,
-  hasPointer: true,
   instance: {
     members: [
       {
         ...m,
         type: 5,
+        flags: 1,
         bitOffset: 0,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 0,
+        name: "retval",
+        structure: s44,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 32,
+        bitSize: 64,
+        byteSize: 8,
+        slot: 1,
+        name: "0",
+        structure: s70,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 96,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 2,
+        name: "1",
+        structure: s43,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 160,
+        bitSize: 8,
+        byteSize: 1,
+        slot: 3,
+        name: "2",
+        structure: s1,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 128,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 4,
+        name: "3",
+        structure: s43,
+      },
+    ],
+  },
+});
+$(s62, {
+  ...s,
+  type: 14,
+  name: "fn (Allocator, usize, u8, usize) ?[*]u8",
+  length: 3,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 192,
+        byteSize: 24,
+        structure: s61,
+      },
+    ],
+    template: o117
+  },
+});
+$(s63, {
+  ...s,
+  type: 14,
+  name: "fn (Allocator, usize, u8, usize) ?[*]u8",
+  length: 3,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 192,
+        byteSize: 24,
+        structure: s61,
+      },
+    ],
+    template: o118
+  },
+});
+$(s64, {
+  ...s,
+  type: 12,
+  flags: 30,
+  name: "Arg(fn (Allocator, []u8, u8, usize, usize) bool)",
+  length: 4,
+  byteSize: 28,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 1,
+        flags: 1,
+        bitOffset: 192,
+        bitSize: 1,
+        byteSize: 1,
+        slot: 0,
+        name: "retval",
+        structure: s48,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 0,
+        bitSize: 64,
+        byteSize: 8,
+        slot: 1,
+        name: "0",
+        structure: s70,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 64,
+        bitSize: 64,
+        byteSize: 8,
+        slot: 2,
+        name: "1",
+        structure: s49,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 200,
+        bitSize: 8,
+        byteSize: 1,
+        slot: 3,
+        name: "2",
+        structure: s1,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 128,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 4,
+        name: "3",
+        structure: s43,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 160,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 5,
+        name: "4",
+        structure: s43,
+      },
+    ],
+  },
+});
+$(s65, {
+  ...s,
+  type: 14,
+  name: "fn (Allocator, []u8, u8, usize, usize) bool",
+  length: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 224,
+        byteSize: 28,
+        structure: s64,
+      },
+    ],
+    template: o119
+  },
+});
+$(s66, {
+  ...s,
+  type: 14,
+  name: "fn (Allocator, []u8, u8, usize, usize) bool",
+  length: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 224,
+        byteSize: 28,
+        structure: s64,
+      },
+    ],
+    template: o120
+  },
+});
+$(s67, {
+  ...s,
+  type: 12,
+  flags: 30,
+  name: "Arg(fn (Allocator, []u8, u8, usize) void)",
+  length: 3,
+  byteSize: 24,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        flags: 1,
+        bitOffset: 160,
+        bitSize: 0,
+        byteSize: 0,
+        slot: 0,
+        name: "retval",
+        structure: s53,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 0,
+        bitSize: 64,
+        byteSize: 8,
+        slot: 1,
+        name: "0",
+        structure: s70,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 64,
+        bitSize: 64,
+        byteSize: 8,
+        slot: 2,
+        name: "1",
+        structure: s49,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 160,
+        bitSize: 8,
+        byteSize: 1,
+        slot: 3,
+        name: "2",
+        structure: s1,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 128,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 4,
+        name: "3",
+        structure: s43,
+      },
+    ],
+  },
+});
+$(s68, {
+  ...s,
+  type: 14,
+  name: "fn (Allocator, []u8, u8, usize) void",
+  length: 3,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 192,
+        byteSize: 24,
+        structure: s67,
+      },
+    ],
+    template: o121
+  },
+});
+$(s69, {
+  ...s,
+  type: 14,
+  name: "fn (Allocator, []u8, u8, usize) void",
+  length: 3,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        bitSize: 192,
+        byteSize: 24,
+        structure: s67,
+      },
+    ],
+    template: o122
+  },
+});
+$(s70, {
+  ...s,
+  type: 2,
+  flags: 270,
+  name: "Allocator",
+  byteSize: 8,
+  align: 4,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 0,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 0,
+        name: "ptr",
+        structure: s40,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 32,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 1,
+        name: "vtable",
+        structure: s58,
+      },
+    ],
+    template: o123
+  },
+  static: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 0,
+        name: "Error",
+        structure: s0,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 1,
+        name: "Log2Align",
+        structure: s0,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 2,
+        name: "VTable",
+        structure: s0,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 3,
+        name: "noResize",
+        structure: s51,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 4,
+        name: "noFree",
+        structure: s55,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 18,
+        slot: 5,
+        name: "rawAlloc",
+        structure: s62,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 18,
+        slot: 6,
+        name: "rawResize",
+        structure: s65,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 18,
+        slot: 7,
+        name: "rawFree",
+        structure: s68,
+      },
+    ],
+    template: o127
+  },
+});
+$(s71, {
+  ...s,
+  type: 12,
+  flags: 62,
+  name: "Arg(fn (Allocator, u32, u32, S14, S17) ES0!S16)",
+  length: 4,
+  byteSize: 112,
+  align: 16,
+  instance: {
+    members: [
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 384,
         bitSize: 192,
         byteSize: 24,
         slot: 0,
-        name: "value",
+        name: "retval",
         structure: s38,
       },
       {
         ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 576,
+        bitSize: 64,
+        byteSize: 8,
+        slot: 1,
+        name: "0",
+        structure: s70,
+      },
+      {
+        ...m,
         type: 3,
-        bitOffset: 192,
-        bitSize: 16,
-        byteSize: 2,
-        name: "error",
-        structure: s43,
+        flags: 1,
+        bitOffset: 640,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 2,
+        name: "1",
+        structure: s29,
+      },
+      {
+        ...m,
+        type: 3,
+        flags: 1,
+        bitOffset: 672,
+        bitSize: 32,
+        byteSize: 4,
+        slot: 3,
+        name: "2",
+        structure: s29,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 704,
+        bitSize: 160,
+        byteSize: 20,
+        slot: 4,
+        name: "3",
+        structure: s32,
+      },
+      {
+        ...m,
+        type: 5,
+        flags: 1,
+        bitOffset: 0,
+        bitSize: 384,
+        byteSize: 48,
+        slot: 5,
+        name: "4",
+        structure: s36,
       },
     ],
-    methods: [],
   },
 });
-Object.assign(s45, {
+$(s72, {
   ...s,
-  type: 5,
-  name: "createPartialOutput",
-  byteSize: 128,
-  align: 16,
-  hasPointer: true,
+  type: 14,
+  name: "fn (Allocator, u32, u32, S14, S17) ES0!S16",
+  length: 4,
   instance: {
     members: [
       {
         ...m,
-        type: 3,
-        isRequired: true,
-        bitOffset: 384,
-        bitSize: 32,
-        byteSize: 4,
-        slot: 3,
-        name: "0",
-        structure: s30,
-      },
-      {
-        ...m,
-        type: 3,
-        isRequired: true,
-        bitOffset: 416,
-        bitSize: 32,
-        byteSize: 4,
-        slot: 4,
-        name: "1",
-        structure: s30,
-      },
-      {
-        ...m,
-        type: 3,
-        isRequired: true,
-        bitOffset: 448,
-        bitSize: 32,
-        byteSize: 4,
-        slot: 5,
-        name: "2",
-        structure: s30,
-      },
-      {
-        ...m,
-        type: 3,
-        isRequired: true,
-        bitOffset: 480,
-        bitSize: 32,
-        byteSize: 4,
-        slot: 6,
-        name: "3",
-        structure: s30,
-      },
-      {
-        ...m,
         type: 5,
-        isRequired: true,
-        bitOffset: 512,
-        bitSize: 192,
-        byteSize: 24,
-        slot: 0,
-        name: "4",
-        structure: s34,
-      },
-      {
-        ...m,
-        type: 5,
-        isRequired: true,
-        bitOffset: 0,
-        bitSize: 384,
-        byteSize: 48,
-        slot: 1,
-        name: "5",
-        structure: s39,
-      },
-      {
-        ...m,
-        type: 5,
-        isRequired: true,
-        bitOffset: 704,
-        bitSize: 224,
-        byteSize: 28,
-        slot: 2,
-        name: "retval",
-        structure: s44,
+        bitSize: 896,
+        byteSize: 112,
+        structure: s71,
       },
     ],
-    methods: [],
+    template: o139
   },
 });
-Object.assign(s46, {
+$(s73, {
   ...s,
   type: 2,
   name: "simple",
@@ -2271,37 +3329,46 @@ Object.assign(s46, {
     members: [
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 0,
         name: "kernel",
         structure: s0,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 1,
         name: "Input",
         structure: s0,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 2,
         name: "Output",
         structure: s0,
       },
       {
         ...m,
-        type: 7,
+        type: 5,
+        flags: 2,
         slot: 3,
         name: "Parameters",
         structure: s0,
       },
+      {
+        ...m,
+        type: 5,
+        flags: 2,
+        slot: 4,
+        name: "createOutput",
+        structure: s72,
+      },
     ],
-    methods: [
-      f0, f1,
-    ],
-    template: o104
+    template: o140
   },
 });
 const structures = [
@@ -2309,24 +3376,27 @@ const structures = [
   s10, s11, s12, s13, s14, s15, s16, s17, s18, s19,
   s20, s21, s22, s23, s24, s25, s26, s27, s28, s29,
   s30, s31, s32, s33, s34, s35, s36, s37, s38, s39,
-  s40, s41, s42, s43, s44, s45, s46,
+  s40, s41, s42, s43, s44, s45, s46, s47, s48, s49,
+  s50, s51, s52, s53, s54, s55, s56, s57, s58, s59,
+  s60, s61, s62, s63, s64, s65, s66, s67, s68, s69,
+  s70, s71, s72, s73,
 ];
-const root = s46;
-const options = {
-  runtimeSafety: false,
+const root = s73;
+const settings = {
+  runtimeSafety: true,
   littleEndian: true,
+  libc: false,
 };
 
 // create runtime environment
-const env = createEnvironment(null);
-const __zigar = env.getSpecialExports();
+const env = createEnvironment();
 
 // recreate structures
-env.recreateStructures(structures, options);
+env.recreateStructures(structures, settings);
 
 // initiate loading and compilation of WASM bytecodes
 const source = (async () => {
-  const url = new URL('assets/simple-iE_8-aNG.wasm', import.meta.url).href;
+  const url = new URL('assets/simple-DVeM9ljI.wasm', import.meta.url).href;
   if (typeof(process) === 'object' && process[Symbol.toStringTag] === 'process') {
     const { readFile } = await import('fs/promises');
     const { fileURLToPath } = await import('url');
@@ -2336,27 +3406,26 @@ const source = (async () => {
     return fetch(url);
   }
 })();
-env.loadModule(source);
+env.loadModule(source, {"memoryInitial":257,"tableInitial":220,"multithreaded":false});
 env.linkVariables(true);
 
 // export root namespace and its methods and constants
 const { constructor } = root;
-// rollup-plugin-pb2zig additions
-const { createPartialOutput, Input, kernel } = constructor;
+const __zigar = env.getSpecialExports();
 
-function createImageData(width, height, source = {}, params = {}) {
-  return createPartialImageData(width, height, 0, height, source, params);
+// rollup-plugin-pb2zig additions
+const { createOutput, Input, kernel } = constructor;
+
+const inputKeys = [];
+for (const [ key ] of kernel.inputImages) {
+  inputKeys.push(key);
+}
+const outputKeys = [];
+for (const [ key ] of kernel.outputImages) {
+  outputKeys.push(key);
 }
 
-function createPartialImageData(width, height, start, count, source = {}, params = {}) {
-  const inputKeys = [];
-  for (const [ key ] of kernel.inputImages) {
-    inputKeys.push(key);
-  }
-  const outputKeys = [];
-  for (const [ key ] of kernel.outputImages) {
-    outputKeys.push(key);
-  }
+function createInput(source) {
   if (Array.isArray(source)) {
     const list = source;
     source = {};
@@ -2366,7 +3435,6 @@ function createPartialImageData(width, height, start, count, source = {}, params
   }
   const input = new Input(undefined);
   const missing = [];
-  let colorSpace;
   for (const key of inputKeys) {
     let imageData = source[key];
     if (!imageData) {
@@ -2378,6 +3446,17 @@ function createPartialImageData(width, height, start, count, source = {}, params
       }
     }
     input[key] = imageData;
+  }
+  if (missing.length > 0) {
+    throw new Error(`Missing input image${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`);
+  }
+  return input;
+}
+
+function getColorSpace(input) {
+  let colorSpace;
+  for (const key of inputKeys) {
+    let imageData = input[key];
     if (colorSpace) {
       if (imageData.colorSpace !== colorSpace) {
         throw new Error(`Input images must all use the same color space: ${colorSpace}`);
@@ -2386,36 +3465,38 @@ function createPartialImageData(width, height, start, count, source = {}, params
       colorSpace = imageData.colorSpace;
     }
   }
-  if (missing.length > 0) {
-    throw new Error(`Missing input image${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`);
-  }
-  const output = createPartialOutput(width, height, start, count, input, params);
-  const createResult = (output) => {
-    const resultSet = {};
-    for (const key of outputKeys) {
-      const { data: { typedArray: ta }, width, height } = output[key];
-      let imageData;
-      if (typeof(ImageData) === 'function') {
-        // convert Uint8Array to Uint8ClampedArray required by ImageData
-        const clampedArray = new Uint8ClampedArray(ta.buffer, ta.byteOffset, ta.byteLength);
-        imageData = new ImageData(clampedArray, width, count, { colorSpace });
-      } else {
-        // for Node.js, which doesn't have ImageData
-        imageData = { data: ta, width, height };
-      }
-      if (outputKeys.length === 1) {
-        // just return the one image
-        return imageData;
-      }
-      resultSet[key] = imageData;
-    }
-    return resultSet;
-  };
+  return colorSpace;
+}
+
+function createResult(output, colorSpace) {
   if (output[Symbol.toStringTag] === 'Promise') {
-    // top-level await isn't used and WASM is not ready
     return output.then(createResult);
   }
-  return createResult(output);
+  const resultSet = {};
+  for (const key of outputKeys) {
+    let imageData;
+    if (typeof(ImageData) === 'function') {
+      const { data: { clampedArray }, width, height } = output[key];
+      imageData = new ImageData(clampedArray, width, height, { colorSpace });
+    } else {
+      // for Node.js, which doesn't have ImageData
+      const { data: { typedArray }, width, height } = output[key];
+      imageData = { data: typedArray, width, height };
+    }
+    if (outputKeys.length === 1) {
+      // just return the one image
+      return imageData;
+    }
+    resultSet[key] = imageData;
+  }
+  return resultSet;
+}
+
+function createImageData(width, height, source = {}, params = {}) {
+  const input = createInput(source);
+  const colorSpace = getColorSpace(input);
+  const output = createOutput(width, height, input, params);
+  return createResult(output, colorSpace);
 }
 
 function getKernelInfo() {
@@ -2427,7 +3508,7 @@ function getKernelInfo() {
         const param = params[pname] = {};
         for (let [ aname, avalue ] of pvalue) {
           if (typeof(avalue) === 'object') {
-            value = avalue.string ?? avalue.valueOf();
+            avalue = avalue.string ?? avalue.valueOf();
           } else if (typeof(avalue) === 'function') {
             avalue = getPBType(avalue.name);
           }
@@ -2469,4 +3550,4 @@ function getPBType(zigType) {
   return types[zigType];
 }
 
-export { __zigar, createImageData, createPartialImageData, getKernelInfo };
+export { __zigar, createImageData, getKernelInfo };

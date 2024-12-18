@@ -1,7 +1,5 @@
 const { createOutput, Input, kernel } = constructor;
 
-export { __zigar };
-
 const inputKeys = [];
 for (const [ key ] of kernel.inputImages) {
   inputKeys.push(key);
@@ -135,3 +133,5 @@ function getPBType(zigType) {
   };
   return types[zigType];
 }
+
+export { __zigar };

@@ -1,9 +1,9 @@
-import Zigar from '../../dist/index.js';
+import Pb2zig from '../../dist/index.js';
 
 export default {
   input: './simple.pbk',
   plugins: [
-    Zigar({ topLevelAwait: false, useReadFile: true }),
+    Pb2zig({ topLevelAwait: false, nodeCompat: true }),
   ],
   output: {
     file: './simple.js',

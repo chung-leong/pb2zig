@@ -8,18 +8,26 @@ function App() {
   const [ library, setLibrary ] = useState();
   const [ kernelInfo, setKernelInfo ] = useState();
   const [ parameters, setParameters ] = useState({});
+  const [ am, setAbortManager ] = useState(null);
 
   async function updateDestinationImage() {
-    const { createImageData, purgeQueue } = library;
-    const srcCanvas = srcCanvasRef.current;
-    const dstCanvas = dstCanvasRef.current;
-    const srcCTX = srcCanvas.getContext('2d', { willReadFrequently: true });
-    const { width, height } = srcCanvas;
-    const srcImageData = srcCTX.getImageData(0, 0, width, height);
-    const dstCTX = dstCanvas.getContext('2d');
-    purgeQueue();
-    const dstImageData = await createImageData(width, height, srcImageData, parameters);
-    dstCTX.putImageData(dstImageData, 0, 0);
+    try {
+      const { createImageDataAsync } = library;
+      const srcCanvas = srcCanvasRef.current;
+      const dstCanvas = dstCanvasRef.current;
+      const srcCTX = srcCanvas.getContext('2d', { willReadFrequently: true });
+      const { width, height } = srcCanvas;
+      const srcImageData = srcCTX.getImageData(0, 0, width, height);
+      const dstCTX = dstCanvas.getContext('2d');
+      const dstImageData = await am.call((signal) => {
+        return createImageDataAsync(width, height, srcImageData, parameters, { signal });
+      });
+      dstCTX.putImageData(dstImageData, 0, 0);
+    } catch (err) {
+      if (err.message !== 'Aborted') {
+        console.error(err);
+      }
+    }
   }
 
   function updateSourceImage() {
@@ -47,7 +55,6 @@ function App() {
     if (!kernelInfo) {
       return;
     }
-    console.log(kernelInfo);
     const controls = Object.entries(kernelInfo.parameters).map(([ name, info ], index) => {
       const {
         type,
@@ -82,7 +89,6 @@ function App() {
           );
         }
         case 'bool': {
-          const value = currentValue;
           const props = {
             value: currentValue,
             onChange: (evt) => {
@@ -232,15 +238,22 @@ function App() {
   }, [ bitmap ]);
   useEffect(() => {
     if (library) {
-      const { getKernelInfo } = library;
-      getKernelInfo().then(setKernelInfo);
+      const { getKernelInfo, AbortManager, startThreadPool, stopThreadPool } = library;
+      const am = new AbortManager();
+      setAbortManager(am);
+      setKernelInfo(getKernelInfo());
+      startThreadPool(navigator.hardwareConcurrency);
+      return async () => {
+        await am.stop();
+        stopThreadPool();
+      };
     }
   }, [ library ]);
   useEffect(() => {
-    if (bitmap && library) {
+    if (bitmap && am) {
       updateDestinationImage();
     }
-  }, [ bitmap, library, parameters ]);
+  }, [ bitmap, am, parameters ]);
   useEffect(() => {
     if (kernelInfo) {
       document.title += `: ${kernelInfo.description}`;

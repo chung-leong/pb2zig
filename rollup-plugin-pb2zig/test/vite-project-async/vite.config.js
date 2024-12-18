@@ -5,11 +5,12 @@ import Pb2Zig from '../../dist/index.js';
 export default defineConfig({
   plugins: [
     React(),
-    Pb2Zig({ webWorker: true }),
+    Pb2Zig({ multithreaded: true }),
   ],
-  base: '/pb2zig/demo-4',
-  build: {
-    emptyOutDir: true,
-    outDir: '../../../docs/demo-4',
+  server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+    }
   },
 })

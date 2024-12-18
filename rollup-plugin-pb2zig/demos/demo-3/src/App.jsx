@@ -6,19 +6,22 @@ function App() {
   const [ library, setLibrary ] = useState();
   const [ kernelInfo, setKernelInfo ] = useState();
   const [ parameters, setParameters ] = useState({});
+  const [ am, setAbortManager ] = useState(null);
 
-  function updateDestinationImage() {
-    const { createPartialImageData, purgeQueue } = library;
-    const dstCanvas = dstCanvasRef.current;
-    const { width, height } = dstCanvas;
-    const dstCTX = dstCanvas.getContext('2d');
-    const perWorker = Math.ceil(height / 8);
-    purgeQueue();
-    for (let i = 0, offset = 0, remaining = height; offset < height; i++, offset += perWorker, remaining -= perWorker) {
-      const scanlines = Math.min(perWorker, remaining);
-      createPartialImageData(width, height, offset, scanlines, {}, parameters).then((data) => {
-        dstCTX.putImageData(data, 0, offset);
+  async function updateDestinationImage() {
+    try {
+      const { createImageDataAsync } = library;
+      const dstCanvas = dstCanvasRef.current;
+      const { width, height } = dstCanvas;
+      const dstCTX = dstCanvas.getContext('2d');
+      const dstImageData = await am.call((signal) => {
+        return createImageDataAsync(width, height, {}, parameters, { signal });
       });
+      dstCTX.putImageData(dstImageData, 0, 0);
+    } catch (err) {
+      if (err.message !== 'Aborted') {
+        console.error(err);
+      }
     }
   }
 
@@ -201,15 +204,22 @@ function App() {
   }, []);
   useEffect(() => {
     if (library) {
-      const { getKernelInfo } = library;
-      getKernelInfo().then(setKernelInfo);
+      const { getKernelInfo, AbortManager, startThreadPool, stopThreadPool } = library;
+      const am = new AbortManager();
+      setAbortManager(am);
+      setKernelInfo(getKernelInfo());
+      startThreadPool(navigator.hardwareConcurrency);
+      return async () => {
+        await am.stop();
+        stopThreadPool();
+      };
     }
   }, [ library ]);
   useEffect(() => {
-    if (library) {
+    if (am) {
       updateDestinationImage();
     }
-  }, [ library, parameters ]);
+  }, [ am, parameters ]);
   useEffect(() => {
     if (kernelInfo) {
       document.title += `: ${kernelInfo.description}`;

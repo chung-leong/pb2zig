@@ -20,7 +20,7 @@ export default function createPlugin(options = {}) {
         // load the code and translate it to Zig
         const pbkPath = resolve(id);
         const pbkCode = await readFile(pbkPath, 'utf-8');
-        const zigCode = convertPixelBender(pbkCode);
+        const zigCode = convertPixelBender(pbkCode, { asyncFn: options.multithreaded });
         // save it to a file in a temp location
         const pbkFile = parse(pbkPath);
         const zigDir = join(tmpdir(), md5(id));

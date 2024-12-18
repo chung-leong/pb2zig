@@ -1,6 +1,4 @@
-const { createOutputAsync } = constructor;
-
-export { startThreadPool, stopThreadPool } from constructor;
+const { createOutputAsync, startThreadPool, stopThreadPool } = constructor;
 
 export async function createImageDataAsync(width, height, source = {}, params = {}, options = {}) {
   const input = createInput(source);
@@ -33,4 +31,10 @@ export class AbortManager {
     }
     return result;
   }
+
+  async stop() {
+    return this.call(null);
+  }
 }
+
+export { startThreadPool, stopThreadPool };
