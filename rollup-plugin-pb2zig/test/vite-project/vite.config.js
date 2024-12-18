@@ -5,6 +5,6 @@ import Pb2Zig from '../../dist/index.js';
 export default defineConfig({
   plugins: [
     React(),
-    Pb2Zig({ webWorker: true }),
+    Pb2Zig(),
   ],
 })

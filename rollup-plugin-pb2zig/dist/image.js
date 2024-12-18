@@ -1,18 +1,17 @@
-const { createPartialOutput, Input, kernel } = constructor;
+const { createOutput, Input, kernel } = constructor;
 
-export function createImageData(width, height, source = {}, params = {}) {
-  return createPartialImageData(width, height, 0, height, source, params);
+export { __zigar };
+
+const inputKeys = [];
+for (const [ key ] of kernel.inputImages) {
+  inputKeys.push(key);
+}
+const outputKeys = [];
+for (const [ key ] of kernel.outputImages) {
+  outputKeys.push(key);
 }
 
-export function createPartialImageData(width, height, start, count, source = {}, params = {}) {
-  const inputKeys = [];
-  for (const [ key ] of kernel.inputImages) {
-    inputKeys.push(key);
-  }
-  const outputKeys = [];
-  for (const [ key ] of kernel.outputImages) {
-    outputKeys.push(key);
-  }
+function createInput(source) {
   if (Array.isArray(source)) {
     const list = source;
     source = {};
@@ -22,7 +21,6 @@ export function createPartialImageData(width, height, start, count, source = {},
   }
   const input = new Input(undefined);
   const missing = [];
-  let colorSpace;
   for (const key of inputKeys) {
     let imageData = source[key];
     if (!imageData) {
@@ -34,6 +32,17 @@ export function createPartialImageData(width, height, start, count, source = {},
       }
     }
     input[key] = imageData;
+  }
+  if (missing.length > 0) {
+    throw new Error(`Missing input image${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`);
+  }
+  return input;
+}
+
+function getColorSpace(input) {
+  let colorSpace;
+  for (const key of inputKeys) {
+    let imageData = input[key];
     if (colorSpace) {
       if (imageData.colorSpace !== colorSpace) {
         throw new Error(`Input images must all use the same color space: ${colorSpace}`);
@@ -42,36 +51,38 @@ export function createPartialImageData(width, height, start, count, source = {},
       colorSpace = imageData.colorSpace;
     }
   }
-  if (missing.length > 0) {
-    throw new Error(`Missing input image${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`);
-  }
-  const output = createPartialOutput(width, height, start, count, input, params);
-  const createResult = (output) => {
-    const resultSet = {};
-    for (const key of outputKeys) {
-      const { data: { typedArray: ta }, width, height } = output[key];
-      let imageData;
-      if (typeof(ImageData) === 'function') {
-        // convert Uint8Array to Uint8ClampedArray required by ImageData
-        const clampedArray = new Uint8ClampedArray(ta.buffer, ta.byteOffset, ta.byteLength);
-        imageData = new ImageData(clampedArray, width, count, { colorSpace });
-      } else {
-        // for Node.js, which doesn't have ImageData
-        imageData = { data: ta, width, height };
-      }
-      if (outputKeys.length === 1) {
-        // just return the one image
-        return imageData;
-      }
-      resultSet[key] = imageData;
-    }
-    return resultSet;
-  };
+  return colorSpace;
+}
+
+function createResult(output, colorSpace) {
   if (output[Symbol.toStringTag] === 'Promise') {
-    // top-level await isn't used and WASM is not ready
     return output.then(createResult);
   }
-  return createResult(output);
+  const resultSet = {};
+  for (const key of outputKeys) {
+    let imageData;
+    if (typeof(ImageData) === 'function') {
+      const { data: { clampedArray }, width, height } = output[key];
+      imageData = new ImageData(clampedArray, width, height, { colorSpace });
+    } else {
+      // for Node.js, which doesn't have ImageData
+      const { data: { typedArray }, width, height } = output[key];
+      imageData = { data: typedArray, width, height };
+    }
+    if (outputKeys.length === 1) {
+      // just return the one image
+      return imageData;
+    }
+    resultSet[key] = imageData;
+  }
+  return resultSet;
+}
+
+export function createImageData(width, height, source = {}, params = {}) {
+  const input = createInput(source);
+  const colorSpace = getColorSpace(input);
+  const output = createOutput(width, height, input, params);
+  return createResult(output, colorSpace);
 }
 
 export function getKernelInfo() {
@@ -124,5 +135,3 @@ function getPBType(zigType) {
   };
   return types[zigType];
 }
-
-export { __zigar };
