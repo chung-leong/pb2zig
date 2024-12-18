@@ -1038,6 +1038,10 @@ describe('Translator tests', function() {
       const pbkCode = addPBKWrapper(``);
       const result = convertPixelBender(pbkCode, {});
       expect(result).to.contain('fn createOutput');
+    })
+    it('should include async image processing functions when asyncFn is set', function() {
+      const pbkCode = addPBKWrapper(``);
+      const result = convertPixelBender(pbkCode, { asyncFn: true });
       expect(result).to.contain('fn createOutputAsync');
     })
     it('should correctly translate out and inout arguments', function() {

@@ -1053,7 +1053,7 @@ const imgOutDir = resolve('./img-output');
 
 async function translate(name) {
   const pbkCode = await readFile(`${pkbDir}/${name}.pbk`, 'utf8');
-  const zigCode = convertPixelBender(pbkCode);
+  const zigCode = convertPixelBender(pbkCode, { asyncFn: true });
   const path = `${zigDir}/${name}.zig`;
   if (isNewContent(path, zigCode)) {
     await writeFile(path, zigCode);

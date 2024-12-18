@@ -25,6 +25,7 @@ export class PixelBenderToZigTranslator {
   translate() {
     const {
       kernelOnly = false,
+      asyncFn = false,
       inputPixelType = 'u8',
       outputPixelType = 'u8',
     } = this.options;
@@ -33,11 +34,14 @@ export class PixelBenderToZigTranslator {
       this.createImport('std'),
       this.createBlankLine(),
       this.translateKernel(),
+      ''
     ];
     if (!kernelOnly) {
       statements.push(this.includeProcessFunctions(inputPixelType, outputPixelType));
     }
-
+    if (asyncFn) {
+      statements.push(this.includeAsyncProcessFunctions());
+    }
     return ZIG.ModuleDefinition.create({ statements });
   }
 
@@ -904,7 +908,15 @@ export class PixelBenderToZigTranslator {
     let code = content.substring(index + marker.length);
     code = code.replace(/InputPixelType/g, inputPixelType);
     code = code.replace(/OutputPixelType/g, outputPixelType);
-    return code;
+    return code.trimStart();
+  }
+
+  includeAsyncProcessFunctions() {
+    const codeURL = new URL('../zig/process-async.zig', import.meta.url);
+    const content = readFileSync(fileURLToPath(codeURL), 'utf-8');
+    const marker = '//---start of code';
+    const index = content.indexOf(marker);
+    return content.substring(index + marker.length).trimStart();
   }
 
   translateVariableDeclaration(pb) {

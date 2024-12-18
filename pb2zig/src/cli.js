@@ -32,6 +32,10 @@ function processArguments(args) {
       case '-ko':
         options.kernelOnly = true;
         break;
+      case '--async-fn':
+      case '-af':
+        options.asyncFn = true;
+        break;
       case '--output-dir':
       case '-od':
         target = 'outputDir';
@@ -69,6 +73,7 @@ pb2zig [OPTION]... [FILE]...
 
 Options:
   --kernel-only,  -ko             Omit image processing code
+  --async-fn,     -af             Include async image processing functions
   --output-dir,   -od [DIR]       Set output directory
   --input-pixel,  -ip [TYPE]      Set input pixel type (default: u8)
   --output-pixel, -op [TYPE]      Set output pixel type (default: u8)

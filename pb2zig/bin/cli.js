@@ -1633,6 +1633,7 @@ class PixelBenderToZigTranslator {
   translate() {
     const {
       kernelOnly = false,
+      asyncFn = false,
       inputPixelType = 'u8',
       outputPixelType = 'u8',
     } = this.options;
@@ -1641,11 +1642,14 @@ class PixelBenderToZigTranslator {
       this.createImport('std'),
       this.createBlankLine(),
       this.translateKernel(),
+      ''
     ];
     if (!kernelOnly) {
       statements.push(this.includeProcessFunctions(inputPixelType, outputPixelType));
     }
-
+    if (asyncFn) {
+      statements.push(this.includeAsyncProcessFunctions());
+    }
     return ModuleDefinition.create({ statements });
   }
 
@@ -2512,7 +2516,15 @@ class PixelBenderToZigTranslator {
     let code = content.substring(index + marker.length);
     code = code.replace(/InputPixelType/g, inputPixelType);
     code = code.replace(/OutputPixelType/g, outputPixelType);
-    return code;
+    return code.trimStart();
+  }
+
+  includeAsyncProcessFunctions() {
+    const codeURL = new URL('../zig/process-async.zig', import.meta.url);
+    const content = readFileSync(fileURLToPath(codeURL), 'utf-8');
+    const marker = '//---start of code';
+    const index = content.indexOf(marker);
+    return content.substring(index + marker.length).trimStart();
   }
 
   translateVariableDeclaration(pb) {
@@ -3866,6 +3878,10 @@ function processArguments(args) {
       case '-ko':
         options.kernelOnly = true;
         break;
+      case '--async-fn':
+      case '-af':
+        options.asyncFn = true;
+        break;
       case '--output-dir':
       case '-od':
         target = 'outputDir';
@@ -3903,6 +3919,7 @@ pb2zig [OPTION]... [FILE]...
 
 Options:
   --kernel-only,  -ko             Omit image processing code
+  --async-fn,     -af             Include async image processing functions
   --output-dir,   -od [DIR]       Set output directory
   --input-pixel,  -ip [TYPE]      Set input pixel type (default: u8)
   --output-pixel, -op [TYPE]      Set output pixel type (default: u8)
