@@ -5,7 +5,7 @@ import Pb2Zig from '../../dist/index.js';
 export default defineConfig({
   plugins: [
     React(),
-    Pb2Zig({ multithreaded: true }),
+    Pb2Zig({ topLevelAwait: false, multithreaded: true }),
   ],
   server: {
     headers: {
