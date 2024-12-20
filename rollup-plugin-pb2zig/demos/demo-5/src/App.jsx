@@ -293,7 +293,7 @@ function App() {
         updating = true;
         update().then(() => updating = false);
       }
-    }, 1000 / 24);
+    }, 1000 / 30);
     return () => clearInterval(interval);
   }, []);
   useEffect(() => {
