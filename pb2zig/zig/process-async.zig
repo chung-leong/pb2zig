@@ -27,7 +27,7 @@ const async_support = struct {
         try zigar.thread.use();
     }
 
-    pub fn stopThreadPool() !void {
+    pub fn stopThreadPool() void {
         work_queue.deinit();
         zigar.thread.end();
     }
@@ -56,7 +56,8 @@ const async_support = struct {
             };
             allocated += 1;
         }
-        const workers: u32 = @intCast(work_queue.thread_count);
+        // add work units to queue
+        const workers: u32 = @intCast(@max(1, work_queue.thread_count));
         const scanlines: u32 = height / workers;
         const slices: u32 = if (scanlines > 0) workers else 1;
         const multipart_promise = try promise.partition(zigar.mem.getDefaultAllocator(), slices);
@@ -64,15 +65,7 @@ const async_support = struct {
         while (slice_num < slices) : (slice_num += 1) {
             const start = scanlines * slice_num;
             const count = if (slice_num < slices - 1) scanlines else height - (scanlines * slice_num);
-            try work_queue.push(thread_ns.processSlice, .{
-                signal,
-                width,
-                start,
-                count,
-                input,
-                output,
-                params,
-            }, multipart_promise);
+            try work_queue.push(thread_ns.processSlice, .{ signal, width, start, count, input, output, params }, multipart_promise);
         }
     }
 
