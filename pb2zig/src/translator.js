@@ -28,6 +28,7 @@ export class PixelBenderToZigTranslator {
       asyncFn = false,
       inputPixelType = 'u8',
       outputPixelType = 'u8',
+      stackSize = 1024,
     } = this.options;
     const statements = [
       this.createComment(`Pixel Bender kernel "${this.pbAST.name}" (translated using pb2zig)`),
@@ -40,6 +41,7 @@ export class PixelBenderToZigTranslator {
       statements.push(this.includeProcessFunctions(inputPixelType, outputPixelType));
     }
     if (asyncFn) {
+      statements.push(`const stack_size = ${stackSize};`);
       statements.push(this.includeAsyncProcessFunctions());
     }
     return ZIG.ModuleDefinition.create({ statements });

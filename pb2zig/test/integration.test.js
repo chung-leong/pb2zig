@@ -726,7 +726,7 @@ describe('Integration tests', function() {
   it('should correctly translate rt-terrain.pbk', async function() {
     this.timeout(60000 * 5);
     const name = 'rt-terrain';
-    await translate(name);
+    await translate(name, { stackSize: 32 * 1024 });
     await apply(name, {
       heightMap: 'bigmap-blur.jpg',
       normalMap: 'bigmap-normal.png',
@@ -1051,9 +1051,9 @@ const zigDir = resolve('./zig-output');
 const imgInDir = resolve('./img-input');
 const imgOutDir = resolve('./img-output');
 
-async function translate(name) {
+async function translate(name, options = {}) {
   const pbkCode = await readFile(`${pkbDir}/${name}.pbk`, 'utf8');
-  const zigCode = convertPixelBender(pbkCode, { asyncFn: true });
+  const zigCode = convertPixelBender(pbkCode, { asyncFn: true, ...options });
   const path = `${zigDir}/${name}.zig`;
   if (isNewContent(path, zigCode)) {
     await writeFile(path, zigCode);

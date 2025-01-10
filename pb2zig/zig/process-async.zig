@@ -5,6 +5,7 @@ const kernel = struct {};
 const Input = process.Input;
 const Output = process.Output;
 const Parameters = process.Parameters;
+const stack_size = 1024;
 
 //---start of code
 pub usingnamespace switch (@import("builtin").single_threaded) {
@@ -23,7 +24,11 @@ const async_support = struct {
 
     pub fn startThreadPool(count: u32) !void {
         const allocator = zigar.mem.getDefaultAllocator();
-        try work_queue.init(.{ .allocator = allocator, .n_jobs = count });
+        try work_queue.init(.{
+            .allocator = allocator,
+            .stack_size = stack_size,
+            .n_jobs = count,
+        });
         try zigar.thread.use();
     }
 

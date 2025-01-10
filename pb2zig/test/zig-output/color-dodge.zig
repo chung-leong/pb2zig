@@ -348,6 +348,7 @@ pub fn KernelParameters(comptime Kernel: type) type {
     });
 }
 
+const stack_size = 1024;
 pub usingnamespace switch (@import("builtin").single_threaded) {
     false => async_support,
     true => struct {},
@@ -364,7 +365,11 @@ const async_support = struct {
 
     pub fn startThreadPool(count: u32) !void {
         const allocator = zigar.mem.getDefaultAllocator();
-        try work_queue.init(.{ .allocator = allocator, .n_jobs = count });
+        try work_queue.init(.{
+            .allocator = allocator,
+            .stack_size = stack_size,
+            .n_jobs = count,
+        });
         try zigar.thread.use();
     }
 

@@ -22,6 +22,13 @@ function processArguments(args) {
             throw new Error(`Invalid pixel type: ${arg}`);
           }
           break;
+        case 'stackSize':
+          const size = parseInt(arg);
+          if (!(size > 0)) {
+            throw new Error(`Invalid stack size: ${arg}`);
+          }
+          arg = size;
+          break;
       }
       options[target] = arg;
       target = '';
@@ -47,6 +54,10 @@ function processArguments(args) {
       case '--output-pixel':
       case '-op':
         target = 'outputPixelType';
+        break;
+      case '--stack-size':
+      case '-sz':
+        target = 'stackSize';
         break;
       case '--help':
       case '-h':
@@ -77,6 +88,7 @@ Options:
   --output-dir,   -od [DIR]       Set output directory
   --input-pixel,  -ip [TYPE]      Set input pixel type (default: u8)
   --output-pixel, -op [TYPE]      Set output pixel type (default: u8)
+  --stack-size,   -sz [SIZE]      Set stack size of thread (default: 1024)
   --version,      -v              Show version number
 `.trimStart());
 }
