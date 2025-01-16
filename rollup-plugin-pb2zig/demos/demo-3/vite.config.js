@@ -13,7 +13,7 @@ export default defineConfig({
       'Cross-Origin-Embedder-Policy': 'credentialless',
     }
   },
-  base: '/pb2zig/demo-3',
+  base: '/demo-3',
   build: {
     emptyOutDir: true,
     outDir: '../../../docs/demo-3',
