@@ -1636,6 +1636,7 @@ class PixelBenderToZigTranslator {
       asyncFn = false,
       inputPixelType = 'u8',
       outputPixelType = 'u8',
+      stackSize = 1024,
     } = this.options;
     const statements = [
       this.createComment(`Pixel Bender kernel "${this.pbAST.name}" (translated using pb2zig)`),
@@ -1648,6 +1649,7 @@ class PixelBenderToZigTranslator {
       statements.push(this.includeProcessFunctions(inputPixelType, outputPixelType));
     }
     if (asyncFn) {
+      statements.push(`const stack_size = ${stackSize};`);
       statements.push(this.includeAsyncProcessFunctions());
     }
     return ModuleDefinition.create({ statements });
@@ -3868,6 +3870,13 @@ function processArguments(args) {
             throw new Error(`Invalid pixel type: ${arg}`);
           }
           break;
+        case 'stackSize':
+          const size = parseInt(arg);
+          if (!(size > 0)) {
+            throw new Error(`Invalid stack size: ${arg}`);
+          }
+          arg = size;
+          break;
       }
       options[target] = arg;
       target = '';
@@ -3893,6 +3902,10 @@ function processArguments(args) {
       case '--output-pixel':
       case '-op':
         target = 'outputPixelType';
+        break;
+      case '--stack-size':
+      case '-sz':
+        target = 'stackSize';
         break;
       case '--help':
       case '-h':
@@ -3923,6 +3936,7 @@ Options:
   --output-dir,   -od [DIR]       Set output directory
   --input-pixel,  -ip [TYPE]      Set input pixel type (default: u8)
   --output-pixel, -op [TYPE]      Set output pixel type (default: u8)
+  --stack-size,   -sz [SIZE]      Set stack size of thread (default: 1024)
   --version,      -v              Show version number
 `.trimStart());
 }
