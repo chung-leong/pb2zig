@@ -208,7 +208,7 @@ function App() {
       const am = new AbortManager();
       setAbortManager(am);
       setKernelInfo(getKernelInfo());
-      startThreadPool(1);
+      startThreadPool(navigator.hardwareConcurrency);
       return async () => {
         await am.stop();
         stopThreadPool();
@@ -231,7 +231,7 @@ function App() {
       <div className="display">
         <div className="frame">
           <div>Output:</div>
-          <canvas ref={dstCanvasRef} width={256} height={256} />
+          <canvas ref={dstCanvasRef} width={512} height={512} />
         </div>
       </div>
       <div className="controls">
