@@ -1,3 +1,7 @@
+## 0.13.3
+
+* Upgraded Zigar to version 0.13.3
+
 ## 0.13.1
 
 * Upgraded Zigar to version 0.13.1
