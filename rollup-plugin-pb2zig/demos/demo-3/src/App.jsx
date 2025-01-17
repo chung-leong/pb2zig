@@ -231,7 +231,7 @@ function App() {
       <div className="display">
         <div className="frame">
           <div>Output:</div>
-          <canvas ref={dstCanvasRef} width={512} height={512} />
+          <canvas ref={dstCanvasRef} width={256} height={256} />
         </div>
       </div>
       <div className="controls">
