@@ -208,7 +208,7 @@ function App() {
       const am = new AbortManager();
       setAbortManager(am);
       setKernelInfo(getKernelInfo());
-      startThreadPool(navigator.hardwareConcurrency);
+      startThreadPool(1);
       return async () => {
         await am.stop();
         stopThreadPool();
