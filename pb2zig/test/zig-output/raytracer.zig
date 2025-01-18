@@ -297,9 +297,9 @@ pub const kernel = struct {
 
     fn acos(v: anytype) @TypeOf(v) {
         return switch (@typeInfo(@TypeOf(v))) {
-            .Vector => calc: {
+            .vector => calc: {
                 var result: @TypeOf(v) = undefined;
-                inline for (0..@typeInfo(@TypeOf(v)).Vector.len) |i| {
+                inline for (0..@typeInfo(@TypeOf(v)).vector.len) |i| {
                     result[i] = acos(v[i]);
                 }
                 break :calc result;
@@ -310,9 +310,9 @@ pub const kernel = struct {
 
     fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
         return switch (@typeInfo(@TypeOf(v1))) {
-            .Vector => calc: {
+            .vector => calc: {
                 var result: @TypeOf(v1) = undefined;
-                inline for (0..@typeInfo(@TypeOf(v1)).Vector.len) |i| {
+                inline for (0..@typeInfo(@TypeOf(v1)).vector.len) |i| {
                     result[i] = pow(v1[i], v2[i]);
                 }
                 break :calc result;
@@ -331,9 +331,9 @@ pub const kernel = struct {
 
     fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
         return switch (@typeInfo(@TypeOf(v2))) {
-            .Vector => @mod(v1, v2),
+            .vector => @mod(v1, v2),
             else => switch (@typeInfo(@TypeOf(v1))) {
-                .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                .vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
                 else => @mod(v1, v2),
             },
         };
@@ -341,9 +341,9 @@ pub const kernel = struct {
 
     fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
         return switch (@typeInfo(@TypeOf(v2))) {
-            .Vector => @max(v1, v2),
+            .vector => @max(v1, v2),
             else => switch (@typeInfo(@TypeOf(v1))) {
-                .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
+                .vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
                 else => @max(v1, v2),
             },
         };
@@ -351,21 +351,21 @@ pub const kernel = struct {
 
     fn length(v: anytype) f32 {
         return switch (@typeInfo(@TypeOf(v))) {
-            .Vector => @sqrt(@reduce(.Add, v * v)),
+            .vector => @sqrt(@reduce(.Add, v * v)),
             else => @abs(v),
         };
     }
 
     fn dot(v1: anytype, v2: anytype) f32 {
         return switch (@typeInfo(@TypeOf(v1))) {
-            .Vector => @reduce(.Add, v1 * v2),
+            .vector => @reduce(.Add, v1 * v2),
             else => v1 * v2,
         };
     }
 
     fn normalize(v: anytype) @TypeOf(v) {
         return switch (@typeInfo(@TypeOf(v))) {
-            .Vector => v / @as(@TypeOf(v), @splat(@sqrt(@reduce(.Add, v * v)))),
+            .vector => v / @as(@TypeOf(v), @splat(@sqrt(@reduce(.Add, v * v)))),
             else => if (v > 0) 1 else -1,
         };
     }
@@ -475,8 +475,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const index = (y * self.width) + x;
             const src_pixel = self.data[index];
             const pixel: FPixel = switch (@typeInfo(T)) {
-                .Float => pbPixelFromFloatPixel(src_pixel),
-                .Int => pbPixelFromIntPixel(src_pixel),
+                .float => pbPixelFromFloatPixel(src_pixel),
+                .int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
             return pixel;
@@ -488,8 +488,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             }
             const index = (y * self.width) + x;
             const dst_pixel: Pixel = switch (@typeInfo(T)) {
-                .Float => floatPixelFromPBPixel(pixel),
-                .Int => intPixelFromPBPixel(pixel),
+                .float => floatPixelFromPBPixel(pixel),
+                .int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
             self.data[index] = dst_pixel;
@@ -556,13 +556,13 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = ImageT,
-            .default_value = @ptrCast(&default_value),
+            .default_value_ptr = @ptrCast(&default_value),
             .is_comptime = false,
             .alignment = @alignOf(ImageT),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},
@@ -581,13 +581,13 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = ImageT,
-            .default_value = @ptrCast(&default_value),
+            .default_value_ptr = @ptrCast(&default_value),
             .is_comptime = false,
             .alignment = @alignOf(ImageT),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},
@@ -605,9 +605,9 @@ pub fn KernelParameters(comptime Kernel: type) type {
             const value: param.type = switch (@hasField(@TypeOf(param), "defaultValue")) {
                 true => param.defaultValue,
                 false => switch (@typeInfo(param.type)) {
-                    .Int, .Float => 0,
-                    .Bool => false,
-                    .Vector => @splat(0),
+                    .int, .float => 0,
+                    .bool => false,
+                    .vector => @splat(0),
                     else => @compileError("Unrecognized parameter type: " ++ @typeName(param.type)),
                 },
             };
@@ -616,13 +616,13 @@ pub fn KernelParameters(comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = param.type,
-            .default_value = default_value,
+            .default_value_ptr = default_value,
             .is_comptime = false,
             .alignment = @alignOf(param.type),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},

@@ -422,7 +422,7 @@ pub const kernel = struct {
     fn radians(v: anytype) @TypeOf(v) {
         const multiplier = std.math.pi / 180.0;
         return switch (@typeInfo(@TypeOf(v))) {
-            .Vector => v * @as(@TypeOf(v), @splat(multiplier)),
+            .vector => v * @as(@TypeOf(v), @splat(multiplier)),
             else => v * multiplier,
         };
     }
@@ -437,14 +437,14 @@ pub const kernel = struct {
 
     fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
         return switch (@typeInfo(@TypeOf(v1))) {
-            .Vector => calc: {
+            .vector => calc: {
                 var result: @TypeOf(v1) = undefined;
-                inline for (0..@typeInfo(@TypeOf(v1)).Vector.len) |i| {
+                inline for (0..@typeInfo(@TypeOf(v1)).vector.len) |i| {
                     result[i] = atan2(v1[i], v2[i]);
                 }
                 break :calc result;
             },
-            else => switch (@typeInfo(@TypeOf(std.math.atan2)).Fn.params.len) {
+            else => switch (@typeInfo(@TypeOf(std.math.atan2)).@"fn".params.len) {
                 2 => std.math.atan2(v1, v2),
                 else => std.math.atan2(@TypeOf(v1), v1, v2),
             },
@@ -453,9 +453,9 @@ pub const kernel = struct {
 
     fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
         return switch (@typeInfo(@TypeOf(v1))) {
-            .Vector => calc: {
+            .vector => calc: {
                 var result: @TypeOf(v1) = undefined;
-                inline for (0..@typeInfo(@TypeOf(v1)).Vector.len) |i| {
+                inline for (0..@typeInfo(@TypeOf(v1)).vector.len) |i| {
                     result[i] = pow(v1[i], v2[i]);
                 }
                 break :calc result;
@@ -474,9 +474,9 @@ pub const kernel = struct {
 
     fn min(v1: anytype, v2: anytype) @TypeOf(v1) {
         return switch (@typeInfo(@TypeOf(v2))) {
-            .Vector => @min(v1, v2),
+            .vector => @min(v1, v2),
             else => switch (@typeInfo(@TypeOf(v1))) {
-                .Vector => @min(v1, @as(@TypeOf(v1), @splat(v2))),
+                .vector => @min(v1, @as(@TypeOf(v1), @splat(v2))),
                 else => @min(v1, v2),
             },
         };
@@ -484,14 +484,14 @@ pub const kernel = struct {
 
     fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
         return switch (@typeInfo(@TypeOf(min_val))) {
-            .Vector => calc: {
-                const T = @typeInfo(@TypeOf(v)).Vector.child;
+            .vector => calc: {
+                const T = @typeInfo(@TypeOf(v)).vector.child;
                 const result1 = @select(T, v < min_val, min_val, v);
                 const result2 = @select(T, result1 > max_val, max_val, result1);
                 break :calc result2;
             },
             else => switch (@typeInfo(@TypeOf(v))) {
-                .Vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
+                .vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
                 else => calc: {
                     if (v < min_val) {
                         break :calc min_val;
@@ -507,9 +507,9 @@ pub const kernel = struct {
 
     fn mix(v1: anytype, v2: anytype, p: anytype) @TypeOf(v1) {
         return switch (@typeInfo(@TypeOf(p))) {
-            .Vector => v1 * (@as(@TypeOf(p), @splat(1)) - p) + v2 * p,
+            .vector => v1 * (@as(@TypeOf(p), @splat(1)) - p) + v2 * p,
             else => switch (@typeInfo(@TypeOf(v1))) {
-                .Vector => mix(v1, v2, @as(@TypeOf(v1), @splat(p))),
+                .vector => mix(v1, v2, @as(@TypeOf(v1), @splat(p))),
                 else => v1 * (1 - p) + v2 * p,
             },
         };
@@ -517,7 +517,7 @@ pub const kernel = struct {
 
     fn length(v: anytype) f32 {
         return switch (@typeInfo(@TypeOf(v))) {
-            .Vector => @sqrt(@reduce(.Add, v * v)),
+            .vector => @sqrt(@reduce(.Add, v * v)),
             else => @abs(v),
         };
     }
@@ -530,8 +530,8 @@ pub const kernel = struct {
         return result;
     }
 
-    fn floatVectorFromIntVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector.len, f32) {
-        const len = @typeInfo(@TypeOf(v)).Vector.len;
+    fn floatVectorFromIntVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).vector.len, f32) {
+        const len = @typeInfo(@TypeOf(v)).vector.len;
         var result: @Vector(len, f32) = undefined;
         inline for (0..len) |i| {
             result[i] = @floatFromInt(v[i]);
@@ -644,8 +644,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const index = (y * self.width) + x;
             const src_pixel = self.data[index];
             const pixel: FPixel = switch (@typeInfo(T)) {
-                .Float => pbPixelFromFloatPixel(src_pixel),
-                .Int => pbPixelFromIntPixel(src_pixel),
+                .float => pbPixelFromFloatPixel(src_pixel),
+                .int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
             return pixel;
@@ -657,8 +657,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             }
             const index = (y * self.width) + x;
             const dst_pixel: Pixel = switch (@typeInfo(T)) {
-                .Float => floatPixelFromPBPixel(pixel),
-                .Int => intPixelFromPBPixel(pixel),
+                .float => floatPixelFromPBPixel(pixel),
+                .int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
             self.data[index] = dst_pixel;
@@ -725,13 +725,13 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = ImageT,
-            .default_value = @ptrCast(&default_value),
+            .default_value_ptr = @ptrCast(&default_value),
             .is_comptime = false,
             .alignment = @alignOf(ImageT),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},
@@ -750,13 +750,13 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = ImageT,
-            .default_value = @ptrCast(&default_value),
+            .default_value_ptr = @ptrCast(&default_value),
             .is_comptime = false,
             .alignment = @alignOf(ImageT),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},
@@ -774,9 +774,9 @@ pub fn KernelParameters(comptime Kernel: type) type {
             const value: param.type = switch (@hasField(@TypeOf(param), "defaultValue")) {
                 true => param.defaultValue,
                 false => switch (@typeInfo(param.type)) {
-                    .Int, .Float => 0,
-                    .Bool => false,
-                    .Vector => @splat(0),
+                    .int, .float => 0,
+                    .bool => false,
+                    .vector => @splat(0),
                     else => @compileError("Unrecognized parameter type: " ++ @typeName(param.type)),
                 },
             };
@@ -785,13 +785,13 @@ pub fn KernelParameters(comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = param.type,
-            .default_value = default_value,
+            .default_value_ptr = default_value,
             .is_comptime = false,
             .alignment = @alignOf(param.type),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},

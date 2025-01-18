@@ -271,9 +271,9 @@ pub const kernel = struct {
 
     fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
         return switch (@typeInfo(@TypeOf(v2))) {
-            .Vector => @mod(v1, v2),
+            .vector => @mod(v1, v2),
             else => switch (@typeInfo(@TypeOf(v1))) {
-                .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                .vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
                 else => @mod(v1, v2),
             },
         };
@@ -281,13 +281,13 @@ pub const kernel = struct {
 
     fn length(v: anytype) f32 {
         return switch (@typeInfo(@TypeOf(v))) {
-            .Vector => @sqrt(@reduce(.Add, v * v)),
+            .vector => @sqrt(@reduce(.Add, v * v)),
             else => @abs(v),
         };
     }
 
     fn @"M * V"(m1: anytype, v2: anytype) @TypeOf(v2) {
-        const ar = @typeInfo(@TypeOf(m1)).Array;
+        const ar = @typeInfo(@TypeOf(m1)).array;
         var t1: @TypeOf(m1) = undefined;
         inline for (m1, 0..) |column, c| {
             inline for (0..ar.len) |r| {
@@ -406,8 +406,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const index = (y * self.width) + x;
             const src_pixel = self.data[index];
             const pixel: FPixel = switch (@typeInfo(T)) {
-                .Float => pbPixelFromFloatPixel(src_pixel),
-                .Int => pbPixelFromIntPixel(src_pixel),
+                .float => pbPixelFromFloatPixel(src_pixel),
+                .int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
             return pixel;
@@ -419,8 +419,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             }
             const index = (y * self.width) + x;
             const dst_pixel: Pixel = switch (@typeInfo(T)) {
-                .Float => floatPixelFromPBPixel(pixel),
-                .Int => intPixelFromPBPixel(pixel),
+                .float => floatPixelFromPBPixel(pixel),
+                .int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
             self.data[index] = dst_pixel;
@@ -487,13 +487,13 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = ImageT,
-            .default_value = @ptrCast(&default_value),
+            .default_value_ptr = @ptrCast(&default_value),
             .is_comptime = false,
             .alignment = @alignOf(ImageT),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},
@@ -512,13 +512,13 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = ImageT,
-            .default_value = @ptrCast(&default_value),
+            .default_value_ptr = @ptrCast(&default_value),
             .is_comptime = false,
             .alignment = @alignOf(ImageT),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},
@@ -536,9 +536,9 @@ pub fn KernelParameters(comptime Kernel: type) type {
             const value: param.type = switch (@hasField(@TypeOf(param), "defaultValue")) {
                 true => param.defaultValue,
                 false => switch (@typeInfo(param.type)) {
-                    .Int, .Float => 0,
-                    .Bool => false,
-                    .Vector => @splat(0),
+                    .int, .float => 0,
+                    .bool => false,
+                    .vector => @splat(0),
                     else => @compileError("Unrecognized parameter type: " ++ @typeName(param.type)),
                 },
             };
@@ -547,13 +547,13 @@ pub fn KernelParameters(comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = param.type,
-            .default_value = default_value,
+            .default_value_ptr = default_value,
             .is_comptime = false,
             .alignment = @alignOf(param.type),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},

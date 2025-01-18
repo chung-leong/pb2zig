@@ -203,9 +203,9 @@ pub const kernel = struct {
 
     fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
         return switch (@typeInfo(@TypeOf(v2))) {
-            .Vector => @mod(v1, v2),
+            .vector => @mod(v1, v2),
             else => switch (@typeInfo(@TypeOf(v1))) {
-                .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+                .vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
                 else => @mod(v1, v2),
             },
         };
@@ -213,27 +213,27 @@ pub const kernel = struct {
 
     fn step(v1: anytype, v2: anytype) @TypeOf(v2) {
         return switch (@typeInfo(@TypeOf(v1))) {
-            .Vector => calc: {
+            .vector => calc: {
                 const ones: @TypeOf(v2) = @splat(1);
                 const zeros: @TypeOf(v2) = @splat(0);
-                break :calc @select(@typeInfo(@TypeOf(v2)).Vector.child, v2 < v1, zeros, ones);
+                break :calc @select(@typeInfo(@TypeOf(v2)).vector.child, v2 < v1, zeros, ones);
             },
             else => switch (@typeInfo(@TypeOf(v2))) {
-                .Vector => step(@as(@TypeOf(v2), @splat(v1)), v2),
+                .vector => step(@as(@TypeOf(v2), @splat(v1)), v2),
                 else => if (v2 < v1) 0 else 1,
             },
         };
     }
 
     fn cross(v1: anytype, v2: anytype) @TypeOf(v1) {
-        const CT = @typeInfo(@TypeOf(v1)).Vector.child;
+        const CT = @typeInfo(@TypeOf(v1)).vector.child;
         const p1 = @shuffle(CT, v1, undefined, @Vector(3, i32){ 1, 2, 0 }) * @shuffle(CT, v2, undefined, @Vector(3, i32){ 2, 0, 1 });
         const p2 = @shuffle(CT, v1, undefined, @Vector(3, i32){ 2, 0, 1 }) * @shuffle(CT, v2, undefined, @Vector(3, i32){ 1, 2, 0 });
         return p1 - p2;
     }
 
     fn @"M * M"(m1: anytype, m2: anytype) @TypeOf(m1) {
-        const ar = @typeInfo(@TypeOf(m2)).Array;
+        const ar = @typeInfo(@TypeOf(m2)).array;
         var result: @TypeOf(m2) = undefined;
         inline for (0..ar.len) |r| {
             var row: ar.child = undefined;
@@ -360,8 +360,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             const index = (y * self.width) + x;
             const src_pixel = self.data[index];
             const pixel: FPixel = switch (@typeInfo(T)) {
-                .Float => pbPixelFromFloatPixel(src_pixel),
-                .Int => pbPixelFromIntPixel(src_pixel),
+                .float => pbPixelFromFloatPixel(src_pixel),
+                .int => pbPixelFromIntPixel(src_pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
             return pixel;
@@ -373,8 +373,8 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             }
             const index = (y * self.width) + x;
             const dst_pixel: Pixel = switch (@typeInfo(T)) {
-                .Float => floatPixelFromPBPixel(pixel),
-                .Int => intPixelFromPBPixel(pixel),
+                .float => floatPixelFromPBPixel(pixel),
+                .int => intPixelFromPBPixel(pixel),
                 else => @compileError("Unsupported type: " ++ @typeName(T)),
             };
             self.data[index] = dst_pixel;
@@ -441,13 +441,13 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = ImageT,
-            .default_value = @ptrCast(&default_value),
+            .default_value_ptr = @ptrCast(&default_value),
             .is_comptime = false,
             .alignment = @alignOf(ImageT),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},
@@ -466,13 +466,13 @@ pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = ImageT,
-            .default_value = @ptrCast(&default_value),
+            .default_value_ptr = @ptrCast(&default_value),
             .is_comptime = false,
             .alignment = @alignOf(ImageT),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},
@@ -490,9 +490,9 @@ pub fn KernelParameters(comptime Kernel: type) type {
             const value: param.type = switch (@hasField(@TypeOf(param), "defaultValue")) {
                 true => param.defaultValue,
                 false => switch (@typeInfo(param.type)) {
-                    .Int, .Float => 0,
-                    .Bool => false,
-                    .Vector => @splat(0),
+                    .int, .float => 0,
+                    .bool => false,
+                    .vector => @splat(0),
                     else => @compileError("Unrecognized parameter type: " ++ @typeName(param.type)),
                 },
             };
@@ -501,13 +501,13 @@ pub fn KernelParameters(comptime Kernel: type) type {
         struct_fields[index] = .{
             .name = field.name,
             .type = param.type,
-            .default_value = default_value,
+            .default_value_ptr = default_value,
             .is_comptime = false,
             .alignment = @alignOf(param.type),
         };
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = &struct_fields,
             .decls = &.{},

@@ -43,7 +43,7 @@ test "not" {
     assert(all(not_vector3 == @Vector(2, bool){ true, false }));
 }
 
-pub fn equal(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
+pub fn equal(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).vector.len, bool) {
     return v1 == v2;
 }
 
@@ -56,7 +56,7 @@ test "equal" {
     assert(any(equal(vector3, vector2)) == true);
 }
 
-pub fn notEqual(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
+pub fn notEqual(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).vector.len, bool) {
     return v1 != v2;
 }
 
@@ -69,7 +69,7 @@ test "notEqual" {
     assert(any(notEqual(vector3, vector2)) == true);
 }
 
-pub fn lessThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
+pub fn lessThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).vector.len, bool) {
     return v1 < v2;
 }
 
@@ -82,7 +82,7 @@ test "lessThan" {
     assert(any(lessThan(vector3, vector2)) == true);
 }
 
-pub fn lessThanEqual(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
+pub fn lessThanEqual(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).vector.len, bool) {
     return v1 <= v2;
 }
 
@@ -95,7 +95,7 @@ test "lessThanEqual" {
     assert(any(lessThanEqual(vector3, vector2)) == true);
 }
 
-pub fn greaterThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
+pub fn greaterThan(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).vector.len, bool) {
     return v1 > v2;
 }
 
@@ -108,7 +108,7 @@ test "greaterThan" {
     assert(any(greaterThan(vector3, vector2)) == true);
 }
 
-pub fn greaterThanEqual(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).Vector.len, bool) {
+pub fn greaterThanEqual(v1: anytype, v2: anytype) @Vector(@typeInfo(@TypeOf(v1)).vector.len, bool) {
     return v1 >= v2;
 }
 
@@ -124,7 +124,7 @@ test "greaterThanEqual" {
 pub fn radians(v: anytype) @TypeOf(v) {
     const multiplier = std.math.pi / 180.0;
     return switch (@typeInfo(@TypeOf(v))) {
-        .Vector => v * @as(@TypeOf(v), @splat(multiplier)),
+        .vector => v * @as(@TypeOf(v), @splat(multiplier)),
         else => v * multiplier,
     };
 }
@@ -139,7 +139,7 @@ test "radians" {
 pub fn degrees(v: anytype) @TypeOf(v) {
     const multiplier = 180.0 / std.math.pi;
     return switch (@typeInfo(@TypeOf(v))) {
-        .Vector => v * @as(@TypeOf(v), @splat(multiplier)),
+        .vector => v * @as(@TypeOf(v), @splat(multiplier)),
         else => v * multiplier,
     };
 }
@@ -186,9 +186,9 @@ test "tan" {
 
 pub fn asin(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Vector => calc: {
+        .vector => calc: {
             var result: @TypeOf(v) = undefined;
-            inline for (0..@typeInfo(@TypeOf(v)).Vector.len) |i| {
+            inline for (0..@typeInfo(@TypeOf(v)).vector.len) |i| {
                 result[i] = asin(v[i]);
             }
             break :calc result;
@@ -206,9 +206,9 @@ test "asin" {
 
 pub fn acos(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Vector => calc: {
+        .vector => calc: {
             var result: @TypeOf(v) = undefined;
-            inline for (0..@typeInfo(@TypeOf(v)).Vector.len) |i| {
+            inline for (0..@typeInfo(@TypeOf(v)).vector.len) |i| {
                 result[i] = acos(v[i]);
             }
             break :calc result;
@@ -226,9 +226,9 @@ test "acos" {
 
 pub fn atan(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Vector => calc: {
+        .vector => calc: {
             var result: @TypeOf(v) = undefined;
-            inline for (0..@typeInfo(@TypeOf(v)).Vector.len) |i| {
+            inline for (0..@typeInfo(@TypeOf(v)).vector.len) |i| {
                 result[i] = atan(v[i]);
             }
             break :calc result;
@@ -246,14 +246,14 @@ test "atan" {
 
 pub fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
     return switch (@typeInfo(@TypeOf(v1))) {
-        .Vector => calc: {
+        .vector => calc: {
             var result: @TypeOf(v1) = undefined;
-            inline for (0..@typeInfo(@TypeOf(v1)).Vector.len) |i| {
+            inline for (0..@typeInfo(@TypeOf(v1)).vector.len) |i| {
                 result[i] = atan2(v1[i], v2[i]);
             }
             break :calc result;
         },
-        else => switch (@typeInfo(@TypeOf(std.math.atan2)).Fn.params.len) {
+        else => switch (@typeInfo(@TypeOf(std.math.atan2)).@"fn".params.len) {
             2 => std.math.atan2(v1, v2),
             else => std.math.atan2(@TypeOf(v1), v1, v2),
         },
@@ -269,9 +269,9 @@ test "atan2" {
 
 pub fn pow(v1: anytype, v2: anytype) @TypeOf(v1) {
     return switch (@typeInfo(@TypeOf(v1))) {
-        .Vector => calc: {
+        .vector => calc: {
             var result: @TypeOf(v1) = undefined;
-            inline for (0..@typeInfo(@TypeOf(v1)).Vector.len) |i| {
+            inline for (0..@typeInfo(@TypeOf(v1)).vector.len) |i| {
                 result[i] = pow(v1[i], v2[i]);
             }
             break :calc result;
@@ -344,7 +344,7 @@ test "sqrt" {
 
 pub fn inverseSqrt(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Vector => @as(@TypeOf(v), @splat(1)) / @sqrt(v),
+        .vector => @as(@TypeOf(v), @splat(1)) / @sqrt(v),
         else => 1 / @sqrt(v),
     };
 }
@@ -415,9 +415,9 @@ test "fract" {
 
 pub fn mod(v1: anytype, v2: anytype) @TypeOf(v1) {
     return switch (@typeInfo(@TypeOf(v2))) {
-        .Vector => @mod(v1, v2),
+        .vector => @mod(v1, v2),
         else => switch (@typeInfo(@TypeOf(v1))) {
-            .Vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
+            .vector => @mod(v1, @as(@TypeOf(v1), @splat(v2))),
             else => @mod(v1, v2),
         },
     };
@@ -433,9 +433,9 @@ test "mod" {
 
 pub fn min(v1: anytype, v2: anytype) @TypeOf(v1) {
     return switch (@typeInfo(@TypeOf(v2))) {
-        .Vector => @min(v1, v2),
+        .vector => @min(v1, v2),
         else => switch (@typeInfo(@TypeOf(v1))) {
-            .Vector => @min(v1, @as(@TypeOf(v1), @splat(v2))),
+            .vector => @min(v1, @as(@TypeOf(v1), @splat(v2))),
             else => @min(v1, v2),
         },
     };
@@ -451,9 +451,9 @@ test "min" {
 
 pub fn max(v1: anytype, v2: anytype) @TypeOf(v1) {
     return switch (@typeInfo(@TypeOf(v2))) {
-        .Vector => @max(v1, v2),
+        .vector => @max(v1, v2),
         else => switch (@typeInfo(@TypeOf(v1))) {
-            .Vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
+            .vector => @max(v1, @as(@TypeOf(v1), @splat(v2))),
             else => @max(v1, v2),
         },
     };
@@ -469,13 +469,13 @@ test "max" {
 
 pub fn step(v1: anytype, v2: anytype) @TypeOf(v2) {
     return switch (@typeInfo(@TypeOf(v1))) {
-        .Vector => calc: {
+        .vector => calc: {
             const ones: @TypeOf(v2) = @splat(1);
             const zeros: @TypeOf(v2) = @splat(0);
-            break :calc @select(@typeInfo(@TypeOf(v2)).Vector.child, v2 < v1, zeros, ones);
+            break :calc @select(@typeInfo(@TypeOf(v2)).vector.child, v2 < v1, zeros, ones);
         },
         else => switch (@typeInfo(@TypeOf(v2))) {
-            .Vector => step(@as(@TypeOf(v2), @splat(v1)), v2),
+            .vector => step(@as(@TypeOf(v2), @splat(v1)), v2),
             else => if (v2 < v1) 0 else 1,
         },
     };
@@ -491,14 +491,14 @@ test "step" {
 
 pub fn clamp(v: anytype, min_val: anytype, max_val: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(min_val))) {
-        .Vector => calc: {
-            const T = @typeInfo(@TypeOf(v)).Vector.child;
+        .vector => calc: {
+            const T = @typeInfo(@TypeOf(v)).vector.child;
             const result1 = @select(T, v < min_val, min_val, v);
             const result2 = @select(T, result1 > max_val, max_val, result1);
             break :calc result2;
         },
         else => switch (@typeInfo(@TypeOf(v))) {
-            .Vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
+            .vector => clamp(v, @as(@TypeOf(v), @splat(min_val)), @as(@TypeOf(v), @splat(max_val))),
             else => calc: {
                 if (v < min_val) {
                     break :calc min_val;
@@ -534,9 +534,9 @@ test "clamp" {
 
 pub fn mix(v1: anytype, v2: anytype, p: anytype) @TypeOf(v1) {
     return switch (@typeInfo(@TypeOf(p))) {
-        .Vector => v1 * (@as(@TypeOf(p), @splat(1)) - p) + v2 * p,
+        .vector => v1 * (@as(@TypeOf(p), @splat(1)) - p) + v2 * p,
         else => switch (@typeInfo(@TypeOf(v1))) {
-            .Vector => mix(v1, v2, @as(@TypeOf(v1), @splat(p))),
+            .vector => mix(v1, v2, @as(@TypeOf(v1), @splat(p))),
             else => v1 * (1 - p) + v2 * p,
         },
     };
@@ -553,9 +553,9 @@ test "mix" {
 
 pub fn smoothStep(edge0: anytype, edge1: anytype, v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(edge0))) {
-        .Vector => calc: {
+        .vector => calc: {
             const T = @TypeOf(v);
-            const ET = @typeInfo(T).Vector.child;
+            const ET = @typeInfo(T).vector.child;
             const zeros: T = @splat(0);
             const ones: T = @splat(1);
             const twos: T = @splat(2);
@@ -567,7 +567,7 @@ pub fn smoothStep(edge0: anytype, edge1: anytype, v: anytype) @TypeOf(v) {
             break :calc result2;
         },
         else => switch (@typeInfo(@TypeOf(v))) {
-            .Vector => smoothStep(@as(@TypeOf(v), @splat(edge0)), @as(@TypeOf(v), @splat(edge1)), v),
+            .vector => smoothStep(@as(@TypeOf(v), @splat(edge0)), @as(@TypeOf(v), @splat(edge1)), v),
             else => calc: {
                 if (v <= edge0) {
                     break :calc 0;
@@ -595,7 +595,7 @@ test "smoothStep" {
 
 pub fn length(v: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Vector => @sqrt(@reduce(.Add, v * v)),
+        .vector => @sqrt(@reduce(.Add, v * v)),
         else => @abs(v),
     };
 }
@@ -611,7 +611,7 @@ test "length" {
 
 pub fn distance(v1: anytype, v2: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v1))) {
-        .Vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
+        .vector => @sqrt(@reduce(.Add, (v1 - v2) * (v1 - v2))),
         else => @abs(v1 - v2),
     };
 }
@@ -627,7 +627,7 @@ test "distance" {
 
 pub fn dot(v1: anytype, v2: anytype) f32 {
     return switch (@typeInfo(@TypeOf(v1))) {
-        .Vector => @reduce(.Add, v1 * v2),
+        .vector => @reduce(.Add, v1 * v2),
         else => v1 * v2,
     };
 }
@@ -642,7 +642,7 @@ test "dot" {
 }
 
 pub fn cross(v1: anytype, v2: anytype) @TypeOf(v1) {
-    const CT = @typeInfo(@TypeOf(v1)).Vector.child;
+    const CT = @typeInfo(@TypeOf(v1)).vector.child;
     const p1 = @shuffle(CT, v1, undefined, @Vector(3, i32){ 1, 2, 0 }) * @shuffle(CT, v2, undefined, @Vector(3, i32){ 2, 0, 1 });
     const p2 = @shuffle(CT, v1, undefined, @Vector(3, i32){ 2, 0, 1 }) * @shuffle(CT, v2, undefined, @Vector(3, i32){ 1, 2, 0 });
     return p1 - p2;
@@ -655,7 +655,7 @@ test "cross" {
 
 pub fn normalize(v: anytype) @TypeOf(v) {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Vector => v / @as(@TypeOf(v), @splat(@sqrt(@reduce(.Add, v * v)))),
+        .vector => v / @as(@TypeOf(v), @splat(@sqrt(@reduce(.Add, v * v)))),
         else => if (v > 0) 1 else -1,
     };
 }
@@ -688,7 +688,7 @@ test "matrixCompMult" {
 }
 
 pub fn @"M * M"(m1: anytype, m2: anytype) @TypeOf(m1) {
-    const ar = @typeInfo(@TypeOf(m2)).Array;
+    const ar = @typeInfo(@TypeOf(m2)).array;
     var result: @TypeOf(m2) = undefined;
     inline for (0..ar.len) |r| {
         var row: ar.child = undefined;
@@ -711,7 +711,7 @@ pub fn @"V * M"(v1: anytype, m2: anytype) @TypeOf(v1) {
 }
 
 pub fn @"M * V"(m1: anytype, v2: anytype) @TypeOf(v2) {
-    const ar = @typeInfo(@TypeOf(m1)).Array;
+    const ar = @typeInfo(@TypeOf(m1)).array;
     var t1: @TypeOf(m1) = undefined;
     inline for (m1, 0..) |column, c| {
         inline for (0..ar.len) |r| {
@@ -728,7 +728,7 @@ pub fn @"M * V"(m1: anytype, v2: anytype) @TypeOf(v2) {
 pub fn @"M * S"(m1: anytype, s2: anytype) @TypeOf(m1) {
     var result: @TypeOf(m1) = undefined;
     inline for (m1, 0..) |column, c| {
-        result[c] = column * @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+        result[c] = column * @as(@typeInfo(@TypeOf(m1)).array.child, @splat(s2));
     }
     return result;
 }
@@ -736,7 +736,7 @@ pub fn @"M * S"(m1: anytype, s2: anytype) @TypeOf(m1) {
 pub fn @"S * M"(s1: anytype, m2: anytype) @TypeOf(m2) {
     var result: @TypeOf(m2) = undefined;
     inline for (m2, 0..) |column, c| {
-        result[c] = column * @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1));
+        result[c] = column * @as(@typeInfo(@TypeOf(m2)).array.child, @splat(s1));
     }
     return result;
 }
@@ -752,7 +752,7 @@ pub fn @"M + M"(m1: anytype, m2: anytype) @TypeOf(m1) {
 pub fn @"M + S"(m1: anytype, s2: anytype) @TypeOf(m1) {
     var result: @TypeOf(m1) = undefined;
     inline for (m1, 0..) |column, c| {
-        result[c] = column + @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+        result[c] = column + @as(@typeInfo(@TypeOf(m1)).array.child, @splat(s2));
     }
     return result;
 }
@@ -760,7 +760,7 @@ pub fn @"M + S"(m1: anytype, s2: anytype) @TypeOf(m1) {
 pub fn @"S + M"(s1: anytype, m2: anytype) @TypeOf(m2) {
     var result: @TypeOf(m2) = undefined;
     inline for (m2, 0..) |column, c| {
-        result[c] = column + @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1));
+        result[c] = column + @as(@typeInfo(@TypeOf(m2)).array.child, @splat(s1));
     }
     return result;
 }
@@ -776,7 +776,7 @@ pub fn @"M - M"(m1: anytype, m2: anytype) @TypeOf(m1) {
 pub fn @"M - S"(m1: anytype, s2: anytype) @TypeOf(m1) {
     var result: @TypeOf(m1) = undefined;
     inline for (m1, 0..) |column, c| {
-        result[c] = column - @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+        result[c] = column - @as(@typeInfo(@TypeOf(m1)).array.child, @splat(s2));
     }
     return result;
 }
@@ -784,7 +784,7 @@ pub fn @"M - S"(m1: anytype, s2: anytype) @TypeOf(m1) {
 pub fn @"S - M"(s1: anytype, m2: anytype) @TypeOf(m2) {
     var result: @TypeOf(m2) = undefined;
     inline for (m2, 0..) |column, c| {
-        result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) - column;
+        result[c] = @as(@typeInfo(@TypeOf(m2)).array.child, @splat(s1)) - column;
     }
     return result;
 }
@@ -800,7 +800,7 @@ pub fn @"M / M"(m1: anytype, m2: anytype) @TypeOf(m1) {
 pub fn @"M / S"(m1: anytype, s2: anytype) @TypeOf(m1) {
     var result: @TypeOf(m1) = undefined;
     inline for (m1, 0..) |column, c| {
-        result[c] = column / @as(@typeInfo(@TypeOf(m1)).Array.child, @splat(s2));
+        result[c] = column / @as(@typeInfo(@TypeOf(m1)).array.child, @splat(s2));
     }
     return result;
 }
@@ -808,7 +808,7 @@ pub fn @"M / S"(m1: anytype, s2: anytype) @TypeOf(m1) {
 pub fn @"S / M"(s1: anytype, m2: anytype) @TypeOf(m2) {
     var result: @TypeOf(m2) = undefined;
     inline for (m2, 0..) |column, c| {
-        result[c] = @as(@typeInfo(@TypeOf(m2)).Array.child, @splat(s1)) / column;
+        result[c] = @as(@typeInfo(@TypeOf(m2)).array.child, @splat(s1)) / column;
     }
     return result;
 }
@@ -888,8 +888,8 @@ test "matrix functions" {
     assert(all(result18[1] == @Vector(2, f32){ 20, 15 }));
 }
 
-pub fn floatVectorFromIntVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector.len, f32) {
-    const len = @typeInfo(@TypeOf(v)).Vector.len;
+pub fn floatVectorFromIntVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).vector.len, f32) {
+    const len = @typeInfo(@TypeOf(v)).vector.len;
     var result: @Vector(len, f32) = undefined;
     inline for (0..len) |i| {
         result[i] = @floatFromInt(v[i]);
@@ -897,8 +897,8 @@ pub fn floatVectorFromIntVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector
     return result;
 }
 
-pub fn intVectorFromFloatVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector.len, i32) {
-    const len = @typeInfo(@TypeOf(v)).Vector.len;
+pub fn intVectorFromFloatVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).vector.len, i32) {
+    const len = @typeInfo(@TypeOf(v)).vector.len;
     var result: @Vector(len, f32) = undefined;
     inline for (0..len) |i| {
         result[i] = @intFromFloat(v[i]);
@@ -906,8 +906,8 @@ pub fn intVectorFromFloatVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector
     return result;
 }
 
-pub fn intVectorFromBoolVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).Vector.len, i32) {
-    const len = @typeInfo(@TypeOf(v)).Vector.len;
+pub fn intVectorFromBoolVector(v: anytype) @Vector(@typeInfo(@TypeOf(v)).vector.len, i32) {
+    const len = @typeInfo(@TypeOf(v)).vector.len;
     var result: @Vector(len, f32) = undefined;
     inline for (0..len) |i| {
         result[i] = @intFromBool(v[i]);
