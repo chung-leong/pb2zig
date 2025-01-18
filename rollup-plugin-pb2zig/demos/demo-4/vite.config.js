@@ -5,7 +5,7 @@ import Pb2Zig from '../../dist/index.js';
 export default defineConfig({
   plugins: [
     React(),
-    Pb2Zig({ topLevelAwait: false, multithreaded: true }),
+    Pb2Zig({ topLevelAwait: false, embedWASM: true, multithreaded: true }),
   ],
   server: {
     headers: {
@@ -13,9 +13,9 @@ export default defineConfig({
       'Cross-Origin-Embedder-Policy': 'require-corp',
     }
   },
-  base: '/demo-4',
+  base: '/pb2zig/demo-4',
   build: {
     emptyOutDir: true,
-    outDir: '../../../docs/demo-4',
+    outDir: '../../../../zigar.website/pb2zig/demo-4',
   },
 })
