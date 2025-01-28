@@ -14,14 +14,14 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@types/react": "^19.0.2",
-    "@types/react-dom": "^19.0.2",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react-swc": "^3.7.2",
-    "eslint": "^9.17.0",
-    "eslint-plugin-react": "^7.37.2",
+    "eslint": "^9.19.0",
+    "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.1.0",
-    "eslint-plugin-react-refresh": "^0.4.16",
-    "rollup-plugin-pb2zig": "^0.14.0-beta.0",
-    "vite": "^6.0.5"
+    "eslint-plugin-react-refresh": "^0.4.18",
+    "rollup-plugin-pb2zig": "^0.14.0-beta.3",
+    "vite": "^6.0.11"
   }
 }
