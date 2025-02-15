@@ -3898,12 +3898,10 @@ const async_support = struct {
             .stack_size = 65536,
             .n_jobs = count,
         });
-        try zigar.thread.use();
     }
 
     pub fn stopThreadPool() void {
         work_queue.deinit();
-        zigar.thread.end();
     }
 
     pub fn stopThreadPoolAsync(promise: zigar.function.Promise(void)) void {
