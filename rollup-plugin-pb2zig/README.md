@@ -23,8 +23,7 @@ This library assumes that the compiler is in the search path.
 ## Versioning
 
 The major and minor version numbers of this program correspond to the version of the Zig compiler
-it's designed for. The current version is 0.13.1. It works with Zig 0.13.0 and is backwards
-compatible with 0.12.0.
+it's designed for. The current version is 0.14.0. It works with Zig 0.14.0.
 
 ## Usage
 
@@ -45,9 +44,10 @@ export default defineConfig({
 })
 ```
 
-By default, processing is performed in the main thread. If your kernel is computationally
-intensive, this could lead to an unresponsive user interface. To offload the processing to web
-workers, set the `webWorker` option to `true`:
+By default, code is generated for single-thread operation. This is not ideal, as using a 
+computationally intensive filter in the main thread can cause the user interface to 
+become unresponsive. Setting the `multithreaded` option to `true` allow you to perform 
+the work in WebAssembly threads, both alleviating and speeding up the process. 
 
 ```js
 import { defineConfig } from 'vite'
@@ -57,10 +57,14 @@ import Pb2Zig from 'rollup-plugin-pb2zig';
 export default defineConfig({
   plugins: [
     React(),
-    Pb2Zig({ webWorker: true }),
+    Pb2Zig({ multithreaded: true }),
   ],
 })
 ```
+
+There're special requirements related to multithreaded operation. See the 
+[documentation of Zigar](https://github.com/chung-leong/zigar/wiki/Multithreading#multithreading-in-webassembly)
+for more details.
 
 ### Creating output
 
@@ -120,8 +124,6 @@ export function App() {
 }
 ```
 
-Note that once an ImageData object has been transferred to a web worker, it cannot be used again.
-
 ### Using multi-image kernels
 
 When a kernel requires multiple images as input, you can either place the two in an array:
@@ -139,7 +141,7 @@ When a kernel requires multiple images as input, you can either place the two in
     const src2ImageData = src2CTX.getImageData(0, 0, width, height);
     const params = { size: 25 };
     const input = [ src1ImageData, src2ImageData ];
-    const dstImageData = await createImageData(width, height, input, params);
+    const dstImageData = createImageData(width, height, input, params);
     dstCTX.putImageData(dstImageData, 0, 0);
   }
 ```
@@ -159,76 +161,9 @@ Or specify them by name in an object:
     const src2ImageData = src2CTX.getImageData(0, 0, width, height);
     const params = { size: 25 };
     const input = { src1: src1ImageData src2: src2ImageData };
-    const dstImageData = await createImageData(width, height, input, params);
+    const dstImageData = createImageData(width, height, input, params);
     dstCTX.putImageData(dstImageData, 0, 0);
   }
-```
-
-### Processing across multiple web workers
-
-For kernels that are computationally intensive, you might wish to speed up the process by spreading
-the work across multiple CPU cores. This plugin provides you with a second function for this
-purpose: `createPartialOutput()`. Given a scanline offset and a scanline count, the function
-returns a slice of the output image:
-
-```js
-import { useState, useRef, useEffect } from 'react'
-import { createPartialOutput, purgeQueue } from './pbk/raytracer.pbk';
-
-export function App() {
-  const srcCanvasRef = useRef();
-  const dstCanvasRef = useRef();
-  const [ params, setParams ] = useState();
-
-  function updateDestinationImage() {
-    const dstCanvas = dstCanvasRef.current;
-    const { width, height } = dstCanvas;
-    const dstCTX = dstCanvas.getContext('2d');
-    const perWorker = Math.ceil(height / 8);
-    purgeQueue();
-    for (let i = 0, offset = 0, remaining = height; offset < height; i++, offset += perWorker, remaining -= perWorker) {
-      const scanlines = Math.min(perWorker, remaining);
-      createPartialImageData(width, height, offset, scanlines, {}, params).then((data) => {
-        dstCTX.putImageData(data, 0, offset);
-      });
-    }
-  }
-
-  // ...
-}
-```
-
-The example above divides the work into 8 chunks. If your computer has 8 cores or more, processing
-would commence immediately on all chunks. Otherwise, some chunks would end up in a queue awaiting
-the completion of earlier ones. The `purgeQueue()` function causes all pending work orders to be
-abandoned. Calling it is essential in a situation where the user can make rapid changes to the
-kernel parameters.
-
-The maximum number of workers by default equals
-[`navigator.hardwareConcurrency`](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/hardwareConcurrency).
-You can change this by calling `manageWorkers()` with the setting `{ maxCount: [number of workers] }`.
-
-By default, workers are kept around after they've completed their task. This makes subsequent
-calls to `createImageData` or `createPartialImageData` much quicker. You may want to release the
-workers when the user exits the section of your app using the kernel. You can accomplish this by
-calling `manageWorkers()` with the setting `{ keepAlive: false }`:
-
-```js
-import { useState, useRef, useEffect } from 'react'
-import { createPartialOutput, purgeQueue, manageWorkers } from './pbk/raytracer.pbk';
-
-export function App() {
-  // ...
-
-  useEffect(() => {
-    // on mount
-    manageWorkers({ keepAlive: true });
-    return () => {
-      // on unmount
-      manageWorkers({ keepAlive: false });
-    };
-  }, []);
-}
 ```
 
 ## Plugin options
