@@ -16,7 +16,7 @@ eight if your CPU has that many cores. The code of the demo app can be found
 |--------|
 |![result](./img/fractal-explorer.jpg)|
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=fractal-explorer) |
+[Live Demo](https://zigar.net/pb2zig/demo-3/?f=fractal-explorer) |
 [Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/fractal-explorer.pbk)
 
 ### landscape
@@ -29,7 +29,7 @@ eight if your CPU has that many cores. The code of the demo app can be found
 |--------|
 |![result](./img/landscape.jpg)|
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=landscape) |
+[Live Demo](https://zigar.net/pb2zig/demo-3/?f=landscape) |
 [Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/landscape.pbk)
 
 ### mandelbulb
@@ -42,7 +42,7 @@ eight if your CPU has that many cores. The code of the demo app can be found
 |--------|
 |![result](./img/mandelbulb.jpg)|
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=mandelbulb) |
+[Live Demo](https://zigar.net/pb2zig/demo-3/?f=mandelbulb) |
 [Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/mandelbulb.pbk)
 
 ### mandelbulb-quick
@@ -55,7 +55,7 @@ eight if your CPU has that many cores. The code of the demo app can be found
 |--------|
 |![result](./img/mandelbulb-quick.jpg)|
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=mandelbulb-quick) |
+[Live Demo](https://zigar.net/pb2zig/demo-3/?f=mandelbulb-quick) |
 [Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/mandelbulb-quick.pbk)
 
 ### newton-raphson
@@ -68,7 +68,7 @@ eight if your CPU has that many cores. The code of the demo app can be found
 |--------|
 |![result](./img/newton-raphson.jpg)|
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=newton-raphson) |
+[Live Demo](https://zigar.net/pb2zig/demo-3/?f=newton-raphson) |
 [Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/newton-raphson.pbk)
 
 ### plasma
@@ -81,7 +81,7 @@ eight if your CPU has that many cores. The code of the demo app can be found
 |--------|
 |![result](./img/plasma.jpg)|
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=plasma) |
+[Live Demo](https://zigar.net/pb2zig/demo-3/?f=plasma) |
 [Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/plasma.pbk)
 
 ### quaternion-julia
@@ -94,7 +94,7 @@ eight if your CPU has that many cores. The code of the demo app can be found
 |--------|
 |![result](./img/quaternion-julia.jpg)|
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=quaternion-julia) |
+[Live Demo](https://zigar.net/pb2zig/demo-3/?f=quaternion-julia) |
 [Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/quaternion-julia.pbk)
 
 ### raytracer
@@ -107,7 +107,7 @@ eight if your CPU has that many cores. The code of the demo app can be found
 |--------|
 |![result](./img/raytracer.jpg)|
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=raytracer) |
+[Live Demo](https://zigar.net/pb2zig/demo-3/?f=raytracer) |
 [Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/raytracer.pbk)
 
 ### rt-julia
@@ -120,6 +120,6 @@ eight if your CPU has that many cores. The code of the demo app can be found
 |--------|
 |![result](./img/rt-julia.png)|
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-3/?f=rt-julia) |
+[Live Demo](https://zigar.net/pb2zig/demo-3/?f=rt-julia) |
 [Source](./rollup-plugin-pb2zig/demos/demo-3/pbk/rt-julia.pbk)
 

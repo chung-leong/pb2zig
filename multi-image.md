@@ -1,8 +1,7 @@
 ## Multi-image kernels
 
 The following examples accept two images as input and produce a single image as output.
-Processing is performed in one web worker. The code of the demo app can be found
-[here](./rollup-plugin-pb2zig/demos/demo-2/src/App.jsx).
+The code of the demo app can be found [here](./rollup-plugin-pb2zig/demos/demo-2/src/App.jsx).
 
 ### asciimii
 
@@ -15,8 +14,8 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/asciimii.jpg)|
 | ![source image](./img/fontmap.png)         |        |
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=asciimii&i2=fontmap) |
-[Live Video Demo](https://chung-leong.github.io/pb2zig/demo-6/?f=asciimii&i2=fontmap) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=asciimii&i2=fontmap) |
+[Live Video Demo](https://zigar.net/pb2zig/demo-5/?f=asciimii&i2=fontmap) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/asciimii.pbk)
 
 ### bezier-aligner
@@ -30,7 +29,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/bezier-aligner.jpg)|
 | ![source image](./img/telephone-cord.png)  |        |
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=bezier-aligner&i2=telephone-cord&w2=imagewidth) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=bezier-aligner&i2=telephone-cord&w2=imagewidth) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/bezier-aligner.pbk)
 
 ### blendmode-color
@@ -44,7 +43,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/blendmode-color.jpg)|
 | ![source image](./img/mandelbrot.jpg)      |        |
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=blendmode-color) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=blendmode-color) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/blendmode-color.pbk)
 
 ### blendmode-color2
@@ -58,7 +57,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/malgorzata-socha.jpg)|![result](./img/blendmode-color2.jpg)|
 | ![source image](./img/mandelbrot.jpg)      |        |
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=blendmode-color2) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=blendmode-color2) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/blendmode-color2.pbk)
 
 ### bumpmap
@@ -72,7 +71,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/zig-logo.jpg)|![result](./img/bumpmap.jpg)|
 | ![source image](./img/wood.jpg)    |        |
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=bumpmap&i1=zig-logo&i2=wood) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=bumpmap&i1=zig-logo&i2=wood) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/bumpmap.pbk)
 
 ### color
@@ -87,7 +86,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/mandelbrot.jpg)      |        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=color) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=color) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/color.pbk)
 
 ### color-burn
@@ -102,7 +101,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/mandelbrot.jpg)      |        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=color-burn) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=color-burn) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/color-burn.pbk)
 
 ### color-dodge
@@ -117,7 +116,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/mandelbrot.jpg)      |        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=color-dodge) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=color-dodge) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/color-dodge.pbk)
 
 ### crossfade
@@ -132,7 +131,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/malgorzata-socha2.jpg)|        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=crossfade&i2=malgorzata-socha2) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=crossfade&i2=malgorzata-socha2) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/crossfade.pbk)
 
 ### displace
@@ -147,7 +146,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/mandelbrot.jpg)|     |        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=displace) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=displace) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/displace.pbk)
 
 ### exclusion
@@ -162,7 +161,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/mandelbrot.jpg)|     |        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=exclusion) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=exclusion) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/exclusion.pbk)
 
 ### luminosity
@@ -177,7 +176,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/mandelbrot.jpg)|     |        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=luminosity) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=luminosity) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/luminosity.pbk)
 
 ### metallic
@@ -192,7 +191,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/stripe.png)|   |        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=metallic&i1=zig-logo&i2=stripe) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=metallic&i1=zig-logo&i2=stripe) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/metallic.pbk)
 
 ### saturation
@@ -207,7 +206,7 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/mandelbrot.jpg)|     |        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=saturation) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=saturation) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/saturation.pbk)
 
 ### soft-light
@@ -222,6 +221,6 @@ Processing is performed in one web worker. The code of the demo app can be found
 | ![source image](./img/mandelbrot.jpg)|     |        |
 
 
-[Live Demo](https://chung-leong.github.io/pb2zig/demo-2/?f=soft-light) |
+[Live Demo](https://zigar.net/pb2zig/demo-2/?f=soft-light) |
 [Source](./rollup-plugin-pb2zig/demos/demo-2/pbk/soft-light.pbk)
 
