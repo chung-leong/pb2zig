@@ -844,7 +844,7 @@ describe('Integration tests', function() {
     await translate(name);
     await apply(name, { src: 'malgorzata-socha.png' });
   })
-  it('should correctly work correctly with i16 pixels', async function() {
+  it('should work correctly with i16 pixels', async function() {
     const name = 'crystallize';
     const filenameIn = 'malgorzata-socha.png';
     const filenameOut = 'crystallize-i16';
@@ -864,8 +864,7 @@ describe('Integration tests', function() {
     const { width, height, channels, depth } = info;
     const input = { src: { data: srcPixels, width, height } };
     const output = createOutput(width, height, input, {});
-    const { dst } = output;
-    const dstPixels = dst.data.typedArray;
+    const dstPixels = output.dst.data;
     for (let i = 0; i < dstPixels.length; i++) {
       dstPixels[i] = dstPixels[i] * ((2 ** 8 - 1) / (2 ** 15 - 1));
     }
@@ -873,7 +872,7 @@ describe('Integration tests', function() {
        raw: { width, height, channels, depth, premultiplied: false },
     }).png().toFile(`${imgOutDir}/${filenameOut}.png`);
   })
-  it('should correctly work correctly with u16 pixels', async function() {
+  it('should work correctly with u16 pixels', async function() {
     const name = 'crystallize';
     const filenameIn = 'malgorzata-socha.png';
     const filenameOut = 'crystallize-u16';
@@ -893,8 +892,7 @@ describe('Integration tests', function() {
     const { width, height, channels, depth } = info;
     const input = { src: { data: srcPixels, width, height } };
     const output = createOutput(width, height, input, {});
-    const { dst } = output;
-    const dstPixels = dst.data.typedArray;
+    const dstPixels = output.dst.data;
     for (let i = 0; i < dstPixels.length; i++) {
       dstPixels[i] = dstPixels[i] * ((2 ** 8 - 1) / (2 ** 16 - 1));
     }
@@ -902,7 +900,7 @@ describe('Integration tests', function() {
        raw: { width, height, channels, depth, premultiplied: false },
     }).png().toFile(`${imgOutDir}/${filenameOut}.png`);
   })
-  it('should correctly work correctly with f32 pixels', async function() {
+  it('should work correctly with f32 pixels', async function() {
     const name = 'crystallize';
     const filenameIn = 'malgorzata-socha.png';
     const filenameOut = 'crystallize-f32';
@@ -922,8 +920,7 @@ describe('Integration tests', function() {
     const { width, height, channels, depth } = info;
     const input = { src: { data: srcPixels, width, height } };
     const output = createOutput(width, height, input, {});
-    const { dst } = output;
-    const dstPixels = dst.data.typedArray;
+    const dstPixels = output.dst.data;
     for (let i = 0; i < dstPixels.length; i++) {
       dstPixels[i] = dstPixels[i] * 255;
     }
@@ -994,13 +991,12 @@ async function apply(name, sources, options = {}) {
   const output = await createOutputAsync(width, height, input, params);
   await stopThreadPoolAsync();
   const outputImages = [];
-  for (const [ name, image ] of output)  {
+  for (const image of Object.values(output))  {
     outputImages.push(image);
   }
   for (const [ index, image ] of outputImages.entries())  {
     const filename = (outputImages.length > 1) ? name + index : name;
-    const dstPixels = image.data.typedArray;
-    sharp(dstPixels, {
+    sharp(image.data, {
       raw: { width, height, channels, depth, premultiplied: false },
     }).png().toFile(`${imgOutDir}/${filename}.png`);
   }

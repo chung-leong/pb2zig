@@ -323,6 +323,19 @@ pub fn KernelParameters(comptime Kernel: type) type {
     });
 }
 
+pub const @"meta(zigar)" = struct {
+    pub fn isFieldTypedArray(comptime T: type, comptime name: std.meta.FieldEnum(T)) bool {
+        // make field `data` typed array
+        if (comptime @hasField(std.meta.FieldEnum(T), "data") and name == .data) return true;
+        return false;
+    }
+
+    pub fn isDeclPlain(comptime T: type, comptime _: std.meta.DeclEnum(T)) bool {
+        // make return value plain objects
+        return true;
+    }
+};
+
 const builtin = if (true) @import("builtin") else unreachable;
 const zigar = if (true) @import("zigar") else unreachable;
 const Allocator = if (true) std.mem.Allocator else unreachable;
