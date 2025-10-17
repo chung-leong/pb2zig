@@ -530,9 +530,7 @@ pub const kernel = struct {
                         } else {
                             v = v + (v1 - v) * abs(vp);
                         }
-                        if (v >= 0.0) {
-
-                        } else {
+                        if (v >= 0.0) {} else {
                             if (v1 >= 0.0) {
                                 v = v1;
                             } else if (v0 >= 0.0) {
@@ -1142,7 +1140,7 @@ pub const @"meta(zigar)" = struct {
 
     pub fn isFieldTypedArray(comptime T: type, comptime name: std.meta.FieldEnum(T)) bool {
         if (@hasDecl(T, "Pixel")) {
-            // make field `data` clamped array if output pixel type is u8
+            // make field `data` typed array (if pixel value is not u8)
             return name == .data;
         }
         return false;
