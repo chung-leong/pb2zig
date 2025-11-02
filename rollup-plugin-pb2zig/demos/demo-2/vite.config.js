@@ -1,11 +1,11 @@
-import { defineConfig } from 'vite'
-import React from '@vitejs/plugin-react-swc'
+import React from '@vitejs/plugin-react-swc';
+import { defineConfig } from 'vite';
 import Pb2Zig from '../../dist/index.js';
 
 export default defineConfig({
   plugins: [
     React(),
-    Pb2Zig({ topLevelAwait: false, embedWASM: true, multithreaded: true }),
+    Pb2Zig({ embedWASM: true, multithreaded: true }),
   ],
   server: {
     headers: {

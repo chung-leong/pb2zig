@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import './App.css'
+import { useEffect, useRef, useState } from 'react';
+import './App.css';
 
 function App() {
   const src1CanvasRef = useRef();
@@ -291,14 +291,14 @@ function App() {
   }, [ bitmap2 ]);
   useEffect(() => {
     if (library) {
-      const { getKernelInfo, AbortManager, startThreadPool, stopThreadPool } = library;
+      const { getKernelInfo, AbortManager, startThreadPool, stopThreadPoolAsync } = library;
       const am = new AbortManager();
       setAbortManager(am);
       setKernelInfo(getKernelInfo());
       startThreadPool(navigator.hardwareConcurrency);
       return async () => {
         await am.stop();
-        stopThreadPool();
+        await stopThreadPoolAsync();
       };
     }
   }, [ library ]);

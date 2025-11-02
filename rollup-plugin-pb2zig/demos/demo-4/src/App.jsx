@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react';
 import { StreamVideo, useMediaCapture } from 'react-media-capture';
 
-import './App.css'
+import './App.css';
 
 function App() {
   const srcCanvasRef = useRef(document.createElement('CANVAS'));
@@ -223,10 +223,10 @@ function App() {
   }, []);
   useEffect(() => {
     if (library) {
-      const { getKernelInfo, startThreadPool, stopThreadPool } = library;
+      const { getKernelInfo, startThreadPool, stopThreadPoolAsync } = library;
       setKernelInfo(getKernelInfo());
       startThreadPool(navigator.hardwareConcurrency);
-      return () => stopThreadPool();
+      return () => stopThreadPoolAsync();
     }
   }, [ library ]);
   useEffect(() => {

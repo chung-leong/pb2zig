@@ -1,9 +1,9 @@
-import { useCallback, useRef, useEffect, useState } from 'react'
-import {
-  AbortManager, createImageDataAsync, startThreadPool, stopThreadPool,
-} from './crystallize.pbk';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import testImage from '../img/malgorzata-socha.png';
-import './App.css'
+import './App.css';
+import {
+  AbortManager, createImageDataAsync, startThreadPool, stopThreadPoolAsync,
+} from './crystallize.pbk';
 
 function App() {
   const srcCanvasRef = useRef();
@@ -35,7 +35,7 @@ function App() {
     startThreadPool(navigator.hardwareConcurrency);
     return async () => {
       await am.stop();
-      stopThreadPool();
+      await stopThreadPoolAsync();
     };
   }, []);
   useEffect(() => {

@@ -60,12 +60,11 @@ function createResult(output, colorSpace) {
   for (const key of outputKeys) {
     let imageData;
     if (typeof(ImageData) === 'function') {
-      const { data: { clampedArray }, width, height } = output[key];
-      imageData = new ImageData(clampedArray, width, height, { colorSpace });
+      const { data, width, height } = output[key];
+      imageData = new ImageData(data, width, height, { colorSpace });
     } else {
       // for Node.js, which doesn't have ImageData
-      const { data: { typedArray }, width, height } = output[key];
-      imageData = { data: typedArray, width, height };
+      imageData = output[key];
     }
     if (outputKeys.length === 1) {
       // just return the one image
