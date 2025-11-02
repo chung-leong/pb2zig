@@ -1,6 +1,6 @@
 {
   "name": "pb2zig",
-  "version": "0.14.2-beta.1",
+  "version": "0.14.2",
   "description": "Pixel Bender to Zig code translator",
   "main": "./dist/index.js",
   "bin": {
