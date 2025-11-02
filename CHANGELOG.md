@@ -1,3 +1,12 @@
+## 0.14.2
+
+* Upgraded Zigar to version 0.14.2
+* Using meta-type to output JS-friendly objects
+
+## 0.14.1
+
+* Upgraded Zigar to version 0.14.1
+
 ## 0.14.0
 
 * Upgraded Zigar to version 0.14.0

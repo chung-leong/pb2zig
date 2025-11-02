@@ -12,7 +12,7 @@ npm install -g pb2zig
 ## Versioning
 
 The major and minor version numbers of this program correspond to the version of the Zig compiler
-it's designed for. The current version is 0.14.0. It works with Zig 0.14.0.
+it's designed for. The current version is 0.14.2. It works with Zig 0.14.0 and 0.14.1.
 
 ## Usage
 
@@ -160,13 +160,13 @@ first three channels are used, that is R, G, and B. For `image2`, R and A are us
 only the R channel is used.
 
 `colorSpace` serves no purpose. It's only there to accommodate the web browser's
-[`ImageData`](https://developer.mozilla.org/en-US/docs/Web/API/ImageData) object.
+[ImageData](https://developer.mozilla.org/en-US/docs/Web/API/ImageData) object.
 
 `offset` is employed when the structure holds data for only some part of the full image.
 
 ### Using Zig code in Node.js
 
-With the help of [`node-zigar`](https://github.com/chung-leong/zigar), you can run Zig code in
+With the help of [node-zigar](https://github.com/chung-leong/zigar), you can run Zig code in
 Node.js. This offer some advantage over using WebAssembly. Native code generally run faster than
 WASM (though the difference is not huge). Native code can also access memory of buffers in
 JavaScript directly whereas WASM instances have their own memory space and image data must be
