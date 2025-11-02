@@ -1,6 +1,6 @@
 {
   "name": "pb2zig",
-  "version": "0.14.2",
+  "version": "0.14.3",
   "description": "Pixel Bender to Zig code translator",
   "main": "./dist/index.js",
   "bin": {
@@ -29,7 +29,7 @@
     "mocha": "^11.7.4",
     "mocha-skip-if": "^1.0.4",
     "node-zigar": "^0.14.2",
-    "rollup": "^4.52.3",
+    "rollup": "^4.52.5",
     "sharp": "^0.34.4"
   }
 }

@@ -1,3 +1,7 @@
+## 0.14.3
+
+* Fixed improper export of kernel
+
 ## 0.14.2
 
 * Upgraded Zigar to version 0.14.2
