@@ -530,7 +530,9 @@ pub const kernel = struct {
                         } else {
                             v = v + (v1 - v) * abs(vp);
                         }
-                        if (v >= 0.0) {} else {
+                        if (v >= 0.0) {
+
+                        } else {
                             if (v1 >= 0.0) {
                                 v = v1;
                             } else if (v0 >= 0.0) {
@@ -1148,7 +1150,7 @@ pub const @"meta(zigar)" = struct {
 
     pub fn isDeclPlain(comptime T: type, comptime _: std.meta.DeclEnum(T)) bool {
         // make return value plain objects
-        return true;
+        return T != kernel;
     }
 };
 
