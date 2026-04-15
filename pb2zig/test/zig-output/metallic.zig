@@ -253,6 +253,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
     return struct {
         pub const Pixel = @Vector(4, T);
         pub const FPixel = @Vector(len, f32);
+        pub const Coord = @Vector(2, f32);
         pub const channels = len;
 
         data: if (writable) []Pixel else []const Pixel,
@@ -344,7 +345,7 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             self.data[index] = dst_pixel;
         }
 
-        fn pixelSize(self: @This()) @Vector(2, f32) {
+        fn pixelSize(self: @This()) Coord {
             _ = self;
             return .{ 1, 1 };
         }
@@ -354,39 +355,27 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             return 1;
         }
 
-        inline fn getPixelAt(self: @This(), coord: @Vector(2, f32)) FPixel {
-            const left_top: @Vector(2, f32) = .{ 0, 0 };
-            const bottom_right: @Vector(2, f32) = .{ @floatFromInt(self.width - 1), @floatFromInt(self.height - 1) };
-            if (@reduce(.And, coord >= left_top) and @reduce(.And, coord <= bottom_right)) {
-                const ic: @Vector(2, u32) = @intFromFloat(coord);
-                return self.getPixel(ic[0], ic[1]);
-            } else {
-                return @splat(0);
-            }
+        fn sampleNearest(self: @This(), coord: Coord) FPixel {
+            const coord_i: @Vector(2, i32) = @intFromFloat(@floor(coord));
+            const x, const y = @as(@Vector(2, u32), @bitCast(coord_i));
+            return switch (x < self.width and y < self.height) {
+                true => self.getPixel(x, y),
+                false => @splat(0),
+            };
         }
 
-        fn sampleNearest(self: @This(), coord: @Vector(2, f32)) FPixel {
-            return self.getPixelAt(@floor(coord));
-        }
-
-        fn sampleLinear(self: @This(), coord: @Vector(2, f32)) FPixel {
-            const c = coord - @as(@Vector(2, f32), @splat(0.5));
+        fn sampleLinear(self: @This(), coord: Coord) FPixel {
+            const c = coord - @as(Coord, @splat(0.5));
             const c0 = @floor(c);
             const f0 = c - c0;
-            const f1 = @as(@Vector(2, f32), @splat(1)) - f0;
-            const w: @Vector(4, f32) = .{
-                f1[0] * f1[1],
-                f0[0] * f1[1],
-                f1[0] * f0[1],
-                f0[0] * f0[1],
-            };
-            const p00 = self.getPixelAt(c0);
-            const p01 = self.getPixelAt(c0 + @as(@Vector(2, f32), .{ 0, 1 }));
-            const p10 = self.getPixelAt(c0 + @as(@Vector(2, f32), .{ 1, 0 }));
-            const p11 = self.getPixelAt(c0 + @as(@Vector(2, f32), .{ 1, 1 }));
+            const f1 = @as(Coord, @splat(1)) - f0;
+            const w: @Vector(4, f32) = .{ f1[0] * f1[1], f0[0] * f1[1], f1[0] * f0[1], f0[0] * f0[1] };
+            const p00 = self.sampleNearest(c0);
+            const p10 = self.sampleNearest(c0 + Coord{ 1, 0 });
+            const p01 = self.sampleNearest(c0 + Coord{ 0, 1 });
+            const p11 = self.sampleNearest(c0 + Coord{ 1, 1 });
             var result: FPixel = undefined;
-            comptime var i = 0;
-            inline while (i < len) : (i += 1) {
+            inline for (0..len) |i| {
                 const p: @Vector(4, f32) = .{ p00[i], p10[i], p01[i], p11[i] };
                 result[i] = @reduce(.Add, p * w);
             }
