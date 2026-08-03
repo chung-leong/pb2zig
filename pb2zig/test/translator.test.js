@@ -1037,12 +1037,12 @@ describe('Translator tests', function() {
     it('should include image processing functions when kernelOnly is not set', function() {
       const pbkCode = addPBKWrapper(``);
       const result = convertPixelBender(pbkCode, {});
-      expect(result).to.contain('fn createOutput');
+      expect(result).to.contain('fn process');
     })
     it('should include async image processing functions when asyncFn is set', function() {
       const pbkCode = addPBKWrapper(``);
       const result = convertPixelBender(pbkCode, { asyncFn: true });
-      expect(result).to.contain('fn createOutputAsync');
+      expect(result).to.contain('fn processAsync');
     })
     it('should correctly translate out and inout arguments', function() {
       const pbkCode = `

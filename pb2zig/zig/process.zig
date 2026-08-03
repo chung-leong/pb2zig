@@ -1,133 +1,75 @@
 const std = @import("std");
 
 const kernel = struct {};
-const InputPixelType = u8;
-const OutputPixelType = u8;
 
 //---start of code
-pub const Input = KernelInput(InputPixelType, kernel);
-pub const Output = KernelOutput(OutputPixelType, kernel);
+// keep auto-formatter from moving statement
+const zigar = if (true) @import("zigar") else unreachable;
+
+pub const Input = KernelInput(kernel);
+pub const Output = KernelOutput(kernel);
 pub const Parameters = KernelParameters(kernel);
 
-pub fn createOutput(allocator: std.mem.Allocator, width: u32, height: u32, input: Input, params: Parameters) !Output {
-    var output: Output = undefined;
-    inline for (std.meta.fields(Output)) |field| {
-        const ImageT = @TypeOf(@field(output, field.name));
-        @field(output, field.name) = .{
-            .data = try allocator.alloc(ImageT.Pixel, width * height),
-            .width = width,
-            .height = height,
-        };
-    }
-    var instance = kernel.create(input, output, params);
-    if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
-        instance.evaluateDependents();
-    }
-    while (instance.outputCoord[1] < height) : (instance.outputCoord[1] += 1) {
-        instance.outputCoord[0] = 0;
-        while (instance.outputCoord[0] < width) : (instance.outputCoord[0] += 1) {
-            instance.evaluatePixel();
+pub fn process(input: Input, output: Output, params: Parameters) !void {
+    // use inline loop to generate code for each image implementation (WebImage or GD)
+    inline for (zigar.image.formats) |tag| {
+        const input_field_names = comptime std.meta.fieldNames(Input);
+        const output_field_names = comptime std.meta.fieldNames(Output);
+        const output_image_0 = @field(output, output_field_names[0]);
+        if (output_image_0 == tag) {
+            // copy fields from zigar.image.Any to implementation-specific structs
+            var input_impl: KernelInputImpl(tag.Type(.ro), kernel) = undefined;
+            inline for (input_field_names) |name| {
+                const input_image = @field(input, name);
+                if (input_image != tag) unreachable;
+                @field(input_impl, name).impl = input_image.getField(tag);
+            }
+            var output_impl: KernelOutputImpl(tag.Type(.rw), kernel) = undefined;
+            inline for (output_field_names) |name| {
+                const output_image = @field(output, name);
+                if (output_image != tag) unreachable;
+                @field(output_impl, name).impl = output_image.getField(tag);
+            }
+            // get the output dimensions (multiple outputs are possible but unlikely)
+            var output_width: usize = 0;
+            var output_height: usize = 0;
+            inline for (output_field_names) |name| {
+                const output_image = @field(output, name);
+                var out = output_image.getField(tag);
+                const w = out.getWidth();
+                const h = out.getHeight();
+                if (w > output_width) output_width = w;
+                if (h > output_height) output_height = h;
+            }
+            // create the implementation-specific kernel instance
+            var instance = kernel.create(input_impl, output_impl, params);
+            // calculate variables that are dependent on kernel parameters
+            if (@hasDecl(@TypeOf(instance), "evaluateDependents")) {
+                instance.evaluateDependents();
+            }
+            // loop through all coordinates, starting from (0.5, 0.5)
+            const width: f32 = @floatFromInt(output_width);
+            const height: f32 = @floatFromInt(output_height);
+            while (instance.outputCoord[1] < height) : (instance.outputCoord[1] += 1) {
+                instance.outputCoord[0] = 0.5;
+                while (instance.outputCoord[0] < width) : (instance.outputCoord[0] += 1) {
+                    instance.evaluatePixel();
+                }
+            }
         }
     }
-    return output;
 }
 
-const ColorSpace = enum { srgb, @"display-p3" };
-
-pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bool) type {
+pub fn KernelImage(comptime Impl: type, comptime channels: comptime_int, comptime writable: bool) type {
+    const Pixel = @Vector(channels, f32);
+    const Coord = @Vector(2, f32);
     return struct {
-        pub const Pixel = @Vector(4, T);
-        pub const FPixel = @Vector(len, f32);
-        pub const Coord = @Vector(2, f32);
-        pub const channels = len;
+        impl: Impl,
 
-        data: if (writable) []Pixel else []const Pixel,
-        width: u32,
-        height: u32,
-        colorSpace: ColorSpace = .srgb,
-
-        fn constrain(v: anytype, min: f32, max: f32) @TypeOf(v) {
-            const lower: @TypeOf(v) = @splat(min);
-            const upper: @TypeOf(v) = @splat(max);
-            const v2 = @select(f32, v > lower, v, lower);
-            return @select(f32, v2 < upper, v2, upper);
-        }
-
-        fn pbPixelFromFloatPixel(pixel: Pixel) FPixel {
-            if (len == 4) {
-                return pixel;
-            }
-            const mask: @Vector(len, i32) = switch (len) {
-                1 => .{0},
-                2 => .{ 0, 3 },
-                3 => .{ 0, 1, 2 },
-                else => @compileError("Unsupported number of channels: " ++ len),
-            };
-            return @shuffle(f32, pixel, undefined, mask);
-        }
-
-        fn floatPixelFromPBPixel(pixel: FPixel) Pixel {
-            if (len == 4) {
-                return pixel;
-            }
-            const alpha: @Vector(1, T) = if (len == 1 or len == 3) .{1} else undefined;
-            const mask: @Vector(len, i32) = switch (len) {
-                1 => .{ 0, 0, 0, -1 },
-                2 => .{ 0, 0, 0, 1 },
-                3 => .{ 0, 1, 2, -1 },
-                else => @compileError("Unsupported number of channels: " ++ len),
-            };
-            return @shuffle(T, pixel, alpha, mask);
-        }
-
-        fn pbPixelFromIntPixel(pixel: Pixel) FPixel {
-            const numerator: FPixel = switch (len) {
-                1 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(1, i32){0})),
-                2 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(2, i32){ 0, 3 })),
-                3 => @floatFromInt(@shuffle(T, pixel, undefined, @Vector(3, i32){ 0, 1, 2 })),
-                4 => @floatFromInt(pixel),
-                else => @compileError("Unsupported number of channels: " ++ len),
-            };
-            const denominator: FPixel = @splat(@floatFromInt(std.math.maxInt(T)));
-            return numerator / denominator;
-        }
-
-        fn intPixelFromPBPixel(pixel: FPixel) Pixel {
-            const max: f32 = @floatFromInt(std.math.maxInt(T));
-            const multiplier: FPixel = @splat(max);
-            const product: FPixel = constrain(pixel * multiplier, 0, max);
-            const maxAlpha: @Vector(1, f32) = .{std.math.maxInt(T)};
-            return switch (len) {
-                1 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 0, 0, -1 })),
-                2 => @intFromFloat(@shuffle(f32, product, undefined, @Vector(4, i32){ 0, 0, 0, 1 })),
-                3 => @intFromFloat(@shuffle(f32, product, maxAlpha, @Vector(4, i32){ 0, 1, 2, -1 })),
-                4 => @intFromFloat(product),
-                else => @compileError("Unsupported number of channels: " ++ len),
-            };
-        }
-
-        fn getPixel(self: @This(), x: u32, y: u32) FPixel {
-            const index = (y * self.width) + x;
-            const src_pixel = self.data[index];
-            const pixel: FPixel = switch (@typeInfo(T)) {
-                .float => pbPixelFromFloatPixel(src_pixel),
-                .int => pbPixelFromIntPixel(src_pixel),
-                else => @compileError("Unsupported type: " ++ @typeName(T)),
-            };
-            return pixel;
-        }
-
-        fn setPixel(self: @This(), x: u32, y: u32, pixel: FPixel) void {
-            if (comptime !writable) {
-                return;
-            }
-            const index = (y * self.width) + x;
-            const dst_pixel: Pixel = switch (@typeInfo(T)) {
-                .float => floatPixelFromPBPixel(pixel),
-                .int => intPixelFromPBPixel(pixel),
-                else => @compileError("Unsupported type: " ++ @typeName(T)),
-            };
-            self.data[index] = dst_pixel;
+        fn writePixel(self: @This(), coord: Coord, pixel: Pixel) void {
+            if (comptime !writable) unreachable;
+            const pos: @Vector(2, usize) = @intFromFloat(coord);
+            self.impl.setPixel(Pixel, pos[0], pos[1], pixel);
         }
 
         fn pixelSize(self: @This()) Coord {
@@ -140,48 +82,26 @@ pub fn Image(comptime T: type, comptime len: comptime_int, comptime writable: bo
             return 1;
         }
 
-        fn sampleNearest(self: @This(), coord: Coord) FPixel {
-            const coord_i: @Vector(2, i32) = @intFromFloat(@floor(coord));
-            const x, const y = @as(@Vector(2, u32), @bitCast(coord_i));
-            return switch (x < self.width and y < self.height) {
-                true => self.getPixel(x, y),
-                false => @splat(0),
-            };
+        fn sampleNearest(self: @This(), coord: Coord) Pixel {
+            return self.impl.sampleNearest(Pixel, coord);
         }
 
-        fn sampleLinear(self: @This(), coord: Coord) FPixel {
-            const c = coord - @as(Coord, @splat(0.5));
-            const c0 = @floor(c);
-            const f0 = c - c0;
-            const f1 = @as(Coord, @splat(1)) - f0;
-            const w: @Vector(4, f32) = .{ f1[0] * f1[1], f0[0] * f1[1], f1[0] * f0[1], f0[0] * f0[1] };
-            const p00 = self.sampleNearest(c0);
-            const p10 = self.sampleNearest(c0 + Coord{ 1, 0 });
-            const p01 = self.sampleNearest(c0 + Coord{ 0, 1 });
-            const p11 = self.sampleNearest(c0 + Coord{ 1, 1 });
-            var result: FPixel = undefined;
-            inline for (0..len) |i| {
-                const p: @Vector(4, f32) = .{ p00[i], p10[i], p01[i], p11[i] };
-                result[i] = @reduce(.Add, p * w);
-            }
-            return result;
+        fn sampleLinear(self: @This(), coord: Coord) Pixel {
+            return self.impl.sampleLinear(Pixel, coord);
         }
     };
 }
 
-pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
+pub fn KernelInput(comptime Kernel: type) type {
     const input_fields = std.meta.fields(@TypeOf(Kernel.inputImages));
     comptime var struct_fields: [input_fields.len]std.builtin.Type.StructField = undefined;
     inline for (input_fields, 0..) |field, index| {
-        const input = @field(Kernel.inputImages, field.name);
-        const ImageT = Image(T, input.channels, false);
-        const default_value: ImageT = undefined;
         struct_fields[index] = .{
             .name = field.name,
-            .type = ImageT,
-            .default_value_ptr = @ptrCast(&default_value),
+            .type = zigar.image.Any(.ro),
+            .default_value_ptr = null,
             .is_comptime = false,
-            .alignment = @alignOf(ImageT),
+            .alignment = @alignOf(zigar.image.Any(.ro)),
         };
     }
     return @Type(.{
@@ -194,19 +114,65 @@ pub fn KernelInput(comptime T: type, comptime Kernel: type) type {
     });
 }
 
-pub fn KernelOutput(comptime T: type, comptime Kernel: type) type {
+pub fn KernelInputImpl(comptime Impl: type, comptime Kernel: type) type {
+    const input_fields = std.meta.fields(@TypeOf(Kernel.inputImages));
+    comptime var struct_fields: [input_fields.len]std.builtin.Type.StructField = undefined;
+    inline for (input_fields, 0..) |field, index| {
+        const input = @field(Kernel.inputImages, field.name);
+        const KernelImageImpl = KernelImage(Impl, input.channels, false);
+        struct_fields[index] = .{
+            .name = field.name,
+            .type = KernelImageImpl,
+            .default_value_ptr = null,
+            .is_comptime = false,
+            .alignment = @alignOf(KernelImageImpl),
+        };
+    }
+    return @Type(.{
+        .@"struct" = .{
+            .layout = .auto,
+            .fields = &struct_fields,
+            .decls = &.{},
+            .is_tuple = false,
+        },
+    });
+}
+
+pub fn KernelOutput(comptime Kernel: type) type {
+    const output_fields = std.meta.fields(@TypeOf(Kernel.outputImages));
+    comptime var struct_fields: [output_fields.len]std.builtin.Type.StructField = undefined;
+    inline for (output_fields, 0..) |field, index| {
+        struct_fields[index] = .{
+            .name = field.name,
+            .type = zigar.image.Any(.rw),
+            .default_value_ptr = null,
+            .is_comptime = false,
+            .alignment = @alignOf(zigar.image.Any(.rw)),
+        };
+    }
+    return @Type(.{
+        .@"struct" = .{
+            .layout = .auto,
+            .fields = &struct_fields,
+            .decls = &.{},
+            .is_tuple = false,
+        },
+    });
+}
+
+pub fn KernelOutputImpl(comptime Impl: type, comptime Kernel: type) type {
     const output_fields = std.meta.fields(@TypeOf(Kernel.outputImages));
     comptime var struct_fields: [output_fields.len]std.builtin.Type.StructField = undefined;
     inline for (output_fields, 0..) |field, index| {
         const output = @field(Kernel.outputImages, field.name);
-        const ImageT = Image(T, output.channels, true);
-        const default_value: ImageT = undefined;
+        const KernelImageImpl = KernelImage(Impl, output.channels, true);
+        const default_value: KernelImageImpl = undefined;
         struct_fields[index] = .{
             .name = field.name,
-            .type = ImageT,
+            .type = KernelImageImpl,
             .default_value_ptr = @ptrCast(&default_value),
             .is_comptime = false,
-            .alignment = @alignOf(ImageT),
+            .alignment = @alignOf(KernelImageImpl),
         };
     }
     return @Type(.{
@@ -253,28 +219,3 @@ pub fn KernelParameters(comptime Kernel: type) type {
         },
     });
 }
-
-pub const @"meta(zigar)" = struct {
-    pub fn isFieldClampedArray(comptime T: type, comptime name: std.meta.FieldEnum(T)) bool {
-        if (@hasDecl(T, "Pixel")) {
-            // make field `data` clamped array if output pixel type is u8
-            if (@typeInfo(T.Pixel).vector.child == u8) {
-                return name == .data;
-            }
-        }
-        return false;
-    }
-
-    pub fn isFieldTypedArray(comptime T: type, comptime name: std.meta.FieldEnum(T)) bool {
-        if (@hasDecl(T, "Pixel")) {
-            // make field `data` typed array (if pixel value is not u8)
-            return name == .data;
-        }
-        return false;
-    }
-
-    pub fn isDeclPlain(comptime T: type, comptime _: std.meta.DeclEnum(T)) bool {
-        // make return value plain objects
-        return T != kernel;
-    }
-};

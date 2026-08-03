@@ -28,7 +28,7 @@
     "chai": "^6.2.0",
     "mocha": "^11.7.4",
     "mocha-skip-if": "^1.0.4",
-    "node-zigar": "^0.15.2",
+    "node-zigar": "^0.15.3-alpha.2",
     "rollup": "^4.52.5",
     "sharp": "^0.34.4"
   }
