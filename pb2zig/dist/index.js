@@ -2179,14 +2179,9 @@ class PixelBenderToZigTranslator {
   translateKernelInstance() {
     // set the types of constants now in case array-dimensions involve constants
     const constantDecls = this.translateConstantDeclarations();
-    // const outCoord = `
-    //   pub fn outCoord(self: *@This()) @Vector(2, f32) {
-    //     return @as(@Vector(2, f32), @floatFromInt(self.outputCoord)) + @as(@Vector(2, f32), @splat(0.5));
-    //   }
-    // `.trim();
     const outCoord = `
       pub fn outCoord(self: *@This()) @Vector(2, f32) {
-        return .{ @as(f32, @floatFromInt(self.outputCoord[0])) + 0.5, @as(f32, @floatFromInt(self.outputCoord[1])) + 0.5 };
+        return self.outputCoord;
       }
     `.trim();
 
@@ -2209,8 +2204,8 @@ class PixelBenderToZigTranslator {
       FieldDeclaration.create({ name: 'output', type: 'OutputStruct' }),
       FieldDeclaration.create({
         name: 'outputCoord',
-        type: '@Vector(2, u32)',
-        defaultValue: this.promoteExpression(Literal.create({ value: 0, type: 'u32' }), '@Vector(2, u32)', false),
+        type: '@Vector(2, f32)',
+        defaultValue: this.promoteExpression(Literal.create({ value: 0, type: 'f32' }), '@Vector(2, f32)', false),
       }),
       this.createBlankLine(),
     ];
@@ -2419,13 +2414,9 @@ class PixelBenderToZigTranslator {
         // write output pixel to image afterward
         const fcall = FunctionCall.create({
           receiver: this.resolveVariable(name, 'Image'),
-          name: 'setPixel',
+          name: 'writePixel',
           args: [
-            ...[ 0, 1 ].map(value => ElementAccess.create({
-              expression: VariableAccess.create({ name: `self.outputCoord` }),
-              index: Literal.create({ value, type: 'u32 '}),
-              type: 'f32',
-            })),
+            VariableAccess.create({ name: `self.outputCoord` }),
             VariableAccess.create({ name: `self.${name}` }),
           ],
           type: 'void',

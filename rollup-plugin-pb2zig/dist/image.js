@@ -1,4 +1,4 @@
-const { createOutput, Input, kernel } = constructor;
+const { process, Input, kernel } = constructor;
 
 const inputKeys = [];
 for (const [ key ] of kernel.inputImages) {
@@ -37,10 +37,18 @@ function createInput(source) {
   return input;
 }
 
+function createOutput(width, height, settings) {
+  const output = {};
+  for (const key of outputKeys) {
+    output[key] = new ImageData(width, height, settings);
+  }
+  return output;
+}
+
 function getColorSpace(input) {
   let colorSpace;
   for (const key of inputKeys) {
-    let imageData = input[key];
+    const imageData = input[key];
     if (colorSpace) {
       if (imageData.colorSpace !== colorSpace) {
         throw new Error(`Input images must all use the same color space: ${colorSpace}`);
@@ -52,34 +60,12 @@ function getColorSpace(input) {
   return colorSpace;
 }
 
-function createResult(output, colorSpace) {
-  if (output[Symbol.toStringTag] === 'Promise') {
-    return output.then(createResult);
-  }
-  const resultSet = {};
-  for (const key of outputKeys) {
-    let imageData;
-    if (typeof(ImageData) === 'function') {
-      const { data, width, height } = output[key];
-      imageData = new ImageData(data, width, height, { colorSpace });
-    } else {
-      // for Node.js, which doesn't have ImageData
-      imageData = output[key];
-    }
-    if (outputKeys.length === 1) {
-      // just return the one image
-      return imageData;
-    }
-    resultSet[key] = imageData;
-  }
-  return resultSet;
-}
-
 export function createImageData(width, height, source = {}, params = {}) {
   const input = createInput(source);
-  const colorSpace = getColorSpace(input);
-  const output = createOutput(width, height, input, params);
-  return createResult(output, colorSpace);
+  const output = createOutput(width, height, { colorSpace: getColorSpace(input) });
+  const result = process(input, output, params);
+  const onResult = () => (outputKeys.length === 1) ? output[outputKeys[0]] : output;
+  return (result?.[Symbol.toStringTag] === 'Promise') ? output.then(onResult) : onResult();
 }
 
 export function getKernelInfo() {

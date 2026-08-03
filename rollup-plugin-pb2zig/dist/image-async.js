@@ -1,10 +1,10 @@
-const { createOutputAsync, startThreadPool, stopThreadPool } = constructor;
+const { processAsync, startThreadPool, stopThreadPool } = constructor;
 
 export async function createImageDataAsync(width, height, source = {}, params = {}, options = {}) {
   const input = createInput(source);
-  const colorSpace = getColorSpace(input);
-  const output = await createOutputAsync(width, height, input, params, options);
-  return createResult(output, colorSpace);
+  const output = createOutput(width, height, { colorSpace: getColorSpace(input) });
+  const result = await processAsync(input, output, params);
+  return (outputKeys.length === 1) ? output[outputKeys[0]] : output;
 }
 
 export class AbortManager {
