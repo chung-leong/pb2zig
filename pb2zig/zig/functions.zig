@@ -253,7 +253,7 @@ pub fn atan2(v1: anytype, v2: anytype) @TypeOf(v1) {
             }
             break :calc result;
         },
-        else => switch (@typeInfo(@TypeOf(std.math.atan2)).@"fn".params.len) {
+        else => switch (@typeInfo(@TypeOf(std.math.atan2)).@"fn".param_types.len) {
             2 => std.math.atan2(v1, v2),
             else => std.math.atan2(@TypeOf(v1), v1, v2),
         },
